@@ -3,11 +3,12 @@ import { Player, Attribute, AttributeCategory, PlayerCategory } from "@/types/pl
 
 interface PlayersState {
   players: Player[];
+  globalMultiplier: number;
   addPlayer: (player: Omit<Player, "id" | "attributes" | "attributeHistory" | "multiplier">) => void;
   updatePlayer: (playerId: string, updates: Partial<Player>) => void;
   deletePlayer: (playerId: string) => void;
   updateAttribute: (playerId: string, attributeName: string, value: number) => void;
-  updateMultiplier: (playerId: string, multiplier: number) => void;
+  updateGlobalMultiplier: (multiplier: number) => void;
 }
 
 const ATTRIBUTES = {
@@ -84,11 +85,12 @@ const generateInitialAttributes = () => {
 
 export const usePlayersStore = create<PlayersState>((set) => ({
   players: [],
+  globalMultiplier: 1,
   addPlayer: (player) => {
     const newPlayer: Player = {
       ...player,
       id: crypto.randomUUID(),
-      multiplier: player.playerCategory === "RONALDO" ? 1 : 1,
+      multiplier: 1,
       attributes: generateInitialAttributes(),
       attributeHistory: {},
     };
@@ -132,11 +134,7 @@ export const usePlayersStore = create<PlayersState>((set) => ({
       }),
     }));
   },
-  updateMultiplier: (playerId, multiplier) => {
-    set((state) => ({
-      players: state.players.map((player) =>
-        player.id === playerId ? { ...player, multiplier } : player
-      ),
-    }));
+  updateGlobalMultiplier: (multiplier) => {
+    set({ globalMultiplier: multiplier });
   },
 }));

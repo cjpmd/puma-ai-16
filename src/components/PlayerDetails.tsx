@@ -1,7 +1,6 @@
 import { Player, Attribute } from "@/types/player";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
 import { usePlayersStore } from "@/store/players";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
@@ -13,7 +12,7 @@ interface PlayerDetailsProps {
 
 export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const updateAttribute = usePlayersStore((state) => state.updateAttribute);
-  const updateMultiplier = usePlayersStore((state) => state.updateMultiplier);
+  const globalMultiplier = usePlayersStore((state) => state.globalMultiplier);
 
   const renderAttributeSection = (category: string, attributes: Attribute[]) => (
     <div className="space-y-4">
@@ -24,7 +23,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">{attr.name}</span>
               <span className="text-sm text-muted-foreground">
-                {attr.value}/20 {player.playerCategory === "RONALDO" && `(${(attr.value * player.multiplier).toFixed(1)} adjusted)`}
+                {attr.value}/20 {player.playerCategory === "RONALDO" && `(${(attr.value * globalMultiplier).toFixed(1)} adjusted)`}
               </span>
             </div>
             <Slider
@@ -41,7 +40,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                     data={player.attributeHistory[attr.name].map((h) => ({
                       date: format(new Date(h.date), "MMM d"),
                       value: h.value,
-                      adjustedValue: player.playerCategory === "RONALDO" ? h.value * player.multiplier : h.value,
+                      adjustedValue: player.playerCategory === "RONALDO" ? h.value * globalMultiplier : h.value,
                     }))}
                     margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
                   >
@@ -83,27 +82,8 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
     >
       <Card>
         <CardHeader>
-          <CardTitle className="flex justify-between items-center">
-            <span>{player.name} - #{player.squadNumber} ({player.playerCategory})</span>
-            {player.playerCategory === "RONALDO" && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Global Multiplier:</span>
-                <Input
-                  type="number"
-                  value={player.multiplier}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value);
-                    if (value >= 1 && value <= 2) {
-                      updateMultiplier(player.id, value);
-                    }
-                  }}
-                  className="w-20"
-                  step="0.1"
-                  min="1"
-                  max="2"
-                />
-              </div>
-            )}
+          <CardTitle>
+            {player.name} - #{player.squadNumber} ({player.playerCategory})
           </CardTitle>
         </CardHeader>
         <CardContent>
