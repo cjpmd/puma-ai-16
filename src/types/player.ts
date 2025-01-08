@@ -5,7 +5,6 @@ export interface Attribute {
   name: string;
   value: number;
   category: AttributeCategory;
-  multiplier: number;
 }
 
 export interface AttributeHistory {
@@ -19,6 +18,7 @@ export interface Player {
   age: number;
   squadNumber: number;
   playerCategory: PlayerCategory;
+  multiplier: number;
   attributes: Attribute[];
   attributeHistory: Record<string, AttributeHistory[]>;
 }

@@ -23,25 +23,9 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           <div key={attr.name} className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">{attr.name}</span>
-              <div className="flex items-center gap-2">
-                {player.playerCategory === "RONALDO" && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Multiplier:</span>
-                    <Input
-                      type="number"
-                      value={attr.multiplier}
-                      onChange={(e) => updateMultiplier(player.id, attr.name, parseFloat(e.target.value))}
-                      className="w-20"
-                      step="0.1"
-                      min="0.1"
-                      max="2"
-                    />
-                  </div>
-                )}
-                <span className="text-sm text-muted-foreground">
-                  {attr.value}/20 {player.playerCategory === "RONALDO" && `(${(attr.value * attr.multiplier).toFixed(1)} adjusted)`}
-                </span>
-              </div>
+              <span className="text-sm text-muted-foreground">
+                {attr.value}/20 {player.playerCategory === "RONALDO" && `(${(attr.value * player.multiplier).toFixed(1)} adjusted)`}
+              </span>
             </div>
             <Slider
               value={[attr.value]}
@@ -57,7 +41,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                     data={player.attributeHistory[attr.name].map((h) => ({
                       date: format(new Date(h.date), "MMM d"),
                       value: h.value,
-                      adjustedValue: player.playerCategory === "RONALDO" ? h.value * attr.multiplier : h.value,
+                      adjustedValue: player.playerCategory === "RONALDO" ? h.value * player.multiplier : h.value,
                     }))}
                     margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
                   >
@@ -99,8 +83,22 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
     >
       <Card>
         <CardHeader>
-          <CardTitle>
-            {player.name} - #{player.squadNumber} ({player.playerCategory})
+          <CardTitle className="flex justify-between items-center">
+            <span>{player.name} - #{player.squadNumber} ({player.playerCategory})</span>
+            {player.playerCategory === "RONALDO" && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Global Multiplier:</span>
+                <Input
+                  type="number"
+                  value={player.multiplier}
+                  onChange={(e) => updateMultiplier(player.id, parseFloat(e.target.value))}
+                  className="w-20"
+                  step="0.1"
+                  min="0.1"
+                  max="2"
+                />
+              </div>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>

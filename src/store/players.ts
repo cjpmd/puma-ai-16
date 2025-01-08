@@ -3,11 +3,11 @@ import { Player, Attribute, AttributeCategory, PlayerCategory } from "@/types/pl
 
 interface PlayersState {
   players: Player[];
-  addPlayer: (player: Omit<Player, "id" | "attributes" | "attributeHistory">) => void;
+  addPlayer: (player: Omit<Player, "id" | "attributes" | "attributeHistory" | "multiplier">) => void;
   updatePlayer: (playerId: string, updates: Partial<Player>) => void;
   deletePlayer: (playerId: string) => void;
   updateAttribute: (playerId: string, attributeName: string, value: number) => void;
-  updateMultiplier: (playerId: string, attributeName: string, multiplier: number) => void;
+  updateMultiplier: (playerId: string, multiplier: number) => void;
 }
 
 const ATTRIBUTES = {
@@ -76,7 +76,6 @@ const generateInitialAttributes = () => {
         name,
         value: 10,
         category: category as AttributeCategory,
-        multiplier: 1,
       });
     });
   });
@@ -89,6 +88,7 @@ export const usePlayersStore = create<PlayersState>((set) => ({
     const newPlayer: Player = {
       ...player,
       id: crypto.randomUUID(),
+      multiplier: player.playerCategory === "RONALDO" ? 1 : 1,
       attributes: generateInitialAttributes(),
       attributeHistory: {},
     };
@@ -132,17 +132,10 @@ export const usePlayersStore = create<PlayersState>((set) => ({
       }),
     }));
   },
-  updateMultiplier: (playerId, attributeName, multiplier) => {
+  updateMultiplier: (playerId, multiplier) => {
     set((state) => ({
       players: state.players.map((player) =>
-        player.id === playerId
-          ? {
-              ...player,
-              attributes: player.attributes.map((attr) =>
-                attr.name === attributeName ? { ...attr, multiplier } : attr
-              ),
-            }
-          : player
+        player.id === playerId ? { ...player, multiplier } : player
       ),
     }));
   },
