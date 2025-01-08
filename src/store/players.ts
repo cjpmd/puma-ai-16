@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Player, Attribute, AttributeCategory } from "@/types/player";
+import { Player, Attribute, AttributeCategory, PlayerCategory } from "@/types/player";
 
 interface PlayersState {
   players: Player[];
@@ -7,6 +7,7 @@ interface PlayersState {
   updatePlayer: (playerId: string, updates: Partial<Player>) => void;
   deletePlayer: (playerId: string) => void;
   updateAttribute: (playerId: string, attributeName: string, value: number) => void;
+  updateMultiplier: (playerId: string, attributeName: string, multiplier: number) => void;
 }
 
 const ATTRIBUTES = {
@@ -75,6 +76,7 @@ const generateInitialAttributes = () => {
         name,
         value: 10,
         category: category as AttributeCategory,
+        multiplier: 1,
       });
     });
   });
@@ -128,6 +130,20 @@ export const usePlayersStore = create<PlayersState>((set) => ({
           attributeHistory: updatedHistory,
         };
       }),
+    }));
+  },
+  updateMultiplier: (playerId, attributeName, multiplier) => {
+    set((state) => ({
+      players: state.players.map((player) =>
+        player.id === playerId
+          ? {
+              ...player,
+              attributes: player.attributes.map((attr) =>
+                attr.name === attributeName ? { ...attr, multiplier } : attr
+              ),
+            }
+          : player
+      ),
     }));
   },
 }));
