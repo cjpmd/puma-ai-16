@@ -91,10 +91,15 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                 <Input
                   type="number"
                   value={player.multiplier}
-                  onChange={(e) => updateMultiplier(player.id, parseFloat(e.target.value))}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    if (value >= 1 && value <= 2) {
+                      updateMultiplier(player.id, value);
+                    }
+                  }}
                   className="w-20"
                   step="0.1"
-                  min="0.1"
+                  min="1"
                   max="2"
                 />
               </div>
