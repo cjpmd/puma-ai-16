@@ -1,10 +1,11 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
-import { Users, BarChart2, UserCircle, Dumbbell } from "lucide-react";
+import { Users, BarChart2, UserCircle, Dumbbell, LogOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export const NavBar = () => {
+  const navigate = useNavigate();
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
@@ -20,6 +21,11 @@ export const NavBar = () => {
       return profile;
     },
   });
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
 
   return (
     <div className="w-full bg-white shadow-sm mb-8">
@@ -60,9 +66,15 @@ export const NavBar = () => {
             </Button>
           </Link>
           {profile && (
-            <span className="ml-4 text-sm text-muted-foreground">
-              {profile.name}
-            </span>
+            <>
+              <span className="ml-4 text-sm text-muted-foreground">
+                {profile.name}
+              </span>
+              <Button variant="ghost" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </Button>
+            </>
           )}
         </div>
       </div>
