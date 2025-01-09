@@ -75,11 +75,11 @@ export const AttributeSection = ({
                   </span>
                 </div>
                 <Slider
-                  value={[attr.value]}
+                  defaultValue={[attr.value]}
                   min={1}
                   max={20}
                   step={1}
-                  onValueChange={(value) => handleUpdateAttribute(attr.name, value[0])}
+                  onValueCommit={(value) => handleUpdateAttribute(attr.name, value[0])}
                 />
                 {attributeHistory[attr.name]?.length > 1 && (
                   <div className="h-32 mt-2">
