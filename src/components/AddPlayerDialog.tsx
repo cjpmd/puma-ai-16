@@ -7,26 +7,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { usePlayersStore } from "@/store/players";
 import { Plus } from "lucide-react";
 import { PlayerCategory } from "@/types/player";
+import { differenceInYears } from "date-fns";
 
 export const AddPlayerDialog = () => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [age, setAge] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [squadNumber, setSquadNumber] = useState("");
   const [playerCategory, setPlayerCategory] = useState<PlayerCategory>("MESSI");
   const addPlayer = usePlayersStore((state) => state.addPlayer);
 
+  const calculateAge = (dob: string) => {
+    const birthDate = new Date(dob);
+    return differenceInYears(new Date(), birthDate);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const age = calculateAge(dateOfBirth);
     addPlayer({
       name,
-      age: parseInt(age),
+      age,
+      dateOfBirth,
       squadNumber: parseInt(squadNumber),
       playerCategory,
     });
     setOpen(false);
     setName("");
-    setAge("");
+    setDateOfBirth("");
     setSquadNumber("");
     setPlayerCategory("MESSI");
   };
@@ -54,13 +62,12 @@ export const AddPlayerDialog = () => {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="age">Age</Label>
+            <Label htmlFor="dateOfBirth">Date of Birth</Label>
             <Input
-              id="age"
-              type="number"
-              min="0"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
+              id="dateOfBirth"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
               required
             />
           </div>

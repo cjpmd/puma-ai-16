@@ -171,6 +171,7 @@ export type Database = {
         Row: {
           age: number
           created_at: string | null
+          date_of_birth: string
           id: string
           name: string
           player_category: string
@@ -180,6 +181,7 @@ export type Database = {
         Insert: {
           age: number
           created_at?: string | null
+          date_of_birth?: string
           id?: string
           name: string
           player_category: string
@@ -189,6 +191,7 @@ export type Database = {
         Update: {
           age?: number
           created_at?: string | null
+          date_of_birth?: string
           id?: string
           name?: string
           player_category?: string
