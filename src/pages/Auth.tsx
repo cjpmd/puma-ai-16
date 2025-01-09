@@ -20,9 +20,16 @@ export const Auth = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold">Welcome Back</h1>
-          <p className="mt-2 text-muted-foreground">Sign in to continue</p>
+        <div className="text-center space-y-6">
+          <img 
+            src="/lovable-uploads/0e21bdb0-5451-4dcf-a2ca-a4d572b82e47.png" 
+            alt="Broughty United Pumas Logo" 
+            className="h-24 w-auto mx-auto"
+          />
+          <div>
+            <h1 className="text-4xl font-bold">Welcome Back</h1>
+            <p className="mt-2 text-muted-foreground">Sign in to continue</p>
+          </div>
         </div>
         <div className="bg-card p-6 rounded-lg shadow-lg">
           <SupabaseAuth 

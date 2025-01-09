@@ -5,9 +5,6 @@ import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { PlayerDetails } from "@/components/PlayerDetails";
 import { Player } from "@/types/player";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { Users, BarChart2, UserCircle } from "lucide-react";
 
 const Index = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
@@ -23,27 +20,7 @@ const Index = () => {
       >
         <div className="flex items-center justify-between">
           <h1 className="text-4xl font-bold">Player Overview</h1>
-          <div className="flex items-center gap-4">
-            <Link to="/squad">
-              <Button variant="outline">
-                <Users className="mr-2 h-4 w-4" />
-                Squad
-              </Button>
-            </Link>
-            <Link to="/analytics">
-              <Button variant="outline">
-                <BarChart2 className="mr-2 h-4 w-4" />
-                Analytics
-              </Button>
-            </Link>
-            <Link to="/coaches">
-              <Button variant="outline">
-                <UserCircle className="mr-2 h-4 w-4" />
-                Coaches
-              </Button>
-            </Link>
-            <AddPlayerDialog />
-          </div>
+          <AddPlayerDialog />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

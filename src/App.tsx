@@ -6,6 +6,7 @@ import { Analytics } from "@/pages/Analytics";
 import SquadManagement from "@/pages/SquadManagement";
 import { Auth } from "@/pages/Auth";
 import { Coaches } from "@/pages/Coaches";
+import { NavBar } from "@/components/NavBar";
 
 const queryClient = new QueryClient();
 
@@ -14,11 +15,43 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/squad" element={<SquadManagement />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/coaches" element={<Coaches />} />
+          <Route
+            path="/"
+            element={
+              <>
+                <NavBar />
+                <Index />
+              </>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <>
+                <NavBar />
+                <Analytics />
+              </>
+            }
+          />
+          <Route
+            path="/squad"
+            element={
+              <>
+                <NavBar />
+                <SquadManagement />
+              </>
+            }
+          />
+          <Route
+            path="/coaches"
+            element={
+              <>
+                <NavBar />
+                <Coaches />
+              </>
+            }
+          />
         </Routes>
       </Router>
       <Toaster />
