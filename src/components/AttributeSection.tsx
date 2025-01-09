@@ -11,6 +11,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
 
 interface AttributeSectionProps {
   category: string;
@@ -39,6 +40,20 @@ export const AttributeSection = ({
   playerId,
 }: AttributeSectionProps) => {
   const { toast } = useToast();
+
+  const { data: playerStats } = useQuery({
+    queryKey: ["player-stats", playerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_stats")
+        .select("*")
+        .eq("player_id", playerId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const handleUpdateAttribute = async (name: string, value: number) => {
     try {
@@ -70,7 +85,22 @@ export const AttributeSection = ({
     <Accordion type="single" collapsible className="w-full">
       <AccordionItem value={category}>
         <AccordionTrigger className="text-lg font-semibold">
-          {category}
+          <div className="flex items-center justify-between w-full">
+            <span>{category}</span>
+            {playerStats && (
+              <div className="flex gap-2 text-sm">
+                <Badge variant="outline" className="bg-green-500/10">
+                  Complete: {playerStats.completed_objectives || 0}
+                </Badge>
+                <Badge variant="outline" className="bg-amber-500/10">
+                  Improving: {playerStats.improving_objectives || 0}
+                </Badge>
+                <Badge variant="outline" className="bg-blue-500/10">
+                  Ongoing: {playerStats.ongoing_objectives || 0}
+                </Badge>
+              </div>
+            )}
+          </div>
         </AccordionTrigger>
         <AccordionContent>
           <div className="space-y-6">
@@ -83,11 +113,14 @@ export const AttributeSection = ({
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">{attr.name}</span>
                     <div className="flex items-center gap-2">
-                      {previousValue && (
-                        <div 
-                          className={`w-3 h-3 rounded-full ${performanceColor}`} 
-                          title={`Previous score: ${previousValue}`}
-                        />
+                      {previousValue !== undefined && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm text-muted-foreground">Previous: {previousValue}</span>
+                          <div 
+                            className={`w-3 h-3 rounded-full ${performanceColor}`}
+                            title={`Previous score: ${previousValue}`}
+                          />
+                        </div>
                       )}
                       <span className="text-sm text-muted-foreground">
                         {attr.value}/20 {playerCategory === "RONALDO" && `(${(attr.value * globalMultiplier).toFixed(1)} adjusted)`}
@@ -101,11 +134,11 @@ export const AttributeSection = ({
                       max={20}
                       step={1}
                       onValueCommit={(value) => handleUpdateAttribute(attr.name, value[0])}
-                      className={performanceColor}
+                      className={`${performanceColor} transition-colors`}
                     />
-                    {previousValue && (
+                    {previousValue !== undefined && (
                       <div 
-                        className={`absolute w-1 h-6 ${performanceColor} rounded`}
+                        className={`absolute w-1 h-6 ${performanceColor} rounded transition-colors`}
                         style={{ 
                           left: `${(previousValue / 20) * 100}%`,
                           top: '-8px',
