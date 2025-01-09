@@ -227,6 +227,100 @@ export type Database = {
         }
         Relationships: []
       }
+      training_drills: {
+        Row: {
+          created_at: string | null
+          id: string
+          instructions: string | null
+          session_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          instructions?: string | null
+          session_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          instructions?: string | null
+          session_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_drills_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_files: {
+        Row: {
+          content_type: string | null
+          created_at: string | null
+          drill_id: string | null
+          file_name: string
+          file_path: string
+          id: string
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string | null
+          drill_id?: string | null
+          file_name: string
+          file_path: string
+          id?: string
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string | null
+          drill_id?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_files_drill_id_fkey"
+            columns: ["drill_id"]
+            isOneToOne: false
+            referencedRelation: "training_drills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_sessions: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
