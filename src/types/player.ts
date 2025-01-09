@@ -1,5 +1,5 @@
 export type AttributeCategory = "GOALKEEPING" | "TECHNICAL" | "MENTAL" | "PHYSICAL";
-export type PlayerCategory = "RONALDO" | "MESSI";
+export type PlayerCategory = "RONALDO" | "MESSI" | "JAGS";
 
 export interface Attribute {
   id: string;

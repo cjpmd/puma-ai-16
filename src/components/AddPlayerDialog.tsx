@@ -177,6 +177,7 @@ export const AddPlayerDialog = () => {
               <SelectContent>
                 <SelectItem value="MESSI">Messi</SelectItem>
                 <SelectItem value="RONALDO">Ronaldo</SelectItem>
+                <SelectItem value="JAGS">Jags</SelectItem>
               </SelectContent>
             </Select>
           </div>

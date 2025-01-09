@@ -7,6 +7,7 @@ import SquadManagement from "@/pages/SquadManagement";
 import PlayerDetailsPage from "@/pages/PlayerDetailsPage";
 import { Auth } from "@/pages/Auth";
 import { Coaches } from "@/pages/Coaches";
+import { Training } from "@/pages/Training";
 import { NavBar } from "@/components/NavBar";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,15 @@ function App() {
               <>
                 <NavBar />
                 <Coaches />
+              </>
+            }
+          />
+          <Route
+            path="/training"
+            element={
+              <>
+                <NavBar />
+                <Training />
               </>
             }
           />
