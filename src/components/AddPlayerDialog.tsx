@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { usePlayersStore } from "@/store/players";
 import { Plus } from "lucide-react";
 import { PlayerCategory } from "@/types/player";
 import { differenceInYears } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const AddPlayerDialog = () => {
   const [open, setOpen] = useState(false);
@@ -15,28 +17,52 @@ export const AddPlayerDialog = () => {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [squadNumber, setSquadNumber] = useState("");
   const [playerCategory, setPlayerCategory] = useState<PlayerCategory>("MESSI");
-  const addPlayer = usePlayersStore((state) => state.addPlayer);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const calculateAge = (dob: string) => {
     const birthDate = new Date(dob);
     return differenceInYears(new Date(), birthDate);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const age = calculateAge(dateOfBirth);
-    addPlayer({
-      name,
-      age,
-      dateOfBirth,
-      squadNumber: parseInt(squadNumber),
-      playerCategory,
-    });
-    setOpen(false);
-    setName("");
-    setDateOfBirth("");
-    setSquadNumber("");
-    setPlayerCategory("MESSI");
+    
+    try {
+      const { error } = await supabase
+        .from('players')
+        .insert({
+          name,
+          age,
+          date_of_birth: dateOfBirth,
+          squad_number: parseInt(squadNumber),
+          player_category: playerCategory,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Player added successfully",
+      });
+
+      // Invalidate the players query to refetch the updated data
+      queryClient.invalidateQueries({ queryKey: ['players'] });
+
+      setOpen(false);
+      setName("");
+      setDateOfBirth("");
+      setSquadNumber("");
+      setPlayerCategory("MESSI");
+    } catch (error) {
+      console.error('Error adding player:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add player. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
