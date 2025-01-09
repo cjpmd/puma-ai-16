@@ -23,6 +23,7 @@ interface SupabasePlayer {
   age: number;
   squad_number: number;
   player_category: string;
+  date_of_birth: string;
   created_at: string;
   updated_at: string;
   player_attributes: {
@@ -54,6 +55,7 @@ const SquadManagement = () => {
         id: player.id,
         name: player.name,
         age: player.age,
+        dateOfBirth: player.date_of_birth,
         squadNumber: player.squad_number,
         playerCategory: player.player_category as PlayerCategory,
         attributes: player.player_attributes.map((attr): Attribute => ({
@@ -174,6 +176,7 @@ const SquadManagement = () => {
                 <TableHead>Squad #</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Age</TableHead>
+                <TableHead>Date of Birth</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead className="text-center">Technical</TableHead>
                 <TableHead className="text-center">Mental</TableHead>
@@ -189,6 +192,7 @@ const SquadManagement = () => {
                   </TableCell>
                   <TableCell>{player.name}</TableCell>
                   <TableCell>{player.age}</TableCell>
+                  <TableCell>{format(new Date(player.dateOfBirth), 'dd/MM/yyyy')}</TableCell>
                   <TableCell>{player.playerCategory}</TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-2">
