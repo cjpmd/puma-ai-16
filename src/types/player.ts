@@ -22,6 +22,7 @@ export interface Player {
   squadNumber: number;
   playerCategory: PlayerCategory;
   attributes: Attribute[];
+  attributeHistory: Record<string, AttributeHistory[]>;
   created_at?: string;
   updated_at?: string;
 }

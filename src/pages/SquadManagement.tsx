@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Player, Attribute } from "@/types/player";
+import { Player, Attribute, PlayerCategory, AttributeCategory } from "@/types/player";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -64,6 +64,7 @@ const SquadManagement = () => {
           player_id: attr.player_id,
           created_at: attr.created_at,
         })),
+        attributeHistory: {},
         created_at: player.created_at,
         updated_at: player.updated_at,
       }));

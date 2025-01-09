@@ -4,7 +4,7 @@ import { Player, Attribute, AttributeCategory, PlayerCategory } from "@/types/pl
 interface PlayersState {
   players: Player[];
   globalMultiplier: number;
-  addPlayer: (player: Omit<Player, "id" | "attributes" | "attributeHistory" | "multiplier">) => void;
+  addPlayer: (player: Omit<Player, "id" | "attributes" | "attributeHistory">) => void;
   updatePlayer: (playerId: string, updates: Partial<Player>) => void;
   deletePlayer: (playerId: string) => void;
   updateAttribute: (playerId: string, attributeName: string, value: number) => void;
@@ -74,6 +74,7 @@ const generateInitialAttributes = () => {
   Object.entries(ATTRIBUTES).forEach(([category, names]) => {
     names.forEach((name) => {
       attributes.push({
+        id: crypto.randomUUID(),
         name,
         value: 10,
         category: category as AttributeCategory,
@@ -90,7 +91,6 @@ export const usePlayersStore = create<PlayersState>((set) => ({
     const newPlayer: Player = {
       ...player,
       id: crypto.randomUUID(),
-      multiplier: 1,
       attributes: generateInitialAttributes(),
       attributeHistory: {},
     };
