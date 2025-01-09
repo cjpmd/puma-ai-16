@@ -12,9 +12,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { motion } from "framer-motion";
+import { format, subDays } from "date-fns";
 
 interface SupabasePlayer {
   id: string;
@@ -49,7 +50,6 @@ const SquadManagement = () => {
 
       if (error) throw error;
 
-      // Transform the data to match our Player type
       return (data as SupabasePlayer[]).map((player): Player => ({
         id: player.id,
         name: player.name,
@@ -83,6 +83,45 @@ const SquadManagement = () => {
     return categoryAttributes.length > 0
       ? (sum / categoryAttributes.length).toFixed(1)
       : "N/A";
+  };
+
+  const getImprovementTrend = (player: Player, category: string) => {
+    const categoryAttributes = player.attributes.filter(
+      (attr) => attr.category === category
+    );
+    
+    if (categoryAttributes.length === 0) return "neutral";
+
+    const currentAvg = parseFloat(calculateAverageAttribute(player, category));
+    const previousAttributes = categoryAttributes.map(attr => ({
+      ...attr,
+      created_at: new Date(attr.created_at || new Date())
+    }));
+
+    // Sort by date and get the oldest records
+    const oldestAttributes = previousAttributes.sort((a, b) => 
+      a.created_at.getTime() - b.created_at.getTime()
+    );
+
+    if (oldestAttributes.length === 0) return "neutral";
+
+    const oldestAvg = oldestAttributes.reduce((acc, curr) => acc + curr.value, 0) / oldestAttributes.length;
+    
+    const difference = currentAvg - oldestAvg;
+    if (difference > 0.5) return "improving";
+    if (difference < -0.5) return "declining";
+    return "neutral";
+  };
+
+  const renderTrendIcon = (trend: string) => {
+    switch (trend) {
+      case "improving":
+        return <TrendingUp className="text-green-500 h-4 w-4" />;
+      case "declining":
+        return <TrendingDown className="text-red-500 h-4 w-4" />;
+      default:
+        return <Minus className="text-gray-500 h-4 w-4" />;
+    }
   };
 
   return (
@@ -136,10 +175,10 @@ const SquadManagement = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Age</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead>Technical</TableHead>
-                <TableHead>Mental</TableHead>
-                <TableHead>Physical</TableHead>
-                <TableHead>Goalkeeping</TableHead>
+                <TableHead className="text-center">Technical</TableHead>
+                <TableHead className="text-center">Mental</TableHead>
+                <TableHead className="text-center">Physical</TableHead>
+                <TableHead className="text-center">Goalkeeping</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -151,11 +190,29 @@ const SquadManagement = () => {
                   <TableCell>{player.name}</TableCell>
                   <TableCell>{player.age}</TableCell>
                   <TableCell>{player.playerCategory}</TableCell>
-                  <TableCell>{calculateAverageAttribute(player, "TECHNICAL")}</TableCell>
-                  <TableCell>{calculateAverageAttribute(player, "MENTAL")}</TableCell>
-                  <TableCell>{calculateAverageAttribute(player, "PHYSICAL")}</TableCell>
                   <TableCell>
-                    {calculateAverageAttribute(player, "GOALKEEPING")}
+                    <div className="flex items-center justify-center gap-2">
+                      {calculateAverageAttribute(player, "TECHNICAL")}
+                      {renderTrendIcon(getImprovementTrend(player, "TECHNICAL"))}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-2">
+                      {calculateAverageAttribute(player, "MENTAL")}
+                      {renderTrendIcon(getImprovementTrend(player, "MENTAL"))}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-2">
+                      {calculateAverageAttribute(player, "PHYSICAL")}
+                      {renderTrendIcon(getImprovementTrend(player, "PHYSICAL"))}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-2">
+                      {calculateAverageAttribute(player, "GOALKEEPING")}
+                      {renderTrendIcon(getImprovementTrend(player, "GOALKEEPING"))}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
