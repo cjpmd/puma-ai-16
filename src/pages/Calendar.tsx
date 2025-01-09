@@ -22,6 +22,11 @@ export const Calendar = () => {
   const [drillTitle, setDrillTitle] = useState("");
   const [drillInstructions, setDrillInstructions] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [editingDrill, setEditingDrill] = useState<{
+    id: string;
+    title: string;
+    instructions: string | null;
+  } | null>(null);
 
   const { data: sessions, refetch: refetchSessions } = useQuery({
     queryKey: ["training-sessions", date],
@@ -90,6 +95,24 @@ export const Calendar = () => {
 
     setSessionTitle("");
     setIsAddSessionOpen(false);
+    refetchSessions();
+  };
+
+  const handleEditDrill = async () => {
+    if (!selectedSessionId || !drillTitle) return;
+
+    await supabase
+      .from("training_drills")
+      .update({
+        title: drillTitle,
+        instructions: drillInstructions,
+      })
+      .eq('id', editingDrill?.id);
+
+    setDrillTitle("");
+    setDrillInstructions("");
+    setEditingDrill(null);
+    setIsAddDrillOpen(false);
     refetchSessions();
   };
 
@@ -229,6 +252,13 @@ export const Calendar = () => {
                     setSelectedSessionId(sessionId);
                     setIsAddDrillOpen(true);
                   }}
+                  onEditDrillClick={(sessionId, drill) => {
+                    setSelectedSessionId(sessionId);
+                    setEditingDrill(drill);
+                    setDrillTitle(drill.title);
+                    setDrillInstructions(drill.instructions || "");
+                    setIsAddDrillOpen(true);
+                  }}
                 />
               ))}
               {(!sessions?.length && !fixtures?.length) && (
@@ -249,7 +279,8 @@ export const Calendar = () => {
         instructions={drillInstructions}
         onInstructionsChange={setDrillInstructions}
         onFileChange={handleFileChange}
-        onAdd={handleAddDrill}
+        onAdd={editingDrill ? handleEditDrill : handleAddDrill}
+        editDrill={editingDrill}
       />
     </div>
   );
