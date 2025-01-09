@@ -18,7 +18,7 @@ const Index = () => {
             alt="Club Logo"
             className="mx-auto h-48 w-auto mb-8"
           />
-          <h1 className="text-4xl font-bold mb-4">Welcome to PlayerPulse</h1>
+          <h1 className="text-4xl font-bold mb-4">Welcome to Puma.AI</h1>
           <p className="text-muted-foreground">Manage your team's performance and development</p>
         </motion.div>
 
