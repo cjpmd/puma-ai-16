@@ -24,7 +24,7 @@ export const Auth = () => {
           <img 
             src="/lovable-uploads/0e21bdb0-5451-4dcf-a2ca-a4d572b82e47.png" 
             alt="Broughty United Pumas Logo" 
-            className="h-24 w-auto mx-auto"
+            className="h-32 w-auto mx-auto" // Increased from h-24 to h-32
           />
           <div>
             <h1 className="text-4xl font-bold">Welcome Back</h1>
