@@ -9,70 +9,106 @@ import { Auth } from "@/pages/Auth";
 import { Coaches } from "@/pages/Coaches";
 import { Calendar } from "@/pages/Calendar";
 import { NavBar } from "@/components/NavBar";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+  }, []);
+
+  // Show loading state while checking authentication
+  if (isAuthenticated === null) {
+    return null;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
-          <Route path="/" element={<Navigate to="/auth" replace />} />
-          <Route path="/auth" element={<Auth />} />
           <Route
-            path="/home"
+            path="/"
             element={
-              <>
-                <NavBar />
-                <Index />
-              </>
+              isAuthenticated ? <Navigate to="/home" /> : <Navigate to="/auth" />
             }
           />
           <Route
-            path="/analytics"
+            path="/auth"
             element={
-              <>
-                <NavBar />
-                <Analytics />
-              </>
+              isAuthenticated ? <Navigate to="/home" /> : <Auth />
             }
           />
-          <Route
-            path="/squad"
-            element={
-              <>
-                <NavBar />
-                <SquadManagement />
-              </>
-            }
-          />
-          <Route
-            path="/player/:id"
-            element={
-              <>
-                <NavBar />
-                <PlayerDetailsPage />
-              </>
-            }
-          />
-          <Route
-            path="/coaches"
-            element={
-              <>
-                <NavBar />
-                <Coaches />
-              </>
-            }
-          />
-          <Route
-            path="/calendar"
-            element={
-              <>
-                <NavBar />
-                <Calendar />
-              </>
-            }
-          />
+          {isAuthenticated ? (
+            <>
+              <Route
+                path="/home"
+                element={
+                  <>
+                    <NavBar />
+                    <Index />
+                  </>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <>
+                    <NavBar />
+                    <Analytics />
+                  </>
+                }
+              />
+              <Route
+                path="/squad"
+                element={
+                  <>
+                    <NavBar />
+                    <SquadManagement />
+                  </>
+                }
+              />
+              <Route
+                path="/player/:id"
+                element={
+                  <>
+                    <NavBar />
+                    <PlayerDetailsPage />
+                  </>
+                }
+              />
+              <Route
+                path="/coaches"
+                element={
+                  <>
+                    <NavBar />
+                    <Coaches />
+                  </>
+                }
+              />
+              <Route
+                path="/calendar"
+                element={
+                  <>
+                    <NavBar />
+                    <Calendar />
+                  </>
+                }
+              />
+            </>
+          ) : (
+            <Route path="*" element={<Navigate to="/auth" />} />
+          )}
         </Routes>
       </Router>
       <Toaster />

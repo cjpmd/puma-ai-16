@@ -1,55 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Plus } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
-
-interface Coach {
-  id: string;
-  name: string;
-  role: string;
-  is_admin: boolean;
-}
+import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { Shield, Check, X } from "lucide-react";
 
 export const Coaches = () => {
-  const [isAddingCoach, setIsAddingCoach] = useState(false);
-  const [newCoachName, setNewCoachName] = useState("");
-  const [newCoachEmail, setNewCoachEmail] = useState("");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const { data: coaches, isLoading, refetch } = useQuery({
-    queryKey: ["coaches"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("coaches")
-        .select("*");
-
-      if (error) throw error;
-      return data as Coach[];
-    },
-  });
-
-  const { data: currentUser } = useQuery({
-    queryKey: ["currentUserRole"],
+  const { data: currentProfile } = useQuery({
+    queryKey: ["profile"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
@@ -64,119 +25,114 @@ export const Coaches = () => {
     },
   });
 
-  const handleAddCoach = async () => {
-    try {
-      const { data: { user }, error: signUpError } = await supabase.auth.signUp({
-        email: newCoachEmail,
-        password: Math.random().toString(36).slice(-8), // Generate random password
-      });
-
-      if (signUpError) throw signUpError;
-
-      const { error: coachError } = await supabase
+  const { data: coaches, isLoading } = useQuery({
+    queryKey: ["coaches"],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from("coaches")
-        .insert([
-          {
-            name: newCoachName,
-            user_id: user?.id,
-            role: "coach",
-            is_admin: false,
-          },
-        ]);
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      if (coachError) throw coachError;
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch coaches",
+        });
+        return [];
+      }
 
+      return data;
+    },
+  });
+
+  const approveCoachMutation = useMutation({
+    mutationFn: async ({ coachId, approved }: { coachId: string; approved: boolean }) => {
+      const { error } = await supabase
+        .from("coaches")
+        .update({ is_approved: approved })
+        .eq("id", coachId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["coaches"] });
       toast({
-        title: "Coach added successfully",
-        description: "An email will be sent to the coach with login instructions.",
+        title: "Success",
+        description: "Coach status updated successfully",
       });
-
-      setIsAddingCoach(false);
-      setNewCoachName("");
-      setNewCoachEmail("");
-      refetch();
-    } catch (error) {
+    },
+    onError: () => {
       toast({
-        title: "Error adding coach",
-        description: "There was an error adding the coach. Please try again.",
         variant: "destructive",
+        title: "Error",
+        description: "Failed to update coach status",
       });
-    }
-  };
+    },
+  });
+
+  if (isLoading) {
+    return <div className="container mx-auto p-4">Loading...</div>;
+  }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="container mx-auto space-y-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            <h1 className="text-4xl font-bold">Coaches</h1>
-          </div>
-          {currentUser?.is_admin && (
-            <Dialog open={isAddingCoach} onOpenChange={setIsAddingCoach}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Coach
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Coach</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={newCoachName}
-                      onChange={(e) => setNewCoachName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newCoachEmail}
-                      onChange={(e) => setNewCoachEmail(e.target.value)}
-                    />
-                  </div>
-                  <Button onClick={handleAddCoach} className="w-full">
-                    Add Coach
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
-
-        {isLoading ? (
-          <div className="text-center py-8">Loading coaches data...</div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Admin Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {coaches?.map((coach) => (
-                <TableRow key={coach.id}>
-                  <TableCell>{coach.name}</TableCell>
-                  <TableCell>{coach.role}</TableCell>
-                  <TableCell>{coach.is_admin ? "Admin" : "Coach"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+    <div className="container mx-auto p-4">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Coaches</h1>
+        {currentProfile?.is_admin && (
+          <p className="text-muted-foreground mt-2">
+            As an admin, you can approve or reject coach applications
+          </p>
         )}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {coaches?.map((coach) => (
+          <Card key={coach.id} className="p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="font-semibold">{coach.name}</h3>
+                <p className="text-sm text-muted-foreground">{coach.role}</p>
+              </div>
+              {coach.is_admin && (
+                <Shield className="h-5 w-5 text-primary" />
+              )}
+            </div>
+            
+            {currentProfile?.is_admin && !coach.is_admin && (
+              <div className="mt-4 flex gap-2">
+                {!coach.is_approved ? (
+                  <Button
+                    onClick={() => approveCoachMutation.mutate({ coachId: coach.id, approved: true })}
+                    size="sm"
+                    className="w-full"
+                  >
+                    <Check className="mr-2 h-4 w-4" />
+                    Approve
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => approveCoachMutation.mutate({ coachId: coach.id, approved: false })}
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Revoke Access
+                  </Button>
+                )}
+              </div>
+            )}
+
+            <div className="mt-2">
+              <span className={`text-sm ${
+                coach.is_approved ? "text-success" : "text-destructive"
+              }`}>
+                {coach.is_approved ? "Approved" : "Pending Approval"}
+              </span>
+            </div>
+          </Card>
+        ))}
       </div>
     </div>
   );
