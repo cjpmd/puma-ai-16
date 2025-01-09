@@ -28,6 +28,25 @@ const getPerformanceColor = (currentValue: number, previousValue: number | undef
   return "bg-blue-500"; // Maintaining
 };
 
+const getHeaderColor = (attributes: Attribute[], attributeHistory: Record<string, { date: string; value: number; }[]>) => {
+  let improving = 0;
+  let declining = 0;
+
+  attributes.forEach(attr => {
+    const history = attributeHistory[attr.name];
+    if (history && history.length > 1) {
+      const currentValue = history[history.length - 1].value;
+      const previousValue = history[history.length - 2].value;
+      if (currentValue > previousValue) improving++;
+      if (currentValue < previousValue) declining++;
+    }
+  });
+
+  if (improving > declining) return "text-green-500";
+  if (declining > improving) return "text-amber-500";
+  return "text-blue-500";
+};
+
 export const AttributeSection = ({
   category,
   attributes,
@@ -65,10 +84,12 @@ export const AttributeSection = ({
     }
   };
 
+  const headerColor = getHeaderColor(attributes, attributeHistory);
+
   return (
     <Accordion type="single" collapsible className="w-full">
       <AccordionItem value={category}>
-        <AccordionTrigger className="text-lg font-semibold">
+        <AccordionTrigger className={`text-lg font-semibold ${headerColor}`}>
           {category}
         </AccordionTrigger>
         <AccordionContent>
@@ -80,7 +101,9 @@ export const AttributeSection = ({
               return (
                 <div key={attr.name} className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">{attr.name}</span>
+                    <span className={`text-sm font-medium ${performanceColor.replace('bg-', 'text-')}`}>
+                      {attr.name}
+                    </span>
                     <div className="flex items-center gap-2">
                       {previousValue !== undefined && (
                         <div className="flex items-center gap-1">
@@ -107,11 +130,12 @@ export const AttributeSection = ({
                     />
                     {previousValue !== undefined && (
                       <div 
-                        className={`absolute w-1 h-4 ${performanceColor} rounded transition-colors`}
+                        className={`absolute w-2 h-6 ${performanceColor} rounded-full transition-colors`}
                         style={{ 
                           left: `${(previousValue / 20) * 100}%`,
-                          top: '-12px',
-                          transform: 'translateX(-50%)'
+                          top: '-8px',
+                          transform: 'translateX(-50%)',
+                          border: '2px solid white'
                         }}
                       />
                     )}
