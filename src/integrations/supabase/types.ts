@@ -9,7 +9,191 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      coaching_comments: {
+        Row: {
+          coach_id: string | null
+          comment: string
+          created_at: string | null
+          id: string
+          player_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          coach_id?: string | null
+          comment: string
+          created_at?: string | null
+          id?: string
+          player_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          coach_id?: string | null
+          comment?: string
+          created_at?: string | null
+          id?: string
+          player_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coaching_comments_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coaching_comments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_attributes: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          name: string
+          player_id: string | null
+          value: number
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          name: string
+          player_id?: string | null
+          value: number
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          player_id?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_attributes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_objectives: {
+        Row: {
+          coach_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          player_id: string | null
+          points: number | null
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          coach_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          player_id?: string | null
+          points?: number | null
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          coach_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          player_id?: string | null
+          points?: number | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_objectives_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_objectives_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          age: number
+          created_at: string | null
+          id: string
+          name: string
+          player_category: string
+          squad_number: number
+          updated_at: string | null
+        }
+        Insert: {
+          age: number
+          created_at?: string | null
+          id?: string
+          name: string
+          player_category: string
+          squad_number: number
+          updated_at?: string | null
+        }
+        Update: {
+          age?: number
+          created_at?: string | null
+          id?: string
+          name?: string
+          player_category?: string
+          squad_number?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          role: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          role: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          role?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

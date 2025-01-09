@@ -1,10 +1,8 @@
-import { Player, Attribute } from "@/types/player";
+import { Player } from "@/types/player";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
 import { usePlayersStore } from "@/store/players";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { AttributeSection } from "./AttributeSection";
 
 interface PlayerDetailsProps {
   player: Player;
@@ -14,64 +12,9 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const updateAttribute = usePlayersStore((state) => state.updateAttribute);
   const globalMultiplier = usePlayersStore((state) => state.globalMultiplier);
 
-  const renderAttributeSection = (category: string, attributes: Attribute[]) => (
-    <div className="space-y-4">
-      <h3 className="font-semibold text-lg">{category}</h3>
-      <div className="space-y-6">
-        {attributes.map((attr) => (
-          <div key={attr.name} className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">{attr.name}</span>
-              <span className="text-sm text-muted-foreground">
-                {attr.value}/20 {player.playerCategory === "RONALDO" && `(${(attr.value * globalMultiplier).toFixed(1)} adjusted)`}
-              </span>
-            </div>
-            <Slider
-              value={[attr.value]}
-              min={1}
-              max={20}
-              step={1}
-              onValueChange={(value) => updateAttribute(player.id, attr.name, value[0])}
-            />
-            {player.attributeHistory[attr.name]?.length > 1 && (
-              <div className="h-32 mt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={player.attributeHistory[attr.name].map((h) => ({
-                      date: format(new Date(h.date), "MMM d"),
-                      value: h.value,
-                      adjustedValue: player.playerCategory === "RONALDO" ? h.value * globalMultiplier : h.value,
-                    }))}
-                    margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
-                  >
-                    <XAxis dataKey="date" />
-                    <YAxis domain={[0, 20]} />
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#4ADE80"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    {player.playerCategory === "RONALDO" && (
-                      <Line
-                        type="monotone"
-                        dataKey="adjustedValue"
-                        stroke="#F87171"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                    )}
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  const handleUpdateAttribute = (name: string, value: number) => {
+    updateAttribute(player.id, name, value);
+  };
 
   return (
     <motion.div
@@ -89,12 +32,15 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         <CardContent>
           <div className="space-y-8">
             {["GOALKEEPING", "TECHNICAL", "MENTAL", "PHYSICAL"].map((category) => (
-              <div key={category}>
-                {renderAttributeSection(
-                  category,
-                  player.attributes.filter((attr) => attr.category === category)
-                )}
-              </div>
+              <AttributeSection
+                key={category}
+                category={category}
+                attributes={player.attributes.filter((attr) => attr.category === category)}
+                attributeHistory={player.attributeHistory}
+                onUpdateAttribute={handleUpdateAttribute}
+                playerCategory={player.playerCategory}
+                globalMultiplier={globalMultiplier}
+              />
             ))}
           </div>
         </CardContent>
