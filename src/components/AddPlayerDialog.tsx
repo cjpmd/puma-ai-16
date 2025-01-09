@@ -29,8 +29,29 @@ export const AddPlayerDialog = () => {
     e.preventDefault();
     const age = calculateAge(dateOfBirth);
     
+    // Log the data being sent
+    console.log('Submitting player data:', {
+      name,
+      age,
+      date_of_birth: dateOfBirth,
+      squad_number: parseInt(squadNumber),
+      player_category: playerCategory,
+    });
+
     try {
-      const { error } = await supabase
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('No authenticated session found');
+        toast({
+          title: "Error",
+          description: "You must be logged in to add players",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase
         .from('players')
         .insert({
           name,
@@ -38,9 +59,16 @@ export const AddPlayerDialog = () => {
           date_of_birth: dateOfBirth,
           squad_number: parseInt(squadNumber),
           player_category: playerCategory,
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      // Log the response
+      console.log('Supabase response:', { data, error });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
