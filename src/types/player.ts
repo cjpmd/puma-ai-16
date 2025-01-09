@@ -15,6 +15,12 @@ export interface AttributeHistory {
   value: number;
 }
 
+export interface PlayerObjectives {
+  completed?: number;
+  improving?: number;
+  ongoing?: number;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -24,6 +30,7 @@ export interface Player {
   playerCategory: PlayerCategory;
   attributes: Attribute[];
   attributeHistory: Record<string, AttributeHistory[]>;
+  objectives?: PlayerObjectives;
   created_at?: string;
   updated_at?: string;
 }

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Player, Attribute, PlayerCategory, AttributeCategory } from "@/types/player";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -12,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
@@ -43,34 +44,48 @@ const SquadManagement = () => {
   const { data: players, isLoading } = useQuery({
     queryKey: ["players"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: playersData, error: playersError } = await supabase
         .from("players")
         .select(`
           *,
           player_attributes (*)
         `);
 
-      if (error) throw error;
+      if (playersError) throw playersError;
 
-      return (data as SupabasePlayer[]).map((player): Player => ({
-        id: player.id,
-        name: player.name,
-        age: player.age,
-        dateOfBirth: player.date_of_birth,
-        squadNumber: player.squad_number,
-        playerCategory: player.player_category as PlayerCategory,
-        attributes: player.player_attributes.map((attr): Attribute => ({
-          id: attr.id,
-          name: attr.name,
-          value: attr.value,
-          category: attr.category as AttributeCategory,
-          player_id: attr.player_id,
-          created_at: attr.created_at,
-        })),
-        attributeHistory: {},
-        created_at: player.created_at,
-        updated_at: player.updated_at,
-      }));
+      const { data: statsData, error: statsError } = await supabase
+        .from("player_stats")
+        .select('*');
+
+      if (statsError) throw statsError;
+
+      return (playersData as any[]).map((player): Player => {
+        const playerStats = statsData.find((stat: any) => stat.player_id === player.id);
+        return {
+          id: player.id,
+          name: player.name,
+          age: player.age,
+          dateOfBirth: player.date_of_birth,
+          squadNumber: player.squad_number,
+          playerCategory: player.player_category as PlayerCategory,
+          attributes: player.player_attributes.map((attr: any): Attribute => ({
+            id: attr.id,
+            name: attr.name,
+            value: attr.value,
+            category: attr.category as AttributeCategory,
+            player_id: attr.player_id,
+            created_at: attr.created_at,
+          })),
+          attributeHistory: {},
+          objectives: playerStats ? {
+            completed: playerStats.completed_objectives,
+            improving: playerStats.improving_objectives,
+            ongoing: playerStats.ongoing_objectives,
+          } : undefined,
+          created_at: player.created_at,
+          updated_at: player.updated_at,
+        };
+      });
     },
   });
 
