@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Users, BarChart2, UserCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 
 const Index = () => {
   return (
@@ -19,7 +18,7 @@ const Index = () => {
             className="mx-auto h-48 w-auto mb-8"
           />
           <h1 className="text-4xl font-bold mb-4">Welcome to Puma.AI</h1>
-          <p className="text-muted-foreground">Manage your team's performance and development</p>
+          <p className="text-muted-foreground">Manage Broughty Puma's Performance and Development</p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
@@ -30,7 +29,7 @@ const Index = () => {
             >
               <Users className="w-12 h-12 mx-auto mb-4 text-primary" />
               <h2 className="text-xl font-semibold mb-2">Squad Management</h2>
-              <p className="text-muted-foreground">View and manage your team roster</p>
+              <p className="text-muted-foreground">View and manage your squad</p>
             </motion.div>
           </Link>
 
