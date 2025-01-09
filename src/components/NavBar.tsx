@@ -3,20 +3,32 @@ import { Button } from "./ui/button";
 import { Users, BarChart2, UserCircle, Calendar, LogOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export const NavBar = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch profile",
+        });
+        return null;
+      }
 
       return profile;
     },
