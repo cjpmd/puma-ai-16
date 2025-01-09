@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePlayersStore } from "@/store/players";
 import { motion } from "framer-motion";
 import { AttributeSection } from "./AttributeSection";
+import { CoachingComments } from "./coaching/CoachingComments";
+import { PlayerObjectives } from "./coaching/PlayerObjectives";
 
 interface PlayerDetailsProps {
   player: Player;
@@ -46,6 +48,11 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <PlayerObjectives playerId={player.id} />
+        <CoachingComments playerId={player.id} />
+      </div>
     </motion.div>
   );
 };
