@@ -19,6 +19,7 @@ export interface Player {
   id: string;
   name: string;
   age: number;
+  dateOfBirth: string;
   squadNumber: number;
   playerCategory: PlayerCategory;
   attributes: Attribute[];
