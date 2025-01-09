@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Upload, X } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +36,7 @@ interface DrillFile {
   id: string;
   file_name: string;
   file_path: string;
+  url?: string;
 }
 
 export const Training = () => {
@@ -47,6 +48,7 @@ export const Training = () => {
   const [newDrillTitle, setNewDrillTitle] = useState("");
   const [newDrillInstructions, setNewDrillInstructions] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileUrls, setFileUrls] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -80,6 +82,26 @@ export const Training = () => {
     },
     enabled: !!date
   });
+
+  useEffect(() => {
+    const loadFileUrls = async () => {
+      const urls: Record<string, string> = {};
+      if (sessions) {
+        for (const session of sessions) {
+          for (const drill of session.drills) {
+            for (const file of drill.training_files) {
+              const { data } = await supabase.storage
+                .from('training_files')
+                .getPublicUrl(file.file_path);
+              urls[file.file_path] = data.publicUrl;
+            }
+          }
+        }
+      }
+      setFileUrls(urls);
+    };
+    loadFileUrls();
+  }, [sessions]);
 
   const addSessionMutation = useMutation({
     mutationFn: async () => {
@@ -190,13 +212,6 @@ export const Training = () => {
 
   const handleAddDrill = () => {
     addDrillMutation.mutate();
-  };
-
-  const getFileUrl = async (filePath: string): Promise<string> => {
-    const { data } = await supabase.storage
-      .from('training_files')
-      .getPublicUrl(filePath);
-    return data.publicUrl;
   };
 
   return (
@@ -321,21 +336,18 @@ export const Training = () => {
                             )}
                             {drill.training_files?.length > 0 && (
                               <div className="mt-2">
-                                {drill.training_files.map(async (file) => {
-                                  const url = await getFileUrl(file.file_path);
-                                  return (
-                                    <a
-                                      key={file.id}
-                                      href={url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-sm text-blue-500 hover:underline flex items-center mt-1"
-                                    >
-                                      <Upload className="h-4 w-4 mr-1" />
-                                      {file.file_name}
-                                    </a>
-                                  );
-                                })}
+                                {drill.training_files.map((file) => (
+                                  <a
+                                    key={file.id}
+                                    href={fileUrls[file.file_path]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-blue-500 hover:underline flex items-center mt-1"
+                                  >
+                                    <Upload className="h-4 w-4 mr-1" />
+                                    {file.file_name}
+                                  </a>
+                                ))}
                               </div>
                             )}
                           </div>
