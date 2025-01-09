@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
-import { Users, BarChart2, UserCircle, SoccerBall, LogOut } from "lucide-react";
+import { Users, BarChart2, UserCircle, Ball, LogOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -61,7 +61,7 @@ export const NavBar = () => {
           </Link>
           <Link to="/training">
             <Button variant="ghost">
-              <SoccerBall className="mr-2 h-4 w-4" />
+              <Ball className="mr-2 h-4 w-4" />
               Training
             </Button>
           </Link>
