@@ -212,7 +212,7 @@ const SquadManagement = () => {
                 <TableHead className="text-center">Mental</TableHead>
                 <TableHead className="text-center">Physical</TableHead>
                 <TableHead className="text-center">Goalkeeping</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-right">Objectives Status</TableHead>
                 <TableHead className="text-right">Current Performance</TableHead>
               </TableRow>
             </TableHeader>
@@ -250,7 +250,17 @@ const SquadManagement = () => {
                       {goalkeepingStats.value}
                     </TableCell>
                     <TableCell className="text-right">
-                      <ArrowRight className="inline-block h-4 w-4 ml-2" />
+                      <div className="flex justify-end gap-2">
+                        <Badge variant="outline" className="bg-green-500/10">
+                          {player.objectives?.completed || 0}
+                        </Badge>
+                        <Badge variant="outline" className="bg-amber-500/10">
+                          {player.objectives?.improving || 0}
+                        </Badge>
+                        <Badge variant="outline" className="bg-blue-500/10">
+                          {player.objectives?.ongoing || 0}
+                        </Badge>
+                      </div>
                     </TableCell>
                     <TableCell className={`text-right ${getPerformanceColor(performanceStatus)}`}>
                       {getPerformanceText(performanceStatus)}
