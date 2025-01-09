@@ -76,6 +76,13 @@ export type Database = {
             foreignKeyName: "coaching_comments_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "coaching_comments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
@@ -141,6 +148,13 @@ export type Database = {
             foreignKeyName: "player_attributes_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_attributes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
@@ -187,6 +201,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_objectives_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
           },
           {
             foreignKeyName: "player_objectives_player_id_fkey"
@@ -353,7 +374,41 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      attribute_history: {
+        Row: {
+          created_at: string | null
+          name: string | null
+          player_id: string | null
+          previous_value: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_attributes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_attributes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_stats: {
+        Row: {
+          completed_objectives: number | null
+          improving_objectives: number | null
+          name: string | null
+          ongoing_objectives: number | null
+          player_id: string | null
+          total_objectives: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       create_initial_admin: {

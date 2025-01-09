@@ -1,75 +1,123 @@
 import { Player } from "@/types/player";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { usePlayersStore } from "@/store/players";
-import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerCardProps {
   player: Player;
-  onSelect: (player: Player) => void;
+  onClick?: () => void;
 }
 
-export const PlayerCard = ({ player, onSelect }: PlayerCardProps) => {
-  const deletePlayer = usePlayersStore((state) => state.deletePlayer);
+const calculateAverageChange = (attributes: any[], attributeHistory: any) => {
+  let totalChange = 0;
+  let count = 0;
 
-  const averageAttribute = (category: string) => {
-    const categoryAttributes = player.attributes.filter((attr) => attr.category === category);
+  attributes.forEach((attr) => {
+    const history = attributeHistory[attr.name];
+    if (history && history.length > 1) {
+      const currentValue = attr.value;
+      const previousValue = history[history.length - 2].value;
+      totalChange += currentValue - previousValue;
+      count++;
+    }
+  });
+
+  return count > 0 ? totalChange / count : 0;
+};
+
+const getPerformanceStatus = (change: number) => {
+  if (change > 0) return { label: "Improving", color: "bg-green-500" };
+  if (change < 0) return { label: "Needs Improvement", color: "bg-amber-500" };
+  return { label: "Maintaining", color: "bg-blue-500" };
+};
+
+export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
+  const { data: playerStats } = useQuery({
+    queryKey: ["player-stats", player.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_stats")
+        .select("*")
+        .eq("player_id", player.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const averageChange = calculateAverageChange(player.attributes, player.attributeHistory);
+  const performance = getPerformanceStatus(averageChange);
+
+  const calculateCategoryAverage = (category: string) => {
+    const categoryAttributes = player.attributes.filter(
+      (attr) => attr.category === category
+    );
+    if (categoryAttributes.length === 0) return 0;
     const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
     return (sum / categoryAttributes.length).toFixed(1);
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card className="hover:shadow-lg transition-shadow duration-300">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xl font-bold">#{player.squadNumber}</CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-red-500 hover:text-red-700"
-            onClick={() => deletePlayer(player.id)}
-          >
-            Delete
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-semibold text-lg">{player.name}</h3>
-              <p className="text-sm text-muted-foreground">Age: {player.age}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="space-y-1">
-                <p className="text-muted-foreground">Goalkeeping</p>
-                <p className="font-medium">{averageAttribute("GOALKEEPING")}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-muted-foreground">Technical</p>
-                <p className="font-medium">{averageAttribute("TECHNICAL")}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-muted-foreground">Mental</p>
-                <p className="font-medium">{averageAttribute("MENTAL")}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-muted-foreground">Physical</p>
-                <p className="font-medium">{averageAttribute("PHYSICAL")}</p>
-              </div>
-            </div>
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={() => onSelect(player)}
-            >
-              View Details
-            </Button>
+    <Card className="hover:bg-accent cursor-pointer" onClick={onClick}>
+      <CardHeader>
+        <CardTitle className="text-xl">
+          {player.name} - #{player.squadNumber}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span>Current Performance</span>
+            <Badge className={performance.color}>{performance.label}</Badge>
           </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="text-sm text-muted-foreground">Technical</span>
+              <p className={`text-xl font-bold ${performance.color}`}>
+                {calculateCategoryAverage("TECHNICAL")}
+              </p>
+            </div>
+            <div>
+              <span className="text-sm text-muted-foreground">Mental</span>
+              <p className={`text-xl font-bold ${performance.color}`}>
+                {calculateCategoryAverage("MENTAL")}
+              </p>
+            </div>
+            <div>
+              <span className="text-sm text-muted-foreground">Physical</span>
+              <p className={`text-xl font-bold ${performance.color}`}>
+                {calculateCategoryAverage("PHYSICAL")}
+              </p>
+            </div>
+            <div>
+              <span className="text-sm text-muted-foreground">Goalkeeping</span>
+              <p className={`text-xl font-bold ${performance.color}`}>
+                {calculateCategoryAverage("GOALKEEPING")}
+              </p>
+            </div>
+          </div>
+          {playerStats && (
+            <div className="border-t pt-4">
+              <div className="flex justify-between text-sm">
+                <span>Objectives:</span>
+                <div className="space-x-2">
+                  <Badge variant="outline" className="bg-green-500/10">
+                    Complete: {playerStats.completed_objectives || 0}
+                  </Badge>
+                  <Badge variant="outline" className="bg-amber-500/10">
+                    Improving: {playerStats.improving_objectives || 0}
+                  </Badge>
+                  <Badge variant="outline" className="bg-blue-500/10">
+                    Ongoing: {playerStats.ongoing_objectives || 0}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };

@@ -10,6 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 
 interface AttributeSectionProps {
   category: string;
@@ -20,6 +21,13 @@ interface AttributeSectionProps {
   globalMultiplier?: number;
   playerId: string;
 }
+
+const getPerformanceColor = (currentValue: number, previousValue: number | undefined) => {
+  if (!previousValue) return "bg-blue-500"; // Maintaining
+  if (currentValue > previousValue) return "bg-green-500"; // Improving
+  if (currentValue < previousValue) return "bg-amber-500"; // Needs Improvement
+  return "bg-blue-500"; // Maintaining
+};
 
 export const AttributeSection = ({
   category,
@@ -66,57 +74,83 @@ export const AttributeSection = ({
         </AccordionTrigger>
         <AccordionContent>
           <div className="space-y-6">
-            {attributes.map((attr) => (
-              <div key={attr.name} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">{attr.name}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {attr.value}/20 {playerCategory === "RONALDO" && `(${(attr.value * globalMultiplier).toFixed(1)} adjusted)`}
-                  </span>
-                </div>
-                <Slider
-                  defaultValue={[attr.value]}
-                  min={1}
-                  max={20}
-                  step={1}
-                  onValueCommit={(value) => handleUpdateAttribute(attr.name, value[0])}
-                />
-                {attributeHistory[attr.name]?.length > 1 && (
-                  <div className="h-32 mt-2">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={attributeHistory[attr.name].map((h) => ({
-                          date: format(new Date(h.date), "MMM d"),
-                          value: h.value,
-                          adjustedValue: playerCategory === "RONALDO" ? h.value * globalMultiplier : h.value,
-                        }))}
-                        margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
-                      >
-                        <XAxis dataKey="date" />
-                        <YAxis domain={[0, 20]} />
-                        <Tooltip />
-                        <Line
-                          type="monotone"
-                          dataKey="value"
-                          stroke="#4ADE80"
-                          strokeWidth={2}
-                          dot={false}
+            {attributes.map((attr) => {
+              const previousValue = attributeHistory[attr.name]?.[attributeHistory[attr.name].length - 2]?.value;
+              const performanceColor = getPerformanceColor(attr.value, previousValue);
+              
+              return (
+                <div key={attr.name} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">{attr.name}</span>
+                    <div className="flex items-center gap-2">
+                      {previousValue && (
+                        <div 
+                          className={`w-3 h-3 rounded-full ${performanceColor}`} 
+                          title={`Previous score: ${previousValue}`}
                         />
-                        {playerCategory === "RONALDO" && (
+                      )}
+                      <span className="text-sm text-muted-foreground">
+                        {attr.value}/20 {playerCategory === "RONALDO" && `(${(attr.value * globalMultiplier).toFixed(1)} adjusted)`}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <Slider
+                      defaultValue={[attr.value]}
+                      min={0}
+                      max={20}
+                      step={1}
+                      onValueCommit={(value) => handleUpdateAttribute(attr.name, value[0])}
+                      className={performanceColor}
+                    />
+                    {previousValue && (
+                      <div 
+                        className={`absolute w-1 h-6 ${performanceColor} rounded`}
+                        style={{ 
+                          left: `${(previousValue / 20) * 100}%`,
+                          top: '-8px',
+                          transform: 'translateX(-50%)'
+                        }}
+                      />
+                    )}
+                  </div>
+                  {attributeHistory[attr.name]?.length > 1 && (
+                    <div className="h-32 mt-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={attributeHistory[attr.name].map((h) => ({
+                            date: format(new Date(h.date), "MMM d"),
+                            value: h.value,
+                            adjustedValue: playerCategory === "RONALDO" ? h.value * globalMultiplier : h.value,
+                          }))}
+                          margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+                        >
+                          <XAxis dataKey="date" />
+                          <YAxis domain={[0, 20]} />
+                          <Tooltip />
                           <Line
                             type="monotone"
-                            dataKey="adjustedValue"
-                            stroke="#F87171"
+                            dataKey="value"
+                            stroke="#4ADE80"
                             strokeWidth={2}
                             dot={false}
                           />
-                        )}
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-              </div>
-            ))}
+                          {playerCategory === "RONALDO" && (
+                            <Line
+                              type="monotone"
+                              dataKey="adjustedValue"
+                              stroke="#F87171"
+                              strokeWidth={2}
+                              dot={false}
+                            />
+                          )}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </AccordionContent>
       </AccordionItem>
