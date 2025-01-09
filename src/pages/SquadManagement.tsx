@@ -173,6 +173,12 @@ const SquadManagement = () => {
           >
             Messi Category
           </Button>
+          <Button
+            variant={selectedCategory === "JAGS" ? "default" : "outline"}
+            onClick={() => setSelectedCategory("JAGS")}
+          >
+            Jags Category
+          </Button>
         </div>
 
         {isLoading ? (

@@ -61,7 +61,7 @@ export const NavBar = () => {
           </Link>
           <Link to="/training">
             <Button variant="ghost">
-              <Dumbbell className="mr-2 h-4 w-4" />
+              <Ball className="mr-2 h-4 w-4" />
               Training
             </Button>
           </Link>
