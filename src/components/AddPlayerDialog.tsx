@@ -11,6 +11,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
+const INITIAL_ATTRIBUTES = {
+  GOALKEEPING: [
+    "Aerial Reach", "Command of Area", "Communication", "Eccentricity", 
+    "Handling", "Kicking", "One on Ones", "Punching", "Reflexes", 
+    "Rushing Out", "Throwing"
+  ],
+  TECHNICAL: [
+    "Corners", "Crossing", "Dribbling", "Finishing", "First Touch",
+    "Free Kicks", "Heading", "Long Shots", "Long Throws", "Marking",
+    "Passing", "Penalties", "Tackling", "Technique"
+  ],
+  MENTAL: [
+    "Aggression", "Anticipation", "Bravery", "Composure", "Concentration",
+    "Decisions", "Determination", "Flair", "Leadership", "Off the Ball",
+    "Positioning", "Teamwork", "Vision", "Work Rate"
+  ],
+  PHYSICAL: [
+    "Acceleration", "Agility", "Balance", "Jumping", "Natural Fitness",
+    "Pace", "Stamina", "Strength"
+  ]
+};
+
 export const AddPlayerDialog = () => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -25,24 +47,31 @@ export const AddPlayerDialog = () => {
     return differenceInYears(new Date(), birthDate);
   };
 
+  const createInitialAttributes = async (playerId: string) => {
+    const attributesToInsert = Object.entries(INITIAL_ATTRIBUTES).flatMap(
+      ([category, attributes]) =>
+        attributes.map((name) => ({
+          player_id: playerId,
+          name,
+          value: 10, // Default starting value
+          category,
+        }))
+    );
+
+    const { error } = await supabase
+      .from('player_attributes')
+      .insert(attributesToInsert);
+
+    if (error) throw error;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const age = calculateAge(dateOfBirth);
     
-    // Log the data being sent
-    console.log('Submitting player data:', {
-      name,
-      age,
-      date_of_birth: dateOfBirth,
-      squad_number: parseInt(squadNumber),
-      player_category: playerCategory,
-    });
-
     try {
-      // Check if user is authenticated
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        console.error('No authenticated session found');
         toast({
           title: "Error",
           description: "You must be logged in to add players",
@@ -51,7 +80,8 @@ export const AddPlayerDialog = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      // Create the player first
+      const { data: playerData, error: playerError } = await supabase
         .from('players')
         .insert({
           name,
@@ -60,23 +90,22 @@ export const AddPlayerDialog = () => {
           squad_number: parseInt(squadNumber),
           player_category: playerCategory,
         })
-        .select();
+        .select()
+        .single();
 
-      // Log the response
-      console.log('Supabase response:', { data, error });
+      if (playerError) throw playerError;
 
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
+      // Create initial attributes for the player
+      await createInitialAttributes(playerData.id);
 
       toast({
         title: "Success",
-        description: "Player added successfully",
+        description: "Player and attributes added successfully",
       });
 
-      // Invalidate the players query to refetch the updated data
+      // Invalidate both players and attributes queries
       queryClient.invalidateQueries({ queryKey: ['players'] });
+      queryClient.invalidateQueries({ queryKey: ['attribute-history'] });
 
       setOpen(false);
       setName("");
