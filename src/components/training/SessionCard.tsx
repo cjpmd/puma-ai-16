@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { DrillCard } from "./DrillCard";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 
@@ -22,6 +22,7 @@ interface SessionCardProps {
   fileUrls: Record<string, string>;
   onAddDrillClick: (sessionId: string) => void;
   onEditDrillClick: (sessionId: string, drill: SessionCardProps["session"]["drills"][0]) => void;
+  onDeleteSession: (sessionId: string) => void;
 }
 
 export const SessionCard = ({ 
@@ -29,20 +30,30 @@ export const SessionCard = ({
   fileUrls, 
   onAddDrillClick,
   onEditDrillClick,
+  onDeleteSession,
 }: SessionCardProps) => {
   return (
     <Card key={session.id}>
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          {session.title}
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button size="sm" variant="outline" onClick={() => onAddDrillClick(session.id)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Drill
-              </Button>
-            </DialogTrigger>
-          </Dialog>
+          <span>{session.title}</span>
+          <div className="flex gap-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" onClick={() => onAddDrillClick(session.id)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Drill
+                </Button>
+              </DialogTrigger>
+            </Dialog>
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={() => onDeleteSession(session.id)}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>

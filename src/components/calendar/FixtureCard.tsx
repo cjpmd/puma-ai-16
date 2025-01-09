@@ -5,7 +5,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
 interface FixtureCardProps {
   fixture: {
@@ -15,9 +15,10 @@ interface FixtureCardProps {
     away_score: number | null;
   };
   onEdit: (fixture: FixtureCardProps["fixture"]) => void;
+  onDelete: (fixtureId: string) => void;
 }
 
-export const FixtureCard = ({ fixture, onEdit }: FixtureCardProps) => {
+export const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => {
   const hasScores = fixture.home_score !== null && fixture.away_score !== null;
 
   return (
@@ -25,9 +26,14 @@ export const FixtureCard = ({ fixture, onEdit }: FixtureCardProps) => {
       <CardHeader>
         <CardTitle className="text-lg flex justify-between items-center">
           <span>Match vs {fixture.opponent}</span>
-          <Button variant="ghost" size="sm" onClick={() => onEdit(fixture)}>
-            <Pencil className="h-4 w-4" />
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => onEdit(fixture)}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => onDelete(fixture.id)}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>

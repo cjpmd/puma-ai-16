@@ -11,6 +11,8 @@ import { SessionCard } from "@/components/training/SessionCard";
 import { AddFixtureDialog } from "@/components/calendar/AddFixtureDialog";
 import { Plus } from "lucide-react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
+import { FixtureCard } from "@/components/calendar/FixtureCard";
 
 export const Calendar = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -27,6 +29,14 @@ export const Calendar = () => {
     title: string;
     instructions: string | null;
   } | null>(null);
+  const [editingFixture, setEditingFixture] = useState<{
+    id: string;
+    opponent: string;
+    home_score: number | null;
+    away_score: number | null;
+  } | null>(null);
+
+  const { toast } = useToast();
 
   const { data: sessions, refetch: refetchSessions } = useQuery({
     queryKey: ["training-sessions", date],
@@ -84,7 +94,7 @@ export const Calendar = () => {
   const handleAddSession = async () => {
     if (!date || !sessionTitle) return;
 
-    await supabase
+    const { error } = await supabase
       .from("training_sessions")
       .insert([
         {
@@ -93,15 +103,72 @@ export const Calendar = () => {
         },
       ]);
 
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create training session",
+      });
+      return;
+    }
+
     setSessionTitle("");
     setIsAddSessionOpen(false);
     refetchSessions();
+    toast({
+      title: "Success",
+      description: "Training session created successfully",
+    });
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    const { error } = await supabase
+      .from("training_sessions")
+      .delete()
+      .eq("id", sessionId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete training session",
+      });
+      return;
+    }
+
+    refetchSessions();
+    toast({
+      title: "Success",
+      description: "Training session deleted successfully",
+    });
+  };
+
+  const handleDeleteFixture = async (fixtureId: string) => {
+    const { error } = await supabase
+      .from("fixtures")
+      .delete()
+      .eq("id", fixtureId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete fixture",
+      });
+      return;
+    }
+
+    refetchFixtures();
+    toast({
+      title: "Success",
+      description: "Fixture deleted successfully",
+    });
   };
 
   const handleEditDrill = async () => {
     if (!selectedSessionId || !drillTitle) return;
 
-    await supabase
+    const { error } = await supabase
       .from("training_drills")
       .update({
         title: drillTitle,
@@ -109,17 +176,30 @@ export const Calendar = () => {
       })
       .eq('id', editingDrill?.id);
 
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update drill",
+      });
+      return;
+    }
+
     setDrillTitle("");
     setDrillInstructions("");
     setEditingDrill(null);
     setIsAddDrillOpen(false);
     refetchSessions();
+    toast({
+      title: "Success",
+      description: "Drill updated successfully",
+    });
   };
 
   const handleAddDrill = async () => {
     if (!selectedSessionId || !drillTitle) return;
 
-    const { data: drill } = await supabase
+    const { data: drill, error: drillError } = await supabase
       .from("training_drills")
       .insert([
         {
@@ -131,15 +211,33 @@ export const Calendar = () => {
       .select()
       .single();
 
+    if (drillError) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create drill",
+      });
+      return;
+    }
+
     if (drill && selectedFile) {
       const fileExt = selectedFile.name.split('.').pop();
       const filePath = `${drill.id}/${Math.random()}.${fileExt}`;
 
-      await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('training_files')
         .upload(filePath, selectedFile);
 
-      await supabase
+      if (uploadError) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to upload file",
+        });
+        return;
+      }
+
+      const { error: fileError } = await supabase
         .from("training_files")
         .insert([
           {
@@ -148,6 +246,15 @@ export const Calendar = () => {
             file_path: filePath,
           },
         ]);
+
+      if (fileError) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to save file information",
+        });
+        return;
+      }
     }
 
     setDrillTitle("");
@@ -155,6 +262,10 @@ export const Calendar = () => {
     setSelectedFile(null);
     setIsAddDrillOpen(false);
     refetchSessions();
+    toast({
+      title: "Success",
+      description: "Drill created successfully",
+    });
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,7 +309,9 @@ export const Calendar = () => {
               onSuccess={() => {
                 refetchFixtures();
                 setIsAddFixtureOpen(false);
+                setEditingFixture(null);
               }}
+              editFixture={editingFixture}
             />
           </Dialog>
         </div>
@@ -228,20 +341,15 @@ export const Calendar = () => {
           <CardContent>
             <div className="space-y-6">
               {fixtures?.map((fixture) => (
-                <Card key={fixture.id} className="p-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">Fixture vs {fixture.opponent}</h3>
-                    <div className="text-lg">
-                      {fixture.home_score !== null && fixture.away_score !== null ? (
-                        <span>
-                          {fixture.home_score} - {fixture.away_score}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">Score pending</span>
-                      )}
-                    </div>
-                  </div>
-                </Card>
+                <FixtureCard 
+                  key={fixture.id} 
+                  fixture={fixture}
+                  onEdit={(fixture) => {
+                    setEditingFixture(fixture);
+                    setIsAddFixtureOpen(true);
+                  }}
+                  onDelete={handleDeleteFixture}
+                />
               ))}
               {sessions?.map((session) => (
                 <SessionCard 
@@ -259,6 +367,7 @@ export const Calendar = () => {
                     setDrillInstructions(drill.instructions || "");
                     setIsAddDrillOpen(true);
                   }}
+                  onDeleteSession={handleDeleteSession}
                 />
               ))}
               {(!sessions?.length && !fixtures?.length) && (
