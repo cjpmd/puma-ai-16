@@ -24,10 +24,10 @@ const Index = () => {
         <div className="flex items-center justify-between">
           <h1 className="text-4xl font-bold">Junior Team Manager</h1>
           <div className="flex items-center gap-4">
-            <Link to="/squad-management">
+            <Link to="/analytics">
               <Button variant="outline">
                 <Users className="mr-2 h-4 w-4" />
-                Squad Management
+                Analytics
               </Button>
             </Link>
             <AddPlayerDialog />
