@@ -17,7 +17,7 @@ import { ArrowLeft } from "lucide-react";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
+import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText, PerformanceStatus } from "@/utils/playerCalculations";
 
 interface SupabasePlayer {
   id: string;
@@ -94,14 +94,14 @@ const SquadManagement = () => {
     ? players?.filter((player) => player.playerCategory === selectedCategory)
     : players;
 
-  const calculateAttributeChange = (player: Player, category: string) => {
+  const calculateAttributeChange = (player: Player, category: string): { value: string, trend: PerformanceStatus } => {
     const categoryAttributes = player.attributes.filter(
       (attr) => attr.category === category
     );
     if (categoryAttributes.length === 0) return { value: "N/A", trend: "neutral" };
 
     const sortedByDate = [...categoryAttributes].sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime()
     );
 
     const recentValues = sortedByDate.slice(0, Math.ceil(sortedByDate.length / 2));
