@@ -1,4 +1,5 @@
-import { Upload } from "lucide-react";
+import { Upload, Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface DrillCardProps {
   drill: {
@@ -12,15 +13,23 @@ interface DrillCardProps {
     }[];
   };
   fileUrls: Record<string, string>;
+  onEdit: (drill: DrillCardProps["drill"]) => void;
 }
 
-export const DrillCard = ({ drill, fileUrls }: DrillCardProps) => {
+export const DrillCard = ({ drill, fileUrls, onEdit }: DrillCardProps) => {
   return (
     <div className="border rounded-lg p-4">
-      <h4 className="font-medium">{drill.title}</h4>
-      {drill.instructions && (
-        <p className="text-sm text-muted-foreground mt-2">{drill.instructions}</p>
-      )}
+      <div className="flex justify-between items-start">
+        <div>
+          <h4 className="font-medium">{drill.title}</h4>
+          {drill.instructions && (
+            <p className="text-sm text-muted-foreground mt-2">{drill.instructions}</p>
+          )}
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => onEdit(drill)}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </div>
       {drill.training_files?.length > 0 && (
         <div className="mt-2">
           {drill.training_files.map((file) => (

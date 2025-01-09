@@ -8,6 +8,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useEffect } from "react";
 
 interface AddDrillDialogProps {
   isOpen: boolean;
@@ -18,6 +19,11 @@ interface AddDrillDialogProps {
   onInstructionsChange: (value: string) => void;
   onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onAdd: () => void;
+  editDrill?: {
+    id: string;
+    title: string;
+    instructions: string | null;
+  };
 }
 
 export const AddDrillDialog = ({
@@ -29,12 +35,23 @@ export const AddDrillDialog = ({
   onInstructionsChange,
   onFileChange,
   onAdd,
+  editDrill,
 }: AddDrillDialogProps) => {
+  useEffect(() => {
+    if (editDrill) {
+      onTitleChange(editDrill.title);
+      onInstructionsChange(editDrill.instructions || "");
+    } else {
+      onTitleChange("");
+      onInstructionsChange("");
+    }
+  }, [editDrill, onTitleChange, onInstructionsChange]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Training Drill</DialogTitle>
+          <DialogTitle>{editDrill ? "Edit Training Drill" : "Add Training Drill"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
@@ -53,17 +70,19 @@ export const AddDrillDialog = ({
               onChange={(e) => onInstructionsChange(e.target.value)}
             />
           </div>
-          <div>
-            <Label htmlFor="file">Attachment</Label>
-            <Input
-              id="file"
-              type="file"
-              onChange={onFileChange}
-              className="cursor-pointer"
-            />
-          </div>
+          {!editDrill && (
+            <div>
+              <Label htmlFor="file">Attachment</Label>
+              <Input
+                id="file"
+                type="file"
+                onChange={onFileChange}
+                className="cursor-pointer"
+              />
+            </div>
+          )}
           <Button onClick={onAdd} className="w-full">
-            Add Drill
+            {editDrill ? "Update Drill" : "Add Drill"}
           </Button>
         </div>
       </DialogContent>

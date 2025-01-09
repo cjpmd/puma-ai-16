@@ -21,9 +21,15 @@ interface SessionCardProps {
   };
   fileUrls: Record<string, string>;
   onAddDrillClick: (sessionId: string) => void;
+  onEditDrillClick: (sessionId: string, drill: SessionCardProps["session"]["drills"][0]) => void;
 }
 
-export const SessionCard = ({ session, fileUrls, onAddDrillClick }: SessionCardProps) => {
+export const SessionCard = ({ 
+  session, 
+  fileUrls, 
+  onAddDrillClick,
+  onEditDrillClick,
+}: SessionCardProps) => {
   return (
     <Card key={session.id}>
       <CardHeader>
@@ -43,7 +49,12 @@ export const SessionCard = ({ session, fileUrls, onAddDrillClick }: SessionCardP
         {session.drills?.length > 0 ? (
           <div className="space-y-4">
             {session.drills.map((drill) => (
-              <DrillCard key={drill.id} drill={drill} fileUrls={fileUrls} />
+              <DrillCard 
+                key={drill.id} 
+                drill={drill} 
+                fileUrls={fileUrls}
+                onEdit={(drill) => onEditDrillClick(session.id, drill)}
+              />
             ))}
           </div>
         ) : (
