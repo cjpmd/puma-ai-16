@@ -41,7 +41,22 @@ export const Calendar = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+
+      // Transform the data to match the expected structure
+      return data.map((session) => ({
+        id: session.id,
+        title: session.title,
+        drills: session.training_drills.map((drill) => ({
+          id: drill.id,
+          title: drill.title,
+          instructions: drill.instructions,
+          training_files: drill.training_files.map((file) => ({
+            id: file.id,
+            file_name: file.file_name,
+            file_path: file.file_path
+          }))
+        }))
+      }));
     },
   });
 
