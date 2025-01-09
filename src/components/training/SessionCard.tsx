@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import { DrillCard } from "./DrillCard";
-import { DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 
 interface SessionCardProps {
   session: {
@@ -29,12 +29,14 @@ export const SessionCard = ({ session, fileUrls, onAddDrillClick }: SessionCardP
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
           {session.title}
-          <DialogTrigger asChild>
-            <Button size="sm" variant="outline" onClick={() => onAddDrillClick(session.id)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Drill
-            </Button>
-          </DialogTrigger>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline" onClick={() => onAddDrillClick(session.id)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Drill
+              </Button>
+            </DialogTrigger>
+          </Dialog>
         </CardTitle>
       </CardHeader>
       <CardContent>
