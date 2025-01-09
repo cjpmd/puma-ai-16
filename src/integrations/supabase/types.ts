@@ -233,7 +233,9 @@ export type Database = {
     }
     Functions: {
       create_initial_admin: {
-        Args: Record<PropertyKey, never>
+        Args: {
+          admin_email: string
+        }
         Returns: undefined
       }
     }
