@@ -95,7 +95,8 @@ export const AttributeSection = ({
         <AccordionContent>
           <div className="space-y-6">
             {attributes.map((attr) => {
-              const previousValue = attributeHistory[attr.name]?.[attributeHistory[attr.name].length - 2]?.value;
+              const history = attributeHistory[attr.name] || [];
+              const previousValue = history.length > 1 ? history[history.length - 2].value : undefined;
               const performanceColor = getPerformanceColor(attr.value, previousValue);
               
               return (
@@ -140,11 +141,11 @@ export const AttributeSection = ({
                       />
                     )}
                   </div>
-                  {attributeHistory[attr.name]?.length > 1 && (
+                  {history.length > 1 && (
                     <div className="h-32 mt-2">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
-                          data={attributeHistory[attr.name].map((h) => ({
+                          data={history.map((h) => ({
                             date: format(new Date(h.date), "MMM d"),
                             value: h.value,
                             adjustedValue: playerCategory === "RONALDO" ? h.value * globalMultiplier : h.value,
