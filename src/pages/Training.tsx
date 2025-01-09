@@ -16,7 +16,7 @@ import { Plus, Upload, X } from "lucide-react";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface TrainingSession {
   id: string;
@@ -29,7 +29,7 @@ interface Drill {
   id: string;
   title: string;
   instructions: string | null;
-  files: DrillFile[];
+  training_files: DrillFile[];
 }
 
 interface DrillFile {
@@ -192,7 +192,7 @@ export const Training = () => {
     addDrillMutation.mutate();
   };
 
-  const getFileUrl = async (filePath: string) => {
+  const getFileUrl = async (filePath: string): Promise<string> => {
     const { data } = await supabase.storage
       .from('training_files')
       .getPublicUrl(filePath);
@@ -319,20 +319,23 @@ export const Training = () => {
                                 {drill.instructions}
                               </p>
                             )}
-                            {drill.files?.length > 0 && (
+                            {drill.training_files?.length > 0 && (
                               <div className="mt-2">
-                                {drill.files.map((file) => (
-                                  <a
-                                    key={file.id}
-                                    href={getFileUrl(file.file_path)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-blue-500 hover:underline flex items-center mt-1"
-                                  >
-                                    <Upload className="h-4 w-4 mr-1" />
-                                    {file.file_name}
-                                  </a>
-                                ))}
+                                {drill.training_files.map(async (file) => {
+                                  const url = await getFileUrl(file.file_path);
+                                  return (
+                                    <a
+                                      key={file.id}
+                                      href={url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-blue-500 hover:underline flex items-center mt-1"
+                                    >
+                                      <Upload className="h-4 w-4 mr-1" />
+                                      {file.file_name}
+                                    </a>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
