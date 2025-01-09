@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Player } from "@/types/player";
+import { Player, Attribute } from "@/types/player";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -15,6 +15,24 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { motion } from "framer-motion";
+
+interface SupabasePlayer {
+  id: string;
+  name: string;
+  age: number;
+  squad_number: number;
+  player_category: string;
+  created_at: string;
+  updated_at: string;
+  player_attributes: {
+    id: string;
+    name: string;
+    value: number;
+    category: string;
+    player_id: string;
+    created_at: string;
+  }[];
+}
 
 const SquadManagement = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -30,7 +48,25 @@ const SquadManagement = () => {
         `);
 
       if (error) throw error;
-      return data as Player[];
+
+      // Transform the data to match our Player type
+      return (data as SupabasePlayer[]).map((player): Player => ({
+        id: player.id,
+        name: player.name,
+        age: player.age,
+        squadNumber: player.squad_number,
+        playerCategory: player.player_category as PlayerCategory,
+        attributes: player.player_attributes.map((attr): Attribute => ({
+          id: attr.id,
+          name: attr.name,
+          value: attr.value,
+          category: attr.category as AttributeCategory,
+          player_id: attr.player_id,
+          created_at: attr.created_at,
+        })),
+        created_at: player.created_at,
+        updated_at: player.updated_at,
+      }));
     },
   });
 
@@ -43,7 +79,9 @@ const SquadManagement = () => {
       (attr) => attr.category === category
     );
     const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
-    return (sum / categoryAttributes.length).toFixed(1);
+    return categoryAttributes.length > 0
+      ? (sum / categoryAttributes.length).toFixed(1)
+      : "N/A";
   };
 
   return (
