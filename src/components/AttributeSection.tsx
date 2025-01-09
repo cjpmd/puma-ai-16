@@ -2,6 +2,8 @@ import { Attribute } from "@/types/player";
 import { Slider } from "@/components/ui/slider";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AttributeSectionProps {
   category: string;
@@ -10,6 +12,7 @@ interface AttributeSectionProps {
   onUpdateAttribute: (name: string, value: number) => void;
   playerCategory?: string;
   globalMultiplier?: number;
+  playerId: string; // Add playerId prop
 }
 
 export const AttributeSection = ({
@@ -19,7 +22,36 @@ export const AttributeSection = ({
   onUpdateAttribute,
   playerCategory,
   globalMultiplier = 1,
+  playerId,
 }: AttributeSectionProps) => {
+  const { toast } = useToast();
+
+  const handleUpdateAttribute = async (name: string, value: number) => {
+    try {
+      const { error } = await supabase
+        .from('player_attributes')
+        .update({ value })
+        .eq('player_id', playerId)
+        .eq('name', name);
+
+      if (error) throw error;
+
+      onUpdateAttribute(name, value);
+      
+      toast({
+        title: "Attribute Updated",
+        description: `${name} has been updated to ${value}`,
+      });
+    } catch (error) {
+      console.error('Error updating attribute:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update attribute. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="font-semibold text-lg">{category}</h3>
@@ -37,7 +69,7 @@ export const AttributeSection = ({
               min={1}
               max={20}
               step={1}
-              onValueChange={(value) => onUpdateAttribute(attr.name, value[0])}
+              onValueChange={(value) => handleUpdateAttribute(attr.name, value[0])}
             />
             {attributeHistory[attr.name]?.length > 1 && (
               <div className="h-32 mt-2">

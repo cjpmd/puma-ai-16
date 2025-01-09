@@ -40,6 +40,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                 onUpdateAttribute={handleUpdateAttribute}
                 playerCategory={player.playerCategory}
                 globalMultiplier={globalMultiplier}
+                playerId={player.id}
               />
             ))}
           </div>
