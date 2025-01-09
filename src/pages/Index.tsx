@@ -7,7 +7,7 @@ import { Player } from "@/types/player";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Users } from "lucide-react";
+import { Users, BarChart2, UserCircle } from "lucide-react";
 
 const Index = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
@@ -22,12 +22,24 @@ const Index = () => {
         className="container mx-auto space-y-8"
       >
         <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-bold">Junior Team Manager</h1>
+          <h1 className="text-4xl font-bold">Player Overview</h1>
           <div className="flex items-center gap-4">
-            <Link to="/analytics">
+            <Link to="/squad">
               <Button variant="outline">
                 <Users className="mr-2 h-4 w-4" />
+                Squad
+              </Button>
+            </Link>
+            <Link to="/analytics">
+              <Button variant="outline">
+                <BarChart2 className="mr-2 h-4 w-4" />
                 Analytics
+              </Button>
+            </Link>
+            <Link to="/coaches">
+              <Button variant="outline">
+                <UserCircle className="mr-2 h-4 w-4" />
+                Coaches
               </Button>
             </Link>
             <AddPlayerDialog />
