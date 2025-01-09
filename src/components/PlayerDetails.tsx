@@ -14,7 +14,6 @@ interface PlayerDetailsProps {
 
 export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const updateAttribute = usePlayersStore((state) => state.updateAttribute);
-  const globalMultiplier = usePlayersStore((state) => state.globalMultiplier);
 
   const { data: attributeHistory } = useQuery({
     queryKey: ["attribute-history", player.id],
@@ -27,7 +26,6 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
 
       if (error) throw error;
 
-      // Group attributes by name for history tracking
       const history: Record<string, { date: string; value: number }[]> = {};
       data.forEach((attr) => {
         if (!history[attr.name]) {
@@ -45,6 +43,15 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
 
   const handleUpdateAttribute = (name: string, value: number) => {
     updateAttribute(player.id, name, value);
+  };
+
+  const calculateCategoryAverage = (category: string) => {
+    const categoryAttributes = player.attributes.filter(
+      (attr) => attr.category === category
+    );
+    if (categoryAttributes.length === 0) return 0;
+    const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
+    return (sum / categoryAttributes.length).toFixed(1);
   };
 
   const categories = ["TECHNICAL", "MENTAL", "PHYSICAL", "GOALKEEPING"];
@@ -69,17 +76,14 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                 (attr) => attr.category === category
               );
               
-              // Only render section if there are attributes
               if (categoryAttributes.length > 0) {
                 return (
                   <AttributeSection
                     key={category}
-                    category={category}
+                    category={`${category} (${calculateCategoryAverage(category)})`}
                     attributes={categoryAttributes}
                     attributeHistory={attributeHistory || {}}
                     onUpdateAttribute={handleUpdateAttribute}
-                    playerCategory={player.playerCategory}
-                    globalMultiplier={globalMultiplier}
                     playerId={player.id}
                   />
                 );

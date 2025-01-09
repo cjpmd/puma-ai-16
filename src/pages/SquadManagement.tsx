@@ -88,43 +88,46 @@ const SquadManagement = () => {
       : "N/A";
   };
 
-  const getImprovementTrend = (player: Player, category: string) => {
-    const categoryAttributes = player.attributes.filter(
-      (attr) => attr.category === category
-    );
-    
-    if (categoryAttributes.length === 0) return "neutral";
+  const getImprovementTrend = (player: Player) => {
+    const allAttributes = player.attributes;
+    if (allAttributes.length === 0) return "neutral";
 
-    const currentAvg = parseFloat(calculateAverageAttribute(player, category));
-    const previousAttributes = categoryAttributes.map(attr => ({
-      ...attr,
-      created_at: new Date(attr.created_at || new Date())
-    }));
-
-    // Sort by date and get the oldest records
-    const oldestAttributes = previousAttributes.sort((a, b) => 
-      a.created_at.getTime() - b.created_at.getTime()
+    const sortedByDate = [...allAttributes].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
-    if (oldestAttributes.length === 0) return "neutral";
+    const recentValues = sortedByDate.slice(0, sortedByDate.length / 2);
+    const olderValues = sortedByDate.slice(sortedByDate.length / 2);
 
-    const oldestAvg = oldestAttributes.reduce((acc, curr) => acc + curr.value, 0) / oldestAttributes.length;
-    
-    const difference = currentAvg - oldestAvg;
+    const recentAvg = recentValues.reduce((sum, attr) => sum + attr.value, 0) / recentValues.length;
+    const olderAvg = olderValues.reduce((sum, attr) => sum + attr.value, 0) / olderValues.length;
+
+    const difference = recentAvg - olderAvg;
     if (difference > 0.5) return "improving";
-    if (difference < -0.5) return "declining";
-    return "neutral";
+    if (difference < -0.5) return "needs-improvement";
+    return "maintaining";
   };
 
-  const renderTrendIcon = (trend: string) => {
-    switch (trend) {
+  const getPerformanceColor = (status: string) => {
+    switch (status) {
       case "improving":
-        return <TrendingUp className="text-green-500 h-4 w-4" />;
-      case "declining":
-        return <TrendingDown className="text-red-500 h-4 w-4" />;
+        return "text-green-500";
+      case "needs-improvement":
+        return "text-amber-500";
       default:
-        return <Minus className="text-gray-500 h-4 w-4" />;
-    }
+        return "text-blue-500";
+    };
+  };
+
+  const getPerformanceText = (status: string) => {
+    switch (status) {
+      case "improving":
+        return "Improving";
+      case "needs-improvement":
+        return "Needs Improvement";
+      default:
+        return "Maintaining";
+    };
   };
 
   const handleRowClick = (playerId: string) => {
@@ -188,51 +191,46 @@ const SquadManagement = () => {
                 <TableHead className="text-center">Physical</TableHead>
                 <TableHead className="text-center">Goalkeeping</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-right">Current Performance</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPlayers?.map((player) => (
-                <TableRow
-                  key={player.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleRowClick(player.id)}
-                >
-                  <TableCell className="font-medium">
-                    {player.squadNumber}
-                  </TableCell>
-                  <TableCell>{player.name}</TableCell>
-                  <TableCell>{player.age}</TableCell>
-                  <TableCell>{format(new Date(player.dateOfBirth), 'dd/MM/yyyy')}</TableCell>
-                  <TableCell>{player.playerCategory}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-2">
+              {filteredPlayers?.map((player) => {
+                const performanceStatus = getImprovementTrend(player);
+                return (
+                  <TableRow
+                    key={player.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleRowClick(player.id)}
+                  >
+                    <TableCell className="font-medium">
+                      {player.squadNumber}
+                    </TableCell>
+                    <TableCell>{player.name}</TableCell>
+                    <TableCell>{player.age}</TableCell>
+                    <TableCell>{format(new Date(player.dateOfBirth), 'dd/MM/yyyy')}</TableCell>
+                    <TableCell>{player.playerCategory}</TableCell>
+                    <TableCell>
                       {calculateAverageAttribute(player, "TECHNICAL")}
-                      {renderTrendIcon(getImprovementTrend(player, "TECHNICAL"))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-2">
+                    </TableCell>
+                    <TableCell>
                       {calculateAverageAttribute(player, "MENTAL")}
-                      {renderTrendIcon(getImprovementTrend(player, "MENTAL"))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-2">
+                    </TableCell>
+                    <TableCell>
                       {calculateAverageAttribute(player, "PHYSICAL")}
-                      {renderTrendIcon(getImprovementTrend(player, "PHYSICAL"))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-2">
+                    </TableCell>
+                    <TableCell>
                       {calculateAverageAttribute(player, "GOALKEEPING")}
-                      {renderTrendIcon(getImprovementTrend(player, "GOALKEEPING"))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <ArrowRight className="inline-block h-4 w-4 ml-2" />
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <ArrowRight className="inline-block h-4 w-4 ml-2" />
+                    </TableCell>
+                    <TableCell className={`text-right ${getPerformanceColor(performanceStatus)}`}>
+                      {getPerformanceText(performanceStatus)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}
