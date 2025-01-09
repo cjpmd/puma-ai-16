@@ -81,6 +81,36 @@ export type Database = {
           },
         ]
       }
+      fixtures: {
+        Row: {
+          away_score: number | null
+          created_at: string | null
+          date: string
+          home_score: number | null
+          id: string
+          opponent: string
+          updated_at: string | null
+        }
+        Insert: {
+          away_score?: number | null
+          created_at?: string | null
+          date: string
+          home_score?: number | null
+          id?: string
+          opponent: string
+          updated_at?: string | null
+        }
+        Update: {
+          away_score?: number | null
+          created_at?: string | null
+          date?: string
+          home_score?: number | null
+          id?: string
+          opponent?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       player_attributes: {
         Row: {
           category: string

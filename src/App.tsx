@@ -7,7 +7,7 @@ import SquadManagement from "@/pages/SquadManagement";
 import PlayerDetailsPage from "@/pages/PlayerDetailsPage";
 import { Auth } from "@/pages/Auth";
 import { Coaches } from "@/pages/Coaches";
-import { Training } from "@/pages/Training";
+import { Calendar } from "@/pages/Calendar";
 import { NavBar } from "@/components/NavBar";
 
 const queryClient = new QueryClient();
@@ -65,11 +65,11 @@ function App() {
             }
           />
           <Route
-            path="/training"
+            path="/calendar"
             element={
               <>
                 <NavBar />
-                <Training />
+                <Calendar />
               </>
             }
           />
