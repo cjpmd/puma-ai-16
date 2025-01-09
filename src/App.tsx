@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Index from "@/pages/Index";
 import { Analytics } from "@/pages/Analytics";
 import SquadManagement from "@/pages/SquadManagement";
+import PlayerDetailsPage from "@/pages/PlayerDetailsPage";
 import { Auth } from "@/pages/Auth";
 import { Coaches } from "@/pages/Coaches";
 import { NavBar } from "@/components/NavBar";
@@ -40,6 +41,15 @@ function App() {
               <>
                 <NavBar />
                 <SquadManagement />
+              </>
+            }
+          />
+          <Route
+            path="/player/:id"
+            element={
+              <>
+                <NavBar />
+                <PlayerDetailsPage />
               </>
             }
           />

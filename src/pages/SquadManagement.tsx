@@ -11,11 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Link } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { motion } from "framer-motion";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 
 interface SupabasePlayer {
   id: string;
@@ -38,6 +38,7 @@ interface SupabasePlayer {
 
 const SquadManagement = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const { data: players, isLoading } = useQuery({
     queryKey: ["players"],
@@ -126,6 +127,10 @@ const SquadManagement = () => {
     }
   };
 
+  const handleRowClick = (playerId: string) => {
+    navigate(`/player/${playerId}`);
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <motion.div
@@ -182,11 +187,16 @@ const SquadManagement = () => {
                 <TableHead className="text-center">Mental</TableHead>
                 <TableHead className="text-center">Physical</TableHead>
                 <TableHead className="text-center">Goalkeeping</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPlayers?.map((player) => (
-                <TableRow key={player.id}>
+                <TableRow
+                  key={player.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleRowClick(player.id)}
+                >
                   <TableCell className="font-medium">
                     {player.squadNumber}
                   </TableCell>
@@ -217,6 +227,9 @@ const SquadManagement = () => {
                       {calculateAverageAttribute(player, "GOALKEEPING")}
                       {renderTrendIcon(getImprovementTrend(player, "GOALKEEPING"))}
                     </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <ArrowRight className="inline-block h-4 w-4 ml-2" />
                   </TableCell>
                 </TableRow>
               ))}
