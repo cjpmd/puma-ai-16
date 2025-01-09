@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
+import { Player, PlayerCategory, Attribute } from "@/types/player";
 
 export const Analytics = () => {
   const [performanceFilter, setPerformanceFilter] = useState<string>("all");
@@ -19,7 +20,7 @@ export const Analytics = () => {
   const { data: players } = useQuery({
     queryKey: ["players-with-attributes"],
     queryFn: async () => {
-      const { data: players, error: playersError } = await supabase
+      const { data: playersData, error: playersError } = await supabase
         .from("players")
         .select(`
           *,
@@ -34,24 +35,38 @@ export const Analytics = () => {
 
       if (historyError) throw historyError;
 
-      return players.map((player) => {
-        const attributes = player.player_attributes;
+      return playersData.map((player): Player => {
+        const attributes = player.player_attributes.map((attr: any): Attribute => ({
+          id: attr.id,
+          name: attr.name,
+          value: attr.value,
+          category: attr.category,
+          player_id: attr.player_id,
+          created_at: attr.created_at,
+        }));
+
         const attributeHistory: Record<string, { date: string; value: number }[]> = {};
-        
-        attributes.forEach((attr: any) => {
+        attributes.forEach((attr) => {
           if (!attributeHistory[attr.name]) {
             attributeHistory[attr.name] = [];
           }
           attributeHistory[attr.name].push({
-            date: attr.created_at,
+            date: attr.created_at || "",
             value: attr.value,
           });
         });
 
         return {
-          ...player,
+          id: player.id,
+          name: player.name,
+          age: player.age,
+          dateOfBirth: player.date_of_birth,
+          squadNumber: player.squad_number,
+          playerCategory: player.player_category as PlayerCategory,
           attributes,
           attributeHistory,
+          created_at: player.created_at,
+          updated_at: player.updated_at,
         };
       });
     },

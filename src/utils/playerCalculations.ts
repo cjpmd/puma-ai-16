@@ -7,7 +7,7 @@ export const calculatePlayerPerformance = (player: Player): PerformanceStatus =>
   if (allAttributes.length === 0) return "neutral";
 
   const sortedByDate = [...allAttributes].sort((a, b) => 
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime()
   );
 
   const recentValues = sortedByDate.slice(0, Math.ceil(sortedByDate.length / 2));
@@ -24,7 +24,7 @@ export const calculatePlayerPerformance = (player: Player): PerformanceStatus =>
   return "maintaining";
 };
 
-export const getPerformanceColor = (status: PerformanceStatus) => {
+export const getPerformanceColor = (status: PerformanceStatus): string => {
   switch (status) {
     case "improving":
       return "text-green-500";
@@ -37,7 +37,7 @@ export const getPerformanceColor = (status: PerformanceStatus) => {
   }
 };
 
-export const getPerformanceText = (status: PerformanceStatus) => {
+export const getPerformanceText = (status: PerformanceStatus): string => {
   switch (status) {
     case "improving":
       return "Improving";
