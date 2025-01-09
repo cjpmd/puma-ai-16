@@ -17,6 +17,7 @@ import { ArrowLeft } from "lucide-react";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
+import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
 
 interface SupabasePlayer {
   id: string;
@@ -119,48 +120,6 @@ const SquadManagement = () => {
     return { value, trend: "maintaining" };
   };
 
-  const getPerformanceColor = (status: string) => {
-    switch (status) {
-      case "improving":
-        return "text-green-500";
-      case "needs-improvement":
-        return "text-amber-500";
-      default:
-        return "text-blue-500";
-    }
-  };
-
-  const getPerformanceText = (status: string) => {
-    switch (status) {
-      case "improving":
-        return "Improving";
-      case "needs-improvement":
-        return "Needs Improvement";
-      default:
-        return "Maintaining";
-    }
-  };
-
-  const getImprovementTrend = (player: Player) => {
-    const allAttributes = player.attributes;
-    if (allAttributes.length === 0) return "neutral";
-
-    const sortedByDate = [...allAttributes].sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-
-    const recentValues = sortedByDate.slice(0, sortedByDate.length / 2);
-    const olderValues = sortedByDate.slice(sortedByDate.length / 2);
-
-    const recentAvg = recentValues.reduce((sum, attr) => sum + attr.value, 0) / recentValues.length;
-    const olderAvg = olderValues.reduce((sum, attr) => sum + attr.value, 0) / olderValues.length;
-
-    const difference = recentAvg - olderAvg;
-    if (difference > 0.5) return "improving";
-    if (difference < -0.5) return "needs-improvement";
-    return "maintaining";
-  };
-
   const handleRowClick = (playerId: string) => {
     navigate(`/player/${playerId}`);
   };
@@ -233,7 +192,7 @@ const SquadManagement = () => {
             </TableHeader>
             <TableBody>
               {filteredPlayers?.map((player) => {
-                const performanceStatus = getImprovementTrend(player);
+                const performanceStatus = calculatePlayerPerformance(player);
                 const technicalStats = calculateAttributeChange(player, "TECHNICAL");
                 const mentalStats = calculateAttributeChange(player, "MENTAL");
                 const physicalStats = calculateAttributeChange(player, "PHYSICAL");

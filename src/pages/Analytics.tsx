@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
 
 export const Analytics = () => {
   const [performanceFilter, setPerformanceFilter] = useState<string>("all");
@@ -56,30 +57,9 @@ export const Analytics = () => {
     },
   });
 
-  const getPlayerPerformance = (player: any) => {
-    let totalChange = 0;
-    let count = 0;
-
-    player.attributes.forEach((attr: any) => {
-      const history = player.attributeHistory[attr.name];
-      if (history && history.length > 1) {
-        const currentValue = attr.value;
-        const previousValue = history[history.length - 2].value;
-        totalChange += currentValue - previousValue;
-        count++;
-      }
-    });
-
-    const averageChange = count > 0 ? totalChange / count : 0;
-    
-    if (averageChange > 0) return "improving";
-    if (averageChange < 0) return "needs-improvement";
-    return "maintaining";
-  };
-
   const filteredPlayers = players?.filter((player) => {
     if (performanceFilter === "all") return true;
-    return getPlayerPerformance(player) === performanceFilter;
+    return calculatePlayerPerformance(player) === performanceFilter;
   });
 
   return (
@@ -104,27 +84,26 @@ export const Analytics = () => {
       
       {filteredPlayers && (
         <div className="grid gap-4">
-          {filteredPlayers.map((player) => (
-            <Card key={player.id}>
-              <CardHeader>
-                <CardTitle>{player.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">Performance Status</h3>
-                    <div className={`inline-block px-3 py-1 rounded-full text-white ${
-                      getPlayerPerformance(player) === "improving" ? "bg-green-500" :
-                      getPlayerPerformance(player) === "needs-improvement" ? "bg-amber-500" :
-                      "bg-blue-500"
-                    }`}>
-                      {getPlayerPerformance(player).split("-").map(word => 
-                        word.charAt(0).toUpperCase() + word.slice(1)
-                      ).join(" ")}
+          {filteredPlayers.map((player) => {
+            const performanceStatus = calculatePlayerPerformance(player);
+            return (
+              <Card key={player.id}>
+                <CardHeader>
+                  <CardTitle>{player.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="font-semibold mb-2">Performance Status</h3>
+                      <div className={`inline-block px-3 py-1 rounded-full text-white ${
+                        performanceStatus === "improving" ? "bg-green-500" :
+                        performanceStatus === "needs-improvement" ? "bg-amber-500" :
+                        performanceStatus === "neutral" ? "bg-gray-500" :
+                        "bg-blue-500"
+                      }`}>
+                        {getPerformanceText(performanceStatus)}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">Category Averages</h3>
                     <div className="space-y-2">
                       {["TECHNICAL", "MENTAL", "PHYSICAL", "GOALKEEPING"].map((category) => {
                         const attrs = player.attributes.filter((attr: any) => attr.category === category);
@@ -139,10 +118,10 @@ export const Analytics = () => {
                       })}
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
       
