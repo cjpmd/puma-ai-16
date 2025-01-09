@@ -1,22 +1,16 @@
 import { useState, useEffect } from "react";
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Plus, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { DialogTrigger } from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
+import { TrainingCalendar } from "@/components/training/TrainingCalendar";
+import { AddSessionDialog } from "@/components/training/AddSessionDialog";
+import { AddDrillDialog } from "@/components/training/AddDrillDialog";
+import { SessionCard } from "@/components/training/SessionCard";
 
 interface TrainingSession {
   id: string;
@@ -216,51 +210,19 @@ export const Training = () => {
 
   return (
     <div className="container mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Training Calendar</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={setDate}
-            className="rounded-md border"
-          />
-        </CardContent>
-      </Card>
+      <TrainingCalendar date={date} onDateSelect={setDate} />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>
             Training Sessions for {date ? format(date, "MMMM d, yyyy") : "Selected Date"}
           </CardTitle>
-          <Dialog open={isAddingSession} onOpenChange={setIsAddingSession}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Session
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Training Session</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Session Title</Label>
-                  <Input
-                    id="title"
-                    value={newSessionTitle}
-                    onChange={(e) => setNewSessionTitle(e.target.value)}
-                  />
-                </div>
-                <Button onClick={handleAddSession} className="w-full">
-                  Add Session
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <DialogTrigger asChild>
+            <Button size="sm" onClick={() => setIsAddingSession(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Session
+            </Button>
+          </DialogTrigger>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -270,99 +232,42 @@ export const Training = () => {
           ) : (
             <div className="space-y-4">
               {sessions?.map((session) => (
-                <Card key={session.id}>
-                  <CardHeader>
-                    <CardTitle className="flex justify-between items-center">
-                      {session.title}
-                      <Dialog open={isAddingDrill && selectedSession === session.id} 
-                             onOpenChange={(open) => {
-                               setIsAddingDrill(open);
-                               if (open) setSelectedSession(session.id);
-                             }}>
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Drill
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Add Training Drill</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <Label htmlFor="drillTitle">Drill Title</Label>
-                              <Input
-                                id="drillTitle"
-                                value={newDrillTitle}
-                                onChange={(e) => setNewDrillTitle(e.target.value)}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="instructions">Instructions</Label>
-                              <Textarea
-                                id="instructions"
-                                value={newDrillInstructions}
-                                onChange={(e) => setNewDrillInstructions(e.target.value)}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="file">Attachment</Label>
-                              <Input
-                                id="file"
-                                type="file"
-                                onChange={handleFileChange}
-                                className="cursor-pointer"
-                              />
-                            </div>
-                            <Button onClick={handleAddDrill} className="w-full">
-                              Add Drill
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {session.drills?.length > 0 ? (
-                      <div className="space-y-4">
-                        {session.drills.map((drill) => (
-                          <div key={drill.id} className="border rounded-lg p-4">
-                            <h4 className="font-medium">{drill.title}</h4>
-                            {drill.instructions && (
-                              <p className="text-sm text-muted-foreground mt-2">
-                                {drill.instructions}
-                              </p>
-                            )}
-                            {drill.training_files?.length > 0 && (
-                              <div className="mt-2">
-                                {drill.training_files.map((file) => (
-                                  <a
-                                    key={file.id}
-                                    href={fileUrls[file.file_path]}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-blue-500 hover:underline flex items-center mt-1"
-                                  >
-                                    <Upload className="h-4 w-4 mr-1" />
-                                    {file.file_name}
-                                  </a>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No drills added yet.</p>
-                    )}
-                  </CardContent>
-                </Card>
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  fileUrls={fileUrls}
+                  onAddDrillClick={(sessionId) => {
+                    setSelectedSession(sessionId);
+                    setIsAddingDrill(true);
+                  }}
+                />
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      <AddSessionDialog
+        isOpen={isAddingSession}
+        onOpenChange={setIsAddingSession}
+        title={newSessionTitle}
+        onTitleChange={setNewSessionTitle}
+        onAdd={handleAddSession}
+      />
+
+      <AddDrillDialog
+        isOpen={isAddingDrill}
+        onOpenChange={(open) => {
+          setIsAddingDrill(open);
+          if (!open) setSelectedSession(null);
+        }}
+        title={newDrillTitle}
+        onTitleChange={setNewDrillTitle}
+        instructions={newDrillInstructions}
+        onInstructionsChange={setNewDrillInstructions}
+        onFileChange={handleFileChange}
+        onAdd={handleAddDrill}
+      />
     </div>
   );
 };
