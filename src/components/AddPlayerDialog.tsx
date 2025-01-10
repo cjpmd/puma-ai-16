@@ -28,6 +28,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { differenceInYears } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
+import { 
+  GOALKEEPER_ATTRIBUTES, 
+  TECHNICAL_ATTRIBUTES, 
+  MENTAL_ATTRIBUTES, 
+  PHYSICAL_ATTRIBUTES 
+} from "@/constants/attributes";
 
 export const AddPlayerDialog = () => {
   const [open, setOpen] = useState(false);
