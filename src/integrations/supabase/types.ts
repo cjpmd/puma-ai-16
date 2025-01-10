@@ -126,6 +126,7 @@ export type Database = {
       }
       player_attributes: {
         Row: {
+          abbreviation: string | null
           category: string
           created_at: string | null
           id: string
@@ -134,6 +135,7 @@ export type Database = {
           value: number
         }
         Insert: {
+          abbreviation?: string | null
           category: string
           created_at?: string | null
           id?: string
@@ -142,6 +144,7 @@ export type Database = {
           value: number
         }
         Update: {
+          abbreviation?: string | null
           category?: string
           created_at?: string | null
           id?: string
