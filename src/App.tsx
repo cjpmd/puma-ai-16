@@ -5,6 +5,7 @@ import Index from "@/pages/Index";
 import { Analytics } from "@/pages/Analytics";
 import SquadManagement from "@/pages/SquadManagement";
 import PlayerDetailsPage from "@/pages/PlayerDetailsPage";
+import TopRatedByPosition from "@/pages/TopRatedByPosition";
 import { Auth } from "@/pages/Auth";
 import { Coaches } from "@/pages/Coaches";
 import { Calendar } from "@/pages/Calendar";
@@ -84,6 +85,15 @@ function App() {
                   <>
                     <NavBar />
                     <SquadManagement />
+                  </>
+                }
+              />
+              <Route
+                path="/top-rated"
+                element={
+                  <>
+                    <NavBar />
+                    <TopRatedByPosition />
                   </>
                 }
               />

@@ -141,7 +141,14 @@ const SquadManagement = () => {
             </Link>
             <h1 className="text-4xl font-bold">Squad Management</h1>
           </div>
-          <AddPlayerDialog />
+          <div className="flex items-center gap-4">
+            <Link to="/top-rated">
+              <Button variant="outline">
+                Top Rated by Position
+              </Button>
+            </Link>
+            <AddPlayerDialog />
+          </div>
         </div>
 
         <div className="flex gap-4 mb-6">
