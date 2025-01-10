@@ -89,11 +89,11 @@ const SquadManagement = () => {
     },
   });
 
-  const calculateAttributeAverage = (attributes: Attribute[], category: string) => {
+  const calculateAttributeAverage = (attributes: Attribute[], category: string): number => {
     const categoryAttributes = attributes.filter(attr => attr.category === category);
     if (categoryAttributes.length === 0) return 0;
     const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
-    return (sum / categoryAttributes.length).toFixed(1);
+    return Number((sum / categoryAttributes.length).toFixed(1));
   };
 
   const sortPlayers = (playersToSort: Player[]) => {
@@ -262,16 +262,16 @@ const SquadManagement = () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      {calculateAttributeAverage(player.attributes, "TECHNICAL")}
+                      {calculateAttributeAverage(player.attributes, "TECHNICAL").toFixed(1)}
                     </TableCell>
                     <TableCell className="text-center">
-                      {calculateAttributeAverage(player.attributes, "MENTAL")}
+                      {calculateAttributeAverage(player.attributes, "MENTAL").toFixed(1)}
                     </TableCell>
                     <TableCell className="text-center">
-                      {calculateAttributeAverage(player.attributes, "PHYSICAL")}
+                      {calculateAttributeAverage(player.attributes, "PHYSICAL").toFixed(1)}
                     </TableCell>
                     <TableCell className="text-center">
-                      {calculateAttributeAverage(player.attributes, "GOALKEEPING")}
+                      {calculateAttributeAverage(player.attributes, "GOALKEEPING").toFixed(1)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
