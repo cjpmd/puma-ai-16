@@ -74,6 +74,19 @@ export const Coaches = () => {
     },
   });
 
+  const { data: availableBadges } = useQuery({
+    queryKey: ["badges"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("coaching_badges")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const approveCoachMutation = useMutation({
     mutationFn: async ({ coachId, approved }: { coachId: string; approved: boolean }) => {
       const { error } = await supabase
