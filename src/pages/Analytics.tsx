@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AttributeTrends } from "@/components/analytics/AttributeTrends";
 import { ObjectiveStats } from "@/components/analytics/ObjectiveStats";
+import { RadarChart } from "@/components/analytics/RadarChart";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
 import { Player, PlayerCategory, Attribute } from "@/types/player";
 
@@ -77,6 +79,15 @@ export const Analytics = () => {
     return calculatePlayerPerformance(player) === performanceFilter;
   });
 
+  const getRadarData = (player: Player, category: string) => {
+    return player.attributes
+      .filter((attr) => attr.category === category)
+      .map((attr) => ({
+        name: attr.name,
+        value: attr.value,
+      }));
+  };
+
   return (
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex justify-between items-center">
@@ -104,7 +115,16 @@ export const Analytics = () => {
             return (
               <Card key={player.id}>
                 <CardHeader>
-                  <CardTitle>{player.name}</CardTitle>
+                  <div className="flex justify-between items-start">
+                    <CardTitle>{player.name}</CardTitle>
+                    <div className="flex gap-2">
+                      {player.topPositions?.map((pos) => (
+                        <Badge key={pos.position} variant="outline">
+                          {pos.position} ({pos.suitability_score.toFixed(1)})
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid md:grid-cols-2 gap-4">
@@ -132,6 +152,19 @@ export const Analytics = () => {
                         );
                       })}
                     </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4 mt-4">
+                    {["TECHNICAL", "MENTAL", "PHYSICAL", "GOALKEEPING"].map((category) => {
+                      const radarData = getRadarData(player, category);
+                      if (radarData.length === 0) return null;
+                      return (
+                        <RadarChart
+                          key={`${player.id}-${category}`}
+                          data={radarData}
+                          title={category}
+                        />
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
