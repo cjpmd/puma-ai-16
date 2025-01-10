@@ -25,6 +25,23 @@ import { Database } from "@/integrations/supabase/types";
 
 type CoachRole = Database["public"]["Enums"]["coach_role"];
 
+interface CoachingBadge {
+  id: string;
+  name: string;
+}
+
+interface Coach {
+  id: string;
+  name: string;
+  email: string | null;
+  role: CoachRole;
+  is_admin: boolean | null;
+  is_approved: boolean | null;
+  user_id: string | null;
+  badges: CoachingBadge[];
+  coach_badges: { badge_id: string | null }[];
+}
+
 export const Coaches = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -70,7 +87,7 @@ export const Coaches = () => {
         badges: badges?.filter(badge => 
           coach.coach_badges?.some(cb => cb.badge_id === badge.id)
         ) || []
-      }));
+      })) as Coach[];
     },
   });
 
@@ -83,7 +100,7 @@ export const Coaches = () => {
         .order("name");
 
       if (error) throw error;
-      return data;
+      return data as CoachingBadge[];
     },
   });
 
@@ -132,13 +149,11 @@ export const Coaches = () => {
 
   const updateBadgesMutation = useMutation({
     mutationFn: async ({ coachId, badgeIds }: { coachId: string; badgeIds: string[] }) => {
-      // First remove all existing badges
       await supabase
         .from("coach_badges")
         .delete()
         .eq("coach_id", coachId);
 
-      // Then add the new ones
       const badgesToAdd = badgeIds.map(badgeId => ({
         coach_id: coachId,
         badge_id: badgeId,
