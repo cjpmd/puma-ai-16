@@ -11,22 +11,31 @@ import { Calendar } from "@/pages/Calendar";
 import { NavBar } from "@/components/NavBar";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "./hooks/use-toast";
 
 const queryClient = new QueryClient();
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
       setIsAuthenticated(!!session);
+      
+      if (event === 'SIGNED_OUT') {
+        toast({
+          description: "Successfully signed out",
+        });
+      }
     });
 
     // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
     });
-  }, []);
+  }, [toast]);
 
   // Show loading state while checking authentication
   if (isAuthenticated === null) {
