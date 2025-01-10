@@ -21,8 +21,9 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Database } from "@/integrations/supabase/types";
 
-type CoachRole = "Manager" | "Coach" | "Helper";
+type CoachRole = Database["public"]["Enums"]["coach_role"];
 
 export const Coaches = () => {
   const { toast } = useToast();
@@ -64,26 +65,12 @@ export const Coaches = () => {
         .from("coaching_badges")
         .select("id, name");
 
-      // Map badges to coaches
       return coachesData.map(coach => ({
         ...coach,
         badges: badges?.filter(badge => 
           coach.coach_badges?.some(cb => cb.badge_id === badge.id)
         ) || []
       }));
-    },
-  });
-
-  const { data: availableBadges } = useQuery({
-    queryKey: ["badges"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("coaching_badges")
-        .select("*")
-        .order("name");
-
-      if (error) throw error;
-      return data;
     },
   });
 
