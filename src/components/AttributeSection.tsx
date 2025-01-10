@@ -22,7 +22,7 @@ interface AttributeSectionProps {
 }
 
 const getPerformanceColor = (currentValue: number, previousValue: number | undefined) => {
-  if (!previousValue) return "bg-blue-500"; // Maintaining
+  if (previousValue === undefined) return "bg-blue-500"; // Maintaining
   if (currentValue > previousValue) return "bg-green-500"; // Improving
   if (currentValue < previousValue) return "bg-amber-500"; // Needs Improvement
   return "bg-blue-500"; // Maintaining
@@ -96,7 +96,9 @@ export const AttributeSection = ({
           <div className="space-y-6">
             {attributes.map((attr) => {
               const history = attributeHistory[attr.name] || [];
-              const previousValue = history.length > 1 ? history[history.length - 2].value : undefined;
+              const previousValue = history.length > 1 
+                ? history[history.length - 2].value 
+                : attr.value;
               const performanceColor = getPerformanceColor(attr.value, previousValue);
               
               return (
@@ -106,15 +108,13 @@ export const AttributeSection = ({
                       {attr.name}
                     </span>
                     <div className="flex items-center gap-2">
-                      {previousValue !== undefined && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm text-muted-foreground">Previous: {previousValue}</span>
-                          <div 
-                            className={`w-3 h-3 rounded-full ${performanceColor}`}
-                            title={`Previous score: ${previousValue}`}
-                          />
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm text-muted-foreground">Previous: {previousValue}</span>
+                        <div 
+                          className={`w-3 h-3 rounded-full ${performanceColor}`}
+                          title={`Previous score: ${previousValue}`}
+                        />
+                      </div>
                       <span className="text-sm text-muted-foreground">
                         {attr.value}/20 {playerCategory === "RONALDO" && `(${(attr.value * globalMultiplier).toFixed(1)} adjusted)`}
                       </span>
@@ -123,23 +123,22 @@ export const AttributeSection = ({
                   <div className="relative">
                     <Slider
                       defaultValue={[attr.value]}
+                      value={[attr.value]}
                       min={0}
                       max={20}
                       step={1}
                       onValueCommit={(value) => handleUpdateAttribute(attr.name, value[0])}
                       className={`${performanceColor} transition-colors`}
                     />
-                    {previousValue !== undefined && (
-                      <div 
-                        className={`absolute w-2 h-6 ${performanceColor} rounded-full transition-colors`}
-                        style={{ 
-                          left: `${(previousValue / 20) * 100}%`,
-                          top: '-8px',
-                          transform: 'translateX(-50%)',
-                          border: '2px solid white'
-                        }}
-                      />
-                    )}
+                    <div 
+                      className={`absolute w-2 h-6 ${performanceColor} rounded-full transition-colors`}
+                      style={{ 
+                        left: `${(previousValue / 20) * 100}%`,
+                        top: '-8px',
+                        transform: 'translateX(-50%)',
+                        border: '2px solid white'
+                      }}
+                    />
                   </div>
                   {history.length > 1 && (
                     <div className="h-32 mt-2">
