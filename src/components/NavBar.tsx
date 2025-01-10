@@ -18,17 +18,26 @@ export const NavBar = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { data: profile } = useQuery({
+  const { data: profile, error: profileError } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
+      console.log("Fetching profile...");
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      console.log("Current user:", user);
+      
+      if (!user) {
+        console.log("No user found");
+        return null;
+      }
 
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
+
+      console.log("Profile data:", profile);
+      console.log("Profile error:", error);
 
       if (error) {
         toast({
@@ -42,6 +51,16 @@ export const NavBar = () => {
       return profile;
     },
   });
+
+  // Show error toast if profile fetch fails
+  if (profileError) {
+    console.error("Profile error:", profileError);
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: "Failed to load profile",
+    });
+  }
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
