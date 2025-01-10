@@ -47,12 +47,17 @@ const TopRatedByPosition = () => {
     queryFn: async () => {
       let query = supabase
         .from("position_rankings")
-        .select("*")
+        .select(`
+          *,
+          players (
+            player_category
+          )
+        `)
         .order("position")
         .order("suitability_score", { ascending: false });
 
       if (selectedCategory) {
-        query = query.eq("player_category", selectedCategory);
+        query = query.eq("players.player_category", selectedCategory);
       }
 
       const { data, error } = await query;
