@@ -8,7 +8,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -17,7 +16,6 @@ serve(async (req) => {
     const { playerId } = await req.json()
     console.log('Generating report for player:', playerId)
     
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')
     if (!supabaseUrl || !supabaseKey) {
@@ -26,7 +24,6 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Fetch player data with attributes
     const { data: playerData, error: playerError } = await supabase
       .from('players')
       .select(`
@@ -54,7 +51,6 @@ serve(async (req) => {
 
     console.log('Player data fetched successfully:', playerData.name)
 
-    // Fetch objectives
     const { data: objectives, error: objectivesError } = await supabase
       .from('player_objectives')
       .select('*')
@@ -66,17 +62,16 @@ serve(async (req) => {
       throw objectivesError
     }
 
-    // Create PDF document
     const pdfDoc = await PDFDocument.create()
     const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman)
     const timesRomanBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
     
-    const page = pdfDoc.addPage()
-    const { height, width } = page.getSize()
+    let currentPage = pdfDoc.addPage()
+    let { height, width } = currentPage.getSize()
     let yOffset = height - 50
 
     // Add header with player name
-    page.drawText('Player Performance Report', {
+    currentPage.drawText('Player Performance Report', {
       x: 50,
       y: yOffset,
       size: 24,
@@ -95,7 +90,11 @@ serve(async (req) => {
     ]
 
     for (const info of playerInfo) {
-      page.drawText(info, {
+      if (yOffset < 50) {
+        currentPage = pdfDoc.addPage()
+        yOffset = height - 50
+      }
+      currentPage.drawText(info, {
         x: 50,
         y: yOffset,
         size: 12,
@@ -115,13 +114,12 @@ serve(async (req) => {
       )
 
       if (categoryAttributes.length > 0) {
-        // Check if we need a new page
         if (yOffset < 100) {
-          page = pdfDoc.addPage()
+          currentPage = pdfDoc.addPage()
           yOffset = height - 50
         }
 
-        page.drawText(category, {
+        currentPage.drawText(category, {
           x: 50,
           y: yOffset,
           size: 14,
@@ -131,7 +129,11 @@ serve(async (req) => {
         yOffset -= 20
 
         for (const attr of categoryAttributes) {
-          page.drawText(`${attr.name}: ${attr.value}/20`, {
+          if (yOffset < 50) {
+            currentPage = pdfDoc.addPage()
+            yOffset = height - 50
+          }
+          currentPage.drawText(`${attr.name}: ${attr.value}/20`, {
             x: 70,
             y: yOffset,
             size: 10,
@@ -146,13 +148,12 @@ serve(async (req) => {
 
     // Add objectives section if available
     if (objectives && objectives.length > 0) {
-      // Check if we need a new page
       if (yOffset < 200) {
-        page = pdfDoc.addPage()
+        currentPage = pdfDoc.addPage()
         yOffset = height - 50
       }
 
-      page.drawText('Development Objectives:', {
+      currentPage.drawText('Development Objectives:', {
         x: 50,
         y: yOffset,
         size: 14,
@@ -162,13 +163,12 @@ serve(async (req) => {
       yOffset -= 30
 
       for (const objective of objectives) {
-        // Check if we need a new page
         if (yOffset < 100) {
-          page = pdfDoc.addPage()
+          currentPage = pdfDoc.addPage()
           yOffset = height - 50
         }
 
-        page.drawText(`${objective.title} (${objective.status})`, {
+        currentPage.drawText(`${objective.title} (${objective.status})`, {
           x: 70,
           y: yOffset,
           size: 12,
@@ -187,7 +187,11 @@ serve(async (req) => {
             const textWidth = timesRomanFont.widthOfTextAtSize(testLine, 10)
 
             if (textWidth > width - 140) {
-              page.drawText(line, {
+              if (lineY < 50) {
+                currentPage = pdfDoc.addPage()
+                lineY = height - 50
+              }
+              currentPage.drawText(line, {
                 x: 70,
                 y: lineY,
                 size: 10,
@@ -202,7 +206,11 @@ serve(async (req) => {
           }
 
           if (line.trim().length > 0) {
-            page.drawText(line, {
+            if (lineY < 50) {
+              currentPage = pdfDoc.addPage()
+              lineY = height - 50
+            }
+            currentPage.drawText(line, {
               x: 70,
               y: lineY,
               size: 10,
@@ -215,7 +223,6 @@ serve(async (req) => {
       }
     }
 
-    // Generate PDF bytes
     const pdfBytes = await pdfDoc.save()
     console.log('PDF generated successfully, size:', pdfBytes.length)
 
