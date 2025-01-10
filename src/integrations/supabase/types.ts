@@ -347,6 +347,82 @@ export type Database = {
         }
         Relationships: []
       }
+      role_definitions: {
+        Row: {
+          abbreviation: string
+          created_at: string | null
+          description: string | null
+          full_name: string
+          id: string
+        }
+        Insert: {
+          abbreviation: string
+          created_at?: string | null
+          description?: string | null
+          full_name: string
+          id?: string
+        }
+        Update: {
+          abbreviation?: string
+          created_at?: string | null
+          description?: string | null
+          full_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      role_suitability: {
+        Row: {
+          calculation_date: string | null
+          created_at: string | null
+          id: string
+          player_id: string | null
+          role_id: string | null
+          suitability_score: number
+          updated_at: string | null
+        }
+        Insert: {
+          calculation_date?: string | null
+          created_at?: string | null
+          id?: string
+          player_id?: string | null
+          role_id?: string | null
+          suitability_score: number
+          updated_at?: string | null
+        }
+        Update: {
+          calculation_date?: string | null
+          created_at?: string | null
+          id?: string
+          player_id?: string | null
+          role_id?: string | null
+          suitability_score?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_suitability_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "role_suitability_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_suitability_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "role_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_drills: {
         Row: {
           created_at: string | null
