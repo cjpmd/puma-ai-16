@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Player, Attribute, PlayerCategory, AttributeCategory } from "@/types/player";
+import { Player, Attribute, PlayerCategory } from "@/types/player";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,27 +16,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
-import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText, PerformanceStatus } from "@/utils/playerCalculations";
-
-interface SupabasePlayer {
-  id: string;
-  name: string;
-  age: number;
-  squad_number: number;
-  player_category: string;
-  date_of_birth: string;
-  created_at: string;
-  updated_at: string;
-  player_attributes: {
-    id: string;
-    name: string;
-    value: number;
-    category: string;
-    player_id: string;
-    created_at: string;
-  }[];
-}
+import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
 
 const SquadManagement = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -60,8 +40,20 @@ const SquadManagement = () => {
 
       if (statsError) throw statsError;
 
+      const { data: positionRankings, error: rankingsError } = await supabase
+        .from("position_rankings")
+        .select('*')
+        .order('suitability_score', { ascending: false });
+
+      if (rankingsError) throw rankingsError;
+
       return (playersData as any[]).map((player): Player => {
         const playerStats = statsData.find((stat: any) => stat.player_id === player.id);
+        const playerTopPositions = positionRankings
+          .filter((ranking: any) => ranking.player_id === player.id)
+          .sort((a: any, b: any) => b.suitability_score - a.suitability_score)
+          .slice(0, 3);
+
         return {
           id: player.id,
           name: player.name,
@@ -73,7 +65,7 @@ const SquadManagement = () => {
             id: attr.id,
             name: attr.name,
             value: attr.value,
-            category: attr.category as AttributeCategory,
+            category: attr.category,
             player_id: attr.player_id,
             created_at: attr.created_at,
           })),
@@ -83,6 +75,7 @@ const SquadManagement = () => {
             improving: playerStats.improving_objectives,
             ongoing: playerStats.ongoing_objectives,
           } : undefined,
+          topPositions: playerTopPositions,
           created_at: player.created_at,
           updated_at: player.updated_at,
         };
@@ -94,38 +87,12 @@ const SquadManagement = () => {
     ? players?.filter((player) => player.playerCategory === selectedCategory)
     : players;
 
-  const calculateAttributeChange = (player: Player, category: string): { value: string, trend: PerformanceStatus } => {
-    const categoryAttributes = player.attributes.filter(
-      (attr) => attr.category === category
-    );
-    if (categoryAttributes.length === 0) return { value: "N/A", trend: "neutral" };
-
-    const sortedByDate = [...categoryAttributes].sort((a, b) => 
-      new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime()
-    );
-
-    const recentValues = sortedByDate.slice(0, Math.ceil(sortedByDate.length / 2));
-    const olderValues = sortedByDate.slice(Math.ceil(sortedByDate.length / 2));
-
-    const recentAvg = recentValues.reduce((sum, attr) => sum + attr.value, 0) / recentValues.length;
-    const olderAvg = olderValues.length > 0 
-      ? olderValues.reduce((sum, attr) => sum + attr.value, 0) / olderValues.length
-      : recentAvg;
-
-    const value = recentAvg.toFixed(1);
-    const difference = recentAvg - olderAvg;
-    
-    if (difference > 0.5) return { value, trend: "improving" };
-    if (difference < -0.5) return { value, trend: "needs-improvement" };
-    return { value, trend: "maintaining" };
-  };
-
   const handleRowClick = (playerId: string) => {
     navigate(`/player/${playerId}`);
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-[#F2FCE2] p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -187,8 +154,8 @@ const SquadManagement = () => {
                 <TableHead>Squad #</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Age</TableHead>
-                <TableHead>Date of Birth</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Top Positions</TableHead>
                 <TableHead className="text-center">Technical</TableHead>
                 <TableHead className="text-center">Mental</TableHead>
                 <TableHead className="text-center">Physical</TableHead>
@@ -200,10 +167,6 @@ const SquadManagement = () => {
             <TableBody>
               {filteredPlayers?.map((player) => {
                 const performanceStatus = calculatePlayerPerformance(player);
-                const technicalStats = calculateAttributeChange(player, "TECHNICAL");
-                const mentalStats = calculateAttributeChange(player, "MENTAL");
-                const physicalStats = calculateAttributeChange(player, "PHYSICAL");
-                const goalkeepingStats = calculateAttributeChange(player, "GOALKEEPING");
 
                 return (
                   <TableRow
@@ -216,19 +179,31 @@ const SquadManagement = () => {
                     </TableCell>
                     <TableCell>{player.name}</TableCell>
                     <TableCell>{player.age}</TableCell>
-                    <TableCell>{format(new Date(player.dateOfBirth), 'dd/MM/yyyy')}</TableCell>
                     <TableCell>{player.playerCategory}</TableCell>
-                    <TableCell className={`text-center ${getPerformanceColor(technicalStats.trend)}`}>
-                      {technicalStats.value}
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {player.topPositions?.map((pos: any, index: number) => (
+                          <Badge 
+                            key={index} 
+                            variant="outline" 
+                            className={`${index === 0 ? 'bg-green-500/10' : index === 1 ? 'bg-blue-500/10' : 'bg-amber-500/10'}`}
+                          >
+                            {pos.position} ({pos.suitability_score.toFixed(1)}%)
+                          </Badge>
+                        ))}
+                      </div>
                     </TableCell>
-                    <TableCell className={`text-center ${getPerformanceColor(mentalStats.trend)}`}>
-                      {mentalStats.value}
+                    <TableCell className="text-center">
+                      {calculateAttributeAverage(player.attributes, "TECHNICAL")}
                     </TableCell>
-                    <TableCell className={`text-center ${getPerformanceColor(physicalStats.trend)}`}>
-                      {physicalStats.value}
+                    <TableCell className="text-center">
+                      {calculateAttributeAverage(player.attributes, "MENTAL")}
                     </TableCell>
-                    <TableCell className={`text-center ${getPerformanceColor(goalkeepingStats.trend)}`}>
-                      {goalkeepingStats.value}
+                    <TableCell className="text-center">
+                      {calculateAttributeAverage(player.attributes, "PHYSICAL")}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {calculateAttributeAverage(player.attributes, "GOALKEEPING")}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -255,6 +230,13 @@ const SquadManagement = () => {
       </motion.div>
     </div>
   );
+};
+
+const calculateAttributeAverage = (attributes: Attribute[], category: string) => {
+  const categoryAttributes = attributes.filter(attr => attr.category === category);
+  if (categoryAttributes.length === 0) return "N/A";
+  const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
+  return (sum / categoryAttributes.length).toFixed(1);
 };
 
 export default SquadManagement;
