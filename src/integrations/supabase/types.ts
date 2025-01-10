@@ -323,6 +323,7 @@ export type Database = {
           id: string
           name: string
           player_category: string
+          player_type: string
           squad_number: number
           updated_at: string | null
         }
@@ -333,6 +334,7 @@ export type Database = {
           id?: string
           name: string
           player_category: string
+          player_type?: string
           squad_number: number
           updated_at?: string | null
         }
@@ -343,6 +345,7 @@ export type Database = {
           id?: string
           name?: string
           player_category?: string
+          player_type?: string
           squad_number?: number
           updated_at?: string | null
         }

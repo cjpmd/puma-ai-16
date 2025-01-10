@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { PlayerCategory, PlayerType } from "@/types/player";
+import { Player, PlayerCategory, PlayerType } from "@/types/player";
 import {
   Dialog,
   DialogContent,
@@ -27,71 +27,51 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
-import { differenceInYears } from "date-fns";
+import { Edit } from "lucide-react";
 
-export const AddPlayerDialog = () => {
+interface EditPlayerDialogProps {
+  player: Player;
+  onPlayerUpdated: () => void;
+}
+
+export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogProps) => {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const form = useForm({
     defaultValues: {
-      name: "",
-      squadNumber: "",
-      dateOfBirth: "",
-      playerCategory: "MESSI",
-      playerType: "OUTFIELD",
+      squadNumber: player.squadNumber,
+      playerCategory: player.playerCategory,
+      playerType: player.playerType,
+      dateOfBirth: player.dateOfBirth,
     },
   });
 
   const onSubmit = async (values: any) => {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("players")
-        .insert([
-          {
-            name: values.name,
-            squad_number: values.squadNumber,
-            date_of_birth: values.dateOfBirth,
-            player_category: values.playerCategory,
-            player_type: values.playerType,
-            age: differenceInYears(new Date(), new Date(values.dateOfBirth)),
-          },
-        ])
-        .select()
-        .single();
+        .update({
+          squad_number: values.squadNumber,
+          player_category: values.playerCategory,
+          player_type: values.playerType,
+          date_of_birth: values.dateOfBirth,
+        })
+        .eq("id", player.id);
 
       if (error) throw error;
 
-      // Add initial attributes based on player type
-      const attributes = values.playerType === "GOALKEEPER" 
-        ? GOALKEEPER_ATTRIBUTES 
-        : [...TECHNICAL_ATTRIBUTES, ...MENTAL_ATTRIBUTES, ...PHYSICAL_ATTRIBUTES];
-
-      const { error: attributesError } = await supabase
-        .from("player_attributes")
-        .insert(
-          attributes.map((attr) => ({
-            player_id: data.id,
-            name: attr.name,
-            value: 10,
-            category: attr.category,
-          }))
-        );
-
-      if (attributesError) throw attributesError;
-
       toast({
-        description: "Player added successfully",
+        description: "Player details updated successfully",
       });
-
-      queryClient.invalidateQueries({ queryKey: ["players"] });
+      
+      onPlayerUpdated();
       setOpen(false);
     } catch (error) {
-      console.error("Error adding player:", error);
+      console.error("Error updating player:", error);
       toast({
         variant: "destructive",
-        description: "Failed to add player",
+        description: "Failed to update player details",
       });
     }
   };
@@ -99,28 +79,16 @@ export const AddPlayerDialog = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Add Player</Button>
+        <Button variant="ghost" size="icon">
+          <Edit className="h-4 w-4" />
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New Player</DialogTitle>
+          <DialogTitle>Edit Player: {player.name}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <FormField
               control={form.control}
               name="squadNumber"
@@ -129,20 +97,6 @@ export const AddPlayerDialog = () => {
                   <FormLabel>Squad Number</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="dateOfBirth"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date of Birth</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -200,7 +154,21 @@ export const AddPlayerDialog = () => {
               )}
             />
 
-            <Button type="submit">Add Player</Button>
+            <FormField
+              control={form.control}
+              name="dateOfBirth"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date of Birth</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit">Save Changes</Button>
           </form>
         </Form>
       </DialogContent>

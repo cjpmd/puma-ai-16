@@ -1,4 +1,6 @@
-import { Player } from "@/types/player";
+import { useParams, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePlayersStore } from "@/store/players";
 import { motion } from "framer-motion";
@@ -6,9 +8,9 @@ import { AttributeSection } from "./AttributeSection";
 import { CoachingComments } from "./coaching/CoachingComments";
 import { PlayerObjectives } from "./coaching/PlayerObjectives";
 import { RadarChart } from "./analytics/RadarChart";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "./ui/badge";
+import { EditPlayerDialog } from "./EditPlayerDialog";
+import { Player } from "@/types/player";
 
 interface PlayerDetailsProps {
   player: Player;
@@ -86,7 +88,10 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
       }));
   };
 
-  const categories = ["TECHNICAL", "MENTAL", "PHYSICAL", "GOALKEEPING"];
+  // Filter categories based on player type
+  const categories = player.playerType === "GOALKEEPER" 
+    ? ["GOALKEEPING"] 
+    : ["TECHNICAL", "MENTAL", "PHYSICAL"];
 
   return (
     <motion.div
@@ -98,9 +103,15 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
       <Card>
         <CardHeader>
           <div className="flex justify-between items-start">
-            <CardTitle>
-              {player.name} - #{player.squadNumber} ({player.playerCategory})
-            </CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>
+                {player.name} - #{player.squadNumber} ({player.playerCategory})
+              </CardTitle>
+              <EditPlayerDialog player={player} onPlayerUpdated={() => {
+                // Refetch player data
+                window.location.reload();
+              }} />
+            </div>
             {topPositions && (
               <div className="flex gap-2">
                 {topPositions.map((pos: any) => (
@@ -110,6 +121,10 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                 ))}
               </div>
             )}
+          </div>
+          <div className="flex gap-2 mt-2">
+            <Badge variant="secondary">{player.playerType}</Badge>
+            <Badge variant="secondary">DOB: {new Date(player.dateOfBirth).toLocaleDateString()}</Badge>
           </div>
         </CardHeader>
         <CardContent>

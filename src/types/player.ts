@@ -1,5 +1,6 @@
 export type AttributeCategory = "GOALKEEPING" | "TECHNICAL" | "MENTAL" | "PHYSICAL";
 export type PlayerCategory = "RONALDO" | "MESSI" | "JAGS";
+export type PlayerType = "GOALKEEPER" | "OUTFIELD";
 
 export interface Attribute {
   id: string;
@@ -33,6 +34,7 @@ export interface Player {
   dateOfBirth: string;
   squadNumber: number;
   playerCategory: PlayerCategory;
+  playerType: PlayerType;
   attributes: Attribute[];
   attributeHistory: Record<string, AttributeHistory[]>;
   objectives?: PlayerObjectives;
