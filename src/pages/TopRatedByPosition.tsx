@@ -42,14 +42,18 @@ const positionTitles: Record<string, string> = {
 
 const TopRatedByPosition = () => {
   const [selectedCategory, setSelectedCategory] = useState<PlayerCategory | null>(null);
+  
   const { data: rankings, isLoading } = useQuery({
     queryKey: ["position-rankings", selectedCategory],
     queryFn: async () => {
       let query = supabase
         .from("position_rankings")
         .select(`
-          *,
-          players (
+          player_id,
+          player_name,
+          position,
+          suitability_score,
+          players!inner (
             player_category
           )
         `)
@@ -99,7 +103,7 @@ const TopRatedByPosition = () => {
                   <TableCell className="py-1">{index + 1}</TableCell>
                   <TableCell className="py-1">{ranking.player_name}</TableCell>
                   <TableCell className="text-right py-1">
-                    {ranking.suitability_score?.toFixed(2)}
+                    {Number(ranking.suitability_score).toFixed(1)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -131,28 +135,28 @@ const TopRatedByPosition = () => {
           <Button
             variant={selectedCategory === null ? "default" : "outline"}
             onClick={() => setSelectedCategory(null)}
-            className="text-white"
+            className="text-white hover:bg-green-700/20"
           >
             All Players
           </Button>
           <Button
             variant={selectedCategory === "MESSI" ? "default" : "outline"}
             onClick={() => setSelectedCategory("MESSI")}
-            className="text-white"
+            className="text-white hover:bg-green-700/20"
           >
             Messi Category
           </Button>
           <Button
             variant={selectedCategory === "RONALDO" ? "default" : "outline"}
             onClick={() => setSelectedCategory("RONALDO")}
-            className="text-white"
+            className="text-white hover:bg-green-700/20"
           >
             Ronaldo Category
           </Button>
           <Button
             variant={selectedCategory === "JAGS" ? "default" : "outline"}
             onClick={() => setSelectedCategory("JAGS")}
-            className="text-white"
+            className="text-white hover:bg-green-700/20"
           >
             Jags Category
           </Button>
