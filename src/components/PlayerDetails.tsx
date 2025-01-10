@@ -11,6 +11,9 @@ import { RadarChart } from "./analytics/RadarChart";
 import { Badge } from "./ui/badge";
 import { EditPlayerDialog } from "./EditPlayerDialog";
 import { Player } from "@/types/player";
+import { Button } from "./ui/button";
+import { FileDown } from "lucide-react";
+import { useToast } from "./ui/use-toast";
 
 interface PlayerDetailsProps {
   player: Player;
@@ -18,6 +21,7 @@ interface PlayerDetailsProps {
 
 export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const updateAttribute = usePlayersStore((state) => state.updateAttribute);
+  const { toast } = useToast();
 
   const { data: attributeHistory } = useQuery({
     queryKey: ["attribute-history", player.id],
@@ -88,6 +92,41 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
       }));
   };
 
+  const handleDownloadReport = async () => {
+    try {
+      const response = await supabase.functions.invoke('generate-player-report', {
+        body: { playerId: player.id }
+      });
+
+      if (response.error) throw response.error;
+
+      // Convert the response data to a Blob
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `player-report-${player.name}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Report Generated",
+        description: "Your player report has been downloaded.",
+      });
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Filter categories based on player type
   const categories = player.playerType === "GOALKEEPER" 
     ? ["GOALKEEPING"] 
@@ -116,6 +155,15 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
               <EditPlayerDialog player={player} onPlayerUpdated={() => {
                 window.location.reload();
               }} />
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-2"
+                onClick={handleDownloadReport}
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                Download Report
+              </Button>
             </div>
             {topPositions && (
               <div className="flex gap-2">
