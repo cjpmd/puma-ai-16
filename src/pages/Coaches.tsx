@@ -22,6 +22,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 
+type CoachRole = "Manager" | "Coach" | "Helper";
+
 export const Coaches = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -111,7 +113,7 @@ export const Coaches = () => {
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ coachId, role }: { coachId: string; role: string }) => {
+    mutationFn: async ({ coachId, role }: { coachId: string; role: CoachRole }) => {
       const { error } = await supabase
         .from("coaches")
         .update({ role })
@@ -185,7 +187,7 @@ export const Coaches = () => {
                   {currentProfile?.is_admin && (
                     <Select
                       defaultValue={coach.role}
-                      onValueChange={(value) => 
+                      onValueChange={(value: CoachRole) => 
                         updateRoleMutation.mutate({ coachId: coach.id, role: value })
                       }
                     >
