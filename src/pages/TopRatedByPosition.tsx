@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -14,6 +15,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { PlayerCategory } from "@/types/player";
 
 const positionTitles: Record<string, string> = {
   "GK": "Goalkeeper",
@@ -39,15 +41,21 @@ const positionTitles: Record<string, string> = {
 };
 
 const TopRatedByPosition = () => {
+  const [selectedCategory, setSelectedCategory] = useState<PlayerCategory | null>(null);
   const { data: rankings, isLoading } = useQuery({
-    queryKey: ["position-rankings"],
+    queryKey: ["position-rankings", selectedCategory],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("position_rankings")
         .select("*")
         .order("position")
         .order("suitability_score", { ascending: false });
 
+      if (selectedCategory) {
+        query = query.eq("player_category", selectedCategory);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -112,6 +120,37 @@ const TopRatedByPosition = () => {
             </Button>
           </Link>
           <h1 className="text-4xl font-bold text-white">Top Rated by Position</h1>
+        </div>
+
+        <div className="flex gap-4 mb-6">
+          <Button
+            variant={selectedCategory === null ? "default" : "outline"}
+            onClick={() => setSelectedCategory(null)}
+            className="text-white"
+          >
+            All Players
+          </Button>
+          <Button
+            variant={selectedCategory === "MESSI" ? "default" : "outline"}
+            onClick={() => setSelectedCategory("MESSI")}
+            className="text-white"
+          >
+            Messi Category
+          </Button>
+          <Button
+            variant={selectedCategory === "RONALDO" ? "default" : "outline"}
+            onClick={() => setSelectedCategory("RONALDO")}
+            className="text-white"
+          >
+            Ronaldo Category
+          </Button>
+          <Button
+            variant={selectedCategory === "JAGS" ? "default" : "outline"}
+            onClick={() => setSelectedCategory("JAGS")}
+            className="text-white"
+          >
+            Jags Category
+          </Button>
         </div>
 
         <div className="flex flex-col items-center space-y-8">

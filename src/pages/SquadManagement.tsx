@@ -13,13 +13,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowUpDown } from "lucide-react";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { motion } from "framer-motion";
 import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
 
+type SortField = "squadNumber" | "technical" | "mental" | "physical" | "goalkeeping";
+type SortOrder = "asc" | "desc";
+
 const SquadManagement = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>("squadNumber");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const navigate = useNavigate();
 
   const { data: players, isLoading } = useQuery({
@@ -84,9 +89,61 @@ const SquadManagement = () => {
     },
   });
 
+  const calculateAttributeAverage = (attributes: Attribute[], category: string) => {
+    const categoryAttributes = attributes.filter(attr => attr.category === category);
+    if (categoryAttributes.length === 0) return 0;
+    const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
+    return sum / categoryAttributes.length;
+  };
+
+  const sortPlayers = (playersToSort: Player[]) => {
+    return [...playersToSort].sort((a, b) => {
+      let valueA: number;
+      let valueB: number;
+
+      switch (sortField) {
+        case "squadNumber":
+          valueA = a.squadNumber;
+          valueB = b.squadNumber;
+          break;
+        case "technical":
+          valueA = calculateAttributeAverage(a.attributes, "TECHNICAL");
+          valueB = calculateAttributeAverage(b.attributes, "TECHNICAL");
+          break;
+        case "mental":
+          valueA = calculateAttributeAverage(a.attributes, "MENTAL");
+          valueB = calculateAttributeAverage(b.attributes, "MENTAL");
+          break;
+        case "physical":
+          valueA = calculateAttributeAverage(a.attributes, "PHYSICAL");
+          valueB = calculateAttributeAverage(b.attributes, "PHYSICAL");
+          break;
+        case "goalkeeping":
+          valueA = calculateAttributeAverage(a.attributes, "GOALKEEPING");
+          valueB = calculateAttributeAverage(b.attributes, "GOALKEEPING");
+          break;
+        default:
+          return 0;
+      }
+
+      return sortOrder === "asc" ? valueA - valueB : valueB - valueA;
+    });
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
   const filteredPlayers = selectedCategory
     ? players?.filter((player) => player.playerCategory === selectedCategory)
     : players;
+
+  const sortedPlayers = filteredPlayers ? sortPlayers(filteredPlayers) : [];
 
   const handleRowClick = (playerId: string) => {
     navigate(`/player/${playerId}`);
@@ -152,15 +209,25 @@ const SquadManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Squad #</TableHead>
+                <TableHead onClick={() => handleSort("squadNumber")} className="cursor-pointer">
+                  Squad # <ArrowUpDown className="inline h-4 w-4" />
+                </TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Age</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Top Positions</TableHead>
-                <TableHead className="text-center">Technical</TableHead>
-                <TableHead className="text-center">Mental</TableHead>
-                <TableHead className="text-center">Physical</TableHead>
-                <TableHead className="text-center">Goalkeeping</TableHead>
+                <TableHead onClick={() => handleSort("technical")} className="text-center cursor-pointer">
+                  Technical <ArrowUpDown className="inline h-4 w-4" />
+                </TableHead>
+                <TableHead onClick={() => handleSort("mental")} className="text-center cursor-pointer">
+                  Mental <ArrowUpDown className="inline h-4 w-4" />
+                </TableHead>
+                <TableHead onClick={() => handleSort("physical")} className="text-center cursor-pointer">
+                  Physical <ArrowUpDown className="inline h-4 w-4" />
+                </TableHead>
+                <TableHead onClick={() => handleSort("goalkeeping")} className="text-center cursor-pointer">
+                  Goalkeeping <ArrowUpDown className="inline h-4 w-4" />
+                </TableHead>
                 <TableHead className="text-right">Objectives Status</TableHead>
                 <TableHead className="text-right">Current Performance</TableHead>
               </TableRow>
@@ -231,13 +298,6 @@ const SquadManagement = () => {
       </motion.div>
     </div>
   );
-};
-
-const calculateAttributeAverage = (attributes: Attribute[], category: string) => {
-  const categoryAttributes = attributes.filter(attr => attr.category === category);
-  if (categoryAttributes.length === 0) return "N/A";
-  const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
-  return (sum / categoryAttributes.length).toFixed(1);
 };
 
 export default SquadManagement;
