@@ -37,7 +37,7 @@ export const Analytics = () => {
             )
           )
         `)
-        .order('position_suitability(suitability_score)', { foreignTable: 'position_suitability', ascending: false });
+        .order('created_at', { ascending: false });
 
       if (playersError) throw playersError;
 
@@ -167,6 +167,7 @@ export const Analytics = () => {
                       })}
                     </div>
                   </div>
+                  
                   <div className="grid md:grid-cols-2 gap-4 mt-4">
                     {["TECHNICAL", "MENTAL", "PHYSICAL", "GOALKEEPING"].map((category) => {
                       const radarData = getRadarData(player, category);
