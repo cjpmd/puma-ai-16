@@ -88,10 +88,16 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
       }));
   };
 
-  // Filter categories based on player type
+  // Filter categories based on player type and ensure uniqueness
   const categories = player.playerType === "GOALKEEPER" 
     ? ["GOALKEEPING"] 
     : ["TECHNICAL", "MENTAL", "PHYSICAL"];
+
+  // Get unique categories that have attributes
+  const uniqueCategories = categories.filter(category => {
+    const attrs = player.attributes.filter(attr => attr.category === category);
+    return attrs.length > 0;
+  });
 
   return (
     <motion.div
@@ -108,7 +114,6 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                 {player.name} - #{player.squadNumber} ({player.playerCategory})
               </CardTitle>
               <EditPlayerDialog player={player} onPlayerUpdated={() => {
-                // Refetch player data
                 window.location.reload();
               }} />
             </div>
@@ -128,7 +133,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         </CardHeader>
         <CardContent>
           <div className="space-y-8">
-            {categories.map((category) => {
+            {uniqueCategories.map((category) => {
               const categoryAttributes = player.attributes.filter(
                 (attr) => attr.category === category
               );
@@ -157,10 +162,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {categories.filter((category, index, self) => 
-          // Only render each category once
-          self.indexOf(category) === index
-        ).map((category) => {
+        {uniqueCategories.map((category) => {
           const radarData = getRadarData(category);
           if (radarData.length > 0) {
             return (
