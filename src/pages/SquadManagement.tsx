@@ -61,6 +61,7 @@ const SquadManagement = () => {
           dateOfBirth: player.date_of_birth,
           squadNumber: player.squad_number,
           playerCategory: player.player_category as PlayerCategory,
+          playerType: player.player_type as PlayerType,
           attributes: player.player_attributes.map((attr: any): Attribute => ({
             id: attr.id,
             name: attr.name,
