@@ -8,6 +8,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -19,7 +20,11 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')
-    const supabase = createClient(supabaseUrl!, supabaseKey!)
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase credentials')
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Fetch player data with attributes
     const { data: playerData, error: playerError } = await supabase
@@ -43,6 +48,12 @@ serve(async (req) => {
       throw playerError
     }
 
+    if (!playerData) {
+      throw new Error('Player not found')
+    }
+
+    console.log('Player data fetched successfully:', playerData.name)
+
     // Fetch objectives
     const { data: objectives, error: objectivesError } = await supabase
       .from('player_objectives')
@@ -62,12 +73,11 @@ serve(async (req) => {
     
     const page = pdfDoc.addPage()
     const { height, width } = page.getSize()
-    const margin = 50
-    let yOffset = height - margin
+    let yOffset = height - 50
 
     // Add header with player name
     page.drawText('Player Performance Report', {
-      x: margin,
+      x: 50,
       y: yOffset,
       size: 24,
       font: timesRomanBold,
@@ -86,7 +96,7 @@ serve(async (req) => {
 
     for (const info of playerInfo) {
       page.drawText(info, {
-        x: margin,
+        x: 50,
         y: yOffset,
         size: 12,
         font: timesRomanFont,
@@ -96,45 +106,7 @@ serve(async (req) => {
     }
     yOffset -= 20
 
-    // Add position suitability section
-    if (playerData.position_suitability && playerData.position_suitability.length > 0) {
-      page.drawText('Top Positions:', {
-        x: margin,
-        y: yOffset,
-        size: 14,
-        font: timesRomanBold,
-        color: rgb(0, 0, 0),
-      })
-      yOffset -= 20
-
-      const sortedPositions = playerData.position_suitability
-        .sort((a: any, b: any) => b.suitability_score - a.suitability_score)
-        .slice(0, 3)
-
-      for (const pos of sortedPositions) {
-        page.drawText(
-          `${pos.position_definitions.abbreviation}: ${Number(pos.suitability_score).toFixed(1)}%`, {
-          x: margin + 20,
-          y: yOffset,
-          size: 12,
-          font: timesRomanFont,
-          color: rgb(0, 0, 0),
-        })
-        yOffset -= 20
-      }
-      yOffset -= 20
-    }
-
     // Add attributes section
-    page.drawText('Attributes:', {
-      x: margin,
-      y: yOffset,
-      size: 14,
-      font: timesRomanBold,
-      color: rgb(0, 0, 0),
-    })
-    yOffset -= 20
-
     const categories = ['TECHNICAL', 'MENTAL', 'PHYSICAL', 'GOALKEEPING']
     
     for (const category of categories) {
@@ -146,13 +118,13 @@ serve(async (req) => {
         // Check if we need a new page
         if (yOffset < 100) {
           page = pdfDoc.addPage()
-          yOffset = height - margin
+          yOffset = height - 50
         }
 
         page.drawText(category, {
-          x: margin,
+          x: 50,
           y: yOffset,
-          size: 12,
+          size: 14,
           font: timesRomanBold,
           color: rgb(0, 0, 0),
         })
@@ -160,7 +132,7 @@ serve(async (req) => {
 
         for (const attr of categoryAttributes) {
           page.drawText(`${attr.name}: ${attr.value}/20`, {
-            x: margin + 20,
+            x: 70,
             y: yOffset,
             size: 10,
             font: timesRomanFont,
@@ -172,16 +144,16 @@ serve(async (req) => {
       }
     }
 
-    // Add objectives section
+    // Add objectives section if available
     if (objectives && objectives.length > 0) {
       // Check if we need a new page
       if (yOffset < 200) {
         page = pdfDoc.addPage()
-        yOffset = height - margin
+        yOffset = height - 50
       }
 
       page.drawText('Development Objectives:', {
-        x: margin,
+        x: 50,
         y: yOffset,
         size: 14,
         font: timesRomanBold,
@@ -193,11 +165,11 @@ serve(async (req) => {
         // Check if we need a new page
         if (yOffset < 100) {
           page = pdfDoc.addPage()
-          yOffset = height - margin
+          yOffset = height - 50
         }
 
         page.drawText(`${objective.title} (${objective.status})`, {
-          x: margin,
+          x: 70,
           y: yOffset,
           size: 12,
           font: timesRomanBold,
@@ -214,9 +186,9 @@ serve(async (req) => {
             const testLine = line + word + ' '
             const textWidth = timesRomanFont.widthOfTextAtSize(testLine, 10)
 
-            if (textWidth > width - (margin * 2)) {
+            if (textWidth > width - 140) {
               page.drawText(line, {
-                x: margin + 20,
+                x: 70,
                 y: lineY,
                 size: 10,
                 font: timesRomanFont,
@@ -231,7 +203,7 @@ serve(async (req) => {
 
           if (line.trim().length > 0) {
             page.drawText(line, {
-              x: margin + 20,
+              x: 70,
               y: lineY,
               size: 10,
               font: timesRomanFont,
@@ -245,6 +217,7 @@ serve(async (req) => {
 
     // Generate PDF bytes
     const pdfBytes = await pdfDoc.save()
+    console.log('PDF generated successfully, size:', pdfBytes.length)
 
     return new Response(
       pdfBytes,
@@ -254,13 +227,14 @@ serve(async (req) => {
           'Content-Type': 'application/pdf',
           'Content-Disposition': `attachment; filename="player-report-${playerData.name}.pdf"`,
           'Content-Length': pdfBytes.length.toString()
-        } 
+        },
+        status: 200
       }
     )
   } catch (error) {
     console.error('Error generating report:', error)
     return new Response(
-      JSON.stringify({ error: 'Failed to generate report' }),
+      JSON.stringify({ error: 'Failed to generate report', details: error.message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500
