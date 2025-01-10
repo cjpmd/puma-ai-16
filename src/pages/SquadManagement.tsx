@@ -92,7 +92,7 @@ const SquadManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F2FCE2] p-6">
+    <div className="min-h-screen bg-background p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
