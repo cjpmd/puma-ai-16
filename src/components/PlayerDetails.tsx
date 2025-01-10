@@ -124,7 +124,6 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           </div>
           <div className="flex gap-2 mt-2">
             <Badge variant="secondary">{player.playerType}</Badge>
-            <Badge variant="secondary">DOB: {new Date(player.dateOfBirth).toLocaleDateString()}</Badge>
           </div>
         </CardHeader>
         <CardContent>

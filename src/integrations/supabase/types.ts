@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      coach_badges: {
+        Row: {
+          badge_id: string | null
+          coach_id: string | null
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          badge_id?: string | null
+          coach_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          badge_id?: string | null
+          coach_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "coaching_badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_badges_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coaches: {
         Row: {
           created_at: string | null
@@ -17,7 +53,7 @@ export type Database = {
           is_admin: boolean | null
           is_approved: boolean | null
           name: string
-          role: string
+          role: Database["public"]["Enums"]["coach_role"]
           updated_at: string | null
           user_id: string | null
         }
@@ -28,7 +64,7 @@ export type Database = {
           is_admin?: boolean | null
           is_approved?: boolean | null
           name: string
-          role?: string
+          role?: Database["public"]["Enums"]["coach_role"]
           updated_at?: string | null
           user_id?: string | null
         }
@@ -39,9 +75,24 @@ export type Database = {
           is_admin?: boolean | null
           is_approved?: boolean | null
           name?: string
-          role?: string
+          role?: Database["public"]["Enums"]["coach_role"]
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      coaching_badges: {
+        Row: {
+          id: string
+          name: string
+        }
+        Insert: {
+          id?: string
+          name: string
+        }
+        Update: {
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -710,7 +761,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      coach_role: "Manager" | "Coach" | "Helper"
     }
     CompositeTypes: {
       [_ in never]: never
