@@ -47,17 +47,19 @@ const TopRatedByPosition = () => {
     queryKey: ["position-rankings", selectedCategory],
     queryFn: async () => {
       let query = supabase
-        .from("position_rankings")
+        .from("position_suitability")
         .select(`
           player_id,
-          player_name,
-          position,
           suitability_score,
           players!inner (
+            name,
             player_category
+          ),
+          position_definitions!inner (
+            abbreviation
           )
         `)
-        .order("position")
+        .order("position_definitions(abbreviation)", { ascending: true })
         .order("suitability_score", { ascending: false });
 
       if (selectedCategory) {
@@ -65,22 +67,32 @@ const TopRatedByPosition = () => {
       }
 
       const { data, error } = await query;
+
       if (error) throw error;
-      return data;
+
+      // Transform the data to match the expected format
+      const transformedData = data.map((item) => ({
+        player_id: item.player_id,
+        player_name: item.players?.name,
+        position: item.position_definitions?.abbreviation,
+        suitability_score: item.suitability_score,
+        player_category: item.players?.player_category
+      }));
+
+      // Group by position
+      return transformedData.reduce((acc: any, curr) => {
+        if (!acc[curr.position]) {
+          acc[curr.position] = [];
+        }
+        acc[curr.position].push(curr);
+        return acc;
+      }, {});
     },
   });
 
   if (isLoading) {
     return <div className="container mx-auto p-6">Loading rankings...</div>;
   }
-
-  const groupedRankings = rankings?.reduce((acc: any, curr) => {
-    if (!acc[curr.position]) {
-      acc[curr.position] = [];
-    }
-    acc[curr.position].push(curr);
-    return acc;
-  }, {});
 
   const RankingCard = ({ position }: { position: string }) => (
     <Card className="w-64 bg-white/90 backdrop-blur-sm">
@@ -98,7 +110,7 @@ const TopRatedByPosition = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {groupedRankings?.[position]?.slice(0, 5).map((ranking: any, index: number) => (
+              {rankings?.[position]?.slice(0, 5).map((ranking: any, index: number) => (
                 <TableRow key={`${ranking.player_id}-${index}`}>
                   <TableCell className="py-1">{index + 1}</TableCell>
                   <TableCell className="py-1">{ranking.player_name}</TableCell>
