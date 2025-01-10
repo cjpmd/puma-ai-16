@@ -10,6 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useState } from "react";
 
 interface AttributeSectionProps {
   category: string;
@@ -57,13 +58,15 @@ export const AttributeSection = ({
   playerId,
 }: AttributeSectionProps) => {
   const { toast } = useToast();
+  const [localValues, setLocalValues] = useState<Record<string, number>>({});
 
-  const handleUpdateAttribute = async (name: string, value: number) => {
+  const handleSliderChange = (name: string, value: number) => {
+    setLocalValues(prev => ({ ...prev, [name]: value }));
+    onUpdateAttribute(name, value);
+  };
+
+  const handleSliderCommit = async (name: string, value: number) => {
     try {
-      // Update UI immediately
-      onUpdateAttribute(name, value);
-      
-      // Then update database
       const { error } = await supabase
         .from('player_attributes')
         .upsert({ 
@@ -123,16 +126,17 @@ export const AttributeSection = ({
                         </div>
                       )}
                       <span className="text-sm text-muted-foreground">
-                        {attr.value}/20 {playerCategory === "RONALDO" && `(${(attr.value * globalMultiplier).toFixed(1)} adjusted)`}
+                        {(localValues[attr.name] ?? attr.value)}/20 {playerCategory === "RONALDO" && `(${((localValues[attr.name] ?? attr.value) * globalMultiplier).toFixed(1)} adjusted)`}
                       </span>
                     </div>
                   </div>
                   <Slider
-                    value={[attr.value]}
+                    value={[localValues[attr.name] ?? attr.value]}
                     min={0}
                     max={20}
                     step={1}
-                    onValueChange={(value) => handleUpdateAttribute(attr.name, value[0])}
+                    onValueChange={(value) => handleSliderChange(attr.name, value[0])}
+                    onValueCommit={(value) => handleSliderCommit(attr.name, value[0])}
                     className={`${performanceColor} transition-colors`}
                   />
                   {history.length > 0 && (
