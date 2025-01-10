@@ -56,11 +56,11 @@ const TopRatedByPosition = () => {
             player_category
           ),
           position_definitions!inner (
-            abbreviation
+            abbreviation,
+            full_name
           )
         `)
-        .order("position_definitions(abbreviation)", { ascending: true })
-        .order("suitability_score", { ascending: false });
+        .order("position_definitions(abbreviation)", { ascending: true });
 
       if (selectedCategory) {
         query = query.eq("players.player_category", selectedCategory);
@@ -75,7 +75,7 @@ const TopRatedByPosition = () => {
         player_id: item.player_id,
         player_name: item.players?.name,
         position: item.position_definitions?.abbreviation,
-        suitability_score: item.suitability_score,
+        suitability_score: Number(item.suitability_score),
         player_category: item.players?.player_category
       }));
 
@@ -115,7 +115,7 @@ const TopRatedByPosition = () => {
                   <TableCell className="py-1">{index + 1}</TableCell>
                   <TableCell className="py-1">{ranking.player_name}</TableCell>
                   <TableCell className="text-right py-1">
-                    {Number(ranking.suitability_score).toFixed(1)}
+                    {ranking.suitability_score.toFixed(1)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -147,28 +147,28 @@ const TopRatedByPosition = () => {
           <Button
             variant={selectedCategory === null ? "default" : "outline"}
             onClick={() => setSelectedCategory(null)}
-            className="text-white hover:bg-green-700/20"
+            className="text-white bg-green-700 hover:bg-green-600"
           >
             All Players
           </Button>
           <Button
             variant={selectedCategory === "MESSI" ? "default" : "outline"}
             onClick={() => setSelectedCategory("MESSI")}
-            className="text-white hover:bg-green-700/20"
+            className="text-white bg-green-700 hover:bg-green-600"
           >
             Messi Category
           </Button>
           <Button
             variant={selectedCategory === "RONALDO" ? "default" : "outline"}
             onClick={() => setSelectedCategory("RONALDO")}
-            className="text-white hover:bg-green-700/20"
+            className="text-white bg-green-700 hover:bg-green-600"
           >
             Ronaldo Category
           </Button>
           <Button
             variant={selectedCategory === "JAGS" ? "default" : "outline"}
             onClick={() => setSelectedCategory("JAGS")}
-            className="text-white hover:bg-green-700/20"
+            className="text-white bg-green-700 hover:bg-green-600"
           >
             Jags Category
           </Button>
