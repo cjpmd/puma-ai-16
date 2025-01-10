@@ -10,27 +10,13 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
 const TopRatedByPosition = () => {
-  const { data: positions, isLoading: positionsLoading } = useQuery({
-    queryKey: ["position-definitions"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("position_definitions")
-        .select("*")
-        .order("abbreviation");
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: rankings, isLoading: rankingsLoading } = useQuery({
+  const { data: rankings, isLoading } = useQuery({
     queryKey: ["position-rankings"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -44,7 +30,7 @@ const TopRatedByPosition = () => {
     },
   });
 
-  if (positionsLoading || rankingsLoading) {
+  if (isLoading) {
     return <div className="container mx-auto p-6">Loading rankings...</div>;
   }
 
@@ -55,6 +41,38 @@ const TopRatedByPosition = () => {
     acc[curr.position].push(curr);
     return acc;
   }, {});
+
+  const RankingCard = ({ position }: { position: string }) => (
+    <Card className="w-64">
+      <CardHeader className="py-2">
+        <CardTitle className="text-sm font-medium">{position}</CardTitle>
+      </CardHeader>
+      <CardContent className="p-2">
+        <ScrollArea className="h-[200px]">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12">Rank</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead className="text-right w-16">Score</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {groupedRankings?.[position]?.slice(0, 5).map((ranking: any, index: number) => (
+                <TableRow key={`${ranking.player_id}-${index}`}>
+                  <TableCell className="py-1">{index + 1}</TableCell>
+                  <TableCell className="py-1">{ranking.player_name}</TableCell>
+                  <TableCell className="text-right py-1">
+                    {ranking.suitability_score?.toFixed(2)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -73,63 +91,51 @@ const TopRatedByPosition = () => {
           <h1 className="text-4xl font-bold">Top Rated by Position</h1>
         </div>
 
-        <Tabs defaultValue={positions?.[0]?.abbreviation} className="space-y-4">
-          <TabsList className="flex flex-wrap gap-2">
-            {positions?.map((position) => (
-              <TabsTrigger
-                key={position.abbreviation}
-                value={position.abbreviation}
-                className="px-4 py-2"
-              >
-                {position.abbreviation}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        <div className="flex flex-col items-center space-y-8">
+          {/* Strikers */}
+          <div className="flex justify-center gap-4">
+            <RankingCard position="STCL" />
+            <RankingCard position="STCR" />
+          </div>
 
-          {positions?.map((position) => (
-            <TabsContent
-              key={position.abbreviation}
-              value={position.abbreviation}
-              className="space-y-4"
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    {position.full_name} ({position.abbreviation})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[400px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Rank</TableHead>
-                          <TableHead>Player</TableHead>
-                          <TableHead className="text-right">Score</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {groupedRankings?.[position.abbreviation]?.map(
-                          (ranking: any, index: number) => (
-                            <TableRow key={`${ranking.player_id}-${index}`}>
-                              <TableCell className="font-medium">
-                                {index + 1}
-                              </TableCell>
-                              <TableCell>{ranking.player_name}</TableCell>
-                              <TableCell className="text-right">
-                                {ranking.suitability_score.toFixed(2)}
-                              </TableCell>
-                            </TableRow>
-                          )
-                        )}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
-        </Tabs>
+          {/* Attacking Midfielders */}
+          <div className="flex justify-center gap-4">
+            <RankingCard position="AML" />
+            <RankingCard position="AMCL" />
+            <RankingCard position="AMCR" />
+            <RankingCard position="AMR" />
+          </div>
+
+          {/* Central Midfielders */}
+          <div className="flex justify-center gap-4">
+            <RankingCard position="ML" />
+            <RankingCard position="MCL" />
+            <RankingCard position="MCR" />
+            <RankingCard position="MR" />
+          </div>
+
+          {/* Defensive Midfielders / Wing Backs */}
+          <div className="flex justify-center gap-4">
+            <RankingCard position="WBL" />
+            <RankingCard position="DMCL" />
+            <RankingCard position="DMCR" />
+            <RankingCard position="WBR" />
+          </div>
+
+          {/* Defenders */}
+          <div className="flex justify-center gap-4">
+            <RankingCard position="DL" />
+            <RankingCard position="DCL" />
+            <RankingCard position="DCR" />
+            <RankingCard position="DR" />
+          </div>
+
+          {/* Goalkeepers */}
+          <div className="flex justify-center gap-4">
+            <RankingCard position="GK" />
+            <RankingCard position="SK" />
+          </div>
+        </div>
       </motion.div>
     </div>
   );
