@@ -42,15 +42,31 @@ export const Analytics = () => {
       if (playersError) throw playersError;
 
       return playersData.map((player) => ({
-        ...player,
+        id: player.id,
+        name: player.name,
+        age: player.age,
+        dateOfBirth: player.date_of_birth,
+        squadNumber: player.squad_number,
+        playerCategory: player.player_category as PlayerCategory,
+        attributes: player.player_attributes.map((attr: any) => ({
+          id: attr.id,
+          name: attr.name,
+          value: attr.value,
+          category: attr.category,
+          player_id: attr.player_id,
+          created_at: attr.created_at,
+        })),
+        attributeHistory: {},
         topPositions: player.position_suitability
           ?.sort((a: any, b: any) => b.suitability_score - a.suitability_score)
           .slice(0, 3)
           .map((pos: any) => ({
             position: pos.position_definitions.abbreviation,
             suitability_score: pos.suitability_score
-          }))
-      }));
+          })),
+        created_at: player.created_at,
+        updated_at: player.updated_at,
+      })) as Player[];
     },
   });
 
