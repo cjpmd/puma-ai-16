@@ -231,7 +231,7 @@ const SquadManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPlayers?.map((player) => {
+              {sortedPlayers?.map((player) => {
                 const performanceStatus = calculatePlayerPerformance(player);
 
                 return (
@@ -248,7 +248,7 @@ const SquadManagement = () => {
                     <TableCell>{player.playerCategory}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        {player.topPositions?.map((pos: any, index: number) => (
+                        {player.topPositions?.map((pos, index) => (
                           <Badge 
                             key={index} 
                             variant="outline" 
