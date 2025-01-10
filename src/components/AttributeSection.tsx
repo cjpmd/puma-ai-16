@@ -22,10 +22,10 @@ interface AttributeSectionProps {
 }
 
 const getPerformanceColor = (currentValue: number, previousValue: number | undefined) => {
-  if (previousValue === undefined) return "bg-blue-500"; // Maintaining
-  if (currentValue > previousValue) return "bg-green-500"; // Improving
-  if (currentValue < previousValue) return "bg-amber-500"; // Needs Improvement
-  return "bg-blue-500"; // Maintaining
+  if (previousValue === undefined) return "bg-blue-500";
+  if (currentValue > previousValue) return "bg-green-500";
+  if (currentValue < previousValue) return "bg-amber-500";
+  return "bg-blue-500";
 };
 
 const getHeaderColor = (attributes: Attribute[], attributeHistory: Record<string, { date: string; value: number; }[]>) => {
@@ -60,6 +60,10 @@ export const AttributeSection = ({
 
   const handleUpdateAttribute = async (name: string, value: number) => {
     try {
+      // Update UI immediately
+      onUpdateAttribute(name, value);
+      
+      // Then update database
       const { error } = await supabase
         .from('player_attributes')
         .upsert({ 
@@ -70,8 +74,6 @@ export const AttributeSection = ({
         });
 
       if (error) throw error;
-
-      onUpdateAttribute(name, value);
       
       toast({
         title: "Attribute Updated",
@@ -101,7 +103,7 @@ export const AttributeSection = ({
               const history = attributeHistory[attr.name] || [];
               const previousValue = history.length > 1 
                 ? history[history.length - 2].value 
-                : attr.value;
+                : undefined;
               const performanceColor = getPerformanceColor(attr.value, previousValue);
               
               return (
@@ -111,13 +113,15 @@ export const AttributeSection = ({
                       {attr.name}
                     </span>
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm text-muted-foreground">Previous: {previousValue}</span>
-                        <div 
-                          className={`w-3 h-3 rounded-full ${performanceColor}`}
-                          title={`Previous score: ${previousValue}`}
-                        />
-                      </div>
+                      {previousValue !== undefined && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm text-muted-foreground">Previous: {previousValue}</span>
+                          <div 
+                            className={`w-3 h-3 rounded-full ${performanceColor}`}
+                            title={`Previous score: ${previousValue}`}
+                          />
+                        </div>
+                      )}
                       <span className="text-sm text-muted-foreground">
                         {attr.value}/20 {playerCategory === "RONALDO" && `(${(attr.value * globalMultiplier).toFixed(1)} adjusted)`}
                       </span>
@@ -131,7 +135,7 @@ export const AttributeSection = ({
                     onValueChange={(value) => handleUpdateAttribute(attr.name, value[0])}
                     className={`${performanceColor} transition-colors`}
                   />
-                  {history.length > 1 && (
+                  {history.length > 0 && (
                     <div className="h-32 mt-2">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
