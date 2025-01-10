@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
-import { Player, PlayerCategory, Attribute } from "@/types/player";
+import { Player, PlayerCategory } from "@/types/player";
 import { useNavigate } from "react-router-dom";
 
 export const Analytics = () => {
@@ -28,51 +28,29 @@ export const Analytics = () => {
         .from("players")
         .select(`
           *,
-          player_attributes (*)
-        `);
+          player_attributes (*),
+          position_suitability (
+            suitability_score,
+            position_definitions (
+              abbreviation,
+              full_name
+            )
+          )
+        `)
+        .order('position_suitability(suitability_score)', { foreignTable: 'position_suitability', ascending: false });
 
       if (playersError) throw playersError;
 
-      const { data: history, error: historyError } = await supabase
-        .from("attribute_history")
-        .select("*");
-
-      if (historyError) throw historyError;
-
-      return playersData.map((player): Player => {
-        const attributes = player.player_attributes.map((attr: any): Attribute => ({
-          id: attr.id,
-          name: attr.name,
-          value: attr.value,
-          category: attr.category,
-          player_id: attr.player_id,
-          created_at: attr.created_at,
-        }));
-
-        const attributeHistory: Record<string, { date: string; value: number }[]> = {};
-        attributes.forEach((attr) => {
-          if (!attributeHistory[attr.name]) {
-            attributeHistory[attr.name] = [];
-          }
-          attributeHistory[attr.name].push({
-            date: attr.created_at || "",
-            value: attr.value,
-          });
-        });
-
-        return {
-          id: player.id,
-          name: player.name,
-          age: player.age,
-          dateOfBirth: player.date_of_birth,
-          squadNumber: player.squad_number,
-          playerCategory: player.player_category as PlayerCategory,
-          attributes,
-          attributeHistory,
-          created_at: player.created_at,
-          updated_at: player.updated_at,
-        };
-      });
+      return playersData.map((player) => ({
+        ...player,
+        topPositions: player.position_suitability
+          ?.sort((a: any, b: any) => b.suitability_score - a.suitability_score)
+          .slice(0, 3)
+          .map((pos: any) => ({
+            position: pos.position_definitions.abbreviation,
+            suitability_score: pos.suitability_score
+          }))
+      }));
     },
   });
 
@@ -81,6 +59,10 @@ export const Analytics = () => {
     return calculatePlayerPerformance(player) === performanceFilter;
   });
 
+  const handlePlayerClick = (playerId: string) => {
+    navigate(`/player/${playerId}`);
+  };
+
   const getRadarData = (player: Player, category: string) => {
     return player.attributes
       .filter((attr) => attr.category === category)
@@ -88,10 +70,6 @@ export const Analytics = () => {
         name: attr.name,
         value: attr.value,
       }));
-  };
-
-  const handlePlayerClick = (playerId: string) => {
-    navigate(`/squad/${playerId}`);
   };
 
   return (
@@ -126,13 +104,23 @@ export const Analytics = () => {
               >
                 <CardHeader>
                   <div className="flex justify-between items-start">
-                    <CardTitle>{player.name}</CardTitle>
-                    <div className="flex gap-2">
-                      {player.topPositions?.map((pos) => (
-                        <Badge key={pos.position} variant="outline">
-                          {pos.position} ({pos.suitability_score.toFixed(1)})
-                        </Badge>
-                      ))}
+                    <div className="space-y-2">
+                      <CardTitle>{player.name}</CardTitle>
+                      <div className="flex gap-2">
+                        {player.topPositions?.map((pos, index) => (
+                          <Badge 
+                            key={index} 
+                            variant="outline"
+                            className={`${
+                              index === 0 ? 'bg-green-500/10' : 
+                              index === 1 ? 'bg-blue-500/10' : 
+                              'bg-amber-500/10'
+                            }`}
+                          >
+                            {pos.position} ({pos.suitability_score.toFixed(1)}%)
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </CardHeader>

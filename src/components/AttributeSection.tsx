@@ -92,7 +92,7 @@ export const AttributeSection = ({
   return (
     <Accordion type="single" collapsible className="w-full">
       <AccordionItem value={category}>
-        <AccordionTrigger className={`text-lg font-semibold ${getHeaderColor(attributes, attributeHistory)}`}>
+        <AccordionTrigger className={`text-lg font-semibold ${headerColor}`}>
           {category}
         </AccordionTrigger>
         <AccordionContent>
@@ -123,26 +123,15 @@ export const AttributeSection = ({
                       </span>
                     </div>
                   </div>
-                  <div className="relative">
-                    <Slider
-                      defaultValue={[attr.value]}
-                      value={[attr.value]}
-                      min={0}
-                      max={20}
-                      step={1}
-                      onValueChange={(value) => handleUpdateAttribute(attr.name, value[0])}
-                      className={`${performanceColor} transition-colors`}
-                    />
-                    <div 
-                      className={`absolute w-2 h-6 ${performanceColor} rounded-full transition-colors`}
-                      style={{ 
-                        left: `${(previousValue / 20) * 100}%`,
-                        top: '-8px',
-                        transform: 'translateX(-50%)',
-                        border: '2px solid white'
-                      }}
-                    />
-                  </div>
+                  <Slider
+                    defaultValue={[attr.value]}
+                    value={[attr.value]}
+                    min={0}
+                    max={20}
+                    step={1}
+                    onValueChange={(value) => handleUpdateAttribute(attr.name, value[0])}
+                    className={`${performanceColor} transition-colors`}
+                  />
                   {history.length > 1 && (
                     <div className="h-32 mt-2">
                       <ResponsiveContainer width="100%" height="100%">
