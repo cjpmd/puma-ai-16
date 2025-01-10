@@ -15,9 +15,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
 import { Player, PlayerCategory, Attribute } from "@/types/player";
+import { useNavigate } from "react-router-dom";
 
 export const Analytics = () => {
   const [performanceFilter, setPerformanceFilter] = useState<string>("all");
+  const navigate = useNavigate();
 
   const { data: players } = useQuery({
     queryKey: ["players-with-attributes"],
@@ -88,6 +90,10 @@ export const Analytics = () => {
       }));
   };
 
+  const handlePlayerClick = (playerId: string) => {
+    navigate(`/squad/${playerId}`);
+  };
+
   return (
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex justify-between items-center">
@@ -113,7 +119,11 @@ export const Analytics = () => {
           {filteredPlayers.map((player) => {
             const performanceStatus = calculatePlayerPerformance(player);
             return (
-              <Card key={player.id}>
+              <Card 
+                key={player.id} 
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => handlePlayerClick(player.id)}
+              >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <CardTitle>{player.name}</CardTitle>

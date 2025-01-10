@@ -1,4 +1,4 @@
-import { ResponsiveContainer, RadarChart as RechartsRadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
+import { ResponsiveContainer, RadarChart as RechartsRadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 
 interface RadarChartProps {
   data: { name: string; value: number }[];
@@ -13,6 +13,7 @@ export const RadarChart = ({ data, title }: RadarChartProps) => {
         <RechartsRadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
           <PolarGrid />
           <PolarAngleAxis dataKey="name" />
+          <PolarRadiusAxis domain={[0, 20]} /> {/* Add explicit domain */}
           <Radar
             name="Attributes"
             dataKey="value"

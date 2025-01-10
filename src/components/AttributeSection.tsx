@@ -62,9 +62,12 @@ export const AttributeSection = ({
     try {
       const { error } = await supabase
         .from('player_attributes')
-        .update({ value })
-        .eq('player_id', playerId)
-        .eq('name', name);
+        .upsert({ 
+          player_id: playerId,
+          name,
+          value,
+          category: attributes.find(attr => attr.name === name)?.category
+        });
 
       if (error) throw error;
 
@@ -89,7 +92,7 @@ export const AttributeSection = ({
   return (
     <Accordion type="single" collapsible className="w-full">
       <AccordionItem value={category}>
-        <AccordionTrigger className={`text-lg font-semibold ${headerColor}`}>
+        <AccordionTrigger className={`text-lg font-semibold ${getHeaderColor(attributes, attributeHistory)}`}>
           {category}
         </AccordionTrigger>
         <AccordionContent>
@@ -127,7 +130,7 @@ export const AttributeSection = ({
                       min={0}
                       max={20}
                       step={1}
-                      onValueCommit={(value) => handleUpdateAttribute(attr.name, value[0])}
+                      onValueChange={(value) => handleUpdateAttribute(attr.name, value[0])}
                       className={`${performanceColor} transition-colors`}
                     />
                     <div 
