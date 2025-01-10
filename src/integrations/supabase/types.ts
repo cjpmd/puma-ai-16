@@ -745,6 +745,12 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_position_suitability: {
+        Args: {
+          input_player_id: string
+        }
+        Returns: undefined
+      }
       create_initial_admin: {
         Args: {
           admin_email: string
@@ -753,7 +759,7 @@ export type Database = {
       }
       update_position_suitability: {
         Args: {
-          player_id: string
+          input_player_id: string
           position_abbrev: string
           score: number
         }
