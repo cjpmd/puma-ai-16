@@ -169,6 +169,66 @@ export type Database = {
           },
         ]
       }
+      player_base_info: {
+        Row: {
+          actual_playing_time: string | null
+          agreed_playing_time: string | null
+          created_at: string | null
+          id: string
+          left_foot: number | null
+          nationality: string | null
+          personality: string | null
+          player_id: string | null
+          position: string | null
+          right_foot: number | null
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_playing_time?: string | null
+          agreed_playing_time?: string | null
+          created_at?: string | null
+          id?: string
+          left_foot?: number | null
+          nationality?: string | null
+          personality?: string | null
+          player_id?: string | null
+          position?: string | null
+          right_foot?: number | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_playing_time?: string | null
+          agreed_playing_time?: string | null
+          created_at?: string | null
+          id?: string
+          left_foot?: number | null
+          nationality?: string | null
+          personality?: string | null
+          player_id?: string | null
+          position?: string | null
+          right_foot?: number | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_base_info_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_base_info_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_objectives: {
         Row: {
           coach_id: string | null
