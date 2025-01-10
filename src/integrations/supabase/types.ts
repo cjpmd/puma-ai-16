@@ -53,7 +53,7 @@ export type Database = {
           is_admin: boolean | null
           is_approved: boolean | null
           name: string
-          role: "Manager" | "Coach" | "Helper"
+          role: Database["public"]["Enums"]["coach_role"]
           updated_at: string | null
           user_id: string | null
         }
@@ -64,7 +64,7 @@ export type Database = {
           is_admin?: boolean | null
           is_approved?: boolean | null
           name: string
-          role?: "Manager" | "Coach" | "Helper"
+          role?: Database["public"]["Enums"]["coach_role"]
           updated_at?: string | null
           user_id?: string | null
         }
@@ -75,7 +75,7 @@ export type Database = {
           is_admin?: boolean | null
           is_approved?: boolean | null
           name?: string
-          role?: "Manager" | "Coach" | "Helper"
+          role?: Database["public"]["Enums"]["coach_role"]
           updated_at?: string | null
           user_id?: string | null
         }
@@ -506,7 +506,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           name?: string
-          role: string
+          role?: string
           updated_at?: string | null
           user_id?: string | null
         }
@@ -832,10 +832,10 @@ export type TablesUpdate<
     : never
   : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
     ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+        Update: infer U
+      }
+      ? U
+      : never
     : never
 
 export type Enums<
