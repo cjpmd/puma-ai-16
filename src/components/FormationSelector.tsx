@@ -1,286 +1,107 @@
-import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
+import { useState } from "react";
 
-interface Position {
-  id: string;
-  roles: string[];
-}
+// Define position types and their options
+const positionOptions = {
+  GK: ["G (D)", "SK (A)", "SK (D)", "SK (S)"],
+  DRL: ["CWB (A)", "CWB (S)", "FB (A)", "FB (D)", "FB (S)", "IFB (D)", "IWB (A)", "IWB (S)", "NFB (D)", "WB (A)", "WB (D)", "WB (S)"],
+  DC: ["BPD (C)", "BPD (D)", "BPD (S)", "CD (C)", "CD (D)", "CD (S)", "L (D)", "L (S)", "NCB (C)", "NCB (D)", "NCB (S)", "WCB (A)", "WCB (D)", "WCB (S)"],
+  WBRL: ["CWB (A)", "CWB (S)", "IWB (A)", "IWB (D)", "IWB (S)", "WB (A)", "WB (D)", "WB (S)"],
+  DM: ["A (D)", "BWM (D)", "BWM (S)", "DLP (D)", "DLP (S)", "DM (D)", "DM (S)", "HB (D)", "RGA (S)", "RPM (S)", "VOL (A)", "VOL (S)"],
+  MRL: ["DW (D)", "DW (S)", "IW (A)", "IW (S)", "W (A)", "W (S)", "WM (A)", "WM (D)", "WM (S)", "WP (A)", "WP (S)"],
+  MC: ["AP (A)", "AP (S)", "BBM (S)", "BWM (D)", "BWM (S)", "CAR (S)", "CM (A)", "CM (D)", "CM (S)", "DLP (D)", "DLP (S)", "MEZ (A)", "MEZ (S)", "RPM (S)"],
+  AMRL: ["AP (A)", "AP (S)", "IF (A)", "IF (S)", "IW (A)", "IW (S)", "RMD (A)", "T (A)", "W (A)", "W (S)", "WTF (A)", "WTF (S)"],
+  AMC: ["AM (A)", "AM (S)", "AP (A)", "AP (S)", "EG (S)", "SS (A)", "T (A)"],
+  ST: ["AF (A)", "CF (A)", "CF (S)", "DLF (A)", "DLF (S)", "FN (S)", "P (A)", "PF (A)", "PF (D)", "PF (S)", "T (A)", "TF (A)", "TF (S)"]
+} as const;
 
-const positions: Position[] = [
-  { id: 'GK', roles: ['G (D)', 'SK (A)', 'SK (D)', 'SK (S)'] },
-  { id: 'DRL', roles: ['CWB (A)', 'CWB (S)', 'FB (A)', 'FB (D)', 'FB (S)', 'IFB (D)', 'IWB (A)', 'IWB (S)', 'NFB (D)', 'WB (A)', 'WB (D)', 'WB (S)'] },
-  { id: 'DC', roles: ['BPD (C)', 'BPD (D)', 'BPD (S)', 'CD (C)', 'CD (D)', 'CD (S)', 'L (D)', 'L (S)', 'NCB (C)', 'NCB (D)', 'NCB (S)', 'WCB (A)', 'WCB (D)', 'WCB (S)'] },
-  { id: 'WBRL', roles: ['CWB (A)', 'CWB (S)', 'IWB (A)', 'IWB (D)', 'IWB (S)', 'WB (A)', 'WB (D)', 'WB (S)'] },
-  { id: 'DM', roles: ['A (D)', 'BWM (D)', 'BWM (S)', 'DLP (D)', 'DLP (S)', 'DM (D)', 'DM (S)', 'HB (D)', 'RGA (S)', 'RPM (S)', 'VOL (A)', 'VOL (S)'] },
-  { id: 'MRL', roles: ['DW (D)', 'DW (S)', 'IW (A)', 'IW (S)', 'W (A)', 'W (S)', 'WM (A)', 'WM (D)', 'WM (S)', 'WP (A)', 'WP (S)'] },
-  { id: 'MC', roles: ['AP (A)', 'AP (S)', 'BBM (S)', 'BWM (D)', 'BWM (S)', 'CAR (S)', 'CM (A)', 'CM (D)', 'CM (S)', 'DLP (D)', 'DLP (S)', 'MEZ (A)', 'MEZ (S)', 'RPM (S)'] },
-  { id: 'AMRL', roles: ['AP (A)', 'AP (S)', 'IF (A)', 'IF (S)', 'IW (A)', 'IW (S)', 'RMD (A)', 'T (A)', 'W (A)', 'W (S)', 'WTF (A)', 'WTF (S)'] },
-  { id: 'AMC', roles: ['AM (A)', 'AM (S)', 'AP (A)', 'AP (S)', 'EG (S)', 'SS (A)', 'T (A)'] },
-  { id: 'ST', roles: ['AF (A)', 'CF (A)', 'CF (S)', 'DLF (A)', 'DLF (S)', 'FN (S)', 'P (A)', 'PF (A)', 'PF (D)', 'PF (S)', 'T (A)', 'TF (A)', 'TF (S)'] }
-];
+type PositionType = keyof typeof positionOptions;
 
 export const FormationSelector = () => {
+  const [selectedPositions, setSelectedPositions] = useState<Record<string, string>>({});
+
+  const handlePositionChange = (position: string, value: string) => {
+    setSelectedPositions(prev => ({
+      ...prev,
+      [position]: value
+    }));
+  };
+
+  const PositionSelect = ({ position, label }: { position: string; label: PositionType }) => (
+    <div className="w-24">
+      <Select
+        value={selectedPositions[position]}
+        onValueChange={(value) => handlePositionChange(position, value)}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={label} />
+        </SelectTrigger>
+        <SelectContent>
+          {positionOptions[label].map((option) => (
+            <SelectItem key={option} value={option}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
   return (
-    <div className="w-full max-w-4xl mx-auto p-6">
-      <div className="bg-[#d5e8d4] p-6 rounded-lg">
-        <div className="text-xl font-bold mb-4 flex justify-between items-center">
-          <span>FORMATION SELECTOR</span>
-          <span>POSITIONS SELECTED: 0</span>
+    <Card className="p-6 w-full max-w-4xl mx-auto">
+      <div className="flex flex-col items-center space-y-8">
+        {/* Strikers */}
+        <div className="flex justify-center space-x-4">
+          <PositionSelect position="st1" label="ST" />
+          <PositionSelect position="st2" label="ST" />
         </div>
-        
-        <div className="grid grid-cols-5 gap-4">
-          {/* Attackers Row */}
-          <div className="col-span-5 grid grid-cols-5 gap-4">
-            <div></div>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="ST" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[9].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="ST" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[9].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="ST" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[9].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div></div>
-          </div>
 
-          {/* Attacking Midfielders Row */}
-          <div className="col-span-5 grid grid-cols-5 gap-4 mt-4">
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="AMRL" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[7].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="AMC" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[8].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="AMC" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[8].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="AMC" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[8].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="AMRL" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[7].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Attacking Midfielders */}
+        <div className="flex justify-center space-x-4">
+          <PositionSelect position="aml" label="AMRL" />
+          <PositionSelect position="amc" label="AMC" />
+          <PositionSelect position="amr" label="AMRL" />
+        </div>
 
-          {/* Midfielders Row */}
-          <div className="col-span-5 grid grid-cols-5 gap-4 mt-4">
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="MRL" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[5].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="MC" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[6].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="DM" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[4].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="MC" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[6].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="MRL" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[5].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Central Midfielders */}
+        <div className="flex justify-center space-x-4">
+          <PositionSelect position="ml" label="MRL" />
+          <PositionSelect position="mcl" label="MC" />
+          <PositionSelect position="mc" label="MC" />
+          <PositionSelect position="mcr" label="MC" />
+          <PositionSelect position="mr" label="MRL" />
+        </div>
 
-          {/* Defenders Row */}
-          <div className="col-span-5 grid grid-cols-5 gap-4 mt-4">
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="WBRL" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[3].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="DC" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[2].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="DC" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[2].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="DC" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[2].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="WBRL" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[3].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Defensive Midfielders */}
+        <div className="flex justify-center space-x-4">
+          <PositionSelect position="dml" label="DM" />
+          <PositionSelect position="dm" label="DM" />
+          <PositionSelect position="dmr" label="DM" />
+        </div>
 
-          {/* Goalkeeper Row */}
-          <div className="col-start-3 col-span-1 mt-4">
-            <Select>
-              <SelectTrigger className="w-full bg-white">
-                <SelectValue placeholder="GK" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions[0].roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Defenders */}
+        <div className="flex justify-center space-x-4">
+          <PositionSelect position="wbl" label="WBRL" />
+          <PositionSelect position="dl" label="DRL" />
+          <PositionSelect position="dcl" label="DC" />
+          <PositionSelect position="dc" label="DC" />
+          <PositionSelect position="dcr" label="DC" />
+          <PositionSelect position="dr" label="DRL" />
+          <PositionSelect position="wbr" label="WBRL" />
+        </div>
+
+        {/* Goalkeeper */}
+        <div className="flex justify-center">
+          <PositionSelect position="gk" label="GK" />
+        </div>
+
+        {/* Position Counter */}
+        <div className="text-sm text-gray-600 mt-4">
+          Positions Selected: {Object.keys(selectedPositions).length}/23
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 
