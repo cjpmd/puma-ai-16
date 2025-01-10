@@ -3,7 +3,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Check, X } from "lucide-react";
+import { Shield, Check, X, Award } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 export const Coaches = () => {
   const { toast } = useToast();
@@ -28,12 +45,11 @@ export const Coaches = () => {
   const { data: coaches, isLoading } = useQuery({
     queryKey: ["coaches"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: coachesData, error: coachesError } = await supabase
         .from("coaches")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*, coach_badges(badge_id)");
 
-      if (error) {
+      if (coachesError) {
         toast({
           variant: "destructive",
           title: "Error",
@@ -42,6 +58,29 @@ export const Coaches = () => {
         return [];
       }
 
+      const { data: badges } = await supabase
+        .from("coaching_badges")
+        .select("id, name");
+
+      // Map badges to coaches
+      return coachesData.map(coach => ({
+        ...coach,
+        badges: badges?.filter(badge => 
+          coach.coach_badges?.some(cb => cb.badge_id === badge.id)
+        ) || []
+      }));
+    },
+  });
+
+  const { data: availableBadges } = useQuery({
+    queryKey: ["badges"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("coaching_badges")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
       return data;
     },
   });
@@ -71,6 +110,55 @@ export const Coaches = () => {
     },
   });
 
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ coachId, role }: { coachId: string; role: string }) => {
+      const { error } = await supabase
+        .from("coaches")
+        .update({ role })
+        .eq("id", coachId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["coaches"] });
+      toast({
+        title: "Success",
+        description: "Coach role updated successfully",
+      });
+    },
+  });
+
+  const updateBadgesMutation = useMutation({
+    mutationFn: async ({ coachId, badgeIds }: { coachId: string; badgeIds: string[] }) => {
+      // First remove all existing badges
+      await supabase
+        .from("coach_badges")
+        .delete()
+        .eq("coach_id", coachId);
+
+      // Then add the new ones
+      const badgesToAdd = badgeIds.map(badgeId => ({
+        coach_id: coachId,
+        badge_id: badgeId,
+      }));
+
+      if (badgesToAdd.length > 0) {
+        const { error } = await supabase
+          .from("coach_badges")
+          .insert(badgesToAdd);
+
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["coaches"] });
+      toast({
+        title: "Success",
+        description: "Coach badges updated successfully",
+      });
+    },
+  });
+
   if (isLoading) {
     return <div className="container mx-auto p-4">Loading...</div>;
   }
@@ -92,11 +180,82 @@ export const Coaches = () => {
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="font-semibold">{coach.name}</h3>
-                <p className="text-sm text-muted-foreground">{coach.role}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-sm text-muted-foreground">{coach.role}</p>
+                  {currentProfile?.is_admin && (
+                    <Select
+                      defaultValue={coach.role}
+                      onValueChange={(value) => 
+                        updateRoleMutation.mutate({ coachId: coach.id, role: value })
+                      }
+                    >
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Manager">Manager</SelectItem>
+                        <SelectItem value="Coach">Coach</SelectItem>
+                        <SelectItem value="Helper">Helper</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
               </div>
               {coach.is_admin && (
                 <Shield className="h-5 w-5 text-primary" />
               )}
+            </div>
+
+            <div className="mt-4">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <Award className="w-4 h-4 mr-2" />
+                    Manage Badges
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Coaching Badges</DialogTitle>
+                  </DialogHeader>
+                  <ScrollArea className="h-[300px] mt-4">
+                    <div className="space-y-4">
+                      {availableBadges?.map((badge) => (
+                        <div key={badge.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={badge.id}
+                            checked={coach.badges?.some(b => b.id === badge.id)}
+                            onCheckedChange={(checked) => {
+                              const currentBadges = coach.badges?.map(b => b.id) || [];
+                              const newBadges = checked
+                                ? [...currentBadges, badge.id]
+                                : currentBadges.filter(id => id !== badge.id);
+                              updateBadgesMutation.mutate({
+                                coachId: coach.id,
+                                badgeIds: newBadges,
+                              });
+                            }}
+                          />
+                          <label
+                            htmlFor={badge.id}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            {badge.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {coach.badges?.map((badge) => (
+                <Badge key={badge.id} variant="secondary">
+                  {badge.name}
+                </Badge>
+              ))}
             </div>
             
             {currentProfile?.is_admin && !coach.is_admin && (
@@ -126,7 +285,7 @@ export const Coaches = () => {
 
             <div className="mt-2">
               <span className={`text-sm ${
-                coach.is_approved ? "text-success" : "text-destructive"
+                coach.is_approved ? "text-green-600" : "text-red-600"
               }`}>
                 {coach.is_approved ? "Approved" : "Pending Approval"}
               </span>
