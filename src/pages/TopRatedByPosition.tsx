@@ -15,6 +15,29 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
+const positionTitles: Record<string, string> = {
+  "GK": "Goalkeeper",
+  "SK": "Sweeper Keeper",
+  "DL": "Left Back",
+  "DCL": "Centre Back (L)",
+  "DCR": "Centre Back (R)",
+  "DR": "Right Back",
+  "WBL": "Wing Back (L)",
+  "DMCL": "Central Defensive Midfielder (L)",
+  "DMCR": "Central Defensive Midfielder (R)",
+  "WBR": "Wing Back Right",
+  "ML": "Left Midfielder",
+  "MCL": "Midfield (Centre Left)",
+  "MCR": "Midfield (Centre Right)",
+  "MR": "Right Midfielder",
+  "AML": "Attacking Midfielder (Left)",
+  "AMCL": "Attacking Midfielder (Centre Left)",
+  "AMCR": "Attacking Midfielder (Centre Right)",
+  "AMR": "Attacking Midfielder (Right)",
+  "STCL": "Striker (L)",
+  "STCR": "Striker (R)"
+};
+
 const TopRatedByPosition = () => {
   const { data: rankings, isLoading } = useQuery({
     queryKey: ["position-rankings"],
@@ -43,9 +66,9 @@ const TopRatedByPosition = () => {
   }, {});
 
   const RankingCard = ({ position }: { position: string }) => (
-    <Card className="w-64">
+    <Card className="w-64 bg-white/90 backdrop-blur-sm">
       <CardHeader className="py-2">
-        <CardTitle className="text-sm font-medium">{position}</CardTitle>
+        <CardTitle className="text-sm font-medium">{positionTitles[position] || position}</CardTitle>
       </CardHeader>
       <CardContent className="p-2">
         <ScrollArea className="h-[200px]">
@@ -75,7 +98,7 @@ const TopRatedByPosition = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-gradient-to-b from-green-800 to-green-900 p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -84,11 +107,11 @@ const TopRatedByPosition = () => {
       >
         <div className="flex items-center gap-4">
           <Link to="/squad">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="text-white hover:bg-green-700/20">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <h1 className="text-4xl font-bold">Top Rated by Position</h1>
+          <h1 className="text-4xl font-bold text-white">Top Rated by Position</h1>
         </div>
 
         <div className="flex flex-col items-center space-y-8">
