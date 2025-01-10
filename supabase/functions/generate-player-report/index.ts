@@ -22,11 +22,18 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl!, supabaseKey!)
 
     // Fetch player data with attributes
-    const { data: player, error: playerError } = await supabase
+    const { data: playerData, error: playerError } = await supabase
       .from('players')
       .select(`
         *,
-        player_attributes (*)
+        player_attributes (*),
+        position_suitability (
+          suitability_score,
+          position_definitions (
+            abbreviation,
+            full_name
+          )
+        )
       `)
       .eq('id', playerId)
       .single()
@@ -41,6 +48,7 @@ serve(async (req) => {
       .from('player_objectives')
       .select('*')
       .eq('player_id', playerId)
+      .order('created_at', { ascending: false })
 
     if (objectivesError) {
       console.error('Error fetching objectives:', objectivesError)
@@ -49,113 +57,153 @@ serve(async (req) => {
 
     // Create PDF document
     const pdfDoc = await PDFDocument.create()
-    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
-    const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+    const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman)
+    const timesRomanBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
     
     const page = pdfDoc.addPage()
     const { height, width } = page.getSize()
-    
-    // Add header
+    const margin = 50
+    let yOffset = height - margin
+
+    // Add header with player name
     page.drawText('Player Performance Report', {
-      x: 50,
-      y: height - 50,
+      x: margin,
+      y: yOffset,
       size: 24,
-      font: helveticaBold,
+      font: timesRomanBold,
+      color: rgb(0, 0, 0),
     })
+    yOffset -= 40
 
-    // Add player info
-    page.drawText(`Name: ${player.name}`, {
-      x: 50,
-      y: height - 100,
-      size: 12,
-      font: helveticaFont,
-    })
+    // Add player info section
+    const playerInfo = [
+      `Name: ${playerData.name}`,
+      `Squad Number: ${playerData.squad_number}`,
+      `Category: ${playerData.player_category}`,
+      `Age: ${playerData.age}`,
+      `Player Type: ${playerData.player_type}`,
+    ]
 
-    page.drawText(`Squad Number: ${player.squad_number}`, {
-      x: 50,
-      y: height - 120,
-      size: 12,
-      font: helveticaFont,
-    })
+    for (const info of playerInfo) {
+      page.drawText(info, {
+        x: margin,
+        y: yOffset,
+        size: 12,
+        font: timesRomanFont,
+        color: rgb(0, 0, 0),
+      })
+      yOffset -= 20
+    }
+    yOffset -= 20
 
-    page.drawText(`Category: ${player.player_category}`, {
-      x: 50,
-      y: height - 140,
-      size: 12,
-      font: helveticaFont,
-    })
+    // Add position suitability section
+    if (playerData.position_suitability && playerData.position_suitability.length > 0) {
+      page.drawText('Top Positions:', {
+        x: margin,
+        y: yOffset,
+        size: 14,
+        font: timesRomanBold,
+        color: rgb(0, 0, 0),
+      })
+      yOffset -= 20
+
+      const sortedPositions = playerData.position_suitability
+        .sort((a: any, b: any) => b.suitability_score - a.suitability_score)
+        .slice(0, 3)
+
+      for (const pos of sortedPositions) {
+        page.drawText(
+          `${pos.position_definitions.abbreviation}: ${Number(pos.suitability_score).toFixed(1)}%`, {
+          x: margin + 20,
+          y: yOffset,
+          size: 12,
+          font: timesRomanFont,
+          color: rgb(0, 0, 0),
+        })
+        yOffset -= 20
+      }
+      yOffset -= 20
+    }
 
     // Add attributes section
     page.drawText('Attributes:', {
-      x: 50,
-      y: height - 180,
+      x: margin,
+      y: yOffset,
       size: 14,
-      font: helveticaBold,
+      font: timesRomanBold,
+      color: rgb(0, 0, 0),
     })
+    yOffset -= 20
 
-    let yOffset = 200
     const categories = ['TECHNICAL', 'MENTAL', 'PHYSICAL', 'GOALKEEPING']
     
     for (const category of categories) {
-      const categoryAttributes = player.player_attributes.filter(
+      const categoryAttributes = playerData.player_attributes.filter(
         (attr: any) => attr.category === category
       )
 
       if (categoryAttributes.length > 0) {
-        page.drawText(category, {
-          x: 50,
-          y: height - yOffset,
-          size: 12,
-          font: helveticaBold,
-        })
+        // Check if we need a new page
+        if (yOffset < 100) {
+          page = pdfDoc.addPage()
+          yOffset = height - margin
+        }
 
-        yOffset += 20
-        
+        page.drawText(category, {
+          x: margin,
+          y: yOffset,
+          size: 12,
+          font: timesRomanBold,
+          color: rgb(0, 0, 0),
+        })
+        yOffset -= 20
+
         for (const attr of categoryAttributes) {
           page.drawText(`${attr.name}: ${attr.value}/20`, {
-            x: 70,
-            y: height - yOffset,
+            x: margin + 20,
+            y: yOffset,
             size: 10,
-            font: helveticaFont,
+            font: timesRomanFont,
+            color: rgb(0, 0, 0),
           })
-          yOffset += 15
+          yOffset -= 15
         }
-        
-        yOffset += 10
+        yOffset -= 10
       }
     }
 
-    // Add objectives section if available
+    // Add objectives section
     if (objectives && objectives.length > 0) {
       // Check if we need a new page
-      if (yOffset > height - 100) {
-        const newPage = pdfDoc.addPage()
-        yOffset = 50
+      if (yOffset < 200) {
+        page = pdfDoc.addPage()
+        yOffset = height - margin
       }
 
-      page.drawText('Objectives:', {
-        x: 50,
-        y: height - yOffset - 30,
+      page.drawText('Development Objectives:', {
+        x: margin,
+        y: yOffset,
         size: 14,
-        font: helveticaBold,
+        font: timesRomanBold,
+        color: rgb(0, 0, 0),
       })
+      yOffset -= 30
 
-      yOffset += 50
-      
       for (const objective of objectives) {
         // Check if we need a new page
-        if (yOffset > height - 100) {
-          const newPage = pdfDoc.addPage()
-          yOffset = 50
+        if (yOffset < 100) {
+          page = pdfDoc.addPage()
+          yOffset = height - margin
         }
 
         page.drawText(`${objective.title} (${objective.status})`, {
-          x: 70,
-          y: height - yOffset,
-          size: 10,
-          font: helveticaFont,
+          x: margin,
+          y: yOffset,
+          size: 12,
+          font: timesRomanBold,
+          color: rgb(0, 0, 0),
         })
-        yOffset += 20
+        yOffset -= 20
 
         if (objective.description) {
           const words = objective.description.split(' ')
@@ -164,17 +212,18 @@ serve(async (req) => {
 
           for (const word of words) {
             const testLine = line + word + ' '
-            const textWidth = helveticaFont.widthOfTextAtSize(testLine, 10)
+            const textWidth = timesRomanFont.widthOfTextAtSize(testLine, 10)
 
-            if (textWidth > width - 140) {
+            if (textWidth > width - (margin * 2)) {
               page.drawText(line, {
-                x: 90,
-                y: height - lineY,
+                x: margin + 20,
+                y: lineY,
                 size: 10,
-                font: helveticaFont,
+                font: timesRomanFont,
+                color: rgb(0, 0, 0),
               })
               line = word + ' '
-              lineY += 15
+              lineY -= 15
             } else {
               line = testLine
             }
@@ -182,14 +231,14 @@ serve(async (req) => {
 
           if (line.trim().length > 0) {
             page.drawText(line, {
-              x: 90,
-              y: height - lineY,
+              x: margin + 20,
+              y: lineY,
               size: 10,
-              font: helveticaFont,
+              font: timesRomanFont,
+              color: rgb(0, 0, 0),
             })
           }
-
-          yOffset = lineY + 20
+          yOffset = lineY - 20
         }
       }
     }
@@ -203,7 +252,7 @@ serve(async (req) => {
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="player-report-${player.name}.pdf"`,
+          'Content-Disposition': `attachment; filename="player-report-${playerData.name}.pdf"`,
           'Content-Length': pdfBytes.length.toString()
         } 
       }
