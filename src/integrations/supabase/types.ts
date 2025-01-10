@@ -320,6 +320,82 @@ export type Database = {
         }
         Relationships: []
       }
+      position_definitions: {
+        Row: {
+          abbreviation: string
+          created_at: string | null
+          description: string | null
+          full_name: string
+          id: string
+        }
+        Insert: {
+          abbreviation: string
+          created_at?: string | null
+          description?: string | null
+          full_name: string
+          id?: string
+        }
+        Update: {
+          abbreviation?: string
+          created_at?: string | null
+          description?: string | null
+          full_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      position_suitability: {
+        Row: {
+          calculation_date: string | null
+          created_at: string | null
+          id: string
+          player_id: string | null
+          position_id: string | null
+          suitability_score: number
+          updated_at: string | null
+        }
+        Insert: {
+          calculation_date?: string | null
+          created_at?: string | null
+          id?: string
+          player_id?: string | null
+          position_id?: string | null
+          suitability_score: number
+          updated_at?: string | null
+        }
+        Update: {
+          calculation_date?: string | null
+          created_at?: string | null
+          id?: string
+          player_id?: string | null
+          position_id?: string | null
+          suitability_score?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "position_suitability_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "position_suitability_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_suitability_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "position_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
