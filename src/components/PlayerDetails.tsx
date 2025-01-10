@@ -157,7 +157,10 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {categories.map((category) => {
+        {categories.filter((category, index, self) => 
+          // Only render each category once
+          self.indexOf(category) === index
+        ).map((category) => {
           const radarData = getRadarData(category);
           if (radarData.length > 0) {
             return (

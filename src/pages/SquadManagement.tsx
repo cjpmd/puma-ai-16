@@ -34,7 +34,14 @@ const SquadManagement = () => {
         .from("players")
         .select(`
           *,
-          player_attributes (*)
+          player_attributes (*),
+          position_suitability (
+            suitability_score,
+            position_definitions (
+              abbreviation,
+              full_name
+            )
+          )
         `);
 
       if (playersError) throw playersError;
@@ -45,47 +52,38 @@ const SquadManagement = () => {
 
       if (statsError) throw statsError;
 
-      const { data: positionRankings, error: rankingsError } = await supabase
-        .from("position_rankings")
-        .select('*')
-        .order('suitability_score', { ascending: false });
-
-      if (rankingsError) throw rankingsError;
-
-      return (playersData as any[]).map((player): Player => {
-        const playerStats = statsData.find((stat: any) => stat.player_id === player.id);
-        const playerTopPositions = positionRankings
-          .filter((ranking: any) => ranking.player_id === player.id)
-          .sort((a: any, b: any) => b.suitability_score - a.suitability_score)
-          .slice(0, 3);
-
-        return {
-          id: player.id,
-          name: player.name,
-          age: player.age,
-          dateOfBirth: player.date_of_birth,
-          squadNumber: player.squad_number,
-          playerCategory: player.player_category as PlayerCategory,
-          playerType: player.player_type as PlayerType,
-          attributes: player.player_attributes.map((attr: any): Attribute => ({
-            id: attr.id,
-            name: attr.name,
-            value: attr.value,
-            category: attr.category,
-            player_id: attr.player_id,
-            created_at: attr.created_at,
-          })),
-          attributeHistory: {},
-          objectives: playerStats ? {
-            completed: playerStats.completed_objectives,
-            improving: playerStats.improving_objectives,
-            ongoing: playerStats.ongoing_objectives,
-          } : undefined,
-          topPositions: playerTopPositions,
-          created_at: player.created_at,
-          updated_at: player.updated_at,
-        };
-      });
+      return (playersData as any[]).map((player): Player => ({
+        id: player.id,
+        name: player.name,
+        age: player.age,
+        dateOfBirth: player.date_of_birth,
+        squadNumber: player.squad_number,
+        playerCategory: player.player_category as PlayerCategory,
+        playerType: player.player_type as PlayerType,
+        attributes: player.player_attributes.map((attr: any): Attribute => ({
+          id: attr.id,
+          name: attr.name,
+          value: attr.value,
+          category: attr.category,
+          player_id: attr.player_id,
+          created_at: attr.created_at,
+        })),
+        attributeHistory: {},
+        objectives: statsData?.find((stat: any) => stat.player_id === player.id) ? {
+          completed: statsData.find((stat: any) => stat.player_id === player.id).completed_objectives,
+          improving: statsData.find((stat: any) => stat.player_id === player.id).improving_objectives,
+          ongoing: statsData.find((stat: any) => stat.player_id === player.id).ongoing_objectives,
+        } : undefined,
+        topPositions: player.position_suitability
+          ?.sort((a: any, b: any) => b.suitability_score - a.suitability_score)
+          .slice(0, 3)
+          .map((pos: any) => ({
+            position: pos.position_definitions.abbreviation,
+            suitability_score: Number(pos.suitability_score)
+          })) || [],
+        created_at: player.created_at,
+        updated_at: player.updated_at,
+      }));
     },
   });
 
