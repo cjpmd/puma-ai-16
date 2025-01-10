@@ -15,10 +15,6 @@ export const RadarChart = ({ data, title }: RadarChartProps) => {
     return acc;
   }, [] as { name: string; value: number }[]);
 
-  // Calculate the domain dynamically based on the unique data
-  const maxValue = Math.max(...uniqueData.map(d => d.value));
-  const domain: [number, number] = [0, Math.ceil(maxValue * 1.1)]; // Add 10% padding
-
   return (
     <div className="h-64">
       <h3 className="text-lg font-semibold mb-2">{title}</h3>
@@ -26,7 +22,7 @@ export const RadarChart = ({ data, title }: RadarChartProps) => {
         <RechartsRadarChart cx="50%" cy="50%" outerRadius="80%" data={uniqueData}>
           <PolarGrid />
           <PolarAngleAxis dataKey="name" />
-          <PolarRadiusAxis domain={domain} />
+          <PolarRadiusAxis domain={[0, 20]} /> {/* Fixed domain to match attribute scale */}
           <Radar
             name="Attributes"
             dataKey="value"
