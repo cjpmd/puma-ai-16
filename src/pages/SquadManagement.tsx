@@ -93,7 +93,7 @@ const SquadManagement = () => {
     const categoryAttributes = attributes.filter(attr => attr.category === category);
     if (categoryAttributes.length === 0) return 0;
     const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
-    return sum / categoryAttributes.length;
+    return (sum / categoryAttributes.length).toFixed(1);
   };
 
   const sortPlayers = (playersToSort: Player[]) => {
@@ -256,7 +256,7 @@ const SquadManagement = () => {
                             variant="outline" 
                             className={`${index === 0 ? 'bg-green-500/10' : index === 1 ? 'bg-blue-500/10' : 'bg-amber-500/10'}`}
                           >
-                            {pos.position} ({pos.suitability_score.toFixed(1)}%)
+                            {pos.position} ({Number(pos.suitability_score).toFixed(1)}%)
                           </Badge>
                         ))}
                       </div>
