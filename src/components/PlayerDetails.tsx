@@ -88,7 +88,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
       }));
   };
 
-  // Filter categories based on player type and ensure uniqueness
+  // Filter categories based on player type
   const categories = player.playerType === "GOALKEEPER" 
     ? ["GOALKEEPING"] 
     : ["TECHNICAL", "MENTAL", "PHYSICAL"];

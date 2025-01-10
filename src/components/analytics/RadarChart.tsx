@@ -6,15 +6,24 @@ interface RadarChartProps {
 }
 
 export const RadarChart = ({ data, title }: RadarChartProps) => {
-  // Calculate the domain dynamically based on the data
-  const maxValue = Math.max(...data.map(d => d.value));
+  // Remove duplicate entries by name
+  const uniqueData = data.reduce((acc, current) => {
+    const existingItem = acc.find(item => item.name === current.name);
+    if (!existingItem) {
+      acc.push(current);
+    }
+    return acc;
+  }, [] as { name: string; value: number }[]);
+
+  // Calculate the domain dynamically based on the unique data
+  const maxValue = Math.max(...uniqueData.map(d => d.value));
   const domain: [number, number] = [0, Math.ceil(maxValue * 1.1)]; // Add 10% padding
 
   return (
     <div className="h-64">
       <h3 className="text-lg font-semibold mb-2">{title}</h3>
       <ResponsiveContainer width="100%" height="100%">
-        <RechartsRadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
+        <RechartsRadarChart cx="50%" cy="50%" outerRadius="80%" data={uniqueData}>
           <PolarGrid />
           <PolarAngleAxis dataKey="name" />
           <PolarRadiusAxis domain={domain} />
