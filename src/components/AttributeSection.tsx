@@ -124,7 +124,6 @@ export const AttributeSection = ({
                     </div>
                   </div>
                   <Slider
-                    defaultValue={[attr.value]}
                     value={[attr.value]}
                     min={0}
                     max={20}
