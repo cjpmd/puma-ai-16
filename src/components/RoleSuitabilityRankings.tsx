@@ -77,7 +77,7 @@ export const RoleSuitabilityRankings = ({ roleId, limit = 5 }: RoleSuitabilityPr
                   <TableCell className="font-medium">{index + 1}</TableCell>
                   <TableCell>{ranking.players?.name}</TableCell>
                   <TableCell className="text-right">
-                    {`${Number(ranking.suitability_score).toFixed(1)}%`}
+                    {`${Number(ranking.suitability_score || 0).toFixed(1)}%`}
                   </TableCell>
                 </TableRow>
               ))}

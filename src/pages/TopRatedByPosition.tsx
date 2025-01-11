@@ -70,16 +70,14 @@ const TopRatedByPosition = () => {
 
       if (error) throw error;
 
-      // Transform the data to match the expected format
       const transformedData = data.map((item) => ({
         player_id: item.player_id,
         player_name: item.players?.name,
         position: item.position_definitions?.abbreviation,
-        suitability_score: Number(item.suitability_score),
+        suitability_score: Number(item.suitability_score || 0),
         player_category: item.players?.player_category
       }));
 
-      // Group by position
       return transformedData.reduce((acc: any, curr) => {
         if (!acc[curr.position]) {
           acc[curr.position] = [];
@@ -115,7 +113,7 @@ const TopRatedByPosition = () => {
                   <TableCell className="py-1">{index + 1}</TableCell>
                   <TableCell className="py-1">{ranking.player_name}</TableCell>
                   <TableCell className="text-right py-1">
-                    {ranking.suitability_score.toFixed(1)}
+                    {`${ranking.suitability_score.toFixed(1)}%`}
                   </TableCell>
                 </TableRow>
               ))}
