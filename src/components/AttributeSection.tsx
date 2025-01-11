@@ -67,6 +67,7 @@ export const AttributeSection = ({
 
   const handleSliderCommit = async (name: string, value: number) => {
     try {
+      // First, try to update the existing record
       const { error } = await supabase
         .from('player_attributes')
         .upsert({ 
@@ -74,6 +75,8 @@ export const AttributeSection = ({
           name,
           value,
           category: attributes.find(attr => attr.name === name)?.category
+        }, {
+          onConflict: 'player_id,name'
         });
 
       if (error) throw error;
