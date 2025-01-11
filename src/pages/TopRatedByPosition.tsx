@@ -104,7 +104,7 @@ const TopRatedByPosition = () => {
               <TableRow>
                 <TableHead className="w-12">Rank</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead className="text-right w-16">Score</TableHead>
+                <TableHead className="text-right w-16">Suitability</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
