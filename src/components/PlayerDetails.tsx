@@ -95,10 +95,14 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const handleDownloadReport = async () => {
     try {
       const response = await supabase.functions.invoke('generate-player-report', {
-        body: { playerId: player.id }
+        body: { playerId: player.id },
+        responseType: 'arraybuffer'  // Add this to handle binary data
       });
 
-      if (response.error) throw response.error;
+      if (response.error) {
+        console.error('Error generating report:', response.error);
+        throw response.error;
+      }
 
       // Convert the response data to a Blob
       const blob = new Blob([response.data], { type: 'application/pdf' });
