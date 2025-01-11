@@ -95,8 +95,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const handleDownloadReport = async () => {
     try {
       const response = await supabase.functions.invoke('generate-player-report', {
-        body: { playerId: player.id },
-        responseType: 'arraybuffer'  // Add this to handle binary data
+        body: { playerId: player.id }
       });
 
       if (response.error) {
