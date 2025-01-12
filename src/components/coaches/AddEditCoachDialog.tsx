@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -84,11 +84,11 @@ export const AddEditCoachDialog = ({ coach, trigger }: AddEditCoachDialogProps) 
   });
 
   // Initialize selected badges when coach badges are loaded
-  useState(() => {
+  useEffect(() => {
     if (coachBadges) {
       setSelectedBadges(coachBadges);
     }
-  });
+  }, [coachBadges]);
 
   const toggleBadge = (badgeId: string) => {
     setSelectedBadges(prev => 
@@ -186,7 +186,7 @@ export const AddEditCoachDialog = ({ coach, trigger }: AddEditCoachDialogProps) 
       <DialogTrigger asChild>
         {trigger || <Button>Add Coach</Button>}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{coach ? "Edit Coach" : "Add New Coach"}</DialogTitle>
           <DialogDescription>
@@ -194,7 +194,7 @@ export const AddEditCoachDialog = ({ coach, trigger }: AddEditCoachDialogProps) 
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -249,23 +249,22 @@ export const AddEditCoachDialog = ({ coach, trigger }: AddEditCoachDialogProps) 
               )}
             />
 
-            <div className="space-y-4">
+            <div className="space-y-2">
               <FormLabel>Coaching Badges</FormLabel>
-              <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/5">
+              <div className="grid grid-cols-2 gap-2 p-2 border rounded-lg bg-muted/5 max-h-[200px] overflow-y-auto">
                 {availableBadges?.map((badge) => (
                   <div
                     key={badge.id}
-                    className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/10 transition-colors"
+                    className="flex items-center space-x-2 p-1.5 rounded-md hover:bg-muted/10 transition-colors"
                   >
                     <Checkbox
                       id={badge.id}
                       checked={selectedBadges.includes(badge.id)}
                       onCheckedChange={() => toggleBadge(badge.id)}
-                      className="h-5 w-5"
                     />
                     <label
                       htmlFor={badge.id}
-                      className="text-sm font-medium leading-none cursor-pointer flex-grow"
+                      className="text-sm font-medium leading-none cursor-pointer"
                     >
                       {badge.name}
                     </label>
