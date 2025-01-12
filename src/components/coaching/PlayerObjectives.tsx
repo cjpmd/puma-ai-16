@@ -14,6 +14,7 @@ interface PlayerObjectivesProps {
 }
 
 const getInitials = (name: string) => {
+  if (!name) return '';
   return name
     .split(' ')
     .map(word => word[0])
@@ -42,6 +43,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log('Objectives data:', data); // Debug log
       return data;
     },
   });
@@ -157,9 +159,11 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium">{objective.title}</h4>
-                      <Badge variant="outline" className="text-xs">
-                        {getInitials(objective.profiles?.name || '')}
-                      </Badge>
+                      {objective.profiles?.name && (
+                        <Badge variant="outline" className="text-xs">
+                          {getInitials(objective.profiles.name)}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground">{objective.description}</p>
                   </div>

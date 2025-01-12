@@ -13,6 +13,7 @@ interface CoachingCommentsProps {
 }
 
 const getInitials = (name: string) => {
+  if (!name) return '';
   return name
     .split(' ')
     .map(word => word[0])
@@ -97,9 +98,11 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{comment.profiles?.name}</span>
-                    <Badge variant="outline" className="text-xs">
-                      {getInitials(comment.profiles?.name || '')}
-                    </Badge>
+                    {comment.profiles?.name && (
+                      <Badge variant="outline" className="text-xs">
+                        {getInitials(comment.profiles.name)}
+                      </Badge>
+                    )}
                   </div>
                   <span className="text-sm text-muted-foreground">
                     {format(new Date(comment.created_at!), "MMM d, yyyy")}
