@@ -13,6 +13,14 @@ interface PlayerObjectivesProps {
   playerId: string;
 }
 
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase();
+};
+
 export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -146,8 +154,13 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
             {objectives?.map((objective) => (
               <div key={objective.id} className="p-4 border rounded-lg space-y-2">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium">{objective.title}</h4>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium">{objective.title}</h4>
+                      <Badge variant="outline" className="text-xs">
+                        {getInitials(objective.profiles?.name || '')}
+                      </Badge>
+                    </div>
                     <p className="text-sm text-muted-foreground">{objective.description}</p>
                   </div>
                   <Badge variant="secondary">{objective.points} points</Badge>

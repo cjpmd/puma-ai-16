@@ -6,10 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 interface CoachingCommentsProps {
   playerId: string;
 }
+
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase();
+};
 
 export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
   const [newComment, setNewComment] = useState("");
@@ -86,7 +95,12 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
             {comments?.map((comment) => (
               <div key={comment.id} className="p-4 bg-muted rounded-lg">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="font-medium">{comment.profiles?.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{comment.profiles?.name}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {getInitials(comment.profiles?.name || '')}
+                    </Badge>
+                  </div>
                   <span className="text-sm text-muted-foreground">
                     {format(new Date(comment.created_at!), "MMM d, yyyy")}
                   </span>
