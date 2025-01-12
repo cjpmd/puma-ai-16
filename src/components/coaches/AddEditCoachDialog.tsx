@@ -26,7 +26,10 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+import { Plus, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface AddEditCoachDialogProps {
   coach?: {
@@ -42,6 +45,34 @@ export const AddEditCoachDialog = ({ coach, trigger }: AddEditCoachDialogProps) 
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
+
+  // Fetch available badges
+  const { data: availableBadges } = useQuery({
+    queryKey: ["coaching-badges"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("coaching_badges")
+        .select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch coach's current badges if editing
+  const { data: coachBadges } = useQuery({
+    queryKey: ["coach-badges", coach?.id],
+    queryFn: async () => {
+      if (!coach?.id) return [];
+      const { data, error } = await supabase
+        .from("coach_badges")
+        .select("badge_id")
+        .eq("coach_id", coach.id);
+      if (error) throw error;
+      return data.map(cb => cb.badge_id);
+    },
+    enabled: !!coach?.id,
+  });
 
   const form = useForm({
     defaultValues: {
@@ -55,7 +86,7 @@ export const AddEditCoachDialog = ({ coach, trigger }: AddEditCoachDialogProps) 
     try {
       if (coach) {
         // Update existing coach
-        const { error } = await supabase
+        const { error: updateError } = await supabase
           .from("coaches")
           .update({
             name: values.name,
@@ -64,22 +95,59 @@ export const AddEditCoachDialog = ({ coach, trigger }: AddEditCoachDialogProps) 
           })
           .eq("id", coach.id);
 
-        if (error) throw error;
+        if (updateError) throw updateError;
+
+        // Update badges
+        // First, remove all existing badges
+        await supabase
+          .from("coach_badges")
+          .delete()
+          .eq("coach_id", coach.id);
+
+        // Then add selected badges
+        if (selectedBadges.length > 0) {
+          const { error: badgeError } = await supabase
+            .from("coach_badges")
+            .insert(
+              selectedBadges.map(badgeId => ({
+                coach_id: coach.id,
+                badge_id: badgeId,
+              }))
+            );
+
+          if (badgeError) throw badgeError;
+        }
 
         toast({
           description: "Coach updated successfully",
         });
       } else {
         // Add new coach
-        const { error } = await supabase
+        const { data: newCoach, error } = await supabase
           .from("coaches")
           .insert([{
             name: values.name,
             email: values.email,
             role: values.role,
-          }]);
+          }])
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Add selected badges for new coach
+        if (selectedBadges.length > 0 && newCoach) {
+          const { error: badgeError } = await supabase
+            .from("coach_badges")
+            .insert(
+              selectedBadges.map(badgeId => ({
+                coach_id: newCoach.id,
+                badge_id: badgeId,
+              }))
+            );
+
+          if (badgeError) throw badgeError;
+        }
 
         toast({
           description: "Coach added successfully",
@@ -95,6 +163,21 @@ export const AddEditCoachDialog = ({ coach, trigger }: AddEditCoachDialogProps) 
         description: "Failed to save coach",
       });
     }
+  };
+
+  // Initialize selected badges when coach badges are loaded
+  useState(() => {
+    if (coachBadges) {
+      setSelectedBadges(coachBadges);
+    }
+  });
+
+  const toggleBadge = (badgeId: string) => {
+    setSelectedBadges(prev => 
+      prev.includes(badgeId)
+        ? prev.filter(id => id !== badgeId)
+        : [...prev, badgeId]
+    );
   };
 
   return (
@@ -161,6 +244,30 @@ export const AddEditCoachDialog = ({ coach, trigger }: AddEditCoachDialogProps) 
                 </FormItem>
               )}
             />
+
+            <div className="space-y-2">
+              <FormLabel>Coaching Badges</FormLabel>
+              <div className="flex flex-wrap gap-2">
+                {availableBadges?.map((badge) => (
+                  <div
+                    key={badge.id}
+                    className="flex items-center space-x-2 border rounded-lg p-2"
+                  >
+                    <Checkbox
+                      id={badge.id}
+                      checked={selectedBadges.includes(badge.id)}
+                      onCheckedChange={() => toggleBadge(badge.id)}
+                    />
+                    <label
+                      htmlFor={badge.id}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {badge.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <Button type="submit">{coach ? "Save Changes" : "Add Coach"}</Button>
           </form>

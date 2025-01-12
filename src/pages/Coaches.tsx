@@ -12,21 +12,15 @@ export const Coaches = () => {
     queryFn: async () => {
       const { data: coachesData, error: coachesError } = await supabase
         .from("coaches")
-        .select("*, coach_badges(badge_id)");
+        .select("*, coach_badges(coaching_badges(*))");
 
       if (coachesError) {
         throw coachesError;
       }
 
-      const { data: badges } = await supabase
-        .from("coaching_badges")
-        .select("id, name");
-
       return coachesData.map(coach => ({
         ...coach,
-        badges: badges?.filter(badge => 
-          coach.coach_badges?.some(cb => cb.badge_id === badge.id)
-        ) || []
+        badges: coach.coach_badges?.map(cb => cb.coaching_badges) || []
       }));
     },
   });
