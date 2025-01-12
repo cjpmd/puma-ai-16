@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -81,6 +82,21 @@ export const AddEditCoachDialog = ({ coach, trigger }: AddEditCoachDialogProps) 
       role: coach?.role || "Coach",
     },
   });
+
+  // Initialize selected badges when coach badges are loaded
+  useState(() => {
+    if (coachBadges) {
+      setSelectedBadges(coachBadges);
+    }
+  });
+
+  const toggleBadge = (badgeId: string) => {
+    setSelectedBadges(prev => 
+      prev.includes(badgeId)
+        ? prev.filter(id => id !== badgeId)
+        : [...prev, badgeId]
+    );
+  };
 
   const onSubmit = async (values: any) => {
     try {
@@ -165,32 +181,20 @@ export const AddEditCoachDialog = ({ coach, trigger }: AddEditCoachDialogProps) 
     }
   };
 
-  // Initialize selected badges when coach badges are loaded
-  useState(() => {
-    if (coachBadges) {
-      setSelectedBadges(coachBadges);
-    }
-  });
-
-  const toggleBadge = (badgeId: string) => {
-    setSelectedBadges(prev => 
-      prev.includes(badgeId)
-        ? prev.filter(id => id !== badgeId)
-        : [...prev, badgeId]
-    );
-  };
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || <Button>Add Coach</Button>}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{coach ? "Edit Coach" : "Add New Coach"}</DialogTitle>
+          <DialogDescription>
+            {coach ? "Update coach details and qualifications" : "Add a new coach to the team"}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
               name="name"
@@ -245,22 +249,23 @@ export const AddEditCoachDialog = ({ coach, trigger }: AddEditCoachDialogProps) 
               )}
             />
 
-            <div className="space-y-2">
+            <div className="space-y-4">
               <FormLabel>Coaching Badges</FormLabel>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/5">
                 {availableBadges?.map((badge) => (
                   <div
                     key={badge.id}
-                    className="flex items-center space-x-2 border rounded-lg p-2"
+                    className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/10 transition-colors"
                   >
                     <Checkbox
                       id={badge.id}
                       checked={selectedBadges.includes(badge.id)}
                       onCheckedChange={() => toggleBadge(badge.id)}
+                      className="h-5 w-5"
                     />
                     <label
                       htmlFor={badge.id}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      className="text-sm font-medium leading-none cursor-pointer flex-grow"
                     >
                       {badge.name}
                     </label>
@@ -269,7 +274,9 @@ export const AddEditCoachDialog = ({ coach, trigger }: AddEditCoachDialogProps) 
               </div>
             </div>
 
-            <Button type="submit">{coach ? "Save Changes" : "Add Coach"}</Button>
+            <Button type="submit" className="w-full">
+              {coach ? "Save Changes" : "Add Coach"}
+            </Button>
           </form>
         </Form>
       </DialogContent>
