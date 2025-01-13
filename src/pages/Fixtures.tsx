@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import {
   Table,
   TableBody,
@@ -25,7 +25,18 @@ const Fixtures = () => {
         .order("date", { ascending: true });
 
       if (error) throw error;
-      return data;
+      
+      // Group fixtures by date
+      const groupedFixtures = data.reduce((acc, fixture) => {
+        const date = fixture.date;
+        if (!acc[date]) {
+          acc[date] = [];
+        }
+        acc[date].push(fixture);
+        return acc;
+      }, {});
+
+      return groupedFixtures;
     },
   });
 
@@ -48,32 +59,39 @@ const Fixtures = () => {
       {isLoading ? (
         <div>Loading fixtures...</div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Opponent</TableHead>
-              <TableHead>Score</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {fixtures?.map((fixture) => (
-              <TableRow key={fixture.id}>
-                <TableCell>{format(new Date(fixture.date), "PPP")}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{fixture.category}</Badge>
-                </TableCell>
-                <TableCell>{fixture.location || "TBD"}</TableCell>
-                <TableCell>{fixture.opponent}</TableCell>
-                <TableCell>
-                  {getScoreDisplay(fixture.home_score, fixture.away_score)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="space-y-8">
+          {Object.entries(fixtures || {}).map(([date, dateFixtures]: [string, any[]]) => (
+            <div key={date} className="space-y-4">
+              <h2 className="text-xl font-semibold">
+                {format(parseISO(date), "EEEE, MMMM do, yyyy")}
+              </h2>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Team</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Opponent</TableHead>
+                    <TableHead>Score</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dateFixtures.map((fixture) => (
+                    <TableRow key={fixture.id}>
+                      <TableCell>
+                        <Badge variant="outline">{fixture.category}</Badge>
+                      </TableCell>
+                      <TableCell>{fixture.location || "TBD"}</TableCell>
+                      <TableCell>{fixture.opponent}</TableCell>
+                      <TableCell>
+                        {getScoreDisplay(fixture.home_score, fixture.away_score)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
