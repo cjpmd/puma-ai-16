@@ -32,14 +32,18 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
         .from('coaching_comments')
         .select(`
           *,
-          profiles (
+          profiles:coach_id (
             name
           )
         `)
         .eq('player_id', playerId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching comments:', error);
+        throw error;
+      }
+      console.log('Comments data:', data); // Debug log
       return data;
     },
   });

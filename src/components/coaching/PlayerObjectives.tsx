@@ -35,14 +35,17 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
         .from('player_objectives')
         .select(`
           *,
-          profiles (
+          profiles:coach_id (
             name
           )
         `)
         .eq('player_id', playerId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching objectives:', error);
+        throw error;
+      }
       console.log('Objectives data:', data); // Debug log
       return data;
     },
@@ -108,19 +111,6 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'COMPLETE':
-        return 'bg-green-100 text-green-800';
-      case 'IMPROVING':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'ONGOING':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -174,7 +164,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
                     value={objective.status}
                     onValueChange={(value) => handleUpdateStatus(objective.id, value)}
                   >
-                    <SelectTrigger className={`w-[180px] ${getStatusColor(objective.status)}`}>
+                    <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Update status" />
                     </SelectTrigger>
                     <SelectContent>
