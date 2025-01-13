@@ -2,16 +2,16 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Index from "./pages/Index";
 import Squad from "./pages/SquadManagement";
-import Calendar from "./pages/Calendar";
+import { Calendar } from "./pages/Calendar";
 import Fixtures from "./pages/Fixtures";
-import Analytics from "./pages/Analytics";
+import { Analytics } from "./pages/Analytics";
 import PlayerDetails from "./pages/PlayerDetailsPage";
 import FormationSelector from "./pages/FormationSelector";
 import RoleSuitability from "./pages/RoleSuitabilityPage";
 import TopRatedByPosition from "./pages/TopRatedByPosition";
 import TeamSettings from "./pages/TeamSettings";
-import Auth from "./pages/Auth";
-import NavBar from "./components/NavBar";
+import { Auth } from "./pages/Auth";
+import { NavBar } from "./components/NavBar";
 
 const queryClient = new QueryClient();
 
