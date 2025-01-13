@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useSession } from "@supabase/auth-helpers-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface CoachingCommentsProps {
   playerId: string;
@@ -117,23 +118,25 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
             </Button>
           </div>
           
-          <div className="space-y-4">
-            {comments?.map((comment) => (
-              <div key={comment.id} className="p-4 bg-muted rounded-lg">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">
-                      {comment.profiles?.name || 'Anonymous Coach'}
+          <ScrollArea className="h-[400px] w-full rounded-md">
+            <div className="space-y-4 pr-4">
+              {comments?.map((comment) => (
+                <div key={comment.id} className="p-4 bg-muted rounded-lg">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">
+                        {comment.profiles?.name || 'Anonymous Coach'}
+                      </span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {format(new Date(comment.created_at!), "MMM d, yyyy")}
                     </span>
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    {format(new Date(comment.created_at!), "MMM d, yyyy")}
-                  </span>
+                  <p className="text-sm">{comment.comment}</p>
                 </div>
-                <p className="text-sm">{comment.comment}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
       </CardContent>
     </Card>

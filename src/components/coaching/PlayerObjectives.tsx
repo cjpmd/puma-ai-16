@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@supabase/auth-helpers-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface PlayerObjectivesProps {
   playerId: string;
@@ -164,41 +165,43 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
             </Button>
           </div>
 
-          <div className="space-y-4">
-            {objectives?.map((objective) => (
-              <div key={objective.id} className="p-4 border rounded-lg space-y-2">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{objective.title}</h4>
-                      {objective.profiles?.name && (
-                        <span className="text-sm text-muted-foreground">
-                          Added by {objective.profiles.name}
-                        </span>
-                      )}
+          <ScrollArea className="h-[400px] w-full rounded-md">
+            <div className="space-y-4 pr-4">
+              {objectives?.map((objective) => (
+                <div key={objective.id} className="p-4 border rounded-lg space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">{objective.title}</h4>
+                        {objective.profiles?.name && (
+                          <span className="text-sm text-muted-foreground">
+                            Added by {objective.profiles.name}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{objective.description}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground">{objective.description}</p>
+                    <Badge variant="secondary">{objective.points} points</Badge>
                   </div>
-                  <Badge variant="secondary">{objective.points} points</Badge>
+                  <div className="flex items-center space-x-2">
+                    <Select
+                      value={objective.status}
+                      onValueChange={(value) => handleUpdateStatus(objective.id, value)}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Update status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ONGOING">Ongoing</SelectItem>
+                        <SelectItem value="IMPROVING">Improving</SelectItem>
+                        <SelectItem value="COMPLETE">Complete</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Select
-                    value={objective.status}
-                    onValueChange={(value) => handleUpdateStatus(objective.id, value)}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Update status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ONGOING">Ongoing</SelectItem>
-                      <SelectItem value="IMPROVING">Improving</SelectItem>
-                      <SelectItem value="COMPLETE">Complete</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
       </CardContent>
     </Card>
