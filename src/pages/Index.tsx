@@ -29,7 +29,7 @@ const Index = () => {
             >
               <Users className="w-12 h-12 mx-auto mb-4 text-primary" />
               <h2 className="text-xl font-semibold mb-2">Squad Management</h2>
-              <p className="text-muted-foreground">View and manage your squad</p>
+              <p className="text-muted-foreground">View and manage squad</p>
             </motion.div>
           </Link>
 
