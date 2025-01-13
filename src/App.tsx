@@ -11,6 +11,7 @@ import RoleSuitability from "./pages/RoleSuitabilityPage";
 import TopRatedByPosition from "./pages/TopRatedByPosition";
 import TeamSettings from "./pages/TeamSettings";
 import { Auth } from "./pages/Auth";
+import { Coaches } from "./pages/Coaches";
 import { NavBar } from "./components/NavBar";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ function App() {
           <Route path="/top-rated" element={<TopRatedByPosition />} />
           <Route path="/settings" element={<TeamSettings />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/coaches" element={<Coaches />} />
         </Routes>
       </Router>
     </QueryClientProvider>
