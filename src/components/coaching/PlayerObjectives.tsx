@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@supabase/auth-helpers-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { format } from "date-fns";
 
 interface PlayerObjectivesProps {
   playerId: string;
@@ -173,13 +174,13 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <h4 className="font-medium">{objective.title}</h4>
-                        {objective.profiles?.name && (
-                          <span className="text-sm text-muted-foreground">
-                            Added by {objective.profiles.name}
-                          </span>
-                        )}
                       </div>
                       <p className="text-sm text-muted-foreground">{objective.description}</p>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>Added by {objective.profiles?.name || 'Anonymous Coach'}</span>
+                        <span>•</span>
+                        <span>{format(new Date(objective.created_at), 'MMM d, yyyy')}</span>
+                      </div>
                     </div>
                     <Badge variant="secondary">{objective.points} points</Badge>
                   </div>

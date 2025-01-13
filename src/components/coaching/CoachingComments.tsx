@@ -129,7 +129,7 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
                       </span>
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {format(new Date(comment.created_at!), "MMM d, yyyy")}
+                      {format(new Date(comment.created_at), "MMM d, yyyy")}
                     </span>
                   </div>
                   <p className="text-sm">{comment.comment}</p>
