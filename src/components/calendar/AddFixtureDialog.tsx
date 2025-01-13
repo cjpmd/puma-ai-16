@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
@@ -21,146 +22,97 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
-import { cn } from "@/lib/utils";
 
-type FormData = {
-  date: Date;
-  opponent: string;
-  category: string;
-  location: string;
-};
+const formSchema = z.object({
+  opponent: z.string().min(1, "Opponent name is required"),
+  location: z.string().optional(),
+  category: z.string().default("Ronaldo"),
+});
 
-export const AddFixtureDialog = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
+type FormData = z.infer<typeof formSchema>;
+
+interface AddFixtureDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedDate?: Date;
+  onSuccess: () => void;
+  editingFixture?: {
+    id: string;
+    opponent: string;
+    home_score: number | null;
+    away_score: number | null;
+  } | null;
+}
+
+export const AddFixtureDialog = ({ 
+  isOpen, 
+  onOpenChange, 
+  selectedDate,
+  onSuccess,
+  editingFixture 
+}: AddFixtureDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      opponent: "",
-      category: "Ronaldo",
+      opponent: editingFixture?.opponent || "",
       location: "",
+      category: "Ronaldo",
     },
   });
 
   const onSubmit = async (data: FormData) => {
     try {
-      const { error } = await supabase.from("fixtures").insert([
-        {
-          date: format(data.date, "yyyy-MM-dd"),
-          opponent: data.opponent,
-          category: data.category,
-          location: data.location,
-        },
-      ]);
+      if (!selectedDate) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Please select a date",
+        });
+        return;
+      }
 
-      if (error) throw error;
+      if (editingFixture) {
+        await supabase
+          .from("fixtures")
+          .update({
+            ...data,
+            date: format(selectedDate, "yyyy-MM-dd"),
+          })
+          .eq("id", editingFixture.id);
+      } else {
+        await supabase.from("fixtures").insert([
+          {
+            ...data,
+            date: format(selectedDate, "yyyy-MM-dd"),
+          },
+        ]);
+      }
 
-      toast({
-        title: "Success",
-        description: "Fixture has been added",
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["fixtures"] });
-      setDialogOpen(false);
+      onSuccess();
       form.reset();
     } catch (error) {
       console.error("Error adding fixture:", error);
       toast({
+        variant: "destructive",
         title: "Error",
         description: "Failed to add fixture",
-        variant: "destructive",
       });
     }
   };
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <Button onClick={() => setDialogOpen(true)}>Add Fixture</Button>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <Button onClick={() => onOpenChange(true)}>
+        {editingFixture ? "Edit Fixture" : "Add Fixture"}
+      </Button>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New Fixture</DialogTitle>
+          <DialogTitle>{editingFixture ? "Edit Fixture" : "Add New Fixture"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Ronaldo">Ronaldo</SelectItem>
-                      <SelectItem value="Messi">Messi</SelectItem>
-                      <SelectItem value="Jag">Jag</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
               name="opponent"
@@ -168,7 +120,7 @@ export const AddFixtureDialog = () => {
                 <FormItem>
                   <FormLabel>Opponent</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter opponent" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -179,16 +131,16 @@ export const AddFixtureDialog = () => {
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Location</FormLabel>
+                  <FormLabel>Location (optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter location" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full">
-              Add Fixture
+            <Button type="submit">
+              {editingFixture ? "Save Changes" : "Add Fixture"}
             </Button>
           </form>
         </Form>

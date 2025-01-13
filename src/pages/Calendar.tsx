@@ -301,8 +301,8 @@ export const Calendar = () => {
                 Add Fixture
               </Button>
             </DialogTrigger>
-            <AddFixtureDialog
-              open={isAddFixtureOpen}
+            <AddFixtureDialog 
+              isOpen={isAddFixtureOpen}
               onOpenChange={setIsAddFixtureOpen}
               selectedDate={date}
               onSuccess={() => {
@@ -310,7 +310,7 @@ export const Calendar = () => {
                 setIsAddFixtureOpen(false);
                 setEditingFixture(null);
               }}
-              editFixture={editingFixture}
+              editingFixture={editingFixture}
             />
           </Dialog>
         </div>
