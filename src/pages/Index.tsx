@@ -40,7 +40,7 @@ const Index = () => {
             >
               <BarChart2 className="w-12 h-12 mx-auto mb-4 text-primary" />
               <h2 className="text-xl font-semibold mb-2">Analytics</h2>
-              <p className="text-muted-foreground">Track player performance metrics</p>
+              <p className="text-muted-foreground">Track player performance</p>
             </motion.div>
           </Link>
 
