@@ -1,15 +1,15 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { NavBar } from "./components/NavBar";
 import Index from "./pages/Index";
-import { SquadManagement } from "./pages/SquadManagement";
+import SquadManagement from "./pages/SquadManagement";
 import PlayerDetailsPage from "./pages/PlayerDetailsPage";
 import { Calendar } from "./pages/Calendar";
 import { Analytics } from "./pages/Analytics";
-import { Fixtures } from "./pages/Fixtures";
-import { TopRatedByPosition } from "./pages/TopRatedByPosition";
-import { FormationSelector } from "./pages/FormationSelector";
-import { RoleSuitabilityPage } from "./pages/RoleSuitabilityPage";
-import { TeamSettings } from "./pages/TeamSettings";
+import Fixtures from "./pages/Fixtures";
+import TopRatedByPosition from "./pages/TopRatedByPosition";
+import FormationSelector from "./pages/FormationSelector";
+import RoleSuitabilityPage from "./pages/RoleSuitabilityPage";
+import TeamSettings from "./pages/TeamSettings";
 import { Coaches } from "./pages/Coaches";
 
 function App() {
