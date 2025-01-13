@@ -8,7 +8,7 @@ export default function Index() {
       <div className="flex flex-col items-center mb-12">
         <img src="/lovable-uploads/0e21bdb0-5451-4dcf-a2ca-a4d572b82e47.png" alt="Logo" className="w-48 mb-8" />
         <h1 className="text-4xl font-bold text-center mb-4">Welcome to Puma.AI</h1>
-        <p className="text-lg text-muted-foreground text-center">Your comprehensive football management solution</p>
+        <p className="text-lg text-muted-foreground text-center">Manage Broughty Puma's Performance and Development</p>
       </div>
       
       <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
@@ -22,7 +22,7 @@ export default function Index() {
             </CardHeader>
             <CardContent className="p-4 pt-0">
               <p className="text-muted-foreground text-center">
-                Manage your team roster, player attributes, and squad details efficiently
+                View and Manage Squad
               </p>
             </CardContent>
           </Card>
@@ -38,7 +38,7 @@ export default function Index() {
             </CardHeader>
             <CardContent className="p-4 pt-0">
               <p className="text-muted-foreground text-center">
-                View comprehensive team and player performance analytics and statistics
+                Track Player Performance
               </p>
             </CardContent>
           </Card>
@@ -54,7 +54,7 @@ export default function Index() {
             </CardHeader>
             <CardContent className="p-4 pt-0">
               <p className="text-muted-foreground text-center">
-                Manage team fixtures, schedules, and match results efficiently
+                Manage Team Fixtures
               </p>
             </CardContent>
           </Card>
