@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@supabase/auth-helpers-react";
+import { useSession } from "@supabase/auth-helpers-react";
 
 interface PlayerObjectivesProps {
   playerId: string;
@@ -18,7 +19,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
   const [description, setDescription] = useState("");
   const [points, setPoints] = useState("5");
   const { toast } = useToast();
-  const { user } = useAuth();
+  const session = useSession();
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -26,7 +27,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', session?.user?.id)
         .single();
 
       if (error) {
@@ -36,7 +37,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
       console.log('Profile data:', data);
       return data;
     },
-    enabled: !!user,
+    enabled: !!session?.user,
   });
 
   const { data: objectives, refetch } = useQuery({
@@ -69,7 +70,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
         .insert([
           {
             player_id: playerId,
-            coach_id: profile?.id, // Add the coach's profile ID
+            coach_id: profile?.id,
             title,
             description,
             points: parseInt(points),
