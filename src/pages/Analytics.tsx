@@ -18,9 +18,8 @@ export const Analytics = () => {
 
   // Transform data for radar chart
   const radarData = playerAttributes?.map(attr => ({
-    subject: attr.name,
-    value: attr.value,
-    fullMark: 20,
+    name: attr.name,
+    value: attr.value
   })) || [];
 
   return (

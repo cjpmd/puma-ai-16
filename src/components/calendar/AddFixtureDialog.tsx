@@ -11,7 +11,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -45,7 +44,7 @@ type FormData = {
 };
 
 export const AddFixtureDialog = () => {
-  const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const form = useForm<FormData>({
@@ -75,7 +74,7 @@ export const AddFixtureDialog = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: ["fixtures"] });
-      setOpen(false);
+      setDialogOpen(false);
       form.reset();
     } catch (error) {
       console.error("Error adding fixture:", error);
@@ -88,10 +87,8 @@ export const AddFixtureDialog = () => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>Add Fixture</Button>
-      </DialogTrigger>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Button onClick={() => setDialogOpen(true)}>Add Fixture</Button>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Fixture</DialogTitle>
