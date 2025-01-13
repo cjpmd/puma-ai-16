@@ -24,6 +24,8 @@ const PlayerDetailsPage = () => {
 
       if (error) throw error;
 
+      console.log("Raw player data:", data);
+
       return {
         id: data.id,
         name: data.name,
@@ -31,6 +33,7 @@ const PlayerDetailsPage = () => {
         dateOfBirth: data.date_of_birth,
         squadNumber: data.squad_number,
         playerCategory: data.player_category,
+        playerType: data.player_type || "OUTFIELD", // Ensure playerType is set
         attributes: data.player_attributes.map((attr: any) => ({
           id: attr.id,
           name: attr.name,
