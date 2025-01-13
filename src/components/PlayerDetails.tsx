@@ -130,11 +130,9 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
     ? ["GOALKEEPING"] 
     : ["TECHNICAL", "MENTAL", "PHYSICAL"];
 
-  // Get unique categories that have attributes
-  const uniqueCategories = categories.filter(category => {
-    const attrs = player.attributes.filter(attr => attr.category === category);
-    return attrs.length > 0;
-  });
+  console.log("Player type:", player.playerType);
+  console.log("Categories:", categories);
+  console.log("All attributes:", player.attributes);
 
   return (
     <motion.div
@@ -179,10 +177,12 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         </CardHeader>
         <CardContent>
           <div className="space-y-8">
-            {uniqueCategories.map((category) => {
+            {categories.map((category) => {
               const categoryAttributes = player.attributes.filter(
                 (attr) => attr.category === category
               );
+              
+              console.log(`Filtered attributes for ${category}:`, categoryAttributes);
               
               if (categoryAttributes.length > 0) {
                 return (
@@ -209,7 +209,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {uniqueCategories.map((category) => {
+        {categories.map((category) => {
           const radarData = getRadarData(category);
           if (radarData.length > 0) {
             return (
