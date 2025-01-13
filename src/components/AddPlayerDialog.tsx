@@ -35,6 +35,16 @@ import {
   MENTAL_ATTRIBUTES, 
   PHYSICAL_ATTRIBUTES 
 } from "@/constants/attributes";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const formSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  squadNumber: z.string().min(1, "Squad number is required"),
+  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  playerCategory: z.string(),
+  playerType: z.string(),
+});
 
 export const AddPlayerDialog = () => {
   const [open, setOpen] = useState(false);
@@ -42,6 +52,7 @@ export const AddPlayerDialog = () => {
   const queryClient = useQueryClient();
 
   const form = useForm({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       squadNumber: "",
@@ -53,6 +64,14 @@ export const AddPlayerDialog = () => {
 
   const onSubmit = async (values: any) => {
     try {
+      if (!values.dateOfBirth) {
+        toast({
+          variant: "destructive",
+          description: "Date of birth is required",
+        });
+        return;
+      }
+
       const { data, error } = await supabase
         .from("players")
         .insert([
@@ -94,6 +113,7 @@ export const AddPlayerDialog = () => {
 
       queryClient.invalidateQueries({ queryKey: ["players"] });
       setOpen(false);
+      form.reset();
     } catch (error) {
       console.error("Error adding player:", error);
       toast({
@@ -149,7 +169,11 @@ export const AddPlayerDialog = () => {
                 <FormItem>
                   <FormLabel>Date of Birth</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input 
+                      type="date" 
+                      {...field}
+                      required
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
