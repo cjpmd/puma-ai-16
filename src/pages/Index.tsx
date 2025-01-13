@@ -72,7 +72,7 @@ export default function Index() {
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>Upcoming Fixtures</CardTitle>
+              <CardTitle>Fixtures</CardTitle>
               <Link to="/fixtures">
                 <Button variant="outline" size="sm">
                   View All
