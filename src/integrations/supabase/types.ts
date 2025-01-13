@@ -155,28 +155,34 @@ export type Database = {
       fixtures: {
         Row: {
           away_score: number | null
+          category: string
           created_at: string | null
           date: string
           home_score: number | null
           id: string
+          location: string | null
           opponent: string
           updated_at: string | null
         }
         Insert: {
           away_score?: number | null
+          category?: string
           created_at?: string | null
           date: string
           home_score?: number | null
           id?: string
+          location?: string | null
           opponent: string
           updated_at?: string | null
         }
         Update: {
           away_score?: number | null
+          category?: string
           created_at?: string | null
           date?: string
           home_score?: number | null
           id?: string
+          location?: string | null
           opponent?: string
           updated_at?: string | null
         }

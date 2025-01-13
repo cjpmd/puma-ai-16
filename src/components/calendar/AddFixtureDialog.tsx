@@ -1,11 +1,17 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -16,123 +22,148 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { cn } from "@/lib/utils";
 
-interface AddFixtureDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  selectedDate?: Date;
-  onSuccess: () => void;
-  editFixture?: {
-    id: string;
-    opponent: string;
-    home_score: number | null;
-    away_score: number | null;
-  };
-}
-
-interface FixtureForm {
+type FormData = {
+  date: Date;
   opponent: string;
-  homeScore?: number;
-  awayScore?: number;
-}
+  category: string;
+  location: string;
+};
 
-export const AddFixtureDialog = ({
-  open,
-  onOpenChange,
-  selectedDate,
-  onSuccess,
-  editFixture,
-}: AddFixtureDialogProps) => {
-  const [isLoading, setIsLoading] = useState(false);
+export const AddFixtureDialog = () => {
+  const [open, setOpen] = useState(false);
   const { toast } = useToast();
-  const form = useForm<FixtureForm>();
+  const queryClient = useQueryClient();
+  const form = useForm<FormData>({
+    defaultValues: {
+      opponent: "",
+      category: "Ronaldo",
+      location: "",
+    },
+  });
 
-  useEffect(() => {
-    if (editFixture) {
-      form.reset({
-        opponent: editFixture.opponent,
-        homeScore: editFixture.home_score || undefined,
-        awayScore: editFixture.away_score || undefined,
-      });
-    } else {
-      form.reset({
-        opponent: "",
-        homeScore: undefined,
-        awayScore: undefined,
-      });
-    }
-  }, [editFixture, form]);
-
-  const onSubmit = async (data: FixtureForm) => {
-    if (!selectedDate && !editFixture) return;
-
-    setIsLoading(true);
-    
-    if (editFixture) {
-      const { error } = await supabase
-        .from("fixtures")
-        .update({
+  const onSubmit = async (data: FormData) => {
+    try {
+      const { error } = await supabase.from("fixtures").insert([
+        {
+          date: format(data.date, "yyyy-MM-dd"),
           opponent: data.opponent,
-          home_score: data.homeScore || null,
-          away_score: data.awayScore || null,
-        })
-        .eq("id", editFixture.id);
+          category: data.category,
+          location: data.location,
+        },
+      ]);
 
-      setIsLoading(false);
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to update fixture. Please try again.",
-        });
-        return;
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Fixture has been updated.",
-      });
-    } else {
-      const { error } = await supabase.from("fixtures").insert({
-        date: format(selectedDate!, "yyyy-MM-dd"),
-        opponent: data.opponent,
-        home_score: data.homeScore || null,
-        away_score: data.awayScore || null,
+        description: "Fixture has been added",
       });
 
-      setIsLoading(false);
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to create fixture. Please try again.",
-        });
-        return;
-      }
-
+      queryClient.invalidateQueries({ queryKey: ["fixtures"] });
+      setOpen(false);
+      form.reset();
+    } catch (error) {
+      console.error("Error adding fixture:", error);
       toast({
-        title: "Success",
-        description: "Fixture has been created.",
+        title: "Error",
+        description: "Failed to add fixture",
+        variant: "destructive",
       });
     }
-
-    form.reset();
-    onSuccess();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>Add Fixture</Button>
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{editFixture ? "Edit Fixture" : "Add New Fixture"}</DialogTitle>
+          <DialogTitle>Add New Fixture</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                          date < new Date("1900-01-01")
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Ronaldo">Ronaldo</SelectItem>
+                      <SelectItem value="Messi">Messi</SelectItem>
+                      <SelectItem value="Jag">Jag</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="opponent"
@@ -140,7 +171,7 @@ export const AddFixtureDialog = ({
                 <FormItem>
                   <FormLabel>Opponent</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Enter opponent name" />
+                    <Input placeholder="Enter opponent" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -148,40 +179,19 @@ export const AddFixtureDialog = ({
             />
             <FormField
               control={form.control}
-              name="homeScore"
+              name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Home Score</FormLabel>
+                  <FormLabel>Location</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                    />
+                    <Input placeholder="Enter location" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="awayScore"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Away Score</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" disabled={isLoading}>
-              {editFixture ? "Update Fixture" : "Add Fixture"}
+            <Button type="submit" className="w-full">
+              Add Fixture
             </Button>
           </form>
         </Form>

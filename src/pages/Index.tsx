@@ -1,63 +1,108 @@
 import { Link } from "react-router-dom";
-import { Users, BarChart2, UserCircle } from "lucide-react";
-import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
-const Index = () => {
+export default function Index() {
+  const { data: recentFixtures } = useQuery({
+    queryKey: ["recent-fixtures"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fixtures")
+        .select("*")
+        .order("date", { ascending: true })
+        .limit(5);
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: squadStats } = useQuery({
+    queryKey: ["squad-stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select(`
+          *,
+          player_attributes (*)
+        `);
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-12"
-        >
-          <img
-            src="/lovable-uploads/0e21bdb0-5451-4dcf-a2ca-a4d572b82e47.png"
-            alt="Club Logo"
-            className="mx-auto h-48 w-auto mb-8"
-          />
-          <h1 className="text-4xl font-bold mb-4">Welcome to Puma.AI</h1>
-          <p className="text-muted-foreground">Manage Broughty Puma's Performance and Development</p>
-        </motion.div>
+    <div className="container mx-auto p-6">
+      <h1 className="text-4xl font-bold mb-8">Dashboard</h1>
+      
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>Squad</CardTitle>
+              <Link to="/squad">
+                <Button variant="outline" size="sm">
+                  View All
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {squadStats?.map((player) => (
+                <div key={player.id} className="flex justify-between items-center border-b pb-2">
+                  <div>
+                    <div className="font-medium">{player.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      Squad Number: {player.squad_number}
+                    </div>
+                  </div>
+                  <Badge variant="outline">{player.player_category}</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <Link to="/squad">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-all"
-            >
-              <Users className="w-12 h-12 mx-auto mb-4 text-primary" />
-              <h2 className="text-xl font-semibold mb-2">Squad Management</h2>
-              <p className="text-muted-foreground">View and manage squad</p>
-            </motion.div>
-          </Link>
-
-          <Link to="/analytics">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-all"
-            >
-              <BarChart2 className="w-12 h-12 mx-auto mb-4 text-primary" />
-              <h2 className="text-xl font-semibold mb-2">Analytics</h2>
-              <p className="text-muted-foreground">Track player performance</p>
-            </motion.div>
-          </Link>
-
-          <Link to="/coaches">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-all"
-            >
-              <UserCircle className="w-12 h-12 mx-auto mb-4 text-primary" />
-              <h2 className="text-xl font-semibold mb-2">Coaches</h2>
-              <p className="text-muted-foreground">Manage coaching staff</p>
-            </motion.div>
-          </Link>
-        </div>
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>Upcoming Fixtures</CardTitle>
+              <Link to="/fixtures">
+                <Button variant="outline" size="sm">
+                  View All
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentFixtures?.map((fixture) => (
+                <div
+                  key={fixture.id}
+                  className="flex justify-between items-center border-b pb-2"
+                >
+                  <div>
+                    <div className="font-medium">{fixture.opponent}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {format(new Date(fixture.date), "PPP")}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {fixture.location || "TBD"}
+                    </div>
+                  </div>
+                  <Badge variant="outline">{fixture.category}</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
-};
-
-export default Index;
+}
