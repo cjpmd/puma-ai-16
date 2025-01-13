@@ -13,15 +13,6 @@ interface PlayerObjectivesProps {
   playerId: string;
 }
 
-const getInitials = (name: string) => {
-  if (!name) return '';
-  return name
-    .split(' ')
-    .map(word => word[0])
-    .join('')
-    .toUpperCase();
-};
-
 export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -46,7 +37,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
         console.error('Error fetching objectives:', error);
         throw error;
       }
-      console.log('Objectives data:', data); // Debug log
+      console.log('Objectives data:', data);
       return data;
     },
   });
@@ -150,9 +141,9 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium">{objective.title}</h4>
                       {objective.profiles?.name && (
-                        <Badge variant="outline" className="text-xs">
-                          {getInitials(objective.profiles.name)}
-                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          Added by {objective.profiles.name}
+                        </span>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">{objective.description}</p>

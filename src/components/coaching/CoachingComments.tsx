@@ -12,15 +12,6 @@ interface CoachingCommentsProps {
   playerId: string;
 }
 
-const getInitials = (name: string) => {
-  if (!name) return '';
-  return name
-    .split(' ')
-    .map(word => word[0])
-    .join('')
-    .toUpperCase();
-};
-
 export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
   const [newComment, setNewComment] = useState("");
   const { toast } = useToast();
@@ -43,7 +34,7 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
         console.error('Error fetching comments:', error);
         throw error;
       }
-      console.log('Comments data:', data); // Debug log
+      console.log('Comments data:', data);
       return data;
     },
   });
@@ -101,12 +92,9 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
               <div key={comment.id} className="p-4 bg-muted rounded-lg">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{comment.profiles?.name}</span>
-                    {comment.profiles?.name && (
-                      <Badge variant="outline" className="text-xs">
-                        {getInitials(comment.profiles.name)}
-                      </Badge>
-                    )}
+                    <span className="font-medium">
+                      {comment.profiles?.name || 'Anonymous Coach'}
+                    </span>
                   </div>
                   <span className="text-sm text-muted-foreground">
                     {format(new Date(comment.created_at!), "MMM d, yyyy")}
