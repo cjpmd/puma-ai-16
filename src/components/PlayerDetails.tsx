@@ -98,16 +98,11 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         body: { playerId: player.id }
       });
 
-      if (response.error) {
-        console.error('Error generating report:', response.error);
-        throw response.error;
-      }
+      if (response.error) throw response.error;
 
-      // Convert the response data to a Blob
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       
-      // Create a temporary link and trigger download
       const a = document.createElement('a');
       a.href = url;
       a.download = `player-report-${player.name}.pdf`;
@@ -130,7 +125,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
     }
   };
 
-  // Filter categories based on player type
+  // Get categories based on player type
   const categories = player.playerType === "GOALKEEPER" 
     ? ["GOALKEEPING"] 
     : ["TECHNICAL", "MENTAL", "PHYSICAL"];
@@ -198,6 +193,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                     attributeHistory={attributeHistory || {}}
                     onUpdateAttribute={handleUpdateAttribute}
                     playerId={player.id}
+                    playerCategory={player.playerCategory}
                   />
                 );
               }

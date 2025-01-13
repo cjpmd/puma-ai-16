@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { Player, Attribute, AttributeCategory, PlayerCategory } from "@/types/player";
+import { GOALKEEPER_ATTRIBUTES, TECHNICAL_ATTRIBUTES, MENTAL_ATTRIBUTES, PHYSICAL_ATTRIBUTES } from "@/constants/attributes";
 
 interface PlayersState {
   players: Player[];
@@ -11,76 +12,30 @@ interface PlayersState {
   updateGlobalMultiplier: (multiplier: number) => void;
 }
 
-const ATTRIBUTES = {
-  GOALKEEPING: [
-    "Aerial Reach",
-    "Command of Area",
-    "Communication",
-    "Eccentricity",
-    "Handling",
-    "Kicking",
-    "One on Ones",
-    "Punching",
-    "Reflexes",
-    "Rushing Out",
-    "Throwing",
-  ],
-  TECHNICAL: [
-    "Corners",
-    "Crossing",
-    "Dribbling",
-    "Finishing",
-    "First Touch",
-    "Free Kicks",
-    "Heading",
-    "Long Shots",
-    "Long Throws",
-    "Marking",
-    "Passing",
-    "Penalties",
-    "Tackling",
-    "Technique",
-  ],
-  MENTAL: [
-    "Aggression",
-    "Anticipation",
-    "Bravery",
-    "Composure",
-    "Concentration",
-    "Decisions",
-    "Determination",
-    "Flair",
-    "Leadership",
-    "Off the Ball",
-    "Positioning",
-    "Teamwork",
-    "Vision",
-    "Work Rate",
-  ],
-  PHYSICAL: [
-    "Acceleration",
-    "Agility",
-    "Balance",
-    "Jumping",
-    "Natural Fitness",
-    "Pace",
-    "Stamina",
-    "Strength",
-  ],
-};
-
-const generateInitialAttributes = () => {
+const generateInitialAttributes = (playerType: string) => {
   const attributes: Attribute[] = [];
-  Object.entries(ATTRIBUTES).forEach(([category, names]) => {
-    names.forEach((name) => {
+  
+  if (playerType === "GOALKEEPER") {
+    GOALKEEPER_ATTRIBUTES.forEach((attr) => {
       attributes.push({
         id: crypto.randomUUID(),
-        name,
+        name: attr.name,
         value: 10,
-        category: category as AttributeCategory,
+        category: attr.category as AttributeCategory,
       });
     });
-  });
+  } else {
+    // For outfield players
+    [...TECHNICAL_ATTRIBUTES, ...MENTAL_ATTRIBUTES, ...PHYSICAL_ATTRIBUTES].forEach((attr) => {
+      attributes.push({
+        id: crypto.randomUUID(),
+        name: attr.name,
+        value: 10,
+        category: attr.category as AttributeCategory,
+      });
+    });
+  }
+  
   return attributes;
 };
 
@@ -91,7 +46,7 @@ export const usePlayersStore = create<PlayersState>((set) => ({
     const newPlayer: Player = {
       ...player,
       id: crypto.randomUUID(),
-      attributes: generateInitialAttributes(),
+      attributes: generateInitialAttributes(player.playerType),
       attributeHistory: {},
     };
     set((state) => ({
