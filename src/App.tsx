@@ -1,37 +1,41 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { NavBar } from "./components/NavBar";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Index from "./pages/Index";
-import SquadManagement from "./pages/SquadManagement";
-import PlayerDetailsPage from "./pages/PlayerDetailsPage";
-import { Calendar } from "./pages/Calendar";
-import { Analytics } from "./pages/Analytics";
+import Squad from "./pages/SquadManagement";
+import Calendar from "./pages/Calendar";
 import Fixtures from "./pages/Fixtures";
-import TopRatedByPosition from "./pages/TopRatedByPosition";
+import Analytics from "./pages/Analytics";
+import PlayerDetails from "./pages/PlayerDetailsPage";
 import FormationSelector from "./pages/FormationSelector";
-import RoleSuitabilityPage from "./pages/RoleSuitabilityPage";
+import RoleSuitability from "./pages/RoleSuitabilityPage";
+import TopRatedByPosition from "./pages/TopRatedByPosition";
 import TeamSettings from "./pages/TeamSettings";
-import { Coaches } from "./pages/Coaches";
+import Auth from "./pages/Auth";
+import NavBar from "./components/NavBar";
+
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-background">
+    <QueryClientProvider client={queryClient}>
+      <Router>
         <NavBar />
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/squad" element={<SquadManagement />} />
-          <Route path="/player/:id" element={<PlayerDetailsPage />} />
+          <Route path="/home" element={<Index />} />
+          <Route path="/squad" element={<Squad />} />
           <Route path="/calendar" element={<Calendar />} />
-          <Route path="/analytics" element={<Analytics />} />
           <Route path="/fixtures" element={<Fixtures />} />
-          <Route path="/top-rated" element={<TopRatedByPosition />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/player/:id" element={<PlayerDetails />} />
           <Route path="/formation" element={<FormationSelector />} />
-          <Route path="/role-suitability" element={<RoleSuitabilityPage />} />
+          <Route path="/role-suitability" element={<RoleSuitability />} />
+          <Route path="/top-rated" element={<TopRatedByPosition />} />
           <Route path="/settings" element={<TeamSettings />} />
-          <Route path="/coaches" element={<Coaches />} />
+          <Route path="/auth" element={<Auth />} />
         </Routes>
-      </div>
-    </Router>
+      </Router>
+    </QueryClientProvider>
   );
 }
 
