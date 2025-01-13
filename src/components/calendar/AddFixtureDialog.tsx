@@ -77,21 +77,24 @@ export const AddFixtureDialog = ({
         await supabase
           .from("fixtures")
           .update({
-            ...data,
+            opponent: data.opponent,
+            location: data.location,
+            category: data.category,
             date: format(selectedDate, "yyyy-MM-dd"),
           })
           .eq("id", editingFixture.id);
       } else {
-        await supabase.from("fixtures").insert([
-          {
-            ...data,
-            date: format(selectedDate, "yyyy-MM-dd"),
-          },
-        ]);
+        await supabase.from("fixtures").insert({
+          opponent: data.opponent,
+          location: data.location,
+          category: data.category,
+          date: format(selectedDate, "yyyy-MM-dd"),
+        });
       }
 
       onSuccess();
       form.reset();
+      onOpenChange(false);
     } catch (error) {
       console.error("Error adding fixture:", error);
       toast({
@@ -104,9 +107,6 @@ export const AddFixtureDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <Button onClick={() => onOpenChange(true)}>
-        {editingFixture ? "Edit Fixture" : "Add Fixture"}
-      </Button>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{editingFixture ? "Edit Fixture" : "Add New Fixture"}</DialogTitle>

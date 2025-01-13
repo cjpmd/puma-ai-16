@@ -11,9 +11,12 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AddFixtureDialog } from "@/components/calendar/AddFixtureDialog";
+import { useState } from "react";
 
 const Fixtures = () => {
-  const { data: fixtures, isLoading } = useQuery({
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const { data: fixtures, isLoading, refetch } = useQuery({
     queryKey: ["fixtures"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -35,7 +38,11 @@ const Fixtures = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Fixtures</h1>
-        <AddFixtureDialog />
+        <AddFixtureDialog 
+          isOpen={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          onSuccess={refetch}
+        />
       </div>
 
       {isLoading ? (
