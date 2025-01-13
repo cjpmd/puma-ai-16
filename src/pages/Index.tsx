@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, BarChart2, UserCog } from "lucide-react";
+import { Users, BarChart2, Calendar } from "lucide-react";
 
 export default function Index() {
   return (
@@ -11,16 +11,16 @@ export default function Index() {
         <p className="text-lg text-muted-foreground text-center">Your comprehensive football management solution</p>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
         <Link to="/squad">
           <Card className="hover:shadow-lg transition-shadow h-full">
-            <CardHeader className="text-center">
+            <CardHeader className="text-center p-4">
               <div className="mx-auto mb-4">
-                <Users className="h-12 w-12 text-primary" />
+                <Users className="h-10 w-10 text-primary" />
               </div>
               <CardTitle>Squad Management</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0">
               <p className="text-muted-foreground text-center">
                 Manage your team roster, player attributes, and squad details efficiently
               </p>
@@ -30,13 +30,13 @@ export default function Index() {
 
         <Link to="/analytics">
           <Card className="hover:shadow-lg transition-shadow h-full">
-            <CardHeader className="text-center">
+            <CardHeader className="text-center p-4">
               <div className="mx-auto mb-4">
-                <BarChart2 className="h-12 w-12 text-primary" />
+                <BarChart2 className="h-10 w-10 text-primary" />
               </div>
               <CardTitle>Analytics</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0">
               <p className="text-muted-foreground text-center">
                 View comprehensive team and player performance analytics and statistics
               </p>
@@ -44,17 +44,17 @@ export default function Index() {
           </Card>
         </Link>
 
-        <Link to="/coaches">
+        <Link to="/fixtures">
           <Card className="hover:shadow-lg transition-shadow h-full">
-            <CardHeader className="text-center">
+            <CardHeader className="text-center p-4">
               <div className="mx-auto mb-4">
-                <UserCog className="h-12 w-12 text-primary" />
+                <Calendar className="h-10 w-10 text-primary" />
               </div>
-              <CardTitle>Coaches</CardTitle>
+              <CardTitle>Fixtures</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0">
               <p className="text-muted-foreground text-center">
-                Manage coaching staff and their responsibilities effectively
+                Manage team fixtures, schedules, and match results efficiently
               </p>
             </CardContent>
           </Card>
