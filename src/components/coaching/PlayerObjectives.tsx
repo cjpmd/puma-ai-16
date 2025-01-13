@@ -64,13 +64,22 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
   });
 
   const handleAddObjective = async () => {
+    if (!profile?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to add objectives.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('player_objectives')
         .insert([
           {
             player_id: playerId,
-            coach_id: profile?.id,
+            coach_id: profile.id,
             title,
             description,
             points: parseInt(points),
@@ -150,7 +159,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
               min="1"
               max="20"
             />
-            <Button onClick={handleAddObjective} disabled={!title.trim()}>
+            <Button onClick={handleAddObjective} disabled={!title.trim() || !profile?.id}>
               Add Objective
             </Button>
           </div>

@@ -60,13 +60,22 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
   });
 
   const handleSubmitComment = async () => {
+    if (!profile?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to add comments.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('coaching_comments')
         .insert([
           {
             player_id: playerId,
-            coach_id: profile?.id,
+            coach_id: profile.id,
             comment: newComment,
           }
         ]);
@@ -103,7 +112,7 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
             />
-            <Button onClick={handleSubmitComment} disabled={!newComment.trim()}>
+            <Button onClick={handleSubmitComment} disabled={!newComment.trim() || !profile?.id}>
               Add Comment
             </Button>
           </div>
