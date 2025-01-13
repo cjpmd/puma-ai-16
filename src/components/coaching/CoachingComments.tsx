@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@supabase/auth-helpers-react";
 
 interface CoachingCommentsProps {
   playerId: string;
@@ -15,6 +15,26 @@ interface CoachingCommentsProps {
 export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
   const [newComment, setNewComment] = useState("");
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error) {
+        console.error('Profile error:', error);
+        return null;
+      }
+      console.log('Profile data:', data);
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const { data: comments, refetch } = useQuery({
     queryKey: ["coaching-comments", playerId],
@@ -46,6 +66,7 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
         .insert([
           {
             player_id: playerId,
+            coach_id: profile?.id, // Add the coach's profile ID
             comment: newComment,
           }
         ]);

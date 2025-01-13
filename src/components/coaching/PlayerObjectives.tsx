@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@supabase/auth-helpers-react";
 
 interface PlayerObjectivesProps {
   playerId: string;
@@ -18,6 +18,26 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
   const [description, setDescription] = useState("");
   const [points, setPoints] = useState("5");
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error) {
+        console.error('Profile error:', error);
+        return null;
+      }
+      console.log('Profile data:', data);
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const { data: objectives, refetch } = useQuery({
     queryKey: ["player-objectives", playerId],
@@ -49,6 +69,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
         .insert([
           {
             player_id: playerId,
+            coach_id: profile?.id, // Add the coach's profile ID
             title,
             description,
             points: parseInt(points),
