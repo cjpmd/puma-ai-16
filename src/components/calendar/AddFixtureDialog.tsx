@@ -188,7 +188,7 @@ export const AddFixtureDialog = ({
                 name="home_score"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Home Score</FormLabel>
+                    <FormLabel>Puma Score</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} />
                     </FormControl>
@@ -201,7 +201,7 @@ export const AddFixtureDialog = ({
                 name="away_score"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Away Score</FormLabel>
+                    <FormLabel>Opponent Score</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} />
                     </FormControl>
