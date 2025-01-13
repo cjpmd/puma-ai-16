@@ -57,7 +57,6 @@ export const Calendar = () => {
 
       if (error) throw error;
 
-      // Transform the data to match the expected structure
       return data.map((session) => ({
         id: session.id,
         title: session.title,
