@@ -29,17 +29,17 @@ interface TeamSelectionManagerProps {
 interface Period {
   id?: string;
   duration: number;
-  players: {
+  positions: {
+    index: number;
     position: string;
     playerId: string;
-    isSubstitute?: boolean;
   }[];
 }
 
 export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManagerProps) => {
   const { toast } = useToast();
   const [periods, setPeriods] = useState<Period[]>([
-    { duration: 10, players: [] },
+    { duration: 10, positions: Array.from({ length: 7 }, (_, i) => ({ index: i, position: "", playerId: "" })) },
   ]);
 
   // Fetch positions from the database
@@ -83,8 +83,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
           fixture_player_positions (
             id,
             player_id,
-            position,
-            is_substitute
+            position
           )
         `)
         .eq("fixture_id", fixtureId)
@@ -100,36 +99,31 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
       const mappedPeriods = existingSelection.map((period) => ({
         id: period.id,
         duration: period.duration_minutes,
-        players: period.fixture_player_positions.map((pos) => ({
-          position: pos.position,
-          playerId: pos.player_id,
-          isSubstitute: pos.is_substitute,
-        })),
+        positions: Array.from({ length: 7 }, (_, i) => {
+          const existingPosition = period.fixture_player_positions.find((_, index) => index === i);
+          return {
+            index: i,
+            position: existingPosition?.position || "",
+            playerId: existingPosition?.player_id || "",
+          };
+        }),
       }));
       setPeriods(mappedPeriods);
     }
   }, [existingSelection]);
 
-  const handlePlayerChange = (periodIndex: number, position: string, playerId: string, isSubstitute = false) => {
+  const handlePositionChange = (periodIndex: number, positionIndex: number, position: string) => {
     setPeriods((currentPeriods) => {
       const newPeriods = [...currentPeriods];
-      const periodPlayers = [...newPeriods[periodIndex].players];
-      
-      const existingPlayerIndex = periodPlayers.findIndex(
-        (p) => p.position === position && p.isSubstitute === isSubstitute
-      );
+      newPeriods[periodIndex].positions[positionIndex].position = position;
+      return newPeriods;
+    });
+  };
 
-      if (existingPlayerIndex >= 0) {
-        periodPlayers[existingPlayerIndex] = { position, playerId, isSubstitute };
-      } else {
-        periodPlayers.push({ position, playerId, isSubstitute });
-      }
-
-      newPeriods[periodIndex] = {
-        ...newPeriods[periodIndex],
-        players: periodPlayers,
-      };
-
+  const handlePlayerChange = (periodIndex: number, positionIndex: number, playerId: string) => {
+    setPeriods((currentPeriods) => {
+      const newPeriods = [...currentPeriods];
+      newPeriods[periodIndex].positions[positionIndex].playerId = playerId;
       return newPeriods;
     });
   };
@@ -137,16 +131,19 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
   const handleDurationChange = (periodIndex: number, duration: number) => {
     setPeriods((currentPeriods) => {
       const newPeriods = [...currentPeriods];
-      newPeriods[periodIndex] = {
-        ...newPeriods[periodIndex],
-        duration,
-      };
+      newPeriods[periodIndex].duration = duration;
       return newPeriods;
     });
   };
 
   const addPeriod = () => {
-    setPeriods((current) => [...current, { duration: 10, players: [] }]);
+    setPeriods((current) => [
+      ...current,
+      {
+        duration: 10,
+        positions: Array.from({ length: 7 }, (_, i) => ({ index: i, position: "", playerId: "" })),
+      },
+    ]);
   };
 
   const removePeriod = (index: number) => {
@@ -177,13 +174,14 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         if (periodError) throw periodError;
 
         // Create player positions
-        const positions = period.players.map((player) => ({
-          fixture_id: fixtureId,
-          period_id: periodData.id,
-          player_id: player.playerId,
-          position: player.position,
-          is_substitute: player.isSubstitute,
-        }));
+        const positions = period.positions
+          .filter(pos => pos.position && pos.playerId)
+          .map((pos) => ({
+            fixture_id: fixtureId,
+            period_id: periodData.id,
+            player_id: pos.playerId,
+            position: pos.position,
+          }));
 
         if (positions.length > 0) {
           const { error: positionsError } = await supabase
@@ -224,7 +222,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Position</TableHead>
+            <TableHead>Position Index</TableHead>
             {periods.map((_, index) => (
               <TableHead key={index} className="min-w-[200px]">
                 <div className="flex items-center justify-between">
@@ -245,14 +243,29 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
           </TableRow>
         </TableHeader>
         <TableBody>
-          {positions.map((position) => (
-            <TableRow key={position}>
-              <TableCell>{position}</TableCell>
+          {Array.from({ length: 7 }, (_, positionIndex) => (
+            <TableRow key={positionIndex}>
+              <TableCell>{positionIndex + 1}</TableCell>
               {periods.map((period, periodIndex) => (
-                <TableCell key={periodIndex}>
+                <TableCell key={periodIndex} className="space-y-2">
                   <Select
-                    value={period.players.find(p => p.position === position)?.playerId || ""}
-                    onValueChange={(value) => handlePlayerChange(periodIndex, position, value)}
+                    value={period.positions[positionIndex].position}
+                    onValueChange={(value) => handlePositionChange(periodIndex, positionIndex, value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select position" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {positions.map((pos) => (
+                        <SelectItem key={pos} value={pos}>
+                          {pos}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={period.positions[positionIndex].playerId}
+                    onValueChange={(value) => handlePlayerChange(periodIndex, positionIndex, value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select player" />
@@ -279,30 +292,6 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
                   onChange={(e) => handleDurationChange(index, parseInt(e.target.value))}
                   className="w-20"
                 />
-              </TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell>Substitutes</TableCell>
-            {periods.map((period, periodIndex) => (
-              <TableCell key={periodIndex}>
-                <div className="space-y-2">
-                  <Select
-                    value={period.players.find(p => p.isSubstitute)?.playerId || ""}
-                    onValueChange={(value) => handlePlayerChange(periodIndex, "SUB", value, true)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select substitute" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {players?.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.name} (#{player.squad_number})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </TableCell>
             ))}
           </TableRow>
