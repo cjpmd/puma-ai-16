@@ -74,7 +74,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
       const { data, error } = await supabase
         .from("players")
         .select("id, name, squad_number")
-        .eq("player_category", category)
+        .eq("player_category", category.toUpperCase()) // Ensure category matches exactly
         .order("squad_number");
 
       if (error) {
