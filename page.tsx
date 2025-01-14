@@ -123,17 +123,17 @@ export default async function Page({ params }: { params: { id: string } }) {
             <CollapsibleContent className="p-4 pt-0 space-y-4">
               <div>
                 <h4 className="font-medium mb-2">Appearances</h4>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-5 gap-2">
                   <div>
                     <p className="text-sm text-gray-600">Total Appearances</p>
                     <p className="font-medium">{player.fixture_player_positions?.length || 0}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Captain Appearances</p>
+                    <p className="text-sm text-gray-600">Captain</p>
                     <p className="font-medium">{captainAppearances}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">MOTM Awards</p>
+                    <p className="text-sm text-gray-600">MOTM</p>
                     <p className="font-medium">{motmAppearances}</p>
                   </div>
                   <div>
@@ -166,7 +166,7 @@ export default async function Page({ params }: { params: { id: string } }) {
                         <div className="flex items-center gap-2">
                           <span className="font-medium">vs {game.opponent}</span>
                           {game.isMotm && (
-                            <Trophy className="h-4 w-4 text-yellow-500" />
+                            <Trophy className="h-4 w-4 text-yellow-500" title="Man of the Match" />
                           )}
                         </div>
                         <Badge variant="secondary">{game.totalMinutes} mins</Badge>
