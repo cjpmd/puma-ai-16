@@ -34,31 +34,12 @@ import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
   location: z.string().optional(),
-  category: z.enum(["RONALDO", "MESSI", "JAGS"]),  // Updated to match database values
+  category: z.enum(["Ronaldo", "Messi", "Jags"]),  // Changed to match database values
   home_score: z.string().optional(),
   away_score: z.string().optional(),
   motm_player_id: z.string().optional(),
   time: z.string().optional(),
 });
-
-type FormData = z.infer<typeof formSchema>;
-
-interface AddFixtureDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  selectedDate?: Date;
-  onSuccess: () => void;
-  editingFixture?: {
-    id: string;
-    opponent: string;
-    home_score: number | null;
-    away_score: number | null;
-    category?: string;
-    location?: string;
-    motm_player_id?: string | null;
-    time?: string | null;
-  } | null;
-}
 
 export const AddFixtureDialog = ({ 
   isOpen, 
@@ -76,7 +57,7 @@ export const AddFixtureDialog = ({
     defaultValues: {
       opponent: editingFixture?.opponent || "",
       location: editingFixture?.location || "",
-      category: (editingFixture?.category?.toUpperCase() as "RONALDO" | "MESSI" | "JAGS") || "RONALDO",
+      category: (editingFixture?.category || "Ronaldo") as "Ronaldo" | "Messi" | "Jags",
       home_score: editingFixture?.home_score?.toString() || "",
       away_score: editingFixture?.away_score?.toString() || "",
       motm_player_id: editingFixture?.motm_player_id || undefined,
@@ -88,12 +69,12 @@ export const AddFixtureDialog = ({
   const { data: players } = useQuery({
     queryKey: ["players", form.watch("category")],
     queryFn: async () => {
-      const category = form.watch("category");
+      const category = form.watch("category").toUpperCase(); // Convert to uppercase for player query
       console.log("Fetching players for category:", category);
       const { data, error } = await supabase
         .from("players")
         .select("id, name, squad_number")
-        .eq("player_category", category)  // Category is now in uppercase
+        .eq("player_category", category)
         .order('name');
       
       if (error) {
@@ -106,7 +87,6 @@ export const AddFixtureDialog = ({
     enabled: isOpen, // Only run query when dialog is open
   });
 
-  // Update form when editing fixture changes
   useEffect(() => {
     if (editingFixture) {
       form.reset({
@@ -148,7 +128,7 @@ export const AddFixtureDialog = ({
       const fixtureData = {
         opponent: data.opponent,
         location: data.location,
-        category: data.category,
+        category: data.category, // This will now be in correct case (Ronaldo/Messi/Jags)
         date: format(selectedDate, "yyyy-MM-dd"),
         home_score: data.home_score ? parseInt(data.home_score) : null,
         away_score: data.away_score ? parseInt(data.away_score) : null,
@@ -157,18 +137,21 @@ export const AddFixtureDialog = ({
       };
 
       if (editingFixture) {
-        await supabase
+        const { error } = await supabase
           .from("fixtures")
           .update(fixtureData)
           .eq("id", editingFixture.id);
+          
+        if (error) throw error;
         setShowTeamSelection(true);
       } else {
-        const { data: newFixture } = await supabase
+        const { data: newFixture, error } = await supabase
           .from("fixtures")
           .insert([fixtureData])
           .select()
           .single();
           
+        if (error) throw error;
         if (newFixture) {
           setShowTeamSelection(true);
         }
@@ -186,7 +169,7 @@ export const AddFixtureDialog = ({
           : "Fixture added successfully",
       });
     } catch (error) {
-      console.error("Error adding fixture:", error);
+      console.error("Error saving fixture:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -221,15 +204,16 @@ export const AddFixtureDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="RONALDO">Ronaldo</SelectItem>
-                        <SelectItem value="MESSI">Messi</SelectItem>
-                        <SelectItem value="JAGS">Jags</SelectItem>
+                        <SelectItem value="Ronaldo">Ronaldo</SelectItem>
+                        <SelectItem value="Messi">Messi</SelectItem>
+                        <SelectItem value="Jags">Jags</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
               <FormField
                 control={form.control}
                 name="opponent"
@@ -326,6 +310,7 @@ export const AddFixtureDialog = ({
                   </FormItem>
                 )}
               />
+              
               <Button type="submit" className="w-full">
                 {editingFixture ? "Save Changes" : "Add Fixture"}
               </Button>
