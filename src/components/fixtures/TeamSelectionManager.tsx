@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Plus, Minus } from "lucide-react";
 
 interface TeamSelectionManagerProps {
   fixtureId: string;
@@ -35,23 +36,25 @@ interface Period {
   }[];
 }
 
-const positions = [
-  "GK",
-  "DL",
-  "DR",
-  "AML",
-  "AMCR",
-  "AMR",
-  "STCR",
-] as const;
-
 export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManagerProps) => {
   const { toast } = useToast();
   const [periods, setPeriods] = useState<Period[]>([
     { duration: 10, players: [] },
-    { duration: 10, players: [] },
-    { duration: 20, players: [] },
   ]);
+
+  // Fetch positions from the database
+  const { data: positions } = useQuery({
+    queryKey: ["positions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("position_definitions")
+        .select("abbreviation")
+        .order("abbreviation");
+
+      if (error) throw error;
+      return data.map(pos => pos.abbreviation);
+    },
+  });
 
   // Fetch available players for the category
   const { data: players } = useQuery({
@@ -142,6 +145,14 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
     });
   };
 
+  const addPeriod = () => {
+    setPeriods((current) => [...current, { duration: 10, players: [] }]);
+  };
+
+  const removePeriod = (index: number) => {
+    setPeriods((current) => current.filter((_, i) => i !== index));
+  };
+
   const saveTeamSelection = async () => {
     try {
       // Delete existing periods and positions
@@ -174,11 +185,13 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
           is_substitute: player.isSubstitute,
         }));
 
-        const { error: positionsError } = await supabase
-          .from("fixture_player_positions")
-          .insert(positions);
+        if (positions.length > 0) {
+          const { error: positionsError } = await supabase
+            .from("fixture_player_positions")
+            .insert(positions);
 
-        if (positionsError) throw positionsError;
+          if (positionsError) throw positionsError;
+        }
 
         startMinute += period.duration;
       }
@@ -197,14 +210,37 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
     }
   };
 
+  if (!positions) return <div>Loading positions...</div>;
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-end space-x-4 mb-4">
+        <Button onClick={addPeriod} className="flex items-center">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Period
+        </Button>
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Position</TableHead>
             {periods.map((_, index) => (
-              <TableHead key={index}>Period {index + 1}</TableHead>
+              <TableHead key={index} className="min-w-[200px]">
+                <div className="flex items-center justify-between">
+                  <span>Period {index + 1}</span>
+                  {periods.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removePeriod(index)}
+                      className="ml-2"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </TableHead>
             ))}
           </TableRow>
         </TableHeader>
