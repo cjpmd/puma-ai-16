@@ -92,7 +92,7 @@ export const AddFixtureDialog = ({
       category: (editingFixture?.category as "Ronaldo" | "Messi" | "Jags") || "Ronaldo",
       home_score: editingFixture?.home_score?.toString() || "",
       away_score: editingFixture?.away_score?.toString() || "",
-      motm_player_id: editingFixture?.motm_player_id || undefined,
+      motm_player_id: editingFixture?.motm_player_id || "none",
     },
   });
 
@@ -105,7 +105,7 @@ export const AddFixtureDialog = ({
         category: (editingFixture.category as "Ronaldo" | "Messi" | "Jags") || "Ronaldo",
         home_score: editingFixture.home_score?.toString() || "",
         away_score: editingFixture.away_score?.toString() || "",
-        motm_player_id: editingFixture.motm_player_id || undefined,
+        motm_player_id: editingFixture.motm_player_id || "none",
       });
       setSelectedCategory(editingFixture.category || "Ronaldo");
     }
@@ -129,7 +129,7 @@ export const AddFixtureDialog = ({
         date: format(selectedDate, "yyyy-MM-dd"),
         home_score: data.home_score ? parseInt(data.home_score) : null,
         away_score: data.away_score ? parseInt(data.away_score) : null,
-        motm_player_id: data.motm_player_id || null,
+        motm_player_id: data.motm_player_id === "none" ? null : data.motm_player_id,
       };
 
       if (editingFixture) {
@@ -279,7 +279,7 @@ export const AddFixtureDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {players?.map((player) => (
                           <SelectItem key={player.id} value={player.id}>
                             {player.name}
