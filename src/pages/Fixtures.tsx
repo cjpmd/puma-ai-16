@@ -81,7 +81,8 @@ const Fixtures = () => {
     setIsDialogOpen(true);
   };
 
-  const handleTeamSelection = (fixture: any) => {
+  const handleTeamSelection = (e: React.MouseEvent, fixture: any) => {
+    e.stopPropagation(); // Prevent row click when clicking team selection
     setSelectedFixture(fixture);
     setShowTeamSelection(true);
   };
@@ -95,20 +96,29 @@ const Fixtures = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Fixtures</h1>
-        <AddFixtureDialog 
-          isOpen={isDialogOpen}
-          onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) setSelectedFixture(null);
-          }}
-          onSuccess={() => {
-            refetch();
+        <Button 
+          onClick={() => {
             setSelectedFixture(null);
+            setIsDialogOpen(true);
           }}
-          editingFixture={selectedFixture}
-          selectedDate={selectedFixture ? parseISO(selectedFixture.date) : undefined}
-        />
+        >
+          Add Fixture
+        </Button>
       </div>
+
+      <AddFixtureDialog 
+        isOpen={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) setSelectedFixture(null);
+        }}
+        onSuccess={() => {
+          refetch();
+          setSelectedFixture(null);
+        }}
+        editingFixture={selectedFixture}
+        selectedDate={selectedFixture ? parseISO(selectedFixture.date) : undefined}
+      />
 
       {isLoading ? (
         <div>Loading fixtures...</div>
@@ -131,7 +141,11 @@ const Fixtures = () => {
                 </TableHeader>
                 <TableBody>
                   {dateFixtures.map((fixture) => (
-                    <TableRow key={fixture.id}>
+                    <TableRow 
+                      key={fixture.id} 
+                      className="cursor-pointer hover:bg-accent/50" 
+                      onClick={() => handleEdit(fixture)}
+                    >
                       <TableCell>
                         <Badge variant="outline">{fixture.category}</Badge>
                       </TableCell>
@@ -144,16 +158,9 @@ const Fixtures = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleTeamSelection(fixture)}
+                          onClick={(e) => handleTeamSelection(e, fixture)}
                         >
                           Team Selection
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(fixture)}
-                        >
-                          Edit
                         </Button>
                         <Button
                           variant="ghost"
