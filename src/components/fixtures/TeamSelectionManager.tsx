@@ -34,12 +34,20 @@ interface Period {
     position: string;
     playerId: string;
   }[];
+  substitutes: {
+    index: number;
+    playerId: string;
+  }[];
 }
 
 export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManagerProps) => {
   const { toast } = useToast();
   const [periods, setPeriods] = useState<Period[]>([
-    { duration: 10, positions: Array.from({ length: 7 }, (_, i) => ({ index: i, position: "", playerId: "" })) },
+    { 
+      duration: 10, 
+      positions: Array.from({ length: 7 }, (_, i) => ({ index: i, position: "", playerId: "" })),
+      substitutes: Array.from({ length: 3 }, (_, i) => ({ index: i, playerId: "" }))
+    },
   ]);
   const [captain, setCaptain] = useState<string>("");
 
@@ -84,7 +92,8 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
           fixture_player_positions (
             id,
             player_id,
-            position
+            position,
+            is_substitute
           )
         `)
         .eq("fixture_id", fixtureId)
@@ -109,18 +118,30 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
 
   useEffect(() => {
     if (existingSelection) {
-      const mappedPeriods = existingSelection.periods.map((period) => ({
-        id: period.id,
-        duration: period.duration_minutes,
-        positions: Array.from({ length: 7 }, (_, i) => {
-          const existingPosition = period.fixture_player_positions.find((_, index) => index === i);
-          return {
-            index: i,
-            position: existingPosition?.position || "",
-            playerId: existingPosition?.player_id || "",
-          };
-        }),
-      }));
+      const mappedPeriods = existingSelection.periods.map((period) => {
+        const starters = period.fixture_player_positions.filter(pos => !pos.is_substitute);
+        const subs = period.fixture_player_positions.filter(pos => pos.is_substitute);
+        
+        return {
+          id: period.id,
+          duration: period.duration_minutes,
+          positions: Array.from({ length: 7 }, (_, i) => {
+            const existingPosition = starters[i];
+            return {
+              index: i,
+              position: existingPosition?.position || "",
+              playerId: existingPosition?.player_id || "",
+            };
+          }),
+          substitutes: Array.from({ length: 3 }, (_, i) => {
+            const existingSub = subs[i];
+            return {
+              index: i,
+              playerId: existingSub?.player_id || "",
+            };
+          }),
+        };
+      });
       setPeriods(mappedPeriods);
       if (existingSelection.captain) {
         setCaptain(existingSelection.captain);
@@ -144,6 +165,14 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
     });
   };
 
+  const handleSubstituteChange = (periodIndex: number, subIndex: number, playerId: string) => {
+    setPeriods((currentPeriods) => {
+      const newPeriods = [...currentPeriods];
+      newPeriods[periodIndex].substitutes[subIndex].playerId = playerId;
+      return newPeriods;
+    });
+  };
+
   const handleDurationChange = (periodIndex: number, duration: number) => {
     setPeriods((currentPeriods) => {
       const newPeriods = [...currentPeriods];
@@ -158,6 +187,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
       {
         duration: 10,
         positions: Array.from({ length: 7 }, (_, i) => ({ index: i, position: "", playerId: "" })),
+        substitutes: Array.from({ length: 3 }, (_, i) => ({ index: i, playerId: "" })),
       },
     ]);
   };
@@ -206,20 +236,34 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
 
         if (periodError) throw periodError;
 
-        // Create player positions
-        const positions = period.positions
+        // Create player positions for starters
+        const starterPositions = period.positions
           .filter(pos => pos.position && pos.playerId)
           .map((pos) => ({
             fixture_id: fixtureId,
             period_id: periodData.id,
             player_id: pos.playerId,
             position: pos.position,
+            is_substitute: false,
           }));
 
-        if (positions.length > 0) {
+        // Create player positions for substitutes
+        const substitutePositions = period.substitutes
+          .filter(sub => sub.playerId)
+          .map((sub) => ({
+            fixture_id: fixtureId,
+            period_id: periodData.id,
+            player_id: sub.playerId,
+            position: "SUB",
+            is_substitute: true,
+          }));
+
+        const allPositions = [...starterPositions, ...substitutePositions];
+
+        if (allPositions.length > 0) {
           const { error: positionsError } = await supabase
             .from("fixture_player_positions")
-            .insert(positions);
+            .insert(allPositions);
 
           if (positionsError) throw positionsError;
         }
@@ -293,6 +337,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
             </TableRow>
           </TableHeader>
           <TableBody>
+            {/* Starting players */}
             {Array.from({ length: 7 }, (_, positionIndex) => (
               <TableRow key={positionIndex}>
                 <TableCell className="font-medium">{positionIndex + 1}</TableCell>
@@ -334,6 +379,39 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
                 ))}
               </TableRow>
             ))}
+            
+            {/* Substitutes section */}
+            <TableRow>
+              <TableCell colSpan={periods.length + 1} className="bg-muted/50 font-medium">
+                Substitutes
+              </TableCell>
+            </TableRow>
+            {Array.from({ length: 3 }, (_, subIndex) => (
+              <TableRow key={`sub-${subIndex}`}>
+                <TableCell className="font-medium">SUB {subIndex + 1}</TableCell>
+                {periods.map((period, periodIndex) => (
+                  <TableCell key={periodIndex} className="p-1">
+                    <Select
+                      value={period.substitutes[subIndex].playerId}
+                      onValueChange={(value) => handleSubstituteChange(periodIndex, subIndex, value)}
+                    >
+                      <SelectTrigger className="h-7">
+                        <SelectValue placeholder="Select substitute" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {players?.map((player) => (
+                          <SelectItem key={player.id} value={player.id}>
+                            {player.name} (#{player.squad_number})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+
+            {/* Duration row */}
             <TableRow>
               <TableCell>Duration</TableCell>
               {periods.map((period, index) => (
