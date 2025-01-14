@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ const formSchema = z.object({
   category: z.enum(["Ronaldo", "Messi", "Jags"]),
   home_score: z.string().optional(),
   away_score: z.string().optional(),
+  motm_player_id: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -53,6 +54,7 @@ interface AddFixtureDialogProps {
     away_score: number | null;
     category?: string;
     location?: string;
+    motm_player_id?: string | null;
   } | null;
 }
 
@@ -66,6 +68,21 @@ export const AddFixtureDialog = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showTeamSelection, setShowTeamSelection] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>(editingFixture?.category || "Ronaldo");
+  
+  const { data: players } = useQuery({
+    queryKey: ["players", selectedCategory],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, name")
+        .eq("player_category", selectedCategory);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: isOpen,
+  });
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -75,8 +92,24 @@ export const AddFixtureDialog = ({
       category: (editingFixture?.category as "Ronaldo" | "Messi" | "Jags") || "Ronaldo",
       home_score: editingFixture?.home_score?.toString() || "",
       away_score: editingFixture?.away_score?.toString() || "",
+      motm_player_id: editingFixture?.motm_player_id || undefined,
     },
   });
+
+  // Update form when editing fixture changes
+  useEffect(() => {
+    if (editingFixture) {
+      form.reset({
+        opponent: editingFixture.opponent,
+        location: editingFixture.location || "",
+        category: (editingFixture.category as "Ronaldo" | "Messi" | "Jags") || "Ronaldo",
+        home_score: editingFixture.home_score?.toString() || "",
+        away_score: editingFixture.away_score?.toString() || "",
+        motm_player_id: editingFixture.motm_player_id || undefined,
+      });
+      setSelectedCategory(editingFixture.category || "Ronaldo");
+    }
+  }, [editingFixture, form]);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -96,6 +129,7 @@ export const AddFixtureDialog = ({
         date: format(selectedDate, "yyyy-MM-dd"),
         home_score: data.home_score ? parseInt(data.home_score) : null,
         away_score: data.away_score ? parseInt(data.away_score) : null,
+        motm_player_id: data.motm_player_id || null,
       };
 
       if (editingFixture) {
@@ -154,7 +188,10 @@ export const AddFixtureDialog = ({
                   <FormItem>
                     <FormLabel>Team</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setSelectedCategory(value);
+                      }}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -226,6 +263,34 @@ export const AddFixtureDialog = ({
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name="motm_player_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Man of the Match</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select player" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {players?.map((player) => (
+                          <SelectItem key={player.id} value={player.id}>
+                            {player.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <Button type="submit" className="w-full">
                 {editingFixture ? "Save Changes" : "Add Fixture"}
               </Button>

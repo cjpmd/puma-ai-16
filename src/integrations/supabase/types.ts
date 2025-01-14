@@ -342,6 +342,7 @@ export type Database = {
           home_score: number | null
           id: string
           location: string | null
+          motm_player_id: string | null
           opponent: string
           updated_at: string | null
         }
@@ -353,6 +354,7 @@ export type Database = {
           home_score?: number | null
           id?: string
           location?: string | null
+          motm_player_id?: string | null
           opponent: string
           updated_at?: string | null
         }
@@ -364,10 +366,40 @@ export type Database = {
           home_score?: number | null
           id?: string
           location?: string | null
+          motm_player_id?: string | null
           opponent?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fixtures_motm_player_id_fkey"
+            columns: ["motm_player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fixtures_motm_player_id_fkey"
+            columns: ["motm_player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fixtures_motm_player_id_fkey"
+            columns: ["motm_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixtures_motm_player_id_fkey"
+            columns: ["motm_player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+        ]
       }
       player_attributes: {
         Row: {
