@@ -68,31 +68,30 @@ export default async function Page({ params }: { params: { id: string } }) {
     position => position.fixtures?.motm_player_id === player.id
   ).length || 0
 
-  // Group games by fixture to consolidate positions
-  const gamesByFixture = player.fixture_player_positions?.reduce((acc, curr) => {
-    const fixtureId = curr.fixtures?.id
-    if (!fixtureId) return acc
+  // Group games by opponent to consolidate positions and minutes
+  const gamesByOpponent = player.fixture_player_positions?.reduce((acc, curr) => {
+    const opponent = curr.fixtures?.opponent
+    if (!opponent) return acc
     
-    if (!acc[fixtureId]) {
-      acc[fixtureId] = {
-        id: fixtureId,
-        opponent: curr.fixtures?.opponent,
+    if (!acc[opponent]) {
+      acc[opponent] = {
+        opponent,
         date: curr.fixtures?.date,
         totalMinutes: 0,
         positions: {},
         isMotm: curr.fixtures?.motm_player_id === player.id,
-        isCaptain: captainFixtures.has(fixtureId)
+        isCaptain: captainFixtures.has(curr.fixtures?.id || '')
       }
     }
     
-    acc[fixtureId].totalMinutes += curr.fixture_playing_periods?.duration_minutes || 0
-    acc[fixtureId].positions[curr.position] = (acc[fixtureId].positions[curr.position] || 0) + 
+    acc[opponent].totalMinutes += curr.fixture_playing_periods?.duration_minutes || 0
+    acc[opponent].positions[curr.position] = (acc[opponent].positions[curr.position] || 0) + 
       (curr.fixture_playing_periods?.duration_minutes || 0)
     
     return acc
   }, {} as Record<string, any>)
 
-  const sortedGames = Object.values(gamesByFixture || {}).sort((a, b) => 
+  const sortedGames = Object.values(gamesByOpponent || {}).sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
@@ -182,14 +181,14 @@ export default async function Page({ params }: { params: { id: string } }) {
                       <div className="flex justify-between items-center mb-1">
                         <div className="flex items-center gap-2">
                           <span className="font-medium">vs {game.opponent}</span>
-                          {game.isMotm && (
-                            <Trophy className="h-4 w-4 text-yellow-500" title="Man of the Match" />
-                          )}
+                          <Badge variant="secondary">{game.totalMinutes} mins</Badge>
                           {game.isCaptain && (
                             <Crown className="h-4 w-4 text-blue-500" title="Captain" />
                           )}
+                          {game.isMotm && (
+                            <Trophy className="h-4 w-4 text-yellow-500" title="Man of the Match" />
+                          )}
                         </div>
-                        <Badge variant="secondary">{game.totalMinutes} mins</Badge>
                       </div>
                       <div className="text-sm text-gray-600 flex flex-wrap gap-2">
                         {Object.entries(game.positions).map(([pos, mins]: [string, number]) => (
