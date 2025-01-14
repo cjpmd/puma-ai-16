@@ -13,10 +13,19 @@ import { Badge } from "@/components/ui/badge";
 import { AddFixtureDialog } from "@/components/calendar/AddFixtureDialog";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Fixtures = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedFixture, setSelectedFixture] = useState<any>(null);
+  const [showTeamSelection, setShowTeamSelection] = useState(false);
   const { toast } = useToast();
 
   const { data: fixtures, isLoading, refetch } = useQuery({
@@ -30,7 +39,7 @@ const Fixtures = () => {
       if (error) throw error;
       
       // Group fixtures by date
-      const groupedFixtures = data.reduce((acc, fixture) => {
+      const groupedFixtures = data.reduce((acc: any, fixture: any) => {
         const date = fixture.date;
         if (!acc[date]) {
           acc[date] = [];
@@ -70,6 +79,11 @@ const Fixtures = () => {
   const handleEdit = (fixture: any) => {
     setSelectedFixture(fixture);
     setIsDialogOpen(true);
+  };
+
+  const handleTeamSelection = (fixture: any) => {
+    setSelectedFixture(fixture);
+    setShowTeamSelection(true);
   };
 
   const getScoreDisplay = (homeScore: number | null, awayScore: number | null) => {
@@ -117,7 +131,7 @@ const Fixtures = () => {
                 </TableHeader>
                 <TableBody>
                   {dateFixtures.map((fixture) => (
-                    <TableRow key={fixture.id} className="cursor-pointer hover:bg-accent/50" onClick={() => handleEdit(fixture)}>
+                    <TableRow key={fixture.id}>
                       <TableCell>
                         <Badge variant="outline">{fixture.category}</Badge>
                       </TableCell>
@@ -126,8 +140,24 @@ const Fixtures = () => {
                       <TableCell>
                         {getScoreDisplay(fixture.home_score, fixture.away_score)}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <button
+                      <TableCell className="text-right space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleTeamSelection(fixture)}
+                        >
+                          Team Selection
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(fixture)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDelete(fixture.id);
@@ -135,7 +165,7 @@ const Fixtures = () => {
                           className="text-destructive hover:text-destructive/80"
                         >
                           Delete
-                        </button>
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -145,6 +175,20 @@ const Fixtures = () => {
           ))}
         </div>
       )}
+
+      <Dialog open={showTeamSelection} onOpenChange={setShowTeamSelection}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Team Selection - {selectedFixture?.opponent}</DialogTitle>
+          </DialogHeader>
+          {selectedFixture && (
+            <TeamSelectionManager 
+              fixtureId={selectedFixture.id} 
+              category={selectedFixture.category}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
