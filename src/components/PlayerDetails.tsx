@@ -14,6 +14,7 @@ import { Player } from "@/types/player";
 import { Button } from "./ui/button";
 import { FileDown } from "lucide-react";
 import { useToast } from "./ui/use-toast";
+import { ScrollArea } from "./ui/scroll-area";
 
 interface PlayerDetailsProps {
   player: Player;
@@ -22,6 +23,41 @@ interface PlayerDetailsProps {
 export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const updateAttribute = usePlayersStore((state) => state.updateAttribute);
   const { toast } = useToast();
+
+  // Query for game metrics data
+  const { data: gameMetrics } = useQuery({
+    queryKey: ["player-game-metrics", player.id],
+    queryFn: async () => {
+      const { data: fixtureStats, error: fixtureError } = await supabase
+        .from("player_fixture_stats")
+        .select("*")
+        .eq("player_id", player.id)
+        .maybeSingle();
+
+      const { data: recentGames, error: gamesError } = await supabase
+        .from("fixture_player_positions")
+        .select(`
+          *,
+          fixtures (
+            date,
+            opponent
+          ),
+          fixture_playing_periods (
+            duration_minutes
+          )
+        `)
+        .eq("player_id", player.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (fixtureError || gamesError) throw fixtureError || gamesError;
+
+      return {
+        stats: fixtureStats,
+        recentGames: recentGames
+      };
+    },
+  });
 
   const { data: attributeHistory } = useQuery({
     queryKey: ["attribute-history", player.id],
@@ -203,11 +239,55 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         </CardContent>
       </Card>
 
+      {/* Game Metrics Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Game Metrics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="p-4 bg-accent/10 rounded-lg">
+                <p className="text-sm text-muted-foreground">Total Appearances</p>
+                <p className="text-2xl font-bold">{gameMetrics?.stats?.total_appearances || 0}</p>
+              </div>
+              <div className="p-4 bg-accent/10 rounded-lg">
+                <p className="text-sm text-muted-foreground">Captain Appearances</p>
+                <p className="text-2xl font-bold">{gameMetrics?.stats?.captain_appearances || 0}</p>
+              </div>
+              <div className="p-4 bg-accent/10 rounded-lg">
+                <p className="text-sm text-muted-foreground">Total Minutes</p>
+                <p className="text-2xl font-bold">{gameMetrics?.stats?.total_minutes_played || 0}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-medium">Recent Games</h4>
+              <ScrollArea className="h-[200px]">
+                {gameMetrics?.recentGames?.map((game) => (
+                  <div key={game.id} className="flex justify-between items-center py-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{game.position}</Badge>
+                      <span>vs {game.fixtures?.opponent}</span>
+                    </div>
+                    <Badge variant="secondary">
+                      {game.fixture_playing_periods?.duration_minutes || 0} mins
+                    </Badge>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Player Objectives and Coaching Comments */}
       <div className="grid gap-6 md:grid-cols-2">
         <PlayerObjectives playerId={player.id} />
         <CoachingComments playerId={player.id} />
       </div>
 
+      {/* Radar Charts */}
       <div className="grid gap-6 md:grid-cols-2">
         {categories.map((category) => {
           const radarData = getRadarData(category);
