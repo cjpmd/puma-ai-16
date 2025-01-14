@@ -74,7 +74,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
       const { data, error } = await supabase
         .from("players")
         .select("id, name, squad_number")
-        .eq("player_category", category.toUpperCase()) // Ensure category matches exactly
+        .eq("player_category", category.toUpperCase())
         .order("squad_number");
 
       if (error) {
@@ -90,6 +90,11 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
   const { data: existingSelection } = useQuery({
     queryKey: ["team-selection", fixtureId],
     queryFn: async () => {
+      // Only fetch if fixtureId is provided
+      if (!fixtureId) {
+        return null;
+      }
+
       const { data: periodsData, error: periodsError } = await supabase
         .from("fixture_playing_periods")
         .select(`
@@ -120,6 +125,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         captain: captainData?.player_id
       };
     },
+    enabled: !!fixtureId, // Only run query if fixtureId exists
   });
 
   useEffect(() => {
