@@ -41,6 +41,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
   const [periods, setPeriods] = useState<Period[]>([
     { duration: 10, positions: Array.from({ length: 7 }, (_, i) => ({ index: i, position: "", playerId: "" })) },
   ]);
+  const [captain, setCaptain] = useState<string>("");
 
   // Fetch positions from the database
   const { data: positions } = useQuery({
@@ -90,13 +91,25 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         .order("start_minute");
 
       if (periodsError) throw periodsError;
-      return periodsData;
+
+      // Fetch captain information
+      const { data: captainData } = await supabase
+        .from("fixture_team_selections")
+        .select("player_id")
+        .eq("fixture_id", fixtureId)
+        .eq("is_captain", true)
+        .single();
+
+      return {
+        periods: periodsData,
+        captain: captainData?.player_id
+      };
     },
   });
 
   useEffect(() => {
     if (existingSelection) {
-      const mappedPeriods = existingSelection.map((period) => ({
+      const mappedPeriods = existingSelection.periods.map((period) => ({
         id: period.id,
         duration: period.duration_minutes,
         positions: Array.from({ length: 7 }, (_, i) => {
@@ -109,6 +122,9 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         }),
       }));
       setPeriods(mappedPeriods);
+      if (existingSelection.captain) {
+        setCaptain(existingSelection.captain);
+      }
     }
   }, [existingSelection]);
 
@@ -157,6 +173,23 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         .from("fixture_playing_periods")
         .delete()
         .eq("fixture_id", fixtureId);
+
+      // Delete existing team selections
+      await supabase
+        .from("fixture_team_selections")
+        .delete()
+        .eq("fixture_id", fixtureId);
+
+      // Save captain
+      if (captain) {
+        await supabase
+          .from("fixture_team_selections")
+          .insert({
+            fixture_id: fixtureId,
+            player_id: captain,
+            is_captain: true,
+          });
+      }
 
       let startMinute = 0;
       for (const period of periods) {
@@ -208,10 +241,26 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
     }
   };
 
-  if (!positions) return <div>Loading positions...</div>;
+  if (!positions || !players) return <div>Loading...</div>;
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-4 mb-4">
+        <span className="font-medium">Captain:</span>
+        <Select value={captain} onValueChange={setCaptain}>
+          <SelectTrigger className="w-[200px] h-8">
+            <SelectValue placeholder="Select captain" />
+          </SelectTrigger>
+          <SelectContent>
+            {players?.map((player) => (
+              <SelectItem key={player.id} value={player.id}>
+                {player.name} (#{player.squad_number})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="flex justify-end">
         <Button onClick={addPeriod} size="sm" className="flex items-center">
           <Plus className="w-4 h-4 mr-1" />
@@ -223,9 +272,9 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         <Table className="border-collapse w-full">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-20">Position</TableHead>
+              <TableHead className="w-16">Position</TableHead>
               {periods.map((_, index) => (
-                <TableHead key={index} className="min-w-[180px]">
+                <TableHead key={index} className="min-w-[160px]">
                   <div className="flex items-center justify-between">
                     <span>Period {index + 1}</span>
                     {periods.length > 1 && (
@@ -254,7 +303,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
                         value={period.positions[positionIndex].position}
                         onValueChange={(value) => handlePositionChange(periodIndex, positionIndex, value)}
                       >
-                        <SelectTrigger className="h-8">
+                        <SelectTrigger className="h-7">
                           <SelectValue placeholder="Position" />
                         </SelectTrigger>
                         <SelectContent>
@@ -269,7 +318,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
                         value={period.positions[positionIndex].playerId}
                         onValueChange={(value) => handlePlayerChange(periodIndex, positionIndex, value)}
                       >
-                        <SelectTrigger className="h-8">
+                        <SelectTrigger className="h-7">
                           <SelectValue placeholder="Player" />
                         </SelectTrigger>
                         <SelectContent>
@@ -293,7 +342,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
                     type="number"
                     value={period.duration}
                     onChange={(e) => handleDurationChange(index, parseInt(e.target.value))}
-                    className="h-8 w-16"
+                    className="h-7 w-16"
                   />
                 </TableCell>
               ))}
