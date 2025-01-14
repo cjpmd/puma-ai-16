@@ -70,7 +70,6 @@ export const AddFixtureDialog = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showTeamSelection, setShowTeamSelection] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>(editingFixture?.category || "Ronaldo");
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -85,7 +84,7 @@ export const AddFixtureDialog = ({
     },
   });
 
-  // Query for players based on selected category
+  // Query for players based on current category
   const { data: players } = useQuery({
     queryKey: ["players", form.watch("category")],
     queryFn: async () => {
@@ -104,31 +103,28 @@ export const AddFixtureDialog = ({
       console.log("Players fetched:", data);
       return data || [];
     },
-    enabled: isOpen,
+    enabled: isOpen, // Only run query when dialog is open
   });
 
-  // Update form and selected category when editing fixture changes
+  // Update form when editing fixture changes
   useEffect(() => {
     if (editingFixture) {
-      const category = editingFixture.category || "Ronaldo";
       form.reset({
         opponent: editingFixture.opponent,
         location: editingFixture.location || "",
-        category: (category as "Ronaldo" | "Messi" | "Jags"),
+        category: (editingFixture.category as "Ronaldo" | "Messi" | "Jags"),
         home_score: editingFixture.home_score?.toString() || "",
         away_score: editingFixture.away_score?.toString() || "",
         motm_player_id: editingFixture.motm_player_id || undefined,
         time: editingFixture.time || "",
       });
-      setSelectedCategory(category);
     }
   }, [editingFixture, form]);
 
-  // Update selected category and reset MOTM when category changes
+  // Reset MOTM and refetch players when category changes
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === "category") {
-        setSelectedCategory(value.category || "Ronaldo");
         // Reset MOTM when category changes
         form.setValue("motm_player_id", undefined);
         // Refetch players for the new category
