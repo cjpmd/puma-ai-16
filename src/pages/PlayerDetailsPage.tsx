@@ -8,11 +8,13 @@ import { motion } from "framer-motion";
 import { Player } from "@/types/player";
 
 const PlayerDetailsPage = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
 
   const { data: player, isLoading } = useQuery({
     queryKey: ["player", id],
     queryFn: async () => {
+      if (!id) throw new Error("No player ID provided");
+
       const { data, error } = await supabase
         .from("players")
         .select(`
@@ -22,7 +24,12 @@ const PlayerDetailsPage = () => {
         .eq("id", id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching player:", error);
+        throw error;
+      }
+
+      if (!data) throw new Error("Player not found");
 
       console.log("Raw player data:", data);
 
@@ -33,7 +40,7 @@ const PlayerDetailsPage = () => {
         dateOfBirth: data.date_of_birth,
         squadNumber: data.squad_number,
         playerCategory: data.player_category,
-        playerType: data.player_type || "OUTFIELD", // Ensure playerType is set
+        playerType: data.player_type || "OUTFIELD",
         attributes: data.player_attributes.map((attr: any) => ({
           id: attr.id,
           name: attr.name,
@@ -47,6 +54,7 @@ const PlayerDetailsPage = () => {
         updated_at: data.updated_at,
       } as Player;
     },
+    enabled: !!id,
   });
 
   if (isLoading) {
