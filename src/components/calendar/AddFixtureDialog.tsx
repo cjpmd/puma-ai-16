@@ -72,21 +72,6 @@ export const AddFixtureDialog = ({
   const [showTeamSelection, setShowTeamSelection] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>(editingFixture?.category || "Ronaldo");
   
-  const { data: players } = useQuery({
-    queryKey: ["players", selectedCategory],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("players")
-        .select("id, name")
-        .eq("player_category", selectedCategory)
-        .order('name');
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: isOpen,
-  });
-  
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -100,21 +85,55 @@ export const AddFixtureDialog = ({
     },
   });
 
-  // Update form when editing fixture changes
+  // Query for players based on selected category
+  const { data: players } = useQuery({
+    queryKey: ["players", selectedCategory],
+    queryFn: async () => {
+      console.log("Fetching players for category:", selectedCategory);
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, name")
+        .eq("player_category", selectedCategory)
+        .order('name');
+      
+      if (error) {
+        console.error("Error fetching players:", error);
+        throw error;
+      }
+      console.log("Players fetched:", data);
+      return data || [];
+    },
+    enabled: isOpen,
+  });
+
+  // Update form and selected category when editing fixture changes
   useEffect(() => {
     if (editingFixture) {
+      const category = editingFixture.category || "Ronaldo";
       form.reset({
         opponent: editingFixture.opponent,
         location: editingFixture.location || "",
-        category: (editingFixture.category as "Ronaldo" | "Messi" | "Jags") || "Ronaldo",
+        category: (category as "Ronaldo" | "Messi" | "Jags"),
         home_score: editingFixture.home_score?.toString() || "",
         away_score: editingFixture.away_score?.toString() || "",
         motm_player_id: editingFixture.motm_player_id || undefined,
         time: editingFixture.time || "",
       });
-      setSelectedCategory(editingFixture.category || "Ronaldo");
+      setSelectedCategory(category);
     }
   }, [editingFixture, form]);
+
+  // Update selected category when category changes in form
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "category") {
+        setSelectedCategory(value.category || "Ronaldo");
+        // Reset MOTM when category changes
+        form.setValue("motm_player_id", undefined);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -194,13 +213,8 @@ export const AddFixtureDialog = ({
                   <FormItem>
                     <FormLabel>Team</FormLabel>
                     <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        setSelectedCategory(value);
-                        // Reset MOTM when category changes
-                        form.setValue("motm_player_id", undefined);
-                      }}
-                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
