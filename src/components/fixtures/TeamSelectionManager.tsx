@@ -211,94 +211,98 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
   if (!positions) return <div>Loading positions...</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end space-x-4 mb-4">
-        <Button onClick={addPeriod} className="flex items-center">
-          <Plus className="w-4 h-4 mr-2" />
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={addPeriod} size="sm" className="flex items-center">
+          <Plus className="w-4 h-4 mr-1" />
           Add Period
         </Button>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Position Index</TableHead>
-            {periods.map((_, index) => (
-              <TableHead key={index} className="min-w-[200px]">
-                <div className="flex items-center justify-between">
-                  <span>Period {index + 1}</span>
-                  {periods.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removePeriod(index)}
-                      className="ml-2"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </TableHead>
+      <div className="overflow-x-auto">
+        <Table className="border-collapse w-full">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-20">Position</TableHead>
+              {periods.map((_, index) => (
+                <TableHead key={index} className="min-w-[180px]">
+                  <div className="flex items-center justify-between">
+                    <span>Period {index + 1}</span>
+                    {periods.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removePeriod(index)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: 7 }, (_, positionIndex) => (
+              <TableRow key={positionIndex}>
+                <TableCell className="font-medium">{positionIndex + 1}</TableCell>
+                {periods.map((period, periodIndex) => (
+                  <TableCell key={periodIndex} className="p-1">
+                    <div className="space-y-1">
+                      <Select
+                        value={period.positions[positionIndex].position}
+                        onValueChange={(value) => handlePositionChange(periodIndex, positionIndex, value)}
+                      >
+                        <SelectTrigger className="h-8">
+                          <SelectValue placeholder="Position" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {positions?.map((pos) => (
+                            <SelectItem key={pos} value={pos}>
+                              {pos}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={period.positions[positionIndex].playerId}
+                        onValueChange={(value) => handlePlayerChange(periodIndex, positionIndex, value)}
+                      >
+                        <SelectTrigger className="h-8">
+                          <SelectValue placeholder="Player" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {players?.map((player) => (
+                            <SelectItem key={player.id} value={player.id}>
+                              {player.name} (#{player.squad_number})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </TableCell>
+                ))}
+              </TableRow>
             ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {Array.from({ length: 7 }, (_, positionIndex) => (
-            <TableRow key={positionIndex}>
-              <TableCell>{positionIndex + 1}</TableCell>
-              {periods.map((period, periodIndex) => (
-                <TableCell key={periodIndex} className="space-y-2">
-                  <Select
-                    value={period.positions[positionIndex].position}
-                    onValueChange={(value) => handlePositionChange(periodIndex, positionIndex, value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select position" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {positions.map((pos) => (
-                        <SelectItem key={pos} value={pos}>
-                          {pos}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select
-                    value={period.positions[positionIndex].playerId}
-                    onValueChange={(value) => handlePlayerChange(periodIndex, positionIndex, value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select player" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {players?.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.name} (#{player.squad_number})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            <TableRow>
+              <TableCell>Duration</TableCell>
+              {periods.map((period, index) => (
+                <TableCell key={index} className="p-1">
+                  <Input
+                    type="number"
+                    value={period.duration}
+                    onChange={(e) => handleDurationChange(index, parseInt(e.target.value))}
+                    className="h-8 w-16"
+                  />
                 </TableCell>
               ))}
             </TableRow>
-          ))}
-          <TableRow>
-            <TableCell>Duration (mins)</TableCell>
-            {periods.map((period, index) => (
-              <TableCell key={index}>
-                <Input
-                  type="number"
-                  value={period.duration}
-                  onChange={(e) => handleDurationChange(index, parseInt(e.target.value))}
-                  className="w-20"
-                />
-              </TableCell>
-            ))}
-          </TableRow>
-        </TableBody>
-      </Table>
+          </TableBody>
+        </Table>
+      </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end mt-4">
         <Button onClick={saveTeamSelection}>Save Team Selection</Button>
       </div>
     </div>
