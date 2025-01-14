@@ -81,8 +81,7 @@ const Fixtures = () => {
     setIsDialogOpen(true);
   };
 
-  const handleTeamSelection = (e: React.MouseEvent, fixture: any) => {
-    e.stopPropagation(); // Prevent row click when clicking team selection
+  const handleTeamSelection = (fixture: any) => {
     setSelectedFixture(fixture);
     setShowTeamSelection(true);
   };
@@ -160,7 +159,10 @@ const Fixtures = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={(e) => handleTeamSelection(e, fixture)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTeamSelection(fixture);
+                          }}
                         >
                           Team Selection
                         </Button>

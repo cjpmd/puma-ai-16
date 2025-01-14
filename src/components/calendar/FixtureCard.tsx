@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Users } from "lucide-react";
 
 interface FixtureCardProps {
   fixture: {
@@ -20,13 +20,14 @@ interface FixtureCardProps {
   };
   onEdit: (fixture: FixtureCardProps["fixture"]) => void;
   onDelete: (fixtureId: string) => void;
+  onTeamSelection: (fixture: FixtureCardProps["fixture"]) => void;
 }
 
-export const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => {
+export const FixtureCard = ({ fixture, onEdit, onDelete, onTeamSelection }: FixtureCardProps) => {
   const hasScores = fixture.home_score !== null && fixture.away_score !== null;
 
   return (
-    <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => onEdit(fixture)}>
+    <Card className="hover:bg-accent/50 transition-colors">
       <CardHeader>
         <CardTitle className="text-lg flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -36,9 +37,9 @@ export const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => 
           <div className="flex gap-2">
             <Button 
               variant="ghost" 
-              size="sm" 
+              size="sm"
               onClick={(e) => {
-                e.stopPropagation(); // Prevent card click when clicking buttons
+                e.stopPropagation();
                 onEdit(fixture);
               }}
             >
@@ -46,9 +47,19 @@ export const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => 
             </Button>
             <Button 
               variant="ghost" 
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTeamSelection(fixture);
+              }}
+            >
+              <Users className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
               size="sm" 
               onClick={(e) => {
-                e.stopPropagation(); // Prevent card click when clicking delete
+                e.stopPropagation();
                 onDelete(fixture.id);
               }}
             >
@@ -57,7 +68,7 @@ export const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => 
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent onClick={() => onEdit(fixture)} className="cursor-pointer">
         {hasScores ? (
           <p className="text-xl font-bold">
             {fixture.home_score} - {fixture.away_score}
