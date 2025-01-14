@@ -34,7 +34,7 @@ import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
   location: z.string().optional(),
-  category: z.enum(["Ronaldo", "Messi", "Jags"]),
+  category: z.enum(["RONALDO", "MESSI", "JAGS"]),  // Updated to match database values
   home_score: z.string().optional(),
   away_score: z.string().optional(),
   motm_player_id: z.string().optional(),
@@ -76,7 +76,7 @@ export const AddFixtureDialog = ({
     defaultValues: {
       opponent: editingFixture?.opponent || "",
       location: editingFixture?.location || "",
-      category: (editingFixture?.category as "Ronaldo" | "Messi" | "Jags") || "Ronaldo",
+      category: (editingFixture?.category?.toUpperCase() as "RONALDO" | "MESSI" | "JAGS") || "RONALDO",
       home_score: editingFixture?.home_score?.toString() || "",
       away_score: editingFixture?.away_score?.toString() || "",
       motm_player_id: editingFixture?.motm_player_id || undefined,
@@ -92,8 +92,8 @@ export const AddFixtureDialog = ({
       console.log("Fetching players for category:", category);
       const { data, error } = await supabase
         .from("players")
-        .select("id, name")
-        .eq("player_category", category)
+        .select("id, name, squad_number")
+        .eq("player_category", category)  // Category is now in uppercase
         .order('name');
       
       if (error) {
@@ -112,7 +112,7 @@ export const AddFixtureDialog = ({
       form.reset({
         opponent: editingFixture.opponent,
         location: editingFixture.location || "",
-        category: (editingFixture.category as "Ronaldo" | "Messi" | "Jags"),
+        category: (editingFixture.category?.toUpperCase() as "RONALDO" | "MESSI" | "JAGS"),
         home_score: editingFixture.home_score?.toString() || "",
         away_score: editingFixture.away_score?.toString() || "",
         motm_player_id: editingFixture.motm_player_id || undefined,
@@ -221,9 +221,9 @@ export const AddFixtureDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Ronaldo">Ronaldo</SelectItem>
-                        <SelectItem value="Messi">Messi</SelectItem>
-                        <SelectItem value="Jags">Jags</SelectItem>
+                        <SelectItem value="RONALDO">Ronaldo</SelectItem>
+                        <SelectItem value="MESSI">Messi</SelectItem>
+                        <SelectItem value="JAGS">Jags</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -317,7 +317,7 @@ export const AddFixtureDialog = ({
                       <SelectContent>
                         {players?.map((player) => (
                           <SelectItem key={player.id} value={player.id}>
-                            {player.name}
+                            {player.name} (#{player.squad_number})
                           </SelectItem>
                         ))}
                       </SelectContent>
