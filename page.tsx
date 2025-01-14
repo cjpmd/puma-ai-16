@@ -17,6 +17,7 @@ export default async function Page({ params }: { params: { id: string } }) {
       fixture_player_positions (
         *,
         fixtures (
+          id,
           date,
           opponent,
           motm_player_id
@@ -71,7 +72,8 @@ export default async function Page({ params }: { params: { id: string } }) {
   // Group games by opponent to consolidate positions and minutes
   const gamesByOpponent = player.fixture_player_positions?.reduce((acc, curr) => {
     const opponent = curr.fixtures?.opponent
-    if (!opponent) return acc
+    const fixtureId = curr.fixtures?.id
+    if (!opponent || !fixtureId) return acc
     
     if (!acc[opponent]) {
       acc[opponent] = {
@@ -80,13 +82,15 @@ export default async function Page({ params }: { params: { id: string } }) {
         totalMinutes: 0,
         positions: {},
         isMotm: curr.fixtures?.motm_player_id === player.id,
-        isCaptain: captainFixtures.has(curr.fixtures?.id || '')
+        isCaptain: captainFixtures.has(fixtureId)
       }
     }
     
     acc[opponent].totalMinutes += curr.fixture_playing_periods?.duration_minutes || 0
-    acc[opponent].positions[curr.position] = (acc[opponent].positions[curr.position] || 0) + 
-      (curr.fixture_playing_periods?.duration_minutes || 0)
+    if (curr.position) {
+      acc[opponent].positions[curr.position] = (acc[opponent].positions[curr.position] || 0) + 
+        (curr.fixture_playing_periods?.duration_minutes || 0)
+    }
     
     return acc
   }, {} as Record<string, any>)
@@ -135,7 +139,7 @@ export default async function Page({ params }: { params: { id: string } }) {
                 <h4 className="font-medium mb-2">Appearances</h4>
                 <div className="grid grid-cols-4 gap-4">
                   <div>
-                    <p className="text-sm text-gray-600">Total Appearances</p>
+                    <p className="text-sm text-gray-600">Total Games</p>
                     <p className="font-medium">{player.fixture_player_positions?.length || 0}</p>
                   </div>
                   <div>
@@ -155,7 +159,7 @@ export default async function Page({ params }: { params: { id: string } }) {
                   <div>
                     <p className="text-sm text-gray-600">Total Minutes</p>
                     <p className="font-medium">
-                      {Object.values(positionMinutes).reduce((a, b) => a + b, 0)} mins
+                      {Object.values(positionMinutes).reduce((a, b) => a + b, 0)}
                     </p>
                   </div>
                 </div>
@@ -176,19 +180,17 @@ export default async function Page({ params }: { params: { id: string } }) {
               <div>
                 <h4 className="font-medium mb-2">Recent Games</h4>
                 <ul className="space-y-3">
-                  {sortedGames.slice(0, 5).map((game, index) => (
+                  {sortedGames.map((game, index) => (
                     <li key={index} className="border-b pb-2 last:border-b-0">
-                      <div className="flex justify-between items-center mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">vs {game.opponent}</span>
-                          <Badge variant="secondary">{game.totalMinutes} mins</Badge>
-                          {game.isCaptain && (
-                            <Crown className="h-4 w-4 text-blue-500" title="Captain" />
-                          )}
-                          {game.isMotm && (
-                            <Trophy className="h-4 w-4 text-yellow-500" title="Man of the Match" />
-                          )}
-                        </div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium">vs {game.opponent}</span>
+                        <Badge variant="secondary">{game.totalMinutes} mins</Badge>
+                        {game.isCaptain && (
+                          <Crown className="h-4 w-4 text-blue-500" title="Captain" />
+                        )}
+                        {game.isMotm && (
+                          <Trophy className="h-4 w-4 text-yellow-500" title="Man of the Match" />
+                        )}
                       </div>
                       <div className="text-sm text-gray-600 flex flex-wrap gap-2">
                         {Object.entries(game.positions).map(([pos, mins]: [string, number]) => (
