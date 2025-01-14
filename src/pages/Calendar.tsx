@@ -348,6 +348,10 @@ export const Calendar = () => {
                     setIsAddFixtureOpen(true);
                   }}
                   onDelete={handleDeleteFixture}
+                  onTeamSelection={(fixture) => {
+                    // Handle team selection
+                    console.log("Team selection for fixture:", fixture);
+                  }}
                 />
               ))}
               {sessions?.map((session) => (
