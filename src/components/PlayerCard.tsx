@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface PlayerCardProps {
   player: Player;
@@ -57,6 +58,31 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
         .single();
 
       if (error) throw error;
+      console.log("Fixture stats:", data);
+      return data;
+    },
+  });
+
+  const { data: gameDetails } = useQuery({
+    queryKey: ["player-game-details", player.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fixture_player_positions")
+        .select(`
+          *,
+          fixtures:fixture_id (
+            date,
+            opponent
+          ),
+          fixture_playing_periods:period_id (
+            duration_minutes
+          )
+        `)
+        .eq("player_id", player.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      console.log("Game details:", data);
       return data;
     },
   });
@@ -72,6 +98,17 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
     const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
     return (sum / categoryAttributes.length).toFixed(1);
   };
+
+  // Calculate position minutes
+  const positionMinutes: Record<string, number> = {};
+  if (gameDetails) {
+    gameDetails.forEach((detail) => {
+      const minutes = detail.fixture_playing_periods?.duration_minutes || 0;
+      if (detail.position) {
+        positionMinutes[detail.position] = (positionMinutes[detail.position] || 0) + minutes;
+      }
+    });
+  }
 
   return (
     <Card className="hover:bg-accent cursor-pointer" onClick={onClick}>
@@ -112,6 +149,68 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
               </p>
             </div>
           </div>
+
+          {/* Game Metrics Section */}
+          <div className="border-t pt-4">
+            <h3 className="font-semibold mb-2">Game Metrics</h3>
+            <ScrollArea className="h-[200px]">
+              <div className="space-y-4">
+                {fixtureStats && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Total Appearances:</span>
+                      <Badge variant="outline" className="bg-blue-500/10">
+                        {fixtureStats.total_appearances || 0}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Captain Appearances:</span>
+                      <Badge variant="outline" className="bg-amber-500/10">
+                        {fixtureStats.captain_appearances || 0}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Total Minutes:</span>
+                      <Badge variant="outline" className="bg-green-500/10">
+                        {fixtureStats.total_minutes_played || 0}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+
+                {Object.entries(positionMinutes).length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium">Minutes by Position:</div>
+                    {Object.entries(positionMinutes).map(([position, minutes]) => (
+                      <div key={position} className="flex justify-between text-sm">
+                        <span>{position}:</span>
+                        <Badge variant="outline" className="bg-purple-500/10">
+                          {minutes} mins
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {gameDetails && gameDetails.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium">Recent Games:</div>
+                    {gameDetails.slice(0, 3).map((game) => (
+                      <div key={game.id} className="text-sm flex justify-between items-center">
+                        <span>
+                          vs {game.fixtures?.opponent} ({game.position})
+                        </span>
+                        <Badge variant="outline" className="bg-blue-500/10">
+                          {game.fixture_playing_periods?.duration_minutes || 0} mins
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+
           {playerStats && (
             <div className="border-t pt-4">
               <div className="flex justify-between text-sm">
@@ -127,42 +226,6 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
                     Ongoing: {playerStats.ongoing_objectives || 0}
                   </Badge>
                 </div>
-              </div>
-            </div>
-          )}
-          {fixtureStats && (
-            <div className="border-t pt-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Appearances:</span>
-                  <Badge variant="outline" className="bg-blue-500/10">
-                    {fixtureStats.total_appearances || 0}
-                  </Badge>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Captain:</span>
-                  <Badge variant="outline" className="bg-amber-500/10">
-                    {fixtureStats.captain_appearances || 0}
-                  </Badge>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Minutes Played:</span>
-                  <Badge variant="outline" className="bg-green-500/10">
-                    {fixtureStats.total_minutes_played || 0}
-                  </Badge>
-                </div>
-                {fixtureStats.positions_played && (
-                  <div className="flex justify-between text-sm items-start">
-                    <span>Positions:</span>
-                    <div className="flex flex-wrap justify-end gap-1 max-w-[60%]">
-                      {(fixtureStats.positions_played as string[]).map((position, index) => (
-                        <Badge key={index} variant="outline" className="bg-purple-500/10">
-                          {position}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           )}
