@@ -12,9 +12,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { AddFixtureDialog } from "@/components/calendar/AddFixtureDialog";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const Fixtures = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedFixture, setSelectedFixture] = useState<any>(null);
+  const { toast } = useToast();
 
   const { data: fixtures, isLoading, refetch } = useQuery({
     queryKey: ["fixtures"],
@@ -40,6 +43,35 @@ const Fixtures = () => {
     },
   });
 
+  const handleDelete = async (fixtureId: string) => {
+    try {
+      const { error } = await supabase
+        .from("fixtures")
+        .delete()
+        .eq("id", fixtureId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Fixture deleted successfully",
+      });
+      refetch();
+    } catch (error) {
+      console.error("Error deleting fixture:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete fixture",
+      });
+    }
+  };
+
+  const handleEdit = (fixture: any) => {
+    setSelectedFixture(fixture);
+    setIsDialogOpen(true);
+  };
+
   const getScoreDisplay = (homeScore: number | null, awayScore: number | null) => {
     if (homeScore === null || awayScore === null) return "Not played";
     return `${homeScore} - ${awayScore}`;
@@ -51,8 +83,16 @@ const Fixtures = () => {
         <h1 className="text-3xl font-bold">Fixtures</h1>
         <AddFixtureDialog 
           isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          onSuccess={refetch}
+          onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) setSelectedFixture(null);
+          }}
+          onSuccess={() => {
+            refetch();
+            setSelectedFixture(null);
+          }}
+          editingFixture={selectedFixture}
+          selectedDate={selectedFixture ? parseISO(selectedFixture.date) : undefined}
         />
       </div>
 
@@ -72,11 +112,12 @@ const Fixtures = () => {
                     <TableHead>Location</TableHead>
                     <TableHead>Opponent</TableHead>
                     <TableHead>Score</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {dateFixtures.map((fixture) => (
-                    <TableRow key={fixture.id}>
+                    <TableRow key={fixture.id} className="cursor-pointer hover:bg-accent/50" onClick={() => handleEdit(fixture)}>
                       <TableCell>
                         <Badge variant="outline">{fixture.category}</Badge>
                       </TableCell>
@@ -84,6 +125,17 @@ const Fixtures = () => {
                       <TableCell>{fixture.opponent}</TableCell>
                       <TableCell>
                         {getScoreDisplay(fixture.home_score, fixture.away_score)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(fixture.id);
+                          }}
+                          className="text-destructive hover:text-destructive/80"
+                        >
+                          Delete
+                        </button>
                       </TableCell>
                     </TableRow>
                   ))}
