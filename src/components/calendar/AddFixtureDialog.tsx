@@ -34,12 +34,31 @@ import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
   location: z.string().optional(),
-  category: z.enum(["Ronaldo", "Messi", "Jags"]),  // Changed to match database values
+  category: z.enum(["Ronaldo", "Messi", "Jags"]),
   home_score: z.string().optional(),
   away_score: z.string().optional(),
   motm_player_id: z.string().optional(),
   time: z.string().optional(),
 });
+
+type FormData = z.infer<typeof formSchema>;
+
+interface AddFixtureDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedDate?: Date;
+  onSuccess: () => void;
+  editingFixture?: {
+    id: string;
+    opponent: string;
+    home_score: number | null;
+    away_score: number | null;
+    category?: string;
+    location?: string;
+    motm_player_id?: string | null;
+    time?: string | null;
+  } | null;
+}
 
 export const AddFixtureDialog = ({ 
   isOpen, 
@@ -67,9 +86,9 @@ export const AddFixtureDialog = ({
 
   // Query for players based on current category
   const { data: players } = useQuery({
-    queryKey: ["players", form.watch("category")],
+    queryKey: ["players", form.getValues("category")],
     queryFn: async () => {
-      const category = form.watch("category").toUpperCase(); // Convert to uppercase for player query
+      const category = form.getValues("category").toUpperCase();
       console.log("Fetching players for category:", category);
       const { data, error } = await supabase
         .from("players")
@@ -92,7 +111,7 @@ export const AddFixtureDialog = ({
       form.reset({
         opponent: editingFixture.opponent,
         location: editingFixture.location || "",
-        category: (editingFixture.category?.toUpperCase() as "RONALDO" | "MESSI" | "JAGS"),
+        category: (editingFixture.category || "Ronaldo") as "Ronaldo" | "Messi" | "Jags",
         home_score: editingFixture.home_score?.toString() || "",
         away_score: editingFixture.away_score?.toString() || "",
         motm_player_id: editingFixture.motm_player_id || undefined,
@@ -105,9 +124,7 @@ export const AddFixtureDialog = ({
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === "category") {
-        // Reset MOTM when category changes
         form.setValue("motm_player_id", undefined);
-        // Refetch players for the new category
         queryClient.invalidateQueries({ queryKey: ["players", value.category] });
       }
     });
@@ -128,7 +145,7 @@ export const AddFixtureDialog = ({
       const fixtureData = {
         opponent: data.opponent,
         location: data.location,
-        category: data.category, // This will now be in correct case (Ronaldo/Messi/Jags)
+        category: data.category,
         date: format(selectedDate, "yyyy-MM-dd"),
         home_score: data.home_score ? parseInt(data.home_score) : null,
         away_score: data.away_score ? parseInt(data.away_score) : null,
