@@ -92,13 +92,13 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
 
       if (periodsError) throw periodsError;
 
-      // Fetch captain information
+      // Fetch captain information using maybeSingle() instead of single()
       const { data: captainData } = await supabase
         .from("fixture_team_selections")
         .select("player_id")
         .eq("fixture_id", fixtureId)
         .eq("is_captain", true)
-        .single();
+        .maybeSingle();
 
       return {
         periods: periodsData,
