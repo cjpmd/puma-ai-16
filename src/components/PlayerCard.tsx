@@ -47,6 +47,20 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
     },
   });
 
+  const { data: fixtureStats } = useQuery({
+    queryKey: ["player-fixture-stats", player.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_fixture_stats")
+        .select("*")
+        .eq("player_id", player.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const averageChange = calculateAverageChange(player.attributes, player.attributeHistory);
   const performance = getPerformanceStatus(averageChange);
 
@@ -113,6 +127,42 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
                     Ongoing: {playerStats.ongoing_objectives || 0}
                   </Badge>
                 </div>
+              </div>
+            </div>
+          )}
+          {fixtureStats && (
+            <div className="border-t pt-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Appearances:</span>
+                  <Badge variant="outline" className="bg-blue-500/10">
+                    {fixtureStats.total_appearances || 0}
+                  </Badge>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Captain:</span>
+                  <Badge variant="outline" className="bg-amber-500/10">
+                    {fixtureStats.captain_appearances || 0}
+                  </Badge>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Minutes Played:</span>
+                  <Badge variant="outline" className="bg-green-500/10">
+                    {fixtureStats.total_minutes_played || 0}
+                  </Badge>
+                </div>
+                {fixtureStats.positions_played && (
+                  <div className="flex justify-between text-sm items-start">
+                    <span>Positions:</span>
+                    <div className="flex flex-wrap justify-end gap-1 max-w-[60%]">
+                      {(fixtureStats.positions_played as string[]).map((position, index) => (
+                        <Badge key={index} variant="outline" className="bg-purple-500/10">
+                          {position}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
