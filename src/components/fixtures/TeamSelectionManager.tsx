@@ -69,13 +69,18 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
   const { data: players } = useQuery({
     queryKey: ["players", category],
     queryFn: async () => {
+      console.log("Fetching players for category:", category);
       const { data, error } = await supabase
         .from("players")
         .select("id, name, squad_number")
         .eq("player_category", category)
         .order("squad_number");
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching players:", error);
+        throw error;
+      }
+      console.log("Players data:", data);
       return data;
     },
   });
@@ -288,7 +293,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
   if (!positions || !players) return <div>Loading...</div>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-h-[80vh] overflow-y-auto">
       <div className="flex items-center gap-4 mb-4">
         <span className="font-medium">Captain:</span>
         <Select value={captain} onValueChange={setCaptain}>

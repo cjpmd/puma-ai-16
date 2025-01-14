@@ -184,7 +184,7 @@ const Fixtures = () => {
       )}
 
       <Dialog open={showTeamSelection} onOpenChange={setShowTeamSelection}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-[95vw] w-full max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>Team Selection - {selectedFixture?.opponent}</DialogTitle>
           </DialogHeader>
