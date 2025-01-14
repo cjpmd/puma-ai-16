@@ -41,7 +41,7 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
         .from("player_stats")
         .select("*")
         .eq("player_id", player.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -55,10 +55,9 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
         .from("player_fixture_stats")
         .select("*")
         .eq("player_id", player.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      console.log("Fixture stats:", data);
       return data;
     },
   });
@@ -82,7 +81,6 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      console.log("Game details:", data);
       return data;
     },
   });
@@ -126,25 +124,25 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <span className="text-sm text-muted-foreground">Technical</span>
-              <p className={`text-xl font-bold ${performance.color}`}>
+              <p className="text-xl font-bold">
                 {calculateCategoryAverage("TECHNICAL")}
               </p>
             </div>
             <div>
               <span className="text-sm text-muted-foreground">Mental</span>
-              <p className={`text-xl font-bold ${performance.color}`}>
+              <p className="text-xl font-bold">
                 {calculateCategoryAverage("MENTAL")}
               </p>
             </div>
             <div>
               <span className="text-sm text-muted-foreground">Physical</span>
-              <p className={`text-xl font-bold ${performance.color}`}>
+              <p className="text-xl font-bold">
                 {calculateCategoryAverage("PHYSICAL")}
               </p>
             </div>
             <div>
               <span className="text-sm text-muted-foreground">Goalkeeping</span>
-              <p className={`text-xl font-bold ${performance.color}`}>
+              <p className="text-xl font-bold">
                 {calculateCategoryAverage("GOALKEEPING")}
               </p>
             </div>
