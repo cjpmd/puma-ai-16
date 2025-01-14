@@ -2,10 +2,10 @@ import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 
 export default async function Page({ params }: { params: { id: string } }) {
-  const cookieStore = await cookies()
+  const cookieStore = cookies()
   const supabase = createClient(cookieStore)
 
   const { data: player, error } = await supabase
