@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Minus } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface TeamSelectionManagerProps {
   fixtureId: string;
@@ -66,7 +67,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
   });
 
   // Fetch available players for the category
-  const { data: players } = useQuery({
+  const { data: players, error: playersError } = useQuery({
     queryKey: ["players", category],
     queryFn: async () => {
       console.log("Fetching players for category:", category);
@@ -106,7 +107,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
 
       if (periodsError) throw periodsError;
 
-      // Fetch captain information using maybeSingle() instead of single()
+      // Fetch captain information
       const { data: captainData } = await supabase
         .from("fixture_team_selections")
         .select("player_id")
@@ -290,7 +291,27 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
     }
   };
 
+  if (playersError) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>
+          Error loading players: {playersError.message}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   if (!positions || !players) return <div>Loading...</div>;
+
+  if (players.length === 0) {
+    return (
+      <Alert>
+        <AlertDescription>
+          No players found for category: {category}. Please add players to this category first.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="space-y-4 max-h-[80vh] overflow-y-auto">
