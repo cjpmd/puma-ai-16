@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
 
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
@@ -64,6 +65,8 @@ export const AddFixtureDialog = ({
 }: AddFixtureDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [showTeamSelection, setShowTeamSelection] = useState(false);
+  
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -100,13 +103,24 @@ export const AddFixtureDialog = ({
           .from("fixtures")
           .update(fixtureData)
           .eq("id", editingFixture.id);
+        setShowTeamSelection(true);
       } else {
-        await supabase.from("fixtures").insert([fixtureData]);
+        const { data: newFixture } = await supabase
+          .from("fixtures")
+          .insert([fixtureData])
+          .select()
+          .single();
+          
+        if (newFixture) {
+          setShowTeamSelection(true);
+        }
       }
 
       onSuccess();
-      form.reset();
-      onOpenChange(false);
+      if (!showTeamSelection) {
+        form.reset();
+        onOpenChange(false);
+      }
       toast({
         title: "Success",
         description: editingFixture 
@@ -125,72 +139,47 @@ export const AddFixtureDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>{editingFixture ? "Edit Fixture" : "Add New Fixture"}</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Team</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select team" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Ronaldo">Ronaldo</SelectItem>
-                      <SelectItem value="Messi">Messi</SelectItem>
-                      <SelectItem value="Jags">Jags</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="opponent"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Opponent</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location (optional)</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4">
+        
+        {!showTeamSelection ? (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="home_score"
+                name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Puma Score</FormLabel>
+                    <FormLabel>Team</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select team" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Ronaldo">Ronaldo</SelectItem>
+                        <SelectItem value="Messi">Messi</SelectItem>
+                        <SelectItem value="Jags">Jags</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="opponent"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Opponent</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -198,23 +187,56 @@ export const AddFixtureDialog = ({
               />
               <FormField
                 control={form.control}
-                name="away_score"
+                name="location"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Opponent Score</FormLabel>
+                    <FormLabel>Location (optional)</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-            <Button type="submit" className="w-full">
-              {editingFixture ? "Save Changes" : "Add Fixture"}
-            </Button>
-          </form>
-        </Form>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="home_score"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Puma Score</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="away_score"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Opponent Score</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                {editingFixture ? "Save Changes" : "Add Fixture"}
+              </Button>
+            </form>
+          </Form>
+        ) : (
+          <TeamSelectionManager 
+            fixtureId={editingFixture?.id || ""} 
+            category={form.getValues("category")}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
