@@ -191,6 +191,8 @@ export const AddFixtureDialog = ({
                       onValueChange={(value) => {
                         field.onChange(value);
                         setSelectedCategory(value);
+                        // Reset MOTM when category changes
+                        form.setValue("motm_player_id", "none");
                       }}
                       defaultValue={field.value}
                     >
