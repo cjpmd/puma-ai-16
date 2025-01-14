@@ -2,7 +2,8 @@ import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, Trophy } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 export default async function Page({ params }: { params: { id: string } }) {
   const cookieStore = cookies()
@@ -17,7 +18,8 @@ export default async function Page({ params }: { params: { id: string } }) {
         *,
         fixtures (
           date,
-          opponent
+          opponent,
+          motm_player_id
         ),
         fixture_playing_periods (
           duration_minutes
@@ -52,6 +54,37 @@ export default async function Page({ params }: { params: { id: string } }) {
   const captainAppearances = player.fixture_team_selections?.filter(
     selection => selection.is_captain
   ).length || 0
+
+  // Calculate MOTM appearances
+  const motmAppearances = player.fixture_player_positions?.filter(
+    position => position.fixtures?.motm_player_id === player.id
+  ).length || 0
+
+  // Group games by fixture to consolidate positions
+  const gamesByFixture = player.fixture_player_positions?.reduce((acc, curr) => {
+    const fixtureId = curr.fixtures?.id
+    if (!fixtureId) return acc
+    
+    if (!acc[fixtureId]) {
+      acc[fixtureId] = {
+        opponent: curr.fixtures?.opponent,
+        date: curr.fixtures?.date,
+        totalMinutes: 0,
+        positions: {},
+        isMotm: curr.fixtures?.motm_player_id === player.id
+      }
+    }
+    
+    acc[fixtureId].totalMinutes += curr.fixture_playing_periods?.duration_minutes || 0
+    acc[fixtureId].positions[curr.position] = (acc[fixtureId].positions[curr.position] || 0) + 
+      (curr.fixture_playing_periods?.duration_minutes || 0)
+    
+    return acc
+  }, {} as Record<string, any>)
+
+  const sortedGames = Object.values(gamesByFixture || {}).sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  )
 
   return (
     <div className="p-4">
@@ -90,7 +123,7 @@ export default async function Page({ params }: { params: { id: string } }) {
             <CollapsibleContent className="p-4 pt-0 space-y-4">
               <div>
                 <h4 className="font-medium mb-2">Appearances</h4>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <div>
                     <p className="text-sm text-gray-600">Total Appearances</p>
                     <p className="font-medium">{player.fixture_player_positions?.length || 0}</p>
@@ -98,6 +131,10 @@ export default async function Page({ params }: { params: { id: string } }) {
                   <div>
                     <p className="text-sm text-gray-600">Captain Appearances</p>
                     <p className="font-medium">{captainAppearances}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">MOTM Awards</p>
+                    <p className="font-medium">{motmAppearances}</p>
                   </div>
                 </div>
               </div>
@@ -116,11 +153,25 @@ export default async function Page({ params }: { params: { id: string } }) {
 
               <div>
                 <h4 className="font-medium mb-2">Recent Games</h4>
-                <ul className="space-y-2">
-                  {player.fixture_player_positions?.slice(0, 5).map((game) => (
-                    <li key={game.id} className="flex justify-between text-sm">
-                      <span>vs {game.fixtures?.opponent} ({game.position})</span>
-                      <span>{game.fixture_playing_periods?.duration_minutes || 0} mins</span>
+                <ul className="space-y-3">
+                  {sortedGames.slice(0, 5).map((game, index) => (
+                    <li key={index} className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <span>vs {game.opponent}</span>
+                          {game.isMotm && (
+                            <Trophy className="h-4 w-4 text-yellow-500" />
+                          )}
+                        </div>
+                        <Badge variant="secondary">{game.totalMinutes} mins</Badge>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {Object.entries(game.positions).map(([pos, mins]: [string, number]) => (
+                          <span key={pos} className="mr-2">
+                            {pos}: {mins}m
+                          </span>
+                        ))}
+                      </div>
                     </li>
                   ))}
                 </ul>
