@@ -78,10 +78,11 @@ export const AddFixtureDialog = ({
       const { data, error } = await supabase
         .from("players")
         .select("id, name")
-        .eq("player_category", selectedCategory);
+        .eq("player_category", selectedCategory)
+        .order('name');
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: isOpen,
   });
