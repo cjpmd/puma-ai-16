@@ -123,7 +123,7 @@ export default async function Page({ params }: { params: { id: string } }) {
             <CollapsibleContent className="p-4 pt-0 space-y-4">
               <div>
                 <h4 className="font-medium mb-2">Appearances</h4>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <div>
                     <p className="text-sm text-gray-600">Total Appearances</p>
                     <p className="font-medium">{player.fixture_player_positions?.length || 0}</p>
@@ -135,6 +135,12 @@ export default async function Page({ params }: { params: { id: string } }) {
                   <div>
                     <p className="text-sm text-gray-600">MOTM Awards</p>
                     <p className="font-medium">{motmAppearances}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Total Minutes</p>
+                    <p className="font-medium">
+                      {Object.values(positionMinutes).reduce((a, b) => a + b, 0)} mins
+                    </p>
                   </div>
                 </div>
               </div>
@@ -155,21 +161,21 @@ export default async function Page({ params }: { params: { id: string } }) {
                 <h4 className="font-medium mb-2">Recent Games</h4>
                 <ul className="space-y-3">
                   {sortedGames.slice(0, 5).map((game, index) => (
-                    <li key={index} className="space-y-1">
-                      <div className="flex justify-between items-center">
+                    <li key={index} className="border-b pb-2 last:border-b-0">
+                      <div className="flex justify-between items-center mb-1">
                         <div className="flex items-center gap-2">
-                          <span>vs {game.opponent}</span>
+                          <span className="font-medium">vs {game.opponent}</span>
                           {game.isMotm && (
                             <Trophy className="h-4 w-4 text-yellow-500" />
                           )}
                         </div>
                         <Badge variant="secondary">{game.totalMinutes} mins</Badge>
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-600 flex flex-wrap gap-2">
                         {Object.entries(game.positions).map(([pos, mins]: [string, number]) => (
-                          <span key={pos} className="mr-2">
+                          <Badge key={pos} variant="outline" className="text-xs">
                             {pos}: {mins}m
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                     </li>
