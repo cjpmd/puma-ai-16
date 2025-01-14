@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, Trophy } from "lucide-react"
+import { ChevronDown, Trophy, Crown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 export default async function Page({ params }: { params: { id: string } }) {
@@ -26,6 +26,7 @@ export default async function Page({ params }: { params: { id: string } }) {
         )
       ),
       fixture_team_selections (
+        fixture_id,
         is_captain
       )
     `)
@@ -50,6 +51,13 @@ export default async function Page({ params }: { params: { id: string } }) {
     }
   })
 
+  // Create a map of fixture IDs where player was captain
+  const captainFixtures = new Set(
+    player.fixture_team_selections
+      ?.filter(selection => selection.is_captain)
+      .map(selection => selection.fixture_id)
+  )
+
   // Calculate captain appearances
   const captainAppearances = player.fixture_team_selections?.filter(
     selection => selection.is_captain
@@ -67,11 +75,13 @@ export default async function Page({ params }: { params: { id: string } }) {
     
     if (!acc[fixtureId]) {
       acc[fixtureId] = {
+        id: fixtureId,
         opponent: curr.fixtures?.opponent,
         date: curr.fixtures?.date,
         totalMinutes: 0,
         positions: {},
-        isMotm: curr.fixtures?.motm_player_id === player.id
+        isMotm: curr.fixtures?.motm_player_id === player.id,
+        isCaptain: captainFixtures.has(fixtureId)
       }
     }
     
@@ -89,6 +99,7 @@ export default async function Page({ params }: { params: { id: string } }) {
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Player Details</h1>
+      
       <div className="space-y-4">
         <div className="p-4 border rounded">
           <h2 className="text-xl">{player.name} - #{player.squad_number}</h2>
@@ -167,6 +178,9 @@ export default async function Page({ params }: { params: { id: string } }) {
                           <span className="font-medium">vs {game.opponent}</span>
                           {game.isMotm && (
                             <Trophy className="h-4 w-4 text-yellow-500" title="Man of the Match" />
+                          )}
+                          {game.isCaptain && (
+                            <Crown className="h-4 w-4 text-blue-500" title="Captain" />
                           )}
                         </div>
                         <Badge variant="secondary">{game.totalMinutes} mins</Badge>
