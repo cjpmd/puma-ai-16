@@ -25,7 +25,7 @@ export const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => 
   const hasScores = fixture.home_score !== null && fixture.away_score !== null;
 
   return (
-    <Card>
+    <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => onEdit(fixture)}>
       <CardHeader>
         <CardTitle className="text-lg flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -33,10 +33,24 @@ export const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => 
             <span>vs {fixture.opponent}</span>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => onEdit(fixture)}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent card click when clicking buttons
+                onEdit(fixture);
+              }}
+            >
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => onDelete(fixture.id)}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent card click when clicking delete
+                onDelete(fixture.id);
+              }}
+            >
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </div>
