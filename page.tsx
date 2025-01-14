@@ -141,11 +141,17 @@ export default async function Page({ params }: { params: { id: string } }) {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Captain</p>
-                    <p className="font-medium">{captainAppearances}</p>
+                    <div className="flex items-center gap-1">
+                      <p className="font-medium">{captainAppearances}</p>
+                      <Crown className="h-4 w-4 text-blue-500" />
+                    </div>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">MOTM</p>
-                    <p className="font-medium">{motmAppearances}</p>
+                    <div className="flex items-center gap-1">
+                      <p className="font-medium">{motmAppearances}</p>
+                      <Trophy className="h-4 w-4 text-yellow-500" />
+                    </div>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Total Minutes</p>
