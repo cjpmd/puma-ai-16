@@ -38,6 +38,7 @@ const formSchema = z.object({
   home_score: z.string().optional(),
   away_score: z.string().optional(),
   motm_player_id: z.string().optional(),
+  time: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -55,6 +56,7 @@ interface AddFixtureDialogProps {
     category?: string;
     location?: string;
     motm_player_id?: string | null;
+    time?: string | null;
   } | null;
 }
 
@@ -92,7 +94,8 @@ export const AddFixtureDialog = ({
       category: (editingFixture?.category as "Ronaldo" | "Messi" | "Jags") || "Ronaldo",
       home_score: editingFixture?.home_score?.toString() || "",
       away_score: editingFixture?.away_score?.toString() || "",
-      motm_player_id: editingFixture?.motm_player_id || "none",
+      motm_player_id: editingFixture?.motm_player_id || undefined,
+      time: editingFixture?.time || "",
     },
   });
 
@@ -105,7 +108,8 @@ export const AddFixtureDialog = ({
         category: (editingFixture.category as "Ronaldo" | "Messi" | "Jags") || "Ronaldo",
         home_score: editingFixture.home_score?.toString() || "",
         away_score: editingFixture.away_score?.toString() || "",
-        motm_player_id: editingFixture.motm_player_id || "none",
+        motm_player_id: editingFixture.motm_player_id || undefined,
+        time: editingFixture.time || "",
       });
       setSelectedCategory(editingFixture.category || "Ronaldo");
     }
@@ -129,7 +133,8 @@ export const AddFixtureDialog = ({
         date: format(selectedDate, "yyyy-MM-dd"),
         home_score: data.home_score ? parseInt(data.home_score) : null,
         away_score: data.away_score ? parseInt(data.away_score) : null,
-        motm_player_id: data.motm_player_id === "none" ? null : data.motm_player_id,
+        motm_player_id: data.motm_player_id || null,
+        time: data.time || null,
       };
 
       if (editingFixture) {
@@ -192,7 +197,7 @@ export const AddFixtureDialog = ({
                         field.onChange(value);
                         setSelectedCategory(value);
                         // Reset MOTM when category changes
-                        form.setValue("motm_player_id", "none");
+                        form.setValue("motm_player_id", undefined);
                       }}
                       defaultValue={field.value}
                     >
@@ -224,19 +229,34 @@ export const AddFixtureDialog = ({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location (optional)</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location (optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Time (optional)</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -281,7 +301,6 @@ export const AddFixtureDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
                         {players?.map((player) => (
                           <SelectItem key={player.id} value={player.id}>
                             {player.name}

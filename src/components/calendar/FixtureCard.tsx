@@ -16,6 +16,7 @@ interface FixtureCardProps {
     away_score: number | null;
     category: string;
     location?: string;
+    time?: string | null;
   };
   onEdit: (fixture: FixtureCardProps["fixture"]) => void;
   onDelete: (fixtureId: string) => void;
@@ -64,11 +65,14 @@ export const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => 
         ) : (
           <p className="text-muted-foreground">Score not yet recorded</p>
         )}
-        {fixture.location && (
-          <p className="text-sm text-muted-foreground mt-2">
-            Location: {fixture.location}
-          </p>
-        )}
+        <div className="space-y-1 mt-2 text-sm text-muted-foreground">
+          {fixture.location && (
+            <p>Location: {fixture.location}</p>
+          )}
+          {fixture.time && (
+            <p>Time: {fixture.time}</p>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

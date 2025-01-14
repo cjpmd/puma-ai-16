@@ -344,6 +344,7 @@ export type Database = {
           location: string | null
           motm_player_id: string | null
           opponent: string
+          time: string | null
           updated_at: string | null
         }
         Insert: {
@@ -356,6 +357,7 @@ export type Database = {
           location?: string | null
           motm_player_id?: string | null
           opponent: string
+          time?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -368,6 +370,7 @@ export type Database = {
           location?: string | null
           motm_player_id?: string | null
           opponent?: string
+          time?: string | null
           updated_at?: string | null
         }
         Relationships: [

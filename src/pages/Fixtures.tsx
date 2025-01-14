@@ -134,6 +134,7 @@ const Fixtures = () => {
                   <TableRow>
                     <TableHead>Team</TableHead>
                     <TableHead>Location</TableHead>
+                    <TableHead>Time</TableHead>
                     <TableHead>Opponent</TableHead>
                     <TableHead>Score</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -150,6 +151,7 @@ const Fixtures = () => {
                         <Badge variant="outline">{fixture.category}</Badge>
                       </TableCell>
                       <TableCell>{fixture.location || "TBD"}</TableCell>
+                      <TableCell>{fixture.time || "TBD"}</TableCell>
                       <TableCell>{fixture.opponent}</TableCell>
                       <TableCell>
                         {getScoreDisplay(fixture.home_score, fixture.away_score)}
