@@ -147,6 +147,19 @@ const SquadManagement = () => {
     navigate(`/player/${playerId}`);
   };
 
+  // Calculate category counts
+  const getCategoryCounts = () => {
+    if (!players) return { RONALDO: 0, MESSI: 0, JAGS: 0, total: 0 };
+    
+    return players.reduce((acc, player) => {
+      acc[player.playerCategory as keyof typeof acc]++;
+      acc.total++;
+      return acc;
+    }, { RONALDO: 0, MESSI: 0, JAGS: 0, total: 0 });
+  };
+
+  const categoryCounts = getCategoryCounts();
+
   return (
     <div className="min-h-screen bg-background p-6">
       <motion.div
@@ -179,25 +192,25 @@ const SquadManagement = () => {
             variant={selectedCategory === null ? "default" : "outline"}
             onClick={() => setSelectedCategory(null)}
           >
-            All Players
+            All Players ({categoryCounts.total})
           </Button>
           <Button
             variant={selectedCategory === "RONALDO" ? "default" : "outline"}
             onClick={() => setSelectedCategory("RONALDO")}
           >
-            Ronaldo Category
+            Ronaldo Category ({categoryCounts.RONALDO})
           </Button>
           <Button
             variant={selectedCategory === "MESSI" ? "default" : "outline"}
             onClick={() => setSelectedCategory("MESSI")}
           >
-            Messi Category
+            Messi Category ({categoryCounts.MESSI})
           </Button>
           <Button
             variant={selectedCategory === "JAGS" ? "default" : "outline"}
             onClick={() => setSelectedCategory("JAGS")}
           >
-            Jags Category
+            Jags Category ({categoryCounts.JAGS})
           </Button>
         </div>
 
