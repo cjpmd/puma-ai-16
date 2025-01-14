@@ -87,13 +87,14 @@ export const AddFixtureDialog = ({
 
   // Query for players based on selected category
   const { data: players } = useQuery({
-    queryKey: ["players", selectedCategory],
+    queryKey: ["players", form.watch("category")],
     queryFn: async () => {
-      console.log("Fetching players for category:", selectedCategory);
+      const category = form.watch("category");
+      console.log("Fetching players for category:", category);
       const { data, error } = await supabase
         .from("players")
         .select("id, name")
-        .eq("player_category", selectedCategory)
+        .eq("player_category", category)
         .order('name');
       
       if (error) {
@@ -123,17 +124,19 @@ export const AddFixtureDialog = ({
     }
   }, [editingFixture, form]);
 
-  // Update selected category when category changes in form
+  // Update selected category and reset MOTM when category changes
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === "category") {
         setSelectedCategory(value.category || "Ronaldo");
         // Reset MOTM when category changes
         form.setValue("motm_player_id", undefined);
+        // Refetch players for the new category
+        queryClient.invalidateQueries({ queryKey: ["players", value.category] });
       }
     });
     return () => subscription.unsubscribe();
-  }, [form]);
+  }, [form, queryClient]);
 
   const onSubmit = async (data: FormData) => {
     try {
