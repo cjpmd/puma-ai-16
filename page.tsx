@@ -134,7 +134,7 @@ export default async function Page({ params }: { params: { id: string } }) {
             <CollapsibleContent className="p-4 pt-0 space-y-4">
               <div>
                 <h4 className="font-medium mb-2">Appearances</h4>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-4 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">Total Appearances</p>
                     <p className="font-medium">{player.fixture_player_positions?.length || 0}</p>
@@ -143,14 +143,14 @@ export default async function Page({ params }: { params: { id: string } }) {
                     <p className="text-sm text-gray-600">Captain</p>
                     <div className="flex items-center gap-1">
                       <p className="font-medium">{captainAppearances}</p>
-                      <Crown className="h-4 w-4 text-blue-500" />
+                      <Crown className="h-4 w-4 text-blue-500" title="Captain" />
                     </div>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">MOTM</p>
                     <div className="flex items-center gap-1">
                       <p className="font-medium">{motmAppearances}</p>
-                      <Trophy className="h-4 w-4 text-yellow-500" />
+                      <Trophy className="h-4 w-4 text-yellow-500" title="Man of the Match" />
                     </div>
                   </div>
                   <div>
