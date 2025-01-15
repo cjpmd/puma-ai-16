@@ -27,6 +27,31 @@ export interface TopPosition {
   suitability_score: number;
 }
 
+export interface FixturePlayerPosition {
+  id: string;
+  fixture_id: string;
+  period_id: string;
+  player_id: string;
+  position: string;
+  is_substitute: boolean;
+  created_at: string;
+  updated_at: string;
+  fixtures?: {
+    id: string;
+    date: string;
+    opponent: string;
+    motm_player_id: string | null;
+  };
+  fixture_playing_periods?: {
+    duration_minutes: number;
+  };
+}
+
+export interface FixtureTeamSelection {
+  fixture_id: string;
+  is_captain: boolean;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -39,6 +64,8 @@ export interface Player {
   attributeHistory: Record<string, AttributeHistory[]>;
   objectives?: PlayerObjectives;
   topPositions?: TopPosition[];
+  fixture_player_positions?: FixturePlayerPosition[];
+  fixture_team_selections?: FixtureTeamSelection[];
   created_at?: string;
   updated_at?: string;
 }

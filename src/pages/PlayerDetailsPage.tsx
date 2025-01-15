@@ -19,7 +19,23 @@ const PlayerDetailsPage = () => {
         .from("players")
         .select(`
           *,
-          player_attributes (*)
+          player_attributes (*),
+          fixture_player_positions (
+            *,
+            fixtures (
+              id,
+              date,
+              opponent,
+              motm_player_id
+            ),
+            fixture_playing_periods (
+              duration_minutes
+            )
+          ),
+          fixture_team_selections (
+            fixture_id,
+            is_captain
+          )
         `)
         .eq("id", id)
         .single();
@@ -49,10 +65,15 @@ const PlayerDetailsPage = () => {
           player_id: attr.player_id,
           created_at: attr.created_at,
         })),
+        fixture_player_positions: data.fixture_player_positions,
+        fixture_team_selections: data.fixture_team_selections,
         attributeHistory: {},
         created_at: data.created_at,
         updated_at: data.updated_at,
-      } as Player;
+      } as Player & {
+        fixture_player_positions: any[];
+        fixture_team_selections: any[];
+      };
     },
     enabled: !!id,
   });
