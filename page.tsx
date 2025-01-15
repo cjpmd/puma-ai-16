@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, Trophy, Crown } from "lucide-react"
+import { ChevronDown, Trophy, Crown, Award, Medal } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 export default async function Page({ params }: { params: { id: string } }) {
@@ -13,65 +13,51 @@ export default async function Page({ params }: { params: { id: string } }) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
 
-  const { data: player, error } = await supabase
-    .from('players')
-    .select(`
-      *,
-      player_attributes (*),
-      fixture_player_positions (
+  // Fetch player details and stats in parallel
+  const [playerResult, statsResult] = await Promise.all([
+    supabase
+      .from('players')
+      .select(`
         *,
-        fixtures (
-          id,
-          date,
-          opponent,
-          motm_player_id
+        player_attributes (*),
+        fixture_player_positions (
+          *,
+          fixtures (
+            id,
+            date,
+            opponent,
+            motm_player_id
+          ),
+          fixture_playing_periods (
+            duration_minutes
+          )
         ),
-        fixture_playing_periods (
-          duration_minutes
+        fixture_team_selections (
+          fixture_id,
+          is_captain
         )
-      ),
-      fixture_team_selections (
-        fixture_id,
-        is_captain
-      )
-    `)
-    .eq('id', params.id)
-    .maybeSingle()
+      `)
+      .eq('id', params.id)
+      .maybeSingle(),
+    
+    supabase
+      .from('player_fixture_stats')
+      .select('*')
+      .eq('player_id', params.id)
+      .maybeSingle()
+  ])
 
-  if (error) {
-    console.error('Error fetching player:', error)
-    throw error
+  if (playerResult.error) {
+    console.error('Error fetching player:', playerResult.error)
+    throw playerResult.error
   }
+
+  const player = playerResult.data
+  const stats = statsResult.data
 
   if (!player) {
     notFound()
   }
-
-  // Calculate position minutes
-  const positionMinutes: Record<string, number> = {}
-  player.fixture_player_positions?.forEach((position) => {
-    const minutes = position.fixture_playing_periods?.duration_minutes || 0
-    if (position.position) {
-      positionMinutes[position.position] = (positionMinutes[position.position] || 0) + minutes
-    }
-  })
-
-  // Create a map of fixture IDs where player was captain
-  const captainFixtures = new Set(
-    player.fixture_team_selections
-      ?.filter(selection => selection.is_captain)
-      .map(selection => selection.fixture_id)
-  )
-
-  // Calculate captain appearances
-  const captainAppearances = player.fixture_team_selections?.filter(
-    selection => selection.is_captain
-  ).length || 0
-
-  // Calculate MOTM appearances
-  const motmAppearances = player.fixture_player_positions?.filter(
-    position => position.fixtures?.motm_player_id === player.id
-  ).length || 0
 
   // Group games by opponent to consolidate positions and minutes
   const gamesByOpponent = player.fixture_player_positions?.reduce((acc, curr) => {
@@ -86,7 +72,9 @@ export default async function Page({ params }: { params: { id: string } }) {
         totalMinutes: 0,
         positions: {},
         isMotm: curr.fixtures?.motm_player_id === player.id,
-        isCaptain: captainFixtures.has(fixtureId)
+        isCaptain: player.fixture_team_selections?.some(
+          selection => selection.fixture_id === fixtureId && selection.is_captain
+        )
       }
     }
     
@@ -102,8 +90,6 @@ export default async function Page({ params }: { params: { id: string } }) {
   const sortedGames = Object.values(gamesByOpponent || {}).sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
-
-  const totalMinutes = Object.values(positionMinutes).reduce((a, b) => a + b, 0)
 
   return (
     <div className="p-4">
@@ -146,25 +132,35 @@ export default async function Page({ params }: { params: { id: string } }) {
                 <div className="grid grid-cols-4 gap-4">
                   <div className="p-3 bg-accent/10 rounded-lg">
                     <p className="text-sm text-gray-600">Total Games</p>
-                    <p className="font-medium text-xl">{player.fixture_player_positions?.length || 0}</p>
+                    <div className="flex items-center gap-1">
+                      <p className="font-medium text-xl">{stats?.total_appearances || 0}</p>
+                      <Medal className="h-5 w-5 text-purple-500" title="Total Games" />
+                    </div>
                   </div>
                   <div className="p-3 bg-accent/10 rounded-lg">
                     <p className="text-sm text-gray-600">Captain</p>
                     <div className="flex items-center gap-1">
-                      <p className="font-medium text-xl">{captainAppearances}</p>
+                      <p className="font-medium text-xl">{stats?.captain_appearances || 0}</p>
                       <Crown className="h-5 w-5 text-blue-500" title="Captain" />
                     </div>
                   </div>
                   <div className="p-3 bg-accent/10 rounded-lg">
                     <p className="text-sm text-gray-600">MOTM</p>
                     <div className="flex items-center gap-1">
-                      <p className="font-medium text-xl">{motmAppearances}</p>
+                      <p className="font-medium text-xl">
+                        {player.fixture_player_positions?.filter(
+                          pos => pos.fixtures?.motm_player_id === player.id
+                        ).length || 0}
+                      </p>
                       <Trophy className="h-5 w-5 text-yellow-500" title="Man of the Match" />
                     </div>
                   </div>
                   <div className="p-3 bg-accent/10 rounded-lg">
                     <p className="text-sm text-gray-600">Total Minutes</p>
-                    <p className="font-medium text-xl">{totalMinutes}</p>
+                    <div className="flex items-center gap-1">
+                      <p className="font-medium text-xl">{stats?.total_minutes_played || 0}</p>
+                      <Award className="h-5 w-5 text-green-500" title="Total Minutes Played" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -172,7 +168,7 @@ export default async function Page({ params }: { params: { id: string } }) {
               <div>
                 <h4 className="font-medium mb-2">Minutes by Position</h4>
                 <ul className="space-y-1">
-                  {Object.entries(positionMinutes).map(([position, minutes]) => (
+                  {stats?.positions_played && Object.entries(stats.positions_played).map(([position, minutes]) => (
                     <li key={position} className="flex justify-between p-2 bg-accent/5 rounded">
                       <span>{position}</span>
                       <span className="font-medium">{minutes} mins</span>

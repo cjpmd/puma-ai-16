@@ -133,13 +133,6 @@ export type Database = {
             foreignKeyName: "coaching_comments_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "coaching_comments_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
             referencedRelation: "player_stats"
             referencedColumns: ["player_id"]
           },
@@ -204,13 +197,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "fixture_playing_periods"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fixture_player_positions_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
           },
           {
             foreignKeyName: "fixture_player_positions_player_id_fkey"
@@ -307,13 +293,6 @@ export type Database = {
             foreignKeyName: "fixture_team_selections_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "fixture_team_selections_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
             referencedRelation: "player_stats"
             referencedColumns: ["player_id"]
           },
@@ -378,13 +357,6 @@ export type Database = {
             foreignKeyName: "fixtures_motm_player_id_fkey"
             columns: ["motm_player_id"]
             isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "fixtures_motm_player_id_fkey"
-            columns: ["motm_player_id"]
-            isOneToOne: false
             referencedRelation: "player_stats"
             referencedColumns: ["player_id"]
           },
@@ -433,13 +405,6 @@ export type Database = {
           value?: number
         }
         Relationships: [
-          {
-            foreignKeyName: "player_attributes_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
-          },
           {
             foreignKeyName: "player_attributes_player_id_fkey"
             columns: ["player_id"]
@@ -511,13 +476,6 @@ export type Database = {
             foreignKeyName: "player_base_info_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "player_base_info_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
             referencedRelation: "player_stats"
             referencedColumns: ["player_id"]
           },
@@ -578,13 +536,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "player_objectives_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
           },
           {
             foreignKeyName: "player_objectives_player_id_fkey"
@@ -702,13 +653,6 @@ export type Database = {
             foreignKeyName: "position_suitability_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "position_suitability_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
             referencedRelation: "player_stats"
             referencedColumns: ["player_id"]
           },
@@ -815,13 +759,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "role_suitability_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
-          },
           {
             foreignKeyName: "role_suitability_player_id_fkey"
             columns: ["player_id"]
@@ -960,13 +897,6 @@ export type Database = {
             foreignKeyName: "player_attributes_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "player_attributes_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
             referencedRelation: "player_stats"
             referencedColumns: ["player_id"]
           },
@@ -996,7 +926,29 @@ export type Database = {
           total_appearances: number | null
           total_minutes_played: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fixture_player_positions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fixture_player_positions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_player_positions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+        ]
       }
       player_stats: {
         Row: {
