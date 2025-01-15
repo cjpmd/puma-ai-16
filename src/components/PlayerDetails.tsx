@@ -12,13 +12,37 @@ import { Badge } from "./ui/badge";
 import { EditPlayerDialog } from "./EditPlayerDialog";
 import { Player } from "@/types/player";
 import { Button } from "./ui/button";
-import { FileDown, ChevronDown } from "lucide-react";
+import { FileDown, ChevronDown, Medal, Crown, Trophy, Award } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 import { ScrollArea } from "./ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PlayerDetailsProps {
   player: Player;
+}
+
+interface GameMetricsData {
+  stats: {
+    total_appearances: number;
+    captain_appearances: number;
+    total_minutes_played: number;
+    positions_played?: Record<string, number>;
+  };
+  recentGames: Array<{
+    id: string;
+    fixtures?: {
+      date: string;
+      opponent: string;
+    };
+    fixture_playing_periods?: {
+      duration_minutes: number;
+    };
+    position: string;
+    isCaptain?: boolean;
+    isMotm?: boolean;
+  }>;
+  motmCount: number;
 }
 
 export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
@@ -26,7 +50,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const { toast } = useToast();
 
   // Query for game metrics data
-  const { data: gameMetrics } = useQuery({
+  const { data: gameMetrics } = useQuery<GameMetricsData>({
     queryKey: ["player-game-metrics", player.id],
     queryFn: async () => {
       const { data: fixtureStats, error: fixtureError } = await supabase
@@ -53,9 +77,22 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
 
       if (fixtureError || gamesError) throw fixtureError || gamesError;
 
+      // Transform the data to match the expected interface
+      const transformedRecentGames = recentGames?.map(game => ({
+        ...game,
+        isCaptain: false, // You might want to fetch this from fixture_team_selections
+        isMotm: false, // You might want to fetch this from fixtures table
+      })) || [];
+
       return {
-        stats: fixtureStats,
-        recentGames: recentGames
+        stats: fixtureStats || {
+          total_appearances: 0,
+          captain_appearances: 0,
+          total_minutes_played: 0,
+          positions_played: {}
+        },
+        recentGames: transformedRecentGames,
+        motmCount: 0 // You might want to calculate this from fixtures table
       };
     },
   });
@@ -300,12 +337,14 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
             <div className="space-y-4">
               <h4 className="text-lg font-semibold">Recent Games</h4>
               <div className="space-y-4">
-                {gameMetrics?.recentGames.map((game, index) => (
-                  <div key={index} 
+                {gameMetrics?.recentGames.map((game) => (
+                  <div key={game.id} 
                     className="border rounded-lg p-5 hover:bg-accent/5 transition-colors">
                     <div className="flex items-center gap-3 mb-3">
                       <span className="text-lg font-semibold text-gray-900">vs {game.fixtures?.opponent}</span>
-                      <Badge variant="secondary" className="text-sm font-medium">{game.fixture_playing_periods?.duration_minutes || 0} mins</Badge>
+                      <Badge variant="secondary" className="text-sm font-medium">
+                        {game.fixture_playing_periods?.duration_minutes || 0} mins
+                      </Badge>
                       {game.isCaptain && (
                         <TooltipProvider>
                           <Tooltip>
@@ -332,11 +371,9 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {Object.entries(game.positions).map(([pos, mins]) => (
-                        <Badge key={pos} variant="outline" className="text-sm">
-                          {pos}: {mins}m
-                        </Badge>
-                      ))}
+                      <Badge variant="outline" className="text-sm">
+                        {game.position}
+                      </Badge>
                     </div>
                   </div>
                 ))}
