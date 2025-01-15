@@ -27,7 +27,7 @@ interface GameMetricsData {
     total_appearances: number;
     captain_appearances: number;
     total_minutes_played: number;
-    positions_played?: Record<string, number>;
+    positions_played: Record<string, number>;
   };
   recentGames: Array<{
     id: string;
@@ -39,8 +39,8 @@ interface GameMetricsData {
       duration_minutes: number;
     };
     position: string;
-    isCaptain?: boolean;
-    isMotm?: boolean;
+    isCaptain: boolean;
+    isMotm: boolean;
   }>;
   motmCount: number;
 }
@@ -65,7 +65,8 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           *,
           fixtures (
             date,
-            opponent
+            opponent,
+            motm_player_id
           ),
           fixture_playing_periods (
             duration_minutes
@@ -78,21 +79,28 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
       if (fixtureError || gamesError) throw fixtureError || gamesError;
 
       // Transform the data to match the expected interface
+      const transformedStats = {
+        total_appearances: fixtureStats?.total_appearances || 0,
+        captain_appearances: fixtureStats?.captain_appearances || 0,
+        total_minutes_played: fixtureStats?.total_minutes_played || 0,
+        positions_played: (fixtureStats?.positions_played as Record<string, number>) || {}
+      };
+
       const transformedRecentGames = recentGames?.map(game => ({
-        ...game,
+        id: game.id,
+        fixtures: game.fixtures,
+        fixture_playing_periods: game.fixture_playing_periods,
+        position: game.position,
         isCaptain: false, // You might want to fetch this from fixture_team_selections
-        isMotm: false, // You might want to fetch this from fixtures table
+        isMotm: game.fixtures?.motm_player_id === player.id
       })) || [];
 
+      const motmCount = transformedRecentGames.filter(game => game.isMotm).length;
+
       return {
-        stats: fixtureStats || {
-          total_appearances: 0,
-          captain_appearances: 0,
-          total_minutes_played: 0,
-          positions_played: {}
-        },
+        stats: transformedStats,
         recentGames: transformedRecentGames,
-        motmCount: 0 // You might want to calculate this from fixtures table
+        motmCount
       };
     },
   });
