@@ -103,6 +103,8 @@ export default async function Page({ params }: { params: { id: string } }) {
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
+  const totalMinutes = Object.values(positionMinutes).reduce((a, b) => a + b, 0)
+
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Player Details</h1>
@@ -133,7 +135,7 @@ export default async function Page({ params }: { params: { id: string } }) {
         </div>
 
         <div className="border rounded">
-          <Collapsible>
+          <Collapsible defaultOpen>
             <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-accent">
               <h3 className="font-semibold">Game Metrics</h3>
               <ChevronDown className="h-5 w-5" />
@@ -142,29 +144,27 @@ export default async function Page({ params }: { params: { id: string } }) {
               <div>
                 <h4 className="font-medium mb-2">Appearances</h4>
                 <div className="grid grid-cols-4 gap-4">
-                  <div>
+                  <div className="p-3 bg-accent/10 rounded-lg">
                     <p className="text-sm text-gray-600">Total Games</p>
-                    <p className="font-medium">{player.fixture_player_positions?.length || 0}</p>
+                    <p className="font-medium text-xl">{player.fixture_player_positions?.length || 0}</p>
                   </div>
-                  <div>
+                  <div className="p-3 bg-accent/10 rounded-lg">
                     <p className="text-sm text-gray-600">Captain</p>
                     <div className="flex items-center gap-1">
-                      <p className="font-medium">{captainAppearances}</p>
-                      <Crown className="h-4 w-4 text-blue-500" title="Captain" />
+                      <p className="font-medium text-xl">{captainAppearances}</p>
+                      <Crown className="h-5 w-5 text-blue-500" title="Captain" />
                     </div>
                   </div>
-                  <div>
+                  <div className="p-3 bg-accent/10 rounded-lg">
                     <p className="text-sm text-gray-600">MOTM</p>
                     <div className="flex items-center gap-1">
-                      <p className="font-medium">{motmAppearances}</p>
-                      <Trophy className="h-4 w-4 text-yellow-500" title="Man of the Match" />
+                      <p className="font-medium text-xl">{motmAppearances}</p>
+                      <Trophy className="h-5 w-5 text-yellow-500" title="Man of the Match" />
                     </div>
                   </div>
-                  <div>
+                  <div className="p-3 bg-accent/10 rounded-lg">
                     <p className="text-sm text-gray-600">Total Minutes</p>
-                    <p className="font-medium">
-                      {Object.values(positionMinutes).reduce((a, b) => a + b, 0)}
-                    </p>
+                    <p className="font-medium text-xl">{totalMinutes}</p>
                   </div>
                 </div>
               </div>
@@ -173,7 +173,7 @@ export default async function Page({ params }: { params: { id: string } }) {
                 <h4 className="font-medium mb-2">Minutes by Position</h4>
                 <ul className="space-y-1">
                   {Object.entries(positionMinutes).map(([position, minutes]) => (
-                    <li key={position} className="flex justify-between">
+                    <li key={position} className="flex justify-between p-2 bg-accent/5 rounded">
                       <span>{position}</span>
                       <span className="font-medium">{minutes} mins</span>
                     </li>
