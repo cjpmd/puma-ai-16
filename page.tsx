@@ -131,40 +131,37 @@ export default async function Page({ params }: { params: { id: string } }) {
               <ChevronDown className="h-5 w-5" />
             </CollapsibleTrigger>
             <CollapsibleContent className="p-4 pt-0 space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">Appearances</h4>
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="p-3 bg-accent/10 rounded-lg">
-                    <p className="text-sm text-gray-600">Total Games</p>
-                    <div className="flex items-center gap-1">
-                      <p className="font-medium text-xl">{stats?.total_appearances || 0}</p>
-                      <Medal className="h-5 w-5 text-purple-500" title="Total Games" />
-                    </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 bg-accent/10 rounded-lg">
+                  <p className="text-sm text-gray-600">Total Games</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-2xl font-semibold">{stats?.total_appearances || 0}</p>
+                    <Medal className="h-5 w-5 text-purple-500" />
                   </div>
-                  <div className="p-3 bg-accent/10 rounded-lg">
-                    <p className="text-sm text-gray-600">Captain</p>
-                    <div className="flex items-center gap-1">
-                      <p className="font-medium text-xl">{stats?.captain_appearances || 0}</p>
-                      <Crown className="h-5 w-5 text-blue-500" title="Captain" />
-                    </div>
+                </div>
+                <div className="p-4 bg-accent/10 rounded-lg">
+                  <p className="text-sm text-gray-600">Captain</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-2xl font-semibold">{stats?.captain_appearances || 0}</p>
+                    <Crown className="h-5 w-5 text-blue-500" />
                   </div>
-                  <div className="p-3 bg-accent/10 rounded-lg">
-                    <p className="text-sm text-gray-600">MOTM</p>
-                    <div className="flex items-center gap-1">
-                      <p className="font-medium text-xl">
-                        {player.fixture_player_positions?.filter(
-                          pos => pos.fixtures?.motm_player_id === player.id
-                        ).length || 0}
-                      </p>
-                      <Trophy className="h-5 w-5 text-yellow-500" title="Man of the Match" />
-                    </div>
+                </div>
+                <div className="p-4 bg-accent/10 rounded-lg">
+                  <p className="text-sm text-gray-600">MOTM</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-2xl font-semibold">
+                      {player.fixture_player_positions?.filter(
+                        pos => pos.fixtures?.motm_player_id === player.id
+                      ).length || 0}
+                    </p>
+                    <Trophy className="h-5 w-5 text-yellow-500" />
                   </div>
-                  <div className="p-3 bg-accent/10 rounded-lg">
-                    <p className="text-sm text-gray-600">Total Minutes</p>
-                    <div className="flex items-center gap-1">
-                      <p className="font-medium text-xl">{stats?.total_minutes_played || 0}</p>
-                      <Award className="h-5 w-5 text-green-500" title="Total Minutes Played" />
-                    </div>
+                </div>
+                <div className="p-4 bg-accent/10 rounded-lg">
+                  <p className="text-sm text-gray-600">Total Minutes</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-2xl font-semibold">{stats?.total_minutes_played || 0}</p>
+                    <Award className="h-5 w-5 text-green-500" />
                   </div>
                 </div>
               </div>
@@ -172,23 +169,23 @@ export default async function Page({ params }: { params: { id: string } }) {
               {stats?.positions_played && Object.keys(stats.positions_played).length > 0 && (
                 <div>
                   <h4 className="font-medium mb-2">Minutes by Position</h4>
-                  <ul className="space-y-1">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {Object.entries(stats.positions_played).map(([position, minutes]) => (
-                      <li key={position} className="flex justify-between p-2 bg-accent/5 rounded">
-                        <span>{position}</span>
-                        <span className="font-medium">{minutes} mins</span>
-                      </li>
+                      <div key={position} className="flex justify-between p-2 bg-accent/5 rounded">
+                        <span className="font-medium">{position}</span>
+                        <span>{minutes} mins</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
 
               <div>
                 <h4 className="font-medium mb-2">Recent Games</h4>
-                <ul className="space-y-3">
+                <div className="space-y-3">
                   {sortedGames.map((game, index) => (
-                    <li key={index} className="border-b pb-2 last:border-b-0">
-                      <div className="flex items-center gap-2 mb-1">
+                    <div key={index} className="border rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
                         <span className="font-medium">vs {game.opponent}</span>
                         <Badge variant="secondary">{game.totalMinutes} mins</Badge>
                         {game.isCaptain && (
@@ -198,16 +195,16 @@ export default async function Page({ params }: { params: { id: string } }) {
                           <Trophy className="h-4 w-4 text-yellow-500" title="Man of the Match" />
                         )}
                       </div>
-                      <div className="text-sm text-gray-600 flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {Object.entries(game.positions).map(([pos, mins]: [string, number]) => (
-                          <Badge key={pos} variant="outline" className="text-xs">
+                          <Badge key={pos} variant="outline">
                             {pos}: {mins}m
                           </Badge>
                         ))}
                       </div>
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             </CollapsibleContent>
           </Collapsible>
