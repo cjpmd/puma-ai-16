@@ -55,6 +55,10 @@ export default async function Page({ params }: { params: { id: string } }) {
   const player = playerResult.data
   const stats = statsResult.data
 
+  // Add console logs to debug data
+  console.log('Player Stats:', stats)
+  console.log('Player Positions:', stats?.positions_played)
+
   if (!player) {
     notFound()
   }
