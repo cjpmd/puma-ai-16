@@ -165,17 +165,19 @@ export default async function Page({ params }: { params: { id: string } }) {
                 </div>
               </div>
 
-              <div>
-                <h4 className="font-medium mb-2">Minutes by Position</h4>
-                <ul className="space-y-1">
-                  {stats?.positions_played && Object.entries(stats.positions_played).map(([position, minutes]) => (
-                    <li key={position} className="flex justify-between p-2 bg-accent/5 rounded">
-                      <span>{position}</span>
-                      <span className="font-medium">{minutes} mins</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {stats?.positions_played && Object.keys(stats.positions_played).length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2">Minutes by Position</h4>
+                  <ul className="space-y-1">
+                    {Object.entries(stats.positions_played).map(([position, minutes]) => (
+                      <li key={position} className="flex justify-between p-2 bg-accent/5 rounded">
+                        <span>{position}</span>
+                        <span className="font-medium">{minutes} mins</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div>
                 <h4 className="font-medium mb-2">Recent Games</h4>
