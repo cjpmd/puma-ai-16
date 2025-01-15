@@ -6,6 +6,10 @@ import { ChevronDown, Trophy, Crown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 export default async function Page({ params }: { params: { id: string } }) {
+  if (!params.id) {
+    notFound()
+  }
+
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
 
