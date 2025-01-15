@@ -2,6 +2,7 @@ import { Trophy, Crown, Award, Medal } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface GameMetricsProps {
   stats: {
@@ -89,10 +90,28 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                     <span className="text-lg font-semibold text-gray-900">vs {game.opponent}</span>
                     <Badge variant="secondary" className="text-sm font-medium">{game.totalMinutes} mins</Badge>
                     {game.isCaptain && (
-                      <Crown className="h-5 w-5 text-blue-500" title="Captain" />
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Crown className="h-5 w-5 text-blue-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Captain</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                     {game.isMotm && (
-                      <Trophy className="h-5 w-5 text-yellow-500" title="Man of the Match" />
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Trophy className="h-5 w-5 text-yellow-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Man of the Match</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
