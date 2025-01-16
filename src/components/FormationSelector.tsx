@@ -1,6 +1,8 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 // Define position types and their options
 const positionOptions = {
@@ -21,6 +23,20 @@ type PositionType = keyof typeof positionOptions;
 export const FormationSelector = () => {
   const [selectedPositions, setSelectedPositions] = useState<Record<string, string>>({});
 
+  // Fetch position definitions from the database
+  const { data: positionDefinitions } = useQuery({
+    queryKey: ["position-definitions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("position_definitions")
+        .select("abbreviation, full_name")
+        .order("abbreviation");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const handlePositionChange = (position: string, value: string) => {
     setSelectedPositions(prev => ({
       ...prev,
@@ -29,7 +45,7 @@ export const FormationSelector = () => {
   };
 
   const PositionSelect = ({ position, label }: { position: string; label: PositionType }) => (
-    <div className="w-24">
+    <div className="w-48">
       <Select
         value={selectedPositions[position]}
         onValueChange={(value) => handlePositionChange(position, value)}
@@ -38,11 +54,20 @@ export const FormationSelector = () => {
           <SelectValue placeholder={label} />
         </SelectTrigger>
         <SelectContent>
-          {positionOptions[label].map((option) => (
-            <SelectItem key={option} value={option}>
-              {option}
-            </SelectItem>
-          ))}
+          {positionOptions[label].map((option) => {
+            const positionDef = positionDefinitions?.find(
+              def => def.abbreviation === option.split(" ")[0]
+            );
+            const displayText = positionDef 
+              ? `${positionDef.full_name} (${option})`
+              : option;
+            
+            return (
+              <SelectItem key={option} value={option}>
+                {displayText}
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
     </div>
