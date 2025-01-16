@@ -82,8 +82,7 @@ export default async function Page({ params }: { params: { id: string } }) {
     }
     
     // Sum up minutes from all periods for this position
-    const minutes = curr.fixture_playing_periods?.reduce((sum, period) => 
-      sum + (period.duration_minutes || 0), 0) || 0
+    const minutes = curr.fixture_playing_periods?.duration_minutes || 0
     
     acc[fixtureId].totalMinutes += minutes
     
@@ -125,7 +124,12 @@ export default async function Page({ params }: { params: { id: string } }) {
         <PlayerAttributes attributes={player.player_attributes} />
 
         <GameMetrics 
-          stats={stats}
+          stats={stats || {
+            total_appearances: 0,
+            captain_appearances: 0,
+            total_minutes_played: 0,
+            positions_played: {}
+          }}
           motmCount={motmCount}
           recentGames={sortedGames}
         />
