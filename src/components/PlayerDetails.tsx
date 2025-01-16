@@ -24,25 +24,6 @@ interface PlayerDetailsProps {
   player: Player;
 }
 
-interface GamePosition {
-  position: string;
-  minutes: number;
-}
-
-interface GameData {
-  id: string;
-  fixture_id: string;
-  fixtures: {
-    date: string;
-    opponent: string;
-    motm_player_id?: string;
-  };
-  positions: Record<string, number>;
-  totalMinutes: number;
-  isCaptain: boolean;
-  isMotm: boolean;
-}
-
 interface GameMetricsData {
   stats: {
     total_appearances: number;
@@ -50,8 +31,15 @@ interface GameMetricsData {
     total_minutes_played: number;
     positions_played: Record<string, number>;
   };
-  recentGames: GameData[];
   motmCount: number;
+  recentGames: {
+    opponent: string;
+    date: string;
+    totalMinutes: number;
+    positions: Record<string, number>;
+    isMotm: boolean;
+    isCaptain: boolean;
+  }[];
 }
 
 export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
@@ -71,8 +59,6 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         .select("*")
         .eq("player_id", player.id)
         .maybeSingle();
-
-      console.log("Fixture stats:", fixtureStats);
 
       // Get recent games with fixture details and all positions
       const { data: recentGames, error: gamesError } = await supabase
@@ -95,8 +81,6 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         .order("date", { ascending: false })
         .limit(5);
 
-      console.log("Recent games raw data:", recentGames);
-
       // Get captain information
       const { data: captainData, error: captainError } = await supabase
         .from("fixture_team_selections")
@@ -114,34 +98,32 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
       );
 
       // Transform recent games data
-      const transformedGames = recentGames?.map(game => ({
-        id: game.id,
-        fixture_id: game.id,
-        fixtures: {
-          date: game.date,
+      const transformedGames = recentGames?.map(game => {
+        const positions: Record<string, number> = {};
+        let totalMinutes = 0;
+
+        game.fixture_player_positions?.forEach((pos: any) => {
+          if (pos.player_id === player.id) {
+            const minutes = (pos.fixture_playing_periods || []).reduce((sum: number, period: any) => 
+              sum + (period.duration_minutes || 0), 0);
+            
+            if (!positions[pos.position]) {
+              positions[pos.position] = 0;
+            }
+            positions[pos.position] += minutes;
+            totalMinutes += minutes;
+          }
+        });
+
+        return {
           opponent: game.opponent,
-          motm_player_id: game.motm_player_id
-        },
-        opponent: game.opponent,
-        date: game.date,
-        totalMinutes: game.fixture_player_positions?.reduce((sum, pos) => {
-          if (pos.player_id === player.id) {
-            return sum + (pos.fixture_playing_periods?.reduce((periodSum, period) => 
-              periodSum + (period.duration_minutes || 0), 0) || 0);
-          }
-          return sum;
-        }, 0) || 0,
-        positions: game.fixture_player_positions?.reduce((posMap: Record<string, number>, pos) => {
-          if (pos.player_id === player.id) {
-            const minutes = pos.fixture_playing_periods?.reduce((sum, period) => 
-              sum + (period.duration_minutes || 0), 0) || 0;
-            posMap[pos.position] = (posMap[pos.position] || 0) + minutes;
-          }
-          return posMap;
-        }, {}),
-        isMotm: game.motm_player_id === player.id,
-        isCaptain: captainMap.get(game.id) || false
-      })) || [];
+          date: game.date,
+          totalMinutes,
+          positions,
+          isMotm: game.motm_player_id === player.id,
+          isCaptain: captainMap.get(game.id) || false
+        };
+      }) || [];
 
       return {
         stats: {
