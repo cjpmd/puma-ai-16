@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Check, Printer, LayoutGrid } from "lucide-react";
+import { Plus, Check, Printer, LayoutGrid, MinusCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { PrintTeamSelection } from './PrintTeamSelection';
@@ -449,7 +449,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
                           onClick={() => removePeriod(index)}
                           className="h-6 w-6 p-0"
                         >
-                          <Minus className="w-4 h-4" />
+                          <MinusCircle className="w-4 h-4" />
                         </Button>
                       )}
                     </div>
