@@ -14,20 +14,24 @@ import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
 
+interface TrainingFile {
+  id: string;
+  file_name: string;
+  file_path: string;
+}
+
+interface TrainingDrill {
+  id: string;
+  title: string;
+  instructions: string | null;
+  training_files: TrainingFile[];
+}
+
 interface TrainingSession {
   id: string;
   title: string;
   date: string;
-  drills: {
-    id: string;
-    title: string;
-    instructions: string;
-    training_files: {
-      id: string;
-      file_name: string;
-      file_path: string;
-    }[];
-  }[];
+  training_drills: TrainingDrill[];
 }
 
 export const Calendar = () => {
@@ -93,8 +97,7 @@ export const Calendar = () => {
     },
   });
 
-  // Function to determine the CSS classes for each day
-  const getDayClassNames = (day: Date) => {
+  const getDayClassNames = (day: Date): string => {
     const dateStr = format(day, "yyyy-MM-dd");
     const hasTraining = sessions?.some(session => session.date === dateStr);
     const hasFixture = fixtures?.some(fixture => fixture.date === dateStr);
@@ -361,7 +364,7 @@ export const Calendar = () => {
                   customStyles: (date) => true,
                 }}
                 modifiersClassNames={{
-                  customStyles: (date) => getDayClassNames(date),
+                  customStyles: getDayClassNames,
                 }}
               />
             </div>
@@ -393,7 +396,16 @@ export const Calendar = () => {
               {sessions?.map((session) => (
                 <SessionCard 
                   key={session.id} 
-                  session={session}
+                  session={{
+                    id: session.id,
+                    title: session.title,
+                    drills: session.training_drills.map(drill => ({
+                      id: drill.id,
+                      title: drill.title,
+                      instructions: drill.instructions || "",
+                      training_files: drill.training_files
+                    }))
+                  }}
                   fileUrls={{}}
                   onAddDrillClick={(sessionId) => {
                     setSelectedSessionId(sessionId);
