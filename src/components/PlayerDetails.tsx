@@ -157,6 +157,55 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
     },
   });
 
+  // Query for attribute history
+  const { data: attributeHistory } = useQuery({
+    queryKey: ["attribute-history", player.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_attributes")
+        .select("*")
+        .eq("player_id", player.id)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      const history: Record<string, { date: string; value: number }[]> = {};
+      data.forEach((attr) => {
+        if (!history[attr.name]) {
+          history[attr.name] = [];
+        }
+        history[attr.name].push({
+          date: attr.created_at,
+          value: attr.value,
+        });
+      });
+
+      return history;
+    },
+  });
+
+  // Query for top positions
+  const { data: topPositions } = useQuery({
+    queryKey: ["top-positions", player.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('position_suitability')
+        .select(`
+          suitability_score,
+          position_definitions (
+            abbreviation,
+            full_name
+          )
+        `)
+        .eq('player_id', player.id)
+        .order('suitability_score', { ascending: false })
+        .limit(3);
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Set up real-time listeners for relevant tables
   useEffect(() => {
     const channel = supabase
