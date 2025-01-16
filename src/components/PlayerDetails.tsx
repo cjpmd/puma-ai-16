@@ -48,6 +48,29 @@ interface GameMetricsData {
   motmCount: number;
 }
 
+const positionMappings: Record<string, string> = {
+  'GK': 'Goalkeeper',
+  'SK': 'Sweeper Keeper',
+  'DL': 'Left Back',
+  'DCL': 'Left Center Back',
+  'DCR': 'Right Center Back',
+  'DR': 'Right Back',
+  'WBL': 'Left Wing Back',
+  'WBR': 'Right Wing Back',
+  'DMCL': 'Left Defensive Midfielder',
+  'DMCR': 'Right Defensive Midfielder',
+  'ML': 'Left Midfielder',
+  'MCL': 'Left Center Midfielder',
+  'MCR': 'Right Center Midfielder',
+  'MR': 'Right Midfielder',
+  'AML': 'Left Attacking Midfielder',
+  'AMCL': 'Left Center Attacking Midfielder',
+  'AMCR': 'Right Center Attacking Midfielder',
+  'AMR': 'Right Attacking Midfielder',
+  'STCL': 'Left Striker',
+  'STCR': 'Right Striker'
+};
+
 export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const updateAttribute = usePlayersStore((state) => state.updateAttribute);
   const { toast } = useToast();
@@ -269,7 +292,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
               <div className="flex gap-2">
                 {topPositions.map((pos: any) => (
                   <Badge key={pos.position_definitions.abbreviation} variant="outline">
-                    {pos.position_definitions.abbreviation} ({pos.suitability_score.toFixed(1)})
+                    {pos.position_definitions.full_name} ({pos.position_definitions.abbreviation})
                   </Badge>
                 ))}
               </div>
@@ -356,7 +379,9 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                   {Object.entries(gameMetrics.stats.positions_played).map(([position, minutes]) => (
                     <div key={position} 
                       className="flex justify-between items-center p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
-                      <span className="font-medium text-gray-800">{position}</span>
+                      <span className="font-medium text-gray-800">
+                        {positionMappings[position]} ({position})
+                      </span>
                       <span className="text-gray-600 font-semibold">{minutes} mins</span>
                     </div>
                   ))}
