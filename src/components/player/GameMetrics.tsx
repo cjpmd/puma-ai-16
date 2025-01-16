@@ -24,6 +24,29 @@ interface GameMetricsProps {
   }>
 }
 
+const positionMappings: Record<string, string> = {
+  'GK': 'Goalkeeper',
+  'SK': 'Sweeper Keeper',
+  'DL': 'Left Back',
+  'DCL': 'Left Center Back',
+  'DCR': 'Right Center Back',
+  'DR': 'Right Back',
+  'WBL': 'Left Wing Back',
+  'WBR': 'Right Wing Back',
+  'DMCL': 'Left Defensive Midfielder',
+  'DMCR': 'Right Defensive Midfielder',
+  'ML': 'Left Midfielder',
+  'MCL': 'Left Center Midfielder',
+  'MCR': 'Right Center Midfielder',
+  'MR': 'Right Midfielder',
+  'AML': 'Left Attacking Midfielder',
+  'AMCL': 'Left Center Attacking Midfielder',
+  'AMCR': 'Right Center Attacking Midfielder',
+  'AMR': 'Right Attacking Midfielder',
+  'STCL': 'Left Striker',
+  'STCR': 'Right Striker'
+};
+
 export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps) {
   return (
     <div className="border rounded-lg shadow-sm bg-white">
@@ -74,7 +97,9 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                 {Object.entries(stats.positions_played).map(([position, minutes]) => (
                   <div key={position} 
                     className="flex justify-between items-center p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
-                    <span className="font-medium text-gray-800">{position}</span>
+                    <span className="font-medium text-gray-800">
+                      {positionMappings[position] || position} ({position})
+                    </span>
                     <span className="text-gray-600 font-semibold">{minutes} mins</span>
                   </div>
                 ))}
@@ -122,7 +147,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                   <div className="flex flex-wrap gap-2">
                     {Object.entries(game.positions).map(([pos, mins]) => (
                       <Badge key={pos} variant="outline" className="text-sm">
-                        {pos}: {mins}m
+                        {positionMappings[pos] || pos} ({pos}): {mins}m
                       </Badge>
                     ))}
                   </div>
