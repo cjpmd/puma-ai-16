@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Minus } from "lucide-react";
+import { Plus, Minus, Check } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 interface TeamSelectionManagerProps {
   fixtureId: string;
@@ -51,6 +52,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
     },
   ]);
   const [captain, setCaptain] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch positions from the database
   const { data: positions } = useQuery({
@@ -209,6 +211,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
   };
 
   const saveTeamSelection = async () => {
+    setIsSaving(true);
     try {
       // Delete existing periods and positions
       await supabase
@@ -298,6 +301,11 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         title: "Success",
         description: "Team selection saved successfully",
       });
+      
+      // Reset the saving state after a delay
+      setTimeout(() => {
+        setIsSaving(false);
+      }, 1000);
     } catch (error) {
       console.error("Error saving team selection:", error);
       toast({
@@ -305,6 +313,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         title: "Error",
         description: "Failed to save team selection",
       });
+      setIsSaving(false);
     }
   };
 
@@ -473,7 +482,23 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
       </div>
 
       <div className="flex justify-end mt-4">
-        <Button onClick={saveTeamSelection}>Save Team Selection</Button>
+        <Button 
+          onClick={saveTeamSelection}
+          className={cn(
+            "transition-all duration-200",
+            isSaving && "bg-green-500 hover:bg-green-600"
+          )}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <>
+              <Check className="w-4 h-4 mr-2" />
+              Saved!
+            </>
+          ) : (
+            "Save Team Selection"
+          )}
+        </Button>
       </div>
     </div>
   );
