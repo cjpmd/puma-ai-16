@@ -62,12 +62,16 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const { data: gameMetrics } = useQuery<GameMetricsData>({
     queryKey: ["player-game-metrics", player.id],
     queryFn: async () => {
+      console.log("Fetching game metrics for player:", player.id);
+      
       // First get the fixture stats
       const { data: fixtureStats, error: fixtureError } = await supabase
         .from("player_fixture_stats")
         .select("*")
         .eq("player_id", player.id)
         .maybeSingle();
+
+      console.log("Fixture stats:", fixtureStats);
 
       // Get recent games with fixture details and all positions
       const { data: recentGames, error: gamesError } = await supabase
@@ -80,6 +84,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           fixture_player_positions!inner (
             id,
             position,
+            player_id,
             fixture_playing_periods (
               duration_minutes
             )
@@ -89,6 +94,8 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         .order("date", { ascending: false })
         .limit(5);
 
+      console.log("Recent games raw data:", recentGames);
+
       // Get captain information
       const { data: captainData, error: captainError } = await supabase
         .from("fixture_team_selections")
@@ -96,6 +103,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         .eq("player_id", player.id);
 
       if (fixtureError || gamesError || captainError) {
+        console.error("Error fetching data:", { fixtureError, gamesError, captainError });
         throw fixtureError || gamesError || captainError;
       }
 
@@ -106,6 +114,8 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
 
       // Group positions by fixture and calculate total minutes for each position
       const transformedGames = recentGames?.reduce((acc: Record<string, any>, game) => {
+        console.log("Processing game:", game);
+        
         if (!acc[game.id]) {
           acc[game.id] = {
             id: game.id,
@@ -134,13 +144,12 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           acc[game.id].totalMinutes += minutes;
         });
 
+        console.log("Transformed game data:", acc[game.id]);
         return acc;
       }, {});
 
       const games = Object.values(transformedGames || {});
-
-      // Count MOTM appearances
-      const motmCount = games.filter((game: any) => game.isMotm).length;
+      console.log("Final transformed games:", games);
 
       return {
         stats: {
@@ -150,7 +159,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           positions_played: fixtureStats?.positions_played as Record<string, number> || {}
         },
         recentGames: games,
-        motmCount
+        motmCount: games.filter((game: any) => game.isMotm).length
       };
     },
   });
