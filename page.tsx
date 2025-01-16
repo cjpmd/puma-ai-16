@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { PlayerHeader } from '@/components/player/PlayerHeader'
 import { PlayerAttributes } from '@/components/player/PlayerAttributes'
 import { GameMetrics } from '@/components/player/GameMetrics'
@@ -64,8 +65,10 @@ export default async function Page({ params }: { params: { id: string } }) {
     const fixtureId = curr.fixtures?.id
     if (!opponent || !fixtureId) return acc
     
-    if (!acc[opponent]) {
-      acc[opponent] = {
+    // Only create a new entry if this fixture hasn't been processed yet
+    if (!acc[fixtureId]) {
+      acc[fixtureId] = {
+        id: fixtureId,
         opponent,
         date: curr.fixtures?.date,
         totalMinutes: 0,
@@ -77,9 +80,10 @@ export default async function Page({ params }: { params: { id: string } }) {
       }
     }
     
-    acc[opponent].totalMinutes += curr.fixture_playing_periods?.duration_minutes || 0
+    // Update minutes and positions for this fixture
+    acc[fixtureId].totalMinutes += curr.fixture_playing_periods?.duration_minutes || 0
     if (curr.position) {
-      acc[opponent].positions[curr.position] = (acc[opponent].positions[curr.position] || 0) + 
+      acc[fixtureId].positions[curr.position] = (acc[fixtureId].positions[curr.position] || 0) + 
         (curr.fixture_playing_periods?.duration_minutes || 0)
     }
     
@@ -90,7 +94,7 @@ export default async function Page({ params }: { params: { id: string } }) {
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
-  // Count unique MOTM appearances by counting fixtures where player was MOTM
+  // Count unique MOTM and captain appearances
   const motmCount = sortedGames.filter(game => game.isMotm).length
 
   return (

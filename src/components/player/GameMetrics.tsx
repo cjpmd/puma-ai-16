@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import Link from 'next/link'
 
 interface GameMetricsProps {
   stats: {
@@ -13,6 +14,7 @@ interface GameMetricsProps {
   }
   motmCount: number
   recentGames: Array<{
+    id: string
     opponent: string
     totalMinutes: number
     positions: Record<string, number>
@@ -84,8 +86,11 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
             <h4 className="text-lg font-semibold">Recent Games</h4>
             <div className="space-y-4">
               {recentGames.map((game, index) => (
-                <div key={index} 
-                  className="border rounded-lg p-5 hover:bg-accent/5 transition-colors">
+                <Link 
+                  key={index}
+                  href={`/fixtures/${game.id}`}
+                  className="block border rounded-lg p-5 hover:bg-accent/5 transition-colors"
+                >
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-lg font-semibold text-gray-900">vs {game.opponent}</span>
                     <Badge variant="secondary" className="text-sm font-medium">{game.totalMinutes} mins</Badge>
@@ -121,7 +126,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                       </Badge>
                     ))}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
