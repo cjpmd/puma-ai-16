@@ -58,6 +58,14 @@ export default async function Page({ params }: { params: { id: string } }) {
     notFound()
   }
 
+  // Get unique fixtures where player was MOTM
+  const motmFixtures = new Set(
+    player.fixture_player_positions
+      ?.filter(pos => pos.fixtures?.motm_player_id === player.id)
+      .map(pos => pos.fixtures?.id)
+  )
+  const motmCount = motmFixtures.size
+
   // Group games by opponent to consolidate positions and minutes
   const gamesByOpponent = player.fixture_player_positions?.reduce((acc, curr) => {
     const opponent = curr.fixtures?.opponent
@@ -89,10 +97,6 @@ export default async function Page({ params }: { params: { id: string } }) {
   const sortedGames = Object.values(gamesByOpponent || {}).sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
-
-  const motmCount = player.fixture_player_positions?.filter(
-    pos => pos.fixtures?.motm_player_id === player.id
-  ).length || 0
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
