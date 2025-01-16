@@ -19,9 +19,10 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Minus, Check } from "lucide-react";
+import { Plus, Minus, Check, Printer } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { PrintTeamSelection } from './PrintTeamSelection';
 
 interface TeamSelectionManagerProps {
   fixtureId: string;
@@ -53,6 +54,8 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
   ]);
   const [captain, setCaptain] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
+  const [players, setPlayers] = useState<any[]>(null);
+  const [fixtures, setFixtures] = useState<any[]>(null);
 
   // Fetch positions from the database
   const { data: positions } = useQuery({
@@ -69,7 +72,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
   });
 
   // Fetch available players for the category
-  const { data: players, error: playersError } = useQuery({
+  const { data: playersData, error: playersError } = useQuery({
     queryKey: ["players", category],
     queryFn: async () => {
       console.log("Fetching players for category:", category);
@@ -327,9 +330,9 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
     );
   }
 
-  if (!positions || !players) return <div>Loading...</div>;
+  if (!positions || !playersData) return <div>Loading...</div>;
 
-  if (players.length === 0) {
+  if (playersData.length === 0) {
     return (
       <Alert>
         <AlertDescription>
@@ -339,167 +342,169 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
     );
   }
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="space-y-4 max-h-[80vh] overflow-y-auto">
-      <div className="flex items-center gap-4 mb-4">
-        <span className="font-medium">Captain:</span>
-        <Select value={captain} onValueChange={setCaptain}>
-          <SelectTrigger className="w-[200px] h-8">
-            <SelectValue placeholder="Select captain" />
-          </SelectTrigger>
-          <SelectContent>
-            {players?.map((player) => (
-              <SelectItem key={player.id} value={player.id}>
-                {player.name} (#{player.squad_number})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex justify-end">
-        <Button onClick={addPeriod} size="sm" className="flex items-center">
-          <Plus className="w-4 h-4 mr-1" />
-          Add Period
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-4">
+          <span className="font-medium">Captain:</span>
+          <Select value={captain} onValueChange={setCaptain}>
+            <SelectTrigger className="w-[200px] h-8">
+              <SelectValue placeholder="Select captain" />
+            </SelectTrigger>
+            <SelectContent>
+              {playersData?.map((player) => (
+                <SelectItem key={player.id} value={player.id}>
+                  {player.name} (#{player.squad_number})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button 
+          onClick={handlePrint}
+          variant="outline"
+          className="print:hidden"
+        >
+          <Printer className="h-4 w-4 mr-2" />
+          Print Team Selection
         </Button>
       </div>
 
-      <div className="overflow-x-auto">
-        <Table className="border-collapse w-full">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-16">Position</TableHead>
-              {periods.map((_, index) => (
-                <TableHead key={index} className="min-w-[160px]">
-                  <div className="flex items-center justify-between">
-                    <span>Period {index + 1}</span>
-                    {periods.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removePeriod(index)}
-                        className="h-6 w-6 p-0"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                </TableHead>
+      {/* Original content */}
+      <div className="print:hidden">
+        <div className="overflow-x-auto">
+          <Table className="border-collapse w-full">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-16">Position</TableHead>
+                {periods.map((_, index) => (
+                  <TableHead key={index} className="min-w-[160px]">
+                    <div className="flex items-center justify-between">
+                      <span>Period {index + 1}</span>
+                      {periods.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removePeriod(index)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {/* Starting players */}
+              {Array.from({ length: 7 }, (_, positionIndex) => (
+                <TableRow key={positionIndex}>
+                  <TableCell className="font-medium">{positionIndex + 1}</TableCell>
+                  {periods.map((period, periodIndex) => (
+                    <TableCell key={periodIndex} className="p-1">
+                      <div className="space-y-1">
+                        <Select
+                          value={period.positions[positionIndex].position}
+                          onValueChange={(value) => handlePositionChange(periodIndex, positionIndex, value)}
+                        >
+                          <SelectTrigger className="h-7">
+                            <SelectValue placeholder="Position" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {positions?.map((pos) => (
+                              <SelectItem key={pos} value={pos}>
+                                {pos}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={period.positions[positionIndex].playerId}
+                          onValueChange={(value) => handlePlayerChange(periodIndex, positionIndex, value)}
+                        >
+                          <SelectTrigger className="h-7">
+                            <SelectValue placeholder="Player" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {playersData?.map((player) => (
+                              <SelectItem key={player.id} value={player.id}>
+                                {player.name} (#{player.squad_number})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TableCell>
+                  ))}
+                </TableRow>
               ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {/* Starting players */}
-            {Array.from({ length: 7 }, (_, positionIndex) => (
-              <TableRow key={positionIndex}>
-                <TableCell className="font-medium">{positionIndex + 1}</TableCell>
-                {periods.map((period, periodIndex) => (
-                  <TableCell key={periodIndex} className="p-1">
-                    <div className="space-y-1">
+              
+              {/* Substitutes section */}
+              <TableRow>
+                <TableCell colSpan={periods.length + 1} className="bg-muted/50 font-medium">
+                  Substitutes
+                </TableCell>
+              </TableRow>
+              {Array.from({ length: 3 }, (_, subIndex) => (
+                <TableRow key={`sub-${subIndex}`}>
+                  <TableCell className="font-medium">SUB {subIndex + 1}</TableCell>
+                  {periods.map((period, periodIndex) => (
+                    <TableCell key={periodIndex} className="p-1">
                       <Select
-                        value={period.positions[positionIndex].position}
-                        onValueChange={(value) => handlePositionChange(periodIndex, positionIndex, value)}
+                        value={period.substitutes[subIndex].playerId}
+                        onValueChange={(value) => handleSubstituteChange(periodIndex, subIndex, value)}
                       >
                         <SelectTrigger className="h-7">
-                          <SelectValue placeholder="Position" />
+                          <SelectValue placeholder="Select substitute" />
                         </SelectTrigger>
                         <SelectContent>
-                          {positions?.map((pos) => (
-                            <SelectItem key={pos} value={pos}>
-                              {pos}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={period.positions[positionIndex].playerId}
-                        onValueChange={(value) => handlePlayerChange(periodIndex, positionIndex, value)}
-                      >
-                        <SelectTrigger className="h-7">
-                          <SelectValue placeholder="Player" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {players?.map((player) => (
+                          {playersData?.map((player) => (
                             <SelectItem key={player.id} value={player.id}>
                               {player.name} (#{player.squad_number})
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-            
-            {/* Substitutes section */}
-            <TableRow>
-              <TableCell colSpan={periods.length + 1} className="bg-muted/50 font-medium">
-                Substitutes
-              </TableCell>
-            </TableRow>
-            {Array.from({ length: 3 }, (_, subIndex) => (
-              <TableRow key={`sub-${subIndex}`}>
-                <TableCell className="font-medium">SUB {subIndex + 1}</TableCell>
-                {periods.map((period, periodIndex) => (
-                  <TableCell key={periodIndex} className="p-1">
-                    <Select
-                      value={period.substitutes[subIndex].playerId}
-                      onValueChange={(value) => handleSubstituteChange(periodIndex, subIndex, value)}
-                    >
-                      <SelectTrigger className="h-7">
-                        <SelectValue placeholder="Select substitute" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {players?.map((player) => (
-                          <SelectItem key={player.id} value={player.id}>
-                            {player.name} (#{player.squad_number})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-
-            {/* Duration row */}
-            <TableRow>
-              <TableCell>Duration</TableCell>
-              {periods.map((period, index) => (
-                <TableCell key={index} className="p-1">
-                  <Input
-                    type="number"
-                    value={period.duration}
-                    onChange={(e) => handleDurationChange(index, parseInt(e.target.value))}
-                    className="h-7 w-16"
-                  />
-                </TableCell>
+                    </TableCell>
+                  ))}
+                </TableRow>
               ))}
-            </TableRow>
-          </TableBody>
-        </Table>
+
+              {/* Duration row */}
+              <TableRow>
+                <TableCell>Duration</TableCell>
+                {periods.map((period, index) => (
+                  <TableCell key={index} className="p-1">
+                    <Input
+                      type="number"
+                      value={period.duration}
+                      onChange={(e) => handleDurationChange(index, parseInt(e.target.value))}
+                      className="h-7 w-16"
+                    />
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
-      <div className="flex justify-end mt-4">
-        <Button 
-          onClick={saveTeamSelection}
-          className={cn(
-            "transition-all duration-200",
-            isSaving && "bg-green-500 hover:bg-green-600"
-          )}
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <>
-              <Check className="w-4 h-4 mr-2" />
-              Saved!
-            </>
-          ) : (
-            "Save Team Selection"
-          )}
-        </Button>
-      </div>
+      {/* Print view */}
+      {playersData && fixtures?.[0] && (
+        <PrintTeamSelection
+          fixture={fixtures[0]}
+          periods={periods}
+          players={playersData}
+          captain={captain}
+        />
+      )}
     </div>
   );
 };
+
+export default TeamSelectionManager;
