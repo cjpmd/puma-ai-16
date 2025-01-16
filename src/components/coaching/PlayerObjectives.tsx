@@ -277,14 +277,13 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
                       </Button>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2" onClick={e => e.stopPropagation()}>
                     <Select
                       value={objective.status}
                       onValueChange={(value) => {
                         const updatedObjective = { ...objective, status: value };
                         setEditingObjective(updatedObjective);
                       }}
-                      onClick={(e) => e.stopPropagation()}
                     >
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Update status" />
