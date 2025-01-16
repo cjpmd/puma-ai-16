@@ -455,8 +455,8 @@ export const Calendar = () => {
                     position: 'relative',
                   },
                 }}
-                modifiersClassNames={{
-                  customStyles: getDayClassNames,
+                classNames={{
+                  day: (date) => getDayClassNames(date),
                 }}
               />
             </div>
