@@ -36,8 +36,7 @@ interface GameData {
     opponent: string;
     motm_player_id?: string;
   };
-  position: string;
-  positions: GamePosition[];
+  positions: Record<string, number>;
   totalMinutes: number;
   isCaptain: boolean;
   isMotm: boolean;
@@ -70,7 +69,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         .eq("player_id", player.id)
         .maybeSingle();
 
-      // Get recent games with fixture details
+      // Get recent games with fixture details and all positions
       const { data: recentGames, error: gamesError } = await supabase
         .from("fixtures")
         .select(`
@@ -105,33 +104,41 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         captainData?.map(item => [item.fixture_id, item.is_captain]) || []
       );
 
-      // Transform the games data
-      const transformedGames = recentGames?.map(game => {
-        const positions = game.fixture_player_positions.map(pos => ({
-          position: pos.position,
-          minutes: pos.fixture_playing_periods?.duration_minutes || 0
-        }));
+      // Group positions by fixture and calculate total minutes for each position
+      const transformedGames = recentGames?.reduce((acc: Record<string, any>, game) => {
+        if (!acc[game.id]) {
+          acc[game.id] = {
+            id: game.id,
+            fixture_id: game.id,
+            fixtures: {
+              date: game.date,
+              opponent: game.opponent,
+              motm_player_id: game.motm_player_id
+            },
+            positions: {},
+            totalMinutes: 0,
+            isCaptain: captainMap.get(game.id) || false,
+            isMotm: game.motm_player_id === player.id
+          };
+        }
 
-        const totalMinutes = positions.reduce((sum, pos) => sum + pos.minutes, 0);
+        // Sum up minutes for each position in this fixture
+        game.fixture_player_positions.forEach((pos: any) => {
+          const minutes = pos.fixture_playing_periods?.duration_minutes || 0;
+          if (!acc[game.id].positions[pos.position]) {
+            acc[game.id].positions[pos.position] = 0;
+          }
+          acc[game.id].positions[pos.position] += minutes;
+          acc[game.id].totalMinutes += minutes;
+        });
 
-        return {
-          id: game.id,
-          fixture_id: game.id,
-          fixtures: {
-            date: game.date,
-            opponent: game.opponent,
-            motm_player_id: game.motm_player_id
-          },
-          position: positions[0]?.position || '', // Primary position
-          positions,
-          totalMinutes,
-          isCaptain: captainMap.get(game.id) || false,
-          isMotm: game.motm_player_id === player.id
-        };
-      }) || [];
+        return acc;
+      }, {});
+
+      const games = Object.values(transformedGames || {});
 
       // Count MOTM appearances
-      const motmCount = transformedGames.filter(game => game.isMotm).length;
+      const motmCount = games.filter((game: any) => game.isMotm).length;
 
       return {
         stats: {
@@ -140,7 +147,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           total_minutes_played: fixtureStats?.total_minutes_played || 0,
           positions_played: fixtureStats?.positions_played as Record<string, number> || {}
         },
-        recentGames: transformedGames,
+        recentGames: games,
         motmCount
       };
     },
@@ -392,38 +399,12 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
             <div className="space-y-4">
               <h4 className="text-lg font-semibold">Recent Games</h4>
               <div className="space-y-4">
-                {gameMetrics?.recentGames.reduce((acc: Record<string, any>[], game) => {
-                  const existingGame = acc.find(g => g.opponent === game.fixtures?.opponent);
-                  
-                  if (existingGame) {
-                    existingGame.totalMinutes += game.totalMinutes;
-                    existingGame.positions.push({
-                      position: game.position,
-                      minutes: game.totalMinutes
-                    });
-                    if (game.isCaptain) existingGame.isCaptain = true;
-                    if (game.isMotm) existingGame.isMotm = true;
-                  } else {
-                    acc.push({
-                      id: game.id,
-                      fixtureId: game.fixture_id,
-                      opponent: game.fixtures?.opponent,
-                      totalMinutes: game.totalMinutes,
-                      isCaptain: game.isCaptain,
-                      isMotm: game.isMotm,
-                      positions: [{
-                        position: game.position,
-                        minutes: game.totalMinutes
-                      }]
-                    });
-                  }
-                  return acc;
-                }, []).map((game) => (
+                {gameMetrics?.recentGames.map((game) => (
                   <div key={game.id} 
                     className="border rounded-lg p-5 hover:bg-accent/5 transition-colors cursor-pointer"
-                    onClick={() => handleFixtureClick(game.fixtureId)}>
+                    onClick={() => handleFixtureClick(game.fixture_id)}>
                     <div className="flex items-center gap-3 mb-3">
-                      <span className="text-lg font-semibold text-gray-900">vs {game.opponent}</span>
+                      <span className="text-lg font-semibold text-gray-900">vs {game.fixtures.opponent}</span>
                       <Badge variant="secondary" className="text-sm font-medium">
                         {game.totalMinutes} mins
                       </Badge>
@@ -453,9 +434,9 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {game.positions.map((pos, index) => (
-                        <Badge key={index} variant="outline" className="text-sm">
-                          {pos.position}: {pos.minutes}m
+                      {Object.entries(game.positions).map(([position, minutes]) => (
+                        <Badge key={position} variant="outline" className="text-sm">
+                          {position}: {minutes}m
                         </Badge>
                       ))}
                     </div>
