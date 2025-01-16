@@ -447,7 +447,7 @@ export const Calendar = () => {
                 className="rounded-md border"
                 weekStartsOn={1}
                 classNames={{
-                  day: getDayClassNames
+                  day: (day) => getDayClassNames(day)
                 }}
               />
             </div>
