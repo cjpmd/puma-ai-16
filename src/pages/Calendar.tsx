@@ -14,6 +14,22 @@ import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
 
+interface TrainingSession {
+  id: string;
+  title: string;
+  date: string;
+  drills: {
+    id: string;
+    title: string;
+    instructions: string;
+    training_files: {
+      id: string;
+      file_name: string;
+      file_path: string;
+    }[];
+  }[];
+}
+
 export const Calendar = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
@@ -57,20 +73,7 @@ export const Calendar = () => {
 
       if (error) throw error;
 
-      return data.map((session) => ({
-        id: session.id,
-        title: session.title,
-        drills: session.training_drills.map((drill) => ({
-          id: drill.id,
-          title: drill.title,
-          instructions: drill.instructions,
-          training_files: drill.training_files.map((file) => ({
-            id: file.id,
-            file_name: file.file_name,
-            file_path: file.file_path
-          }))
-        }))
-      }));
+      return data as TrainingSession[];
     },
   });
 

@@ -111,7 +111,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
       refetch();
       
       toast({
-        title: "Objective Added",
+        title: "Success",
         description: "New objective has been added successfully.",
       });
     } catch (error) {

@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import Link from 'next/link'
+import { Link } from "react-router-dom"
 
 interface GameMetricsProps {
   stats: {
@@ -88,7 +88,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
               {recentGames.map((game, index) => (
                 <Link 
                   key={index}
-                  href={`/fixtures/${game.id}`}
+                  to={`/fixtures/${game.id}`}
                   className="block border rounded-lg p-5 hover:bg-accent/5 transition-colors"
                 >
                   <div className="flex items-center gap-3 mb-3">
