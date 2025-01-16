@@ -11,10 +11,9 @@ import { SessionCard } from "@/components/training/SessionCard";
 import { AddFixtureDialog } from "@/components/calendar/AddFixtureDialog";
 import { Plus } from "lucide-react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
 
-// Database types
 interface DbTrainingSession {
   id: string;
   title: string;
@@ -364,7 +363,7 @@ export const Calendar = () => {
     enabled: !!date,
   });
 
-  const getDayClassNames = (day: Date): string => {
+  const getDayClassNames = (day: Date) => {
     if (!date || !isSameMonth(day, date)) {
       return "relative";
     }
@@ -456,7 +455,7 @@ export const Calendar = () => {
                   },
                 }}
                 classNames={{
-                  day: (date) => getDayClassNames(date),
+                  day: getDayClassNames,
                 }}
               />
             </div>
