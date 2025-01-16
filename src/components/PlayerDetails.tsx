@@ -116,11 +116,19 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         captainData?.map(item => [item.fixture_id, item.is_captain]) || []
       );
 
+      // Calculate total minutes only from positions (excluding substitute minutes)
+      const totalMinutesPlayed = recentGames?.reduce((total, game) => {
+        if (!game.is_substitute && game.fixture_playing_periods?.duration_minutes) {
+          return total + game.fixture_playing_periods.duration_minutes;
+        }
+        return total;
+      }, 0) || 0;
+
       // Transform the data to match the expected interface
       const transformedStats = {
         total_appearances: fixtureStats?.total_appearances || 0,
         captain_appearances: fixtureStats?.captain_appearances || 0,
-        total_minutes_played: fixtureStats?.total_minutes_played || 0,
+        total_minutes_played: totalMinutesPlayed,
         positions_played: (fixtureStats?.positions_played as Record<string, number>) || {}
       };
 
