@@ -60,7 +60,7 @@ export const FormationSelector = () => {
               def => def.abbreviation === abbrev
             );
             const displayText = positionDef 
-              ? `${positionDef.full_name} ${role}`
+              ? `${positionDef.full_name} [${abbrev}] ${role}`
               : option;
             
             return (
