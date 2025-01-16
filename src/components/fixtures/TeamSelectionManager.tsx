@@ -19,10 +19,11 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Minus, Check, Printer } from "lucide-react";
+import { Plus, Minus, Check, Printer, LayoutGrid } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { PrintTeamSelection } from './PrintTeamSelection';
+import { FormationView } from "./FormationView";
 
 interface TeamSelectionManagerProps {
   fixtureId: string;
@@ -56,6 +57,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
   const [isSaving, setIsSaving] = useState(false);
   const [players, setPlayers] = useState<any[]>(null);
   const [fixtures, setFixtures] = useState<any[]>(null);
+  const [showFormation, setShowFormation] = useState(false);
 
   // Fetch positions from the database
   const { data: positions } = useQuery({
@@ -383,6 +385,14 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         </div>
         <div className="flex gap-2">
           <Button 
+            onClick={() => setShowFormation(!showFormation)} 
+            variant="outline"
+            className="print:hidden"
+          >
+            <LayoutGrid className="h-4 w-4 mr-2" />
+            {showFormation ? "Hide" : "Show"} Formation
+          </Button>
+          <Button 
             onClick={saveTeamSelection} 
             disabled={isSaving}
             className="print:hidden"
@@ -403,6 +413,21 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
           </Button>
         </div>
       </div>
+
+      {/* Formation View */}
+      {showFormation && (
+        <div className="mb-4">
+          {periods.map((period, index) => (
+            <FormationView
+              key={index}
+              positions={period.positions}
+              players={playersData || []}
+              periodNumber={index + 1}
+              duration={period.duration}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Original content */}
       <div className="print:hidden">
