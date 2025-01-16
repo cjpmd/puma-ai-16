@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
 import { AddDrillDialog } from "@/components/training/AddDrillDialog";
 import { SessionCard } from "@/components/training/SessionCard";
@@ -13,6 +13,7 @@ import { Plus } from "lucide-react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
+import { Badge } from "@/components/ui/badge";
 
 interface TrainingFile {
   id: string;
@@ -95,6 +96,35 @@ export const Calendar = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  const { data: objectives } = useQuery({
+    queryKey: ["objectives", date],
+    queryFn: async () => {
+      if (!date) return [];
+      
+      const startDate = startOfMonth(date);
+      const endDate = endOfMonth(date);
+      
+      const { data, error } = await supabase
+        .from('player_objectives')
+        .select(`
+          *,
+          players (
+            name
+          ),
+          profiles:coach_id (
+            name
+          )
+        `)
+        .gte('review_date', format(startDate, 'yyyy-MM-dd'))
+        .lte('review_date', format(endDate, 'yyyy-MM-dd'))
+        .order('review_date', { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!date,
   });
 
   const getDayClassNames = (day: Date): string => {
@@ -435,6 +465,51 @@ export const Calendar = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* New Objectives Dashboard */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>
+            Objectives for Review in {date ? format(date, 'MMMM yyyy') : 'Selected Month'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {objectives?.length === 0 && (
+              <p className="text-center text-muted-foreground py-4">
+                No objectives scheduled for review this month
+              </p>
+            )}
+            {objectives?.map((objective) => (
+              <div key={objective.id} className="p-4 border rounded-lg space-y-2">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium">{objective.title}</h4>
+                      <Badge variant={
+                        objective.status === 'COMPLETE' ? 'default' :
+                        objective.status === 'IMPROVING' ? 'secondary' :
+                        'outline'
+                      }>
+                        {objective.status}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{objective.description}</p>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>Player: {objective.players?.name}</span>
+                      <span>•</span>
+                      <span>Coach: {objective.profiles?.name}</span>
+                      <span>•</span>
+                      <span>Review on: {format(new Date(objective.review_date), 'MMM d, yyyy')}</span>
+                    </div>
+                  </div>
+                  <Badge variant="secondary">{objective.points} points</Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <AddDrillDialog
         isOpen={isAddDrillOpen}
