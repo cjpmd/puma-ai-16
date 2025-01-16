@@ -31,6 +31,7 @@ export const PlayerDetails = ({ playerId }: { playerId: string }) => {
       if (error) throw error;
       return data;
     },
+    enabled: !!playerId
   });
 
   // Separate query for captain information
@@ -46,6 +47,7 @@ export const PlayerDetails = ({ playerId }: { playerId: string }) => {
       if (error) throw error;
       return data;
     },
+    enabled: !!playerId
   });
 
   // Create a map of fixture IDs to captain status
