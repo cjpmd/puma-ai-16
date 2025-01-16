@@ -24,6 +24,8 @@ interface GameMetricsProps {
 }
 
 export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps) {
+  console.log("Recent Games in GameMetrics:", recentGames); // Debug log
+
   return (
     <div className="border rounded-lg shadow-sm bg-white">
       <Collapsible defaultOpen>
@@ -84,7 +86,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
           <div className="space-y-4">
             <h4 className="text-lg font-semibold">Recent Games</h4>
             <div className="space-y-4">
-              {recentGames && recentGames.length > 0 ? (
+              {Array.isArray(recentGames) && recentGames.length > 0 ? (
                 recentGames.map((game, index) => (
                   <div key={`${game.opponent}-${game.date}-${index}`} 
                     className="border rounded-lg p-5 hover:bg-accent/5 transition-colors">
