@@ -60,48 +60,64 @@ export default async function Page({ params }: { params: { id: string } }) {
     notFound()
   }
 
-  // Create a map to store fixture data
-  const fixturesMap = new Map()
-
-  // Process fixture positions and aggregate minutes by fixture
-  player.fixture_player_positions?.forEach((position) => {
+  // First, group all positions by fixture
+  const fixturePositions = new Map()
+  
+  player.fixture_player_positions?.forEach(position => {
     if (!position.fixtures || !position.fixture_id) return
 
     const fixtureId = position.fixture_id
-    const minutes = position.fixture_playing_periods?.duration_minutes || 0
-
-    if (!fixturesMap.has(fixtureId)) {
-      fixturesMap.set(fixtureId, {
-        opponent: position.fixtures.opponent,
-        date: position.fixtures.date,
-        totalMinutes: 0,
-        positions: {},
-        isMotm: position.fixtures.motm_player_id === player.id,
-        isCaptain: player.fixture_team_selections?.some(
-          selection => selection.fixture_id === fixtureId && selection.is_captain
-        )
-      })
+    if (!fixturePositions.has(fixtureId)) {
+      fixturePositions.set(fixtureId, [])
     }
+    fixturePositions.get(fixtureId).push(position)
+  })
 
-    const fixture = fixturesMap.get(fixtureId)
-    fixture.totalMinutes += minutes
+  // Then create the final games array with aggregated data
+  const games = Array.from(fixturePositions.entries()).map(([fixtureId, positions]) => {
+    const firstPosition = positions[0] // Use first position to get fixture details
+    const fixture = firstPosition.fixtures
 
-    if (position.position) {
-      fixture.positions[position.position] = (fixture.positions[position.position] || 0) + minutes
+    // Calculate total minutes and positions
+    const positionsMap = {}
+    let totalMinutes = 0
+
+    positions.forEach(pos => {
+      const minutes = pos.fixture_playing_periods?.duration_minutes || 0
+      if (pos.position) {
+        positionsMap[pos.position] = (positionsMap[pos.position] || 0) + minutes
+      }
+      totalMinutes += minutes
+    })
+
+    // Check if player was captain in this fixture
+    const isCaptain = player.fixture_team_selections?.some(
+      selection => selection.fixture_id === fixtureId && selection.is_captain
+    )
+
+    return {
+      opponent: fixture.opponent,
+      date: fixture.date,
+      totalMinutes,
+      positions: positionsMap,
+      isMotm: fixture.motm_player_id === player.id,
+      isCaptain
     }
   })
 
-  // Convert map to array and sort by date
-  const sortedGames = Array.from(fixturesMap.values()).sort((a, b) => 
+  // Sort games by date (most recent first)
+  const sortedGames = games.sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
-  // Calculate MOTM count
+  // Calculate MOTM count from fixture positions
   const motmCount = new Set(
     player.fixture_player_positions
       ?.filter(pos => pos.fixtures?.motm_player_id === player.id)
       .map(pos => pos.fixtures?.id)
   ).size
+
+  console.log('Processed games:', sortedGames)
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
