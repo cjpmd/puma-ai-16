@@ -22,7 +22,7 @@ interface PrintTeamSelectionProps {
     id: string;
     name: string;
     squad_number: number;
-  }> | null;
+  }>;
   captain?: string;
 }
 

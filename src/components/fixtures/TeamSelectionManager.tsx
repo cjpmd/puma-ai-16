@@ -320,6 +320,23 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
     }
   };
 
+  // Add fixture data query
+  const { data: fixture } = useQuery({
+    queryKey: ["fixture", fixtureId],
+    queryFn: async () => {
+      if (!fixtureId) return null;
+      const { data, error } = await supabase
+        .from("fixtures")
+        .select("*")
+        .eq("id", fixtureId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!fixtureId,
+  });
+
   if (playersError) {
     return (
       <Alert variant="destructive">
@@ -364,14 +381,27 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
             </SelectContent>
           </Select>
         </div>
-        <Button 
-          onClick={handlePrint}
-          variant="outline"
-          className="print:hidden"
-        >
-          <Printer className="h-4 w-4 mr-2" />
-          Print Team Selection
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={saveTeamSelection} 
+            disabled={isSaving}
+            className="print:hidden"
+          >
+            {isSaving ? (
+              <Check className="h-4 w-4 mr-2" />
+            ) : (
+              "Save"
+            )}
+          </Button>
+          <Button 
+            onClick={handlePrint}
+            variant="outline"
+            className="print:hidden"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Print Team Selection
+          </Button>
+        </div>
       </div>
 
       {/* Original content */}
@@ -492,13 +522,30 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
             </TableBody>
           </Table>
         </div>
+
+        {/* Add Period button */}
+        <div className="mt-4 flex justify-end">
+          <Button onClick={addPeriod} variant="outline">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Period
+          </Button>
+        </div>
       </div>
 
       {/* Print view */}
-      {playersData && fixtures?.[0] && (
+      {playersData && fixture && (
         <PrintTeamSelection
-          fixture={fixtures[0]}
-          periods={periods}
+          fixture={fixture}
+          periods={periods.map(period => ({
+            duration: period.duration,
+            positions: period.positions.map(pos => ({
+              position: pos.position,
+              playerId: pos.playerId
+            })),
+            substitutes: period.substitutes.map(sub => ({
+              playerId: sub.playerId
+            }))
+          }))}
           players={playersData}
           captain={captain}
         />
