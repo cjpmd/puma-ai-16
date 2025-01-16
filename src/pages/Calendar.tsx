@@ -13,6 +13,7 @@ import { Plus } from "lucide-react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
+import { EditObjectiveDialog } from "@/components/calendar/EditObjectiveDialog";
 
 interface DbTrainingSession {
   id: string;
@@ -74,6 +75,8 @@ export const CalendarPage = () => {
     away_score: number | null;
     date: string;
   } | null>(null);
+  const [editingObjective, setEditingObjective] = useState<any>(null);
+  const [isEditObjectiveOpen, setIsEditObjectiveOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -511,7 +514,14 @@ export const CalendarPage = () => {
           <CardContent>
             <div className="space-y-4">
               {objectives?.map((objective) => (
-                <div key={objective.id} className="p-4 border rounded-lg">
+                <div 
+                  key={objective.id} 
+                  className="p-4 border rounded-lg cursor-pointer hover:border-primary transition-colors"
+                  onClick={() => {
+                    setEditingObjective(objective);
+                    setIsEditObjectiveOpen(true);
+                  }}
+                >
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="font-medium">{objective.title}</h4>
@@ -546,17 +556,17 @@ export const CalendarPage = () => {
         </Card>
       </div>
 
-      <AddDrillDialog
-        isOpen={isAddDrillOpen}
-        onOpenChange={setIsAddDrillOpen}
-        title={drillTitle}
-        onTitleChange={setDrillTitle}
-        instructions={drillInstructions}
-        onInstructionsChange={setDrillInstructions}
-        onFileChange={handleFileChange}
-        onAdd={editingDrill ? handleEditDrill : handleAddDrill}
-        editDrill={editingDrill}
-      />
+      {editingObjective && (
+        <EditObjectiveDialog
+          objective={editingObjective}
+          isOpen={isEditObjectiveOpen}
+          onOpenChange={setIsEditObjectiveOpen}
+          onSuccess={() => {
+            setEditingObjective(null);
+            refetch();
+          }}
+        />
+      )}
     </div>
   );
 };
