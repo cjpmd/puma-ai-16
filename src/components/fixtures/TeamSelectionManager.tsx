@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Minus, Check, Printer, LayoutGrid } from "lucide-react";
+import { Plus, Check, Printer, LayoutGrid } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { PrintTeamSelection } from './PrintTeamSelection';
@@ -366,24 +366,24 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
   };
 
   return (
-    <div className="space-y-4 max-h-[80vh] overflow-y-auto">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-4">
-          <span className="font-medium">Captain:</span>
-          <Select value={captain} onValueChange={setCaptain}>
-            <SelectTrigger className="w-[200px] h-8">
-              <SelectValue placeholder="Select captain" />
-            </SelectTrigger>
-            <SelectContent>
-              {playersData?.map((player) => (
-                <SelectItem key={player.id} value={player.id}>
-                  {player.name} (#{player.squad_number})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex gap-2">
+    <div className="space-y-4">
+      <div className="sticky top-0 z-10 bg-background pt-4 pb-2 border-b">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2 mr-auto">
+            <span className="font-medium">Captain:</span>
+            <Select value={captain} onValueChange={setCaptain}>
+              <SelectTrigger className="w-[200px] h-8">
+                <SelectValue placeholder="Select captain" />
+              </SelectTrigger>
+              <SelectContent>
+                {playersData?.map((player) => (
+                  <SelectItem key={player.id} value={player.id}>
+                    {player.name} (#{player.squad_number})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button 
             onClick={() => setShowFormation(!showFormation)} 
             variant="outline"
@@ -392,6 +392,10 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
             <LayoutGrid className="h-4 w-4 mr-2" />
             {showFormation ? "Hide" : "Show"} Formation
           </Button>
+          <Button onClick={addPeriod} variant="outline">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Period
+          </Button>
           <Button 
             onClick={handlePrint}
             variant="outline"
@@ -399,6 +403,17 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
           >
             <Printer className="h-4 w-4 mr-2" />
             Print Team Selection
+          </Button>
+          <Button 
+            onClick={saveTeamSelection} 
+            disabled={isSaving}
+            className="print:hidden"
+          >
+            {isSaving ? (
+              <Check className="h-4 w-4 mr-2" />
+            ) : (
+              "Save"
+            )}
           </Button>
         </div>
       </div>
