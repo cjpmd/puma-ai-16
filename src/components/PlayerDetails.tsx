@@ -80,6 +80,8 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         .order("date", { ascending: false })
         .limit(5);
 
+      console.log("Recent games data:", recentGames);
+
       // Get captain information
       const { data: captainData, error: captainError } = await supabase
         .from("fixture_team_selections")
@@ -110,6 +112,15 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           }
           positions[pos.position] += minutes;
           totalMinutes += minutes;
+        });
+
+        console.log("Transformed game:", {
+          opponent: game.opponent,
+          date: game.date,
+          totalMinutes,
+          positions,
+          isMotm: game.motm_player_id === player.id,
+          isCaptain: captainMap.get(game.id) || false
         });
 
         return {
