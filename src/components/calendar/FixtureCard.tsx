@@ -6,9 +6,12 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Users } from "lucide-react";
+import { Calendar, Pencil, Trash2, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format, parseISO } from "date-fns";
 import { useState } from "react";
 
 interface FixtureCardProps {
@@ -20,13 +23,16 @@ interface FixtureCardProps {
     category: string;
     location?: string;
     time?: string | null;
+    date: string;
   };
   onEdit: (fixture: FixtureCardProps["fixture"]) => void;
   onDelete: (fixtureId: string) => void;
+  onDateChange: (newDate: Date) => void;
 }
 
-export const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => {
+export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: FixtureCardProps) => {
   const [isTeamSelectionOpen, setIsTeamSelectionOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const hasScores = fixture.home_score !== null && fixture.away_score !== null;
 
   return (
@@ -39,6 +45,26 @@ export const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => 
               <span>vs {fixture.opponent}</span>
             </div>
             <div className="flex gap-2">
+              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <Calendar className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <CalendarComponent
+                    mode="single"
+                    selected={parseISO(fixture.date)}
+                    onSelect={(date) => {
+                      if (date) {
+                        onDateChange(date);
+                        setIsCalendarOpen(false);
+                      }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
               <Button 
                 variant="ghost" 
                 size="sm"
@@ -87,6 +113,7 @@ export const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => 
             {fixture.time && (
               <p>Time: {fixture.time}</p>
             )}
+            <p>Date: {format(parseISO(fixture.date), "MMMM do, yyyy")}</p>
           </div>
         </CardContent>
       </Card>
