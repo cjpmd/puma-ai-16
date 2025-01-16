@@ -65,6 +65,7 @@ export const EditObjectiveDialog = ({
           status: values.status,
           points: values.points,
           review_date: values.review_date,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", objective.id);
 

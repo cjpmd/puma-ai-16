@@ -15,6 +15,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EditObjectiveDialog } from "../calendar/EditObjectiveDialog";
 
 interface PlayerObjectivesProps {
   playerId: string;
@@ -26,6 +27,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
   const [points, setPoints] = useState("5");
   const [reviewDate, setReviewDate] = useState<Date>();
   const [isSaving, setIsSaving] = useState(false);
+  const [editingObjective, setEditingObjective] = useState<any>(null);
   const { toast } = useToast();
   const session = useSession();
 
@@ -132,31 +134,6 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
     }
   };
 
-  const handleUpdateStatus = async (objectiveId: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from('player_objectives')
-        .update({ status: newStatus })
-        .eq('id', objectiveId);
-
-      if (error) throw error;
-
-      refetch();
-      
-      toast({
-        title: "Status Updated",
-        description: `Objective status updated to ${newStatus}`,
-      });
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update status. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -224,7 +201,11 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
           <ScrollArea className="h-[400px] w-full rounded-md">
             <div className="space-y-4 pr-4">
               {objectives?.map((objective) => (
-                <div key={objective.id} className="p-4 border rounded-lg space-y-2">
+                <div 
+                  key={objective.id} 
+                  className="p-4 border rounded-lg space-y-2 cursor-pointer hover:bg-accent/5"
+                  onClick={() => setEditingObjective(objective)}
+                >
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -248,7 +229,10 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
                   <div className="flex items-center space-x-2">
                     <Select
                       value={objective.status}
-                      onValueChange={(value) => handleUpdateStatus(objective.id, value)}
+                      onValueChange={(value) => {
+                        const updatedObjective = { ...objective, status: value };
+                        setEditingObjective(updatedObjective);
+                      }}
                     >
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Update status" />
@@ -266,6 +250,18 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
           </ScrollArea>
         </div>
       </CardContent>
+
+      {editingObjective && (
+        <EditObjectiveDialog
+          objective={editingObjective}
+          isOpen={!!editingObjective}
+          onOpenChange={(open) => !open && setEditingObjective(null)}
+          onSuccess={() => {
+            setEditingObjective(null);
+            refetch();
+          }}
+        />
+      )}
     </Card>
   );
 };
