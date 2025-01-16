@@ -393,17 +393,6 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
             {showFormation ? "Hide" : "Show"} Formation
           </Button>
           <Button 
-            onClick={saveTeamSelection} 
-            disabled={isSaving}
-            className="print:hidden"
-          >
-            {isSaving ? (
-              <Check className="h-4 w-4 mr-2" />
-            ) : (
-              "Save"
-            )}
-          </Button>
-          <Button 
             onClick={handlePrint}
             variant="outline"
             className="print:hidden"
@@ -414,7 +403,6 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         </div>
       </div>
 
-      {/* Formation View */}
       {showFormation && (
         <div className="mb-4">
           {periods.map((period, index) => (
@@ -429,7 +417,6 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         </div>
       )}
 
-      {/* Original content */}
       <div className="print:hidden">
         <div className="overflow-x-auto">
           <Table className="border-collapse w-full">
@@ -548,8 +535,19 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
           </Table>
         </div>
 
-        {/* Add Period button */}
-        <div className="mt-4 flex justify-end">
+        {/* Switched positions of Save and Add Period buttons */}
+        <div className="mt-4 flex justify-end gap-2">
+          <Button 
+            onClick={saveTeamSelection} 
+            disabled={isSaving}
+            className="print:hidden"
+          >
+            {isSaving ? (
+              <Check className="h-4 w-4 mr-2" />
+            ) : (
+              "Save"
+            )}
+          </Button>
           <Button onClick={addPeriod} variant="outline">
             <Plus className="h-4 w-4 mr-2" />
             Add Period
@@ -557,7 +555,6 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         </div>
       </div>
 
-      {/* Print view */}
       {playersData && fixture && (
         <PrintTeamSelection
           fixture={fixture}
