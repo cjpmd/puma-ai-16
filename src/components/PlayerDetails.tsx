@@ -32,14 +32,14 @@ interface GameMetricsData {
     positions_played: Record<string, number>;
   };
   motmCount: number;
-  recentGames: {
+  recentGames: Array<{
     opponent: string;
     date: string;
     totalMinutes: number;
     positions: Record<string, number>;
     isMotm: boolean;
     isCaptain: boolean;
-  }[];
+  }>;
 }
 
 export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
@@ -68,8 +68,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           date,
           opponent,
           motm_player_id,
-          fixture_player_positions!left (
-            id,
+          fixture_player_positions!inner (
             position,
             player_id,
             fixture_playing_periods (
@@ -103,16 +102,14 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         let totalMinutes = 0;
 
         game.fixture_player_positions?.forEach((pos: any) => {
-          if (pos.player_id === player.id) {
-            const minutes = (pos.fixture_playing_periods || []).reduce((sum: number, period: any) => 
-              sum + (period.duration_minutes || 0), 0);
-            
-            if (!positions[pos.position]) {
-              positions[pos.position] = 0;
-            }
-            positions[pos.position] += minutes;
-            totalMinutes += minutes;
+          const minutes = pos.fixture_playing_periods?.reduce((sum: number, period: any) => 
+            sum + (period.duration_minutes || 0), 0) || 0;
+          
+          if (!positions[pos.position]) {
+            positions[pos.position] = 0;
           }
+          positions[pos.position] += minutes;
+          totalMinutes += minutes;
         });
 
         return {
