@@ -15,26 +15,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
 import { Badge } from "@/components/ui/badge";
 
-interface TrainingFile {
-  id: string;
-  file_name: string;
-  file_path: string;
-}
-
-interface TrainingDrill {
-  id: string;
-  title: string;
-  instructions: string | null;
-  training_files: TrainingFile[];
-}
-
-interface TrainingSession {
-  id: string;
-  title: string;
-  date: string;
-  training_drills: TrainingDrill[];
-}
-
 export const Calendar = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
@@ -59,6 +39,187 @@ export const Calendar = () => {
   } | null>(null);
 
   const { toast } = useToast();
+
+  const handleAddSession = async () => {
+    try {
+      if (!date) return;
+      
+      const { error } = await supabase
+        .from("training_sessions")
+        .insert([
+          {
+            title: sessionTitle,
+            date: format(date, "yyyy-MM-dd"),
+          },
+        ]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Training session added successfully",
+      });
+      setIsAddSessionOpen(false);
+      setSessionTitle("");
+      refetchSessions();
+    } catch (error) {
+      console.error("Error adding training session:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add training session",
+      });
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+      const { error } = await supabase
+        .from("training_sessions")
+        .delete()
+        .eq("id", sessionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Training session deleted successfully",
+      });
+      refetchSessions();
+    } catch (error) {
+      console.error("Error deleting training session:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete training session",
+      });
+    }
+  };
+
+  const handleAddDrill = async () => {
+    try {
+      if (!selectedSessionId) return;
+
+      const { data: drill, error: drillError } = await supabase
+        .from("training_drills")
+        .insert([
+          {
+            session_id: selectedSessionId,
+            title: drillTitle,
+            instructions: drillInstructions,
+          },
+        ])
+        .select()
+        .single();
+
+      if (drillError) throw drillError;
+
+      if (selectedFile && drill) {
+        const fileExt = selectedFile.name.split('.').pop();
+        const filePath = `${drill.id}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('training_files')
+          .upload(filePath, selectedFile);
+
+        if (uploadError) throw uploadError;
+
+        const { error: fileError } = await supabase
+          .from('training_files')
+          .insert([
+            {
+              drill_id: drill.id,
+              file_name: selectedFile.name,
+              file_path: filePath,
+              content_type: selectedFile.type,
+            },
+          ]);
+
+        if (fileError) throw fileError;
+      }
+
+      toast({
+        title: "Success",
+        description: "Drill added successfully",
+      });
+      setIsAddDrillOpen(false);
+      setDrillTitle("");
+      setDrillInstructions("");
+      setSelectedFile(null);
+      refetchSessions();
+    } catch (error) {
+      console.error("Error adding drill:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add drill",
+      });
+    }
+  };
+
+  const handleEditDrill = async () => {
+    try {
+      if (!editingDrill) return;
+
+      const { error } = await supabase
+        .from("training_drills")
+        .update({
+          title: drillTitle,
+          instructions: drillInstructions,
+        })
+        .eq("id", editingDrill.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Drill updated successfully",
+      });
+      setIsAddDrillOpen(false);
+      setDrillTitle("");
+      setDrillInstructions("");
+      setEditingDrill(null);
+      refetchSessions();
+    } catch (error) {
+      console.error("Error updating drill:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update drill",
+      });
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleDeleteFixture = async (fixtureId: string) => {
+    try {
+      const { error } = await supabase
+        .from("fixtures")
+        .delete()
+        .eq("id", fixtureId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Fixture deleted successfully",
+      });
+      refetchFixtures();
+    } catch (error) {
+      console.error("Error deleting fixture:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete fixture",
+      });
+    }
+  };
 
   const { data: sessions, refetch: refetchSessions } = useQuery({
     queryKey: ["training-sessions", date],
@@ -150,30 +311,6 @@ export const Calendar = () => {
     return className;
   };
 
-  const handleUpdateFixtureDate = async (fixtureId: string, newDate: Date) => {
-    try {
-      const { error } = await supabase
-        .from("fixtures")
-        .update({ date: format(newDate, "yyyy-MM-dd") })
-        .eq("id", fixtureId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Fixture date updated successfully",
-      });
-      refetchFixtures();
-    } catch (error) {
-      console.error("Error updating fixture date:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update fixture date",
-      });
-    }
-  };
-
   return (
     <div className="container mx-auto p-6 space-y-8">
       <div className="flex justify-between items-center">
@@ -244,7 +381,7 @@ export const Calendar = () => {
                   },
                 }}
                 modifiersClassNames={{
-                  customStyles: (date) => getDayClassNames(date),
+                  customStyles: getDayClassNames,
                 }}
               />
             </div>
@@ -308,51 +445,6 @@ export const Calendar = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* New Objectives Dashboard */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>
-            Objectives for Review in {date ? format(date, 'MMMM yyyy') : 'Selected Month'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {objectives?.length === 0 && (
-              <p className="text-center text-muted-foreground py-4">
-                No objectives scheduled for review this month
-              </p>
-            )}
-            {objectives?.map((objective) => (
-              <div key={objective.id} className="p-4 border rounded-lg space-y-2">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{objective.title}</h4>
-                      <Badge variant={
-                        objective.status === 'COMPLETE' ? 'default' :
-                        objective.status === 'IMPROVING' ? 'secondary' :
-                        'outline'
-                      }>
-                        {objective.status}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{objective.description}</p>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>Player: {objective.players?.name}</span>
-                      <span>•</span>
-                      <span>Coach: {objective.profiles?.name}</span>
-                      <span>•</span>
-                      <span>Review on: {format(new Date(objective.review_date), 'MMM d, yyyy')}</span>
-                    </div>
-                  </div>
-                  <Badge variant="secondary">{objective.points} points</Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       <AddDrillDialog
         isOpen={isAddDrillOpen}
