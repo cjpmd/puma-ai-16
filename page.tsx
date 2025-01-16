@@ -19,14 +19,14 @@ export default async function Page({ params }: { params: { id: string } }) {
       .select(`
         *,
         player_attributes (*),
-        fixture_player_positions!inner (
+        fixture_player_positions (
           id,
           position,
           fixture_id,
           fixture_playing_periods (
             duration_minutes
           ),
-          fixtures!inner (
+          fixtures (
             id,
             date,
             opponent,
@@ -64,9 +64,9 @@ export default async function Page({ params }: { params: { id: string } }) {
 
   // Create a map of fixture IDs to consolidate positions and minutes
   const gamesByFixture = player.fixture_player_positions?.reduce((acc, curr) => {
-    if (!curr.fixtures?.id || !curr.fixtures) return acc
+    if (!curr.fixture_id || !curr.fixtures) return acc
     
-    const fixtureId = curr.fixtures.id
+    const fixtureId = curr.fixture_id
     
     if (!acc[fixtureId]) {
       acc[fixtureId] = {
