@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, isSameMonth, parseISO, startOfMonth, endOfMonth } from "date-fns";
+import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
 import { AddDrillDialog } from "@/components/training/AddDrillDialog";
 import { SessionCard } from "@/components/training/SessionCard";
@@ -52,8 +52,8 @@ interface TrainingSession {
   }[];
 }
 
-export const Calendar = () => {
-  const [date, setDate] = useState<Date | undefined>(new Date());
+export const CalendarPage = () => {
+  const [date, setDate] = useState<Date>(new Date());
   const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
   const [isAddFixtureOpen, setIsAddFixtureOpen] = useState(false);
   const [sessionTitle, setSessionTitle] = useState("");
@@ -419,9 +419,8 @@ export const Calendar = () => {
                 <span>Fixture</span>
               </div>
               <Calendar
-                mode="single"
                 selected={date}
-                onSelect={setDate}
+                onSelect={(newDate) => newDate && setDate(newDate)}
                 className="rounded-md border"
                 weekStartsOn={1}
                 modifiers={{
