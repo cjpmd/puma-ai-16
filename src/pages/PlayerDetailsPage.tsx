@@ -47,6 +47,8 @@ const PlayerDetailsPage = () => {
 
       if (!data) throw new Error("Player not found");
 
+      console.log("Raw player data:", data);
+
       return {
         id: data.id,
         name: data.name,
@@ -101,7 +103,7 @@ const PlayerDetailsPage = () => {
           <h1 className="text-4xl font-bold">Player Details</h1>
         </div>
 
-        <PlayerDetails playerId={player.id} />
+        <PlayerDetails player={player} />
       </motion.div>
     </div>
   );
