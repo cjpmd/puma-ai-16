@@ -18,6 +18,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 interface PlayerDetailsProps {
   player: Player;
@@ -76,8 +77,8 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Query for game metrics data
-  const { data: gameMetrics } = useQuery<GameMetricsData>({
+  // Query for game metrics data with real-time updates enabled
+  const { data: gameMetrics, refetch: refetchGameMetrics } = useQuery({
     queryKey: ["player-game-metrics", player.id],
     queryFn: async () => {
       const { data: fixtureStats, error: fixtureError } = await supabase
@@ -103,7 +104,6 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         .order("created_at", { ascending: false })
         .limit(5);
 
-      // Fetch captain information separately
       const { data: captainData, error: captainError } = await supabase
         .from("fixture_team_selections")
         .select("fixture_id, is_captain")
@@ -124,7 +124,6 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         return total;
       }, 0) || 0;
 
-      // Transform the data to match the expected interface
       const transformedStats = {
         total_appearances: fixtureStats?.total_appearances || 0,
         captain_appearances: fixtureStats?.captain_appearances || 0,
@@ -132,7 +131,6 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         positions_played: (fixtureStats?.positions_played as Record<string, number>) || {}
       };
 
-      // Group games by fixture to avoid counting the same MOTM multiple times
       const uniqueFixtures = new Map();
       recentGames?.forEach(game => {
         if (!uniqueFixtures.has(game.fixture_id)) {
@@ -149,8 +147,6 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
       });
 
       const transformedRecentGames = Array.from(uniqueFixtures.values());
-
-      // Count MOTM appearances from unique fixtures
       const motmCount = transformedRecentGames.filter(game => game.isMotm).length;
 
       return {
@@ -161,52 +157,40 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
     },
   });
 
-  const { data: attributeHistory } = useQuery({
-    queryKey: ["attribute-history", player.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("player_attributes")
-        .select("*")
-        .eq("player_id", player.id)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-
-      const history: Record<string, { date: string; value: number }[]> = {};
-      data.forEach((attr) => {
-        if (!history[attr.name]) {
-          history[attr.name] = [];
+  // Set up real-time listeners for relevant tables
+  useEffect(() => {
+    const channel = supabase
+      .channel('player-game-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'fixture_player_positions',
+          filter: `player_id=eq.${player.id}`
+        },
+        () => {
+          refetchGameMetrics();
         }
-        history[attr.name].push({
-          date: attr.created_at,
-          value: attr.value,
-        });
-      });
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'fixture_team_selections',
+          filter: `player_id=eq.${player.id}`
+        },
+        () => {
+          refetchGameMetrics();
+        }
+      )
+      .subscribe();
 
-      return history;
-    },
-  });
-
-  const { data: topPositions } = useQuery({
-    queryKey: ["top-positions", player.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('position_suitability')
-        .select(`
-          suitability_score,
-          position_definitions (
-            abbreviation,
-            full_name
-          )
-        `)
-        .eq('player_id', player.id)
-        .order('suitability_score', { ascending: false })
-        .limit(3);
-
-      if (error) throw error;
-      return data;
-    },
-  });
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [player.id, refetchGameMetrics]);
 
   const handleUpdateAttribute = (name: string, value: number) => {
     updateAttribute(player.id, name, value);
