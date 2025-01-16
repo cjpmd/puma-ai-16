@@ -74,6 +74,9 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           ),
           fixture_playing_periods (
             duration_minutes
+          ),
+          fixture_team_selections!inner (
+            is_captain
           )
         `)
         .eq("player_id", player.id)
@@ -96,7 +99,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         fixtures: game.fixtures,
         fixture_playing_periods: game.fixture_playing_periods,
         position: game.position,
-        isCaptain: false, // You might want to fetch this from fixture_team_selections
+        isCaptain: game.fixture_team_selections?.is_captain || false,
         isMotm: game.fixtures?.motm_player_id === player.id
       })) || [];
 
@@ -222,7 +225,9 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   console.log("All attributes:", player.attributes);
 
   const handleFixtureClick = (fixtureId: string) => {
-    navigate(`/fixtures/${fixtureId}`);
+    if (fixtureId) {
+      navigate(`/fixtures/${fixtureId}`);
+    }
   };
 
   return (
@@ -363,13 +368,15 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                       position: game.position,
                       minutes: game.fixture_playing_periods?.duration_minutes || 0
                     });
+                    if (game.isCaptain) existingGame.isCaptain = true;
+                    if (game.isMotm) existingGame.isMotm = true;
                   } else {
                     acc.push({
                       id: game.id,
                       fixtureId: game.fixture_id,
                       opponent: game.fixtures?.opponent,
                       totalMinutes: game.fixture_playing_periods?.duration_minutes || 0,
-                      isCaptain: game.isCaptain || false,
+                      isCaptain: game.isCaptain,
                       isMotm: game.fixtures?.motm_player_id === player.id,
                       positions: [{
                         position: game.position,
