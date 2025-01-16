@@ -13,9 +13,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Check } from "lucide-react";
+import { CalendarIcon, Check, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EditObjectiveDialog } from "../calendar/EditObjectiveDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface PlayerObjectivesProps {
   playerId: string;
@@ -28,6 +38,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
   const [reviewDate, setReviewDate] = useState<Date>();
   const [isSaving, setIsSaving] = useState(false);
   const [editingObjective, setEditingObjective] = useState<any>(null);
+  const [deleteObjectiveId, setDeleteObjectiveId] = useState<string | null>(null);
   const { toast } = useToast();
   const session = useSession();
 
@@ -134,6 +145,34 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
     }
   };
 
+  const handleDeleteObjective = async () => {
+    if (!deleteObjectiveId) return;
+
+    try {
+      const { error } = await supabase
+        .from('player_objectives')
+        .delete()
+        .eq('id', deleteObjectiveId);
+
+      if (error) throw error;
+
+      refetch();
+      setDeleteObjectiveId(null);
+      
+      toast({
+        title: "Success",
+        description: "Objective deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting objective:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete objective.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -224,7 +263,19 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
                         )}
                       </div>
                     </div>
-                    <Badge variant="secondary">{objective.points} points</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">{objective.points} points</Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteObjectiveId(objective.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Select
@@ -233,6 +284,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
                         const updatedObjective = { ...objective, status: value };
                         setEditingObjective(updatedObjective);
                       }}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Update status" />
@@ -262,6 +314,21 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
           }}
         />
       )}
+
+      <AlertDialog open={!!deleteObjectiveId} onOpenChange={() => setDeleteObjectiveId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the objective.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteObjective}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

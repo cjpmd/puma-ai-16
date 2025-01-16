@@ -8,6 +8,18 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useSession } from "@supabase/auth-helpers-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { EditCommentDialog } from "./EditCommentDialog";
+import { Pencil, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface CoachingCommentsProps {
   playerId: string;
@@ -15,6 +27,8 @@ interface CoachingCommentsProps {
 
 export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
   const [newComment, setNewComment] = useState("");
+  const [editingComment, setEditingComment] = useState<any>(null);
+  const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null);
   const { toast } = useToast();
   const session = useSession();
 
@@ -31,7 +45,6 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
         console.error('Profile error:', error);
         return null;
       }
-      console.log('Profile data:', data);
       return data;
     },
     enabled: !!session?.user,
@@ -55,7 +68,6 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
         console.error('Error fetching comments:', error);
         throw error;
       }
-      console.log('Comments data:', data);
       return data;
     },
   });
@@ -87,7 +99,7 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
       refetch();
       
       toast({
-        title: "Comment Added",
+        title: "Success",
         description: "Your comment has been added successfully.",
       });
     } catch (error) {
@@ -95,6 +107,34 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
       toast({
         title: "Error",
         description: "Failed to add comment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteComment = async () => {
+    if (!deleteCommentId) return;
+
+    try {
+      const { error } = await supabase
+        .from('coaching_comments')
+        .delete()
+        .eq('id', deleteCommentId);
+
+      if (error) throw error;
+
+      refetch();
+      setDeleteCommentId(null);
+      
+      toast({
+        title: "Success",
+        description: "Comment deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete comment.",
         variant: "destructive",
       });
     }
@@ -128,9 +168,25 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
                         {comment.profiles?.name || 'Anonymous Coach'}
                       </span>
                     </div>
-                    <span className="text-sm text-muted-foreground">
-                      {format(new Date(comment.created_at), "MMM d, yyyy")}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        {format(new Date(comment.created_at), "MMM d, yyyy")}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setEditingComment(comment)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteCommentId(comment.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-sm">{comment.comment}</p>
                 </div>
@@ -139,6 +195,30 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
           </ScrollArea>
         </div>
       </CardContent>
+
+      {editingComment && (
+        <EditCommentDialog
+          comment={editingComment}
+          isOpen={!!editingComment}
+          onOpenChange={(open) => !open && setEditingComment(null)}
+          onSuccess={refetch}
+        />
+      )}
+
+      <AlertDialog open={!!deleteCommentId} onOpenChange={() => setDeleteCommentId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the comment.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteComment}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
