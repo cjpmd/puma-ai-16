@@ -78,6 +78,15 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
       return;
     }
 
+    if (!reviewDate) {
+      toast({
+        title: "Error",
+        description: "Please select a review date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('player_objectives')
@@ -89,7 +98,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
             description,
             points: parseInt(points),
             status: 'ONGOING',
-            review_date: reviewDate
+            review_date: reviewDate.toISOString().split('T')[0]
           }
         ]);
 
@@ -206,11 +215,11 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>Added by {objective.profiles?.name || 'Anonymous Coach'}</span>
                         <span>•</span>
-                        <span>{format(new Date(objective.created_at), 'MMM d, yyyy')}</span>
+                        <span>Created: {format(new Date(objective.created_at), 'MMM d, yyyy')}</span>
                         {objective.review_date && (
                           <>
                             <span>•</span>
-                            <span>Review on {format(new Date(objective.review_date), 'MMM d, yyyy')}</span>
+                            <span>Review on: {format(new Date(objective.review_date), 'MMM d, yyyy')}</span>
                           </>
                         )}
                       </div>
