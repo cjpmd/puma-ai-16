@@ -98,7 +98,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
             description,
             points: parseInt(points),
             status: 'ONGOING',
-            review_date: reviewDate.toISOString().split('T')[0]
+            review_date: format(reviewDate, 'yyyy-MM-dd')
           }
         ]);
 
