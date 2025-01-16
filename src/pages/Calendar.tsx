@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, isSameMonth, isSameDay } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
 import { AddDrillDialog } from "@/components/training/AddDrillDialog";
 import { SessionCard } from "@/components/training/SessionCard";
@@ -139,11 +139,11 @@ export const Calendar = () => {
     let className = "relative";
     
     if (hasTraining && hasFixture) {
-      className += " bg-gradient-to-br from-blue-100 to-orange-100";
+      className += " before:absolute before:inset-0 before:bg-gradient-to-br before:from-blue-100 before:to-orange-100 before:rounded-md before:-z-10";
     } else if (hasTraining) {
-      className += " bg-blue-100";
+      className += " before:absolute before:inset-0 before:bg-blue-100 before:rounded-md before:-z-10";
     } else if (hasFixture) {
-      className += " bg-orange-100";
+      className += " before:absolute before:inset-0 before:bg-orange-100 before:rounded-md before:-z-10";
     }
     
     return className;
