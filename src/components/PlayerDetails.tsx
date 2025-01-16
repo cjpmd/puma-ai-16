@@ -74,16 +74,24 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           ),
           fixture_playing_periods (
             duration_minutes
-          ),
-          fixture_team_selections!inner (
-            is_captain
           )
         `)
         .eq("player_id", player.id)
         .order("created_at", { ascending: false })
         .limit(5);
 
-      if (fixtureError || gamesError) throw fixtureError || gamesError;
+      // Fetch captain information separately
+      const { data: captainData, error: captainError } = await supabase
+        .from("fixture_team_selections")
+        .select("fixture_id, is_captain")
+        .eq("player_id", player.id);
+
+      if (fixtureError || gamesError || captainError) throw fixtureError || gamesError || captainError;
+
+      // Create a map of fixture_id to captain status
+      const captainMap = new Map(
+        captainData?.map(item => [item.fixture_id, item.is_captain]) || []
+      );
 
       // Transform the data to match the expected interface
       const transformedStats = {
@@ -99,7 +107,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         fixtures: game.fixtures,
         fixture_playing_periods: game.fixture_playing_periods,
         position: game.position,
-        isCaptain: game.fixture_team_selections?.is_captain || false,
+        isCaptain: captainMap.get(game.fixture_id) || false,
         isMotm: game.fixtures?.motm_player_id === player.id
       })) || [];
 
