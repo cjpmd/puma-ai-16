@@ -23,6 +23,26 @@ interface PlayerDetailsProps {
   player: Player;
 }
 
+interface GamePosition {
+  position: string;
+  minutes: number;
+}
+
+interface GameData {
+  id: string;
+  fixture_id: string;
+  fixtures: {
+    date: string;
+    opponent: string;
+    motm_player_id?: string;
+  };
+  position: string;
+  positions: GamePosition[];
+  totalMinutes: number;
+  isCaptain: boolean;
+  isMotm: boolean;
+}
+
 interface GameMetricsData {
   stats: {
     total_appearances: number;
@@ -30,21 +50,7 @@ interface GameMetricsData {
     total_minutes_played: number;
     positions_played: Record<string, number>;
   };
-  recentGames: Array<{
-    id: string;
-    fixture_id: string;
-    fixtures?: {
-      date: string;
-      opponent: string;
-      motm_player_id?: string;
-    };
-    fixture_playing_periods?: {
-      duration_minutes: number;
-    };
-    position: string;
-    isCaptain: boolean;
-    isMotm: boolean;
-  }>;
+  recentGames: GameData[];
   motmCount: number;
 }
 
@@ -132,7 +138,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           total_appearances: fixtureStats?.total_appearances || 0,
           captain_appearances: fixtureStats?.captain_appearances || 0,
           total_minutes_played: fixtureStats?.total_minutes_played || 0,
-          positions_played: fixtureStats?.positions_played || {}
+          positions_played: fixtureStats?.positions_played as Record<string, number> || {}
         },
         recentGames: transformedGames,
         motmCount
