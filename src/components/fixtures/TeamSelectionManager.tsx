@@ -44,6 +44,22 @@ interface Period {
   }[];
 }
 
+interface Position {
+  position: string;
+  playerId: string;
+}
+
+interface Player {
+  id: string;
+  name: string;
+  squad_number: number;
+}
+
+interface PositionDefinition {
+  abbreviation: string;
+  full_name: string;
+}
+
 export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManagerProps) => {
   const { toast } = useToast();
   const [periods, setPeriods] = useState<Period[]>([
@@ -65,11 +81,11 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
     queryFn: async () => {
       const { data, error } = await supabase
         .from("position_definitions")
-        .select("abbreviation")
+        .select("abbreviation, full_name")
         .order("abbreviation");
 
       if (error) throw error;
-      return data.map(pos => pos.abbreviation);
+      return data as PositionDefinition[];
     },
   });
 
@@ -475,8 +491,8 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
                             </SelectTrigger>
                             <SelectContent>
                               {positions?.map((pos) => (
-                                <SelectItem key={pos} value={pos}>
-                                  {pos}
+                                <SelectItem key={pos.abbreviation} value={pos.abbreviation}>
+                                  {pos.full_name} [{pos.abbreviation}]
                                 </SelectItem>
                               ))}
                             </SelectContent>
