@@ -31,13 +31,19 @@ const Fixtures = () => {
   const { data: fixtures, isLoading, refetch } = useQuery({
     queryKey: ["fixtures"],
     queryFn: async () => {
+      console.log("Fetching fixtures...");
       const { data, error } = await supabase
         .from("fixtures")
         .select("*")
         .order("date", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching fixtures:", error);
+        throw error;
+      }
       
+      console.log("Fixtures data:", data);
+
       // Group fixtures by date
       const groupedFixtures = data.reduce((acc: any, fixture: any) => {
         const date = fixture.date;
@@ -91,6 +97,17 @@ const Fixtures = () => {
     return `${homeScore} - ${awayScore}`;
   };
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -119,11 +136,13 @@ const Fixtures = () => {
         selectedDate={selectedFixture ? parseISO(selectedFixture.date) : undefined}
       />
 
-      {isLoading ? (
-        <div>Loading fixtures...</div>
+      {!fixtures || Object.keys(fixtures).length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">No fixtures found. Add your first fixture to get started.</p>
+        </div>
       ) : (
         <div className="space-y-8">
-          {Object.entries(fixtures || {}).map(([date, dateFixtures]: [string, any[]]) => (
+          {Object.entries(fixtures).map(([date, dateFixtures]: [string, any[]]) => (
             <div key={date} className="space-y-4">
               <h2 className="text-xl font-semibold">
                 {format(parseISO(date), "EEEE, MMMM do, yyyy")}
