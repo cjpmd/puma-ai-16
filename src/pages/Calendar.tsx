@@ -13,7 +13,21 @@ import { Plus } from "lucide-react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
-import { Badge } from "@/components/ui/badge";
+
+interface TrainingSession {
+  id: string;
+  title: string;
+  drills: {
+    id: string;
+    title: string;
+    instructions: string;
+    training_files: Array<{
+      id: string;
+      file_name: string;
+      file_path: string;
+    }>;
+  }[];
+}
 
 export const Calendar = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -221,6 +235,32 @@ export const Calendar = () => {
     }
   };
 
+  const handleUpdateFixtureDate = async (fixtureId: string, newDate: Date) => {
+    try {
+      const { error } = await supabase
+        .from("fixtures")
+        .update({
+          date: format(newDate, "yyyy-MM-dd"),
+        })
+        .eq("id", fixtureId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Fixture date updated successfully",
+      });
+      refetchFixtures();
+    } catch (error) {
+      console.error("Error updating fixture date:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update fixture date",
+      });
+    }
+  };
+
   const { data: sessions, refetch: refetchSessions } = useQuery({
     queryKey: ["training-sessions", date],
     queryFn: async () => {
@@ -289,7 +329,7 @@ export const Calendar = () => {
     enabled: !!date,
   });
 
-  const getDayClassNames = (day: Date): string => {
+  const getDayClassNames = (day: Date) => {
     if (!date || !isSameMonth(day, date)) {
       return "relative";
     }
@@ -381,7 +421,7 @@ export const Calendar = () => {
                   },
                 }}
                 modifiersClassNames={{
-                  customStyles: getDayClassNames,
+                  customStyles: (day) => getDayClassNames(day),
                 }}
               />
             </div>
