@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, startOfMonth, endOfMonth, isSameMonth, isSameDay, parseISO } from "date-fns";
+import { format, isSameMonth, parseISO } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
 import { AddDrillDialog } from "@/components/training/AddDrillDialog";
 import { SessionCard } from "@/components/training/SessionCard";
@@ -14,9 +14,33 @@ import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
 
+// Database types
+interface DbTrainingSession {
+  id: string;
+  title: string;
+  date: string;
+  created_at: string;
+  updated_at: string;
+  training_drills: {
+    id: string;
+    title: string;
+    instructions: string;
+    session_id: string;
+    created_at: string;
+    updated_at: string;
+    training_files: Array<{
+      id: string;
+      file_name: string;
+      file_path: string;
+    }>;
+  }[];
+}
+
+// Component types
 interface TrainingSession {
   id: string;
   title: string;
+  date: string;
   drills: {
     id: string;
     title: string;
@@ -280,7 +304,18 @@ export const Calendar = () => {
 
       if (error) throw error;
 
-      return data as TrainingSession[];
+      // Map database response to component interface
+      return (data as DbTrainingSession[]).map(session => ({
+        id: session.id,
+        title: session.title,
+        date: session.date,
+        drills: session.training_drills.map(drill => ({
+          id: drill.id,
+          title: drill.title,
+          instructions: drill.instructions,
+          training_files: drill.training_files
+        }))
+      })) as TrainingSession[];
     },
   });
 
@@ -329,7 +364,7 @@ export const Calendar = () => {
     enabled: !!date,
   });
 
-  const getDayClassNames = (day: Date) => {
+  const getDayClassNames = (day: Date): string => {
     if (!date || !isSameMonth(day, date)) {
       return "relative";
     }
@@ -454,12 +489,7 @@ export const Calendar = () => {
                   session={{
                     id: session.id,
                     title: session.title,
-                    drills: session.training_drills.map(drill => ({
-                      id: drill.id,
-                      title: drill.title,
-                      instructions: drill.instructions || "",
-                      training_files: drill.training_files
-                    }))
+                    drills: session.drills
                   }}
                   fileUrls={{}}
                   onAddDrillClick={(sessionId) => {
