@@ -447,7 +447,19 @@ export const Calendar = () => {
                 className="rounded-md border"
                 weekStartsOn={1}
                 classNames={{
-                  day: (day) => getDayClassNames(day)
+                  day: "relative"
+                }}
+                modifiers={{
+                  hasEvent: (day) => {
+                    const dateStr = format(day, "yyyy-MM-dd");
+                    return (
+                      sessions?.some(session => session.date === dateStr) ||
+                      fixtures?.some(fixture => fixture.date === dateStr)
+                    );
+                  }
+                }}
+                modifiersClassNames={{
+                  hasEvent: (day) => getDayClassNames(day)
                 }}
               />
             </div>
