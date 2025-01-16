@@ -42,11 +42,13 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
       <div className="text-sm font-semibold mb-2">
         Period {periodNumber} ({duration} minutes)
       </div>
-      <div className="grid grid-cols-7 gap-2 max-w-2xl mx-auto">
+      <div className="grid grid-cols-5 gap-4 max-w-2xl mx-auto">
         {/* Strikers */}
-        <div className="col-span-3">{renderPlayer("STCL")}</div>
-        <div className="col-span-1"></div>
-        <div className="col-span-3">{renderPlayer("STCR")}</div>
+        <div></div>
+        <div>{renderPlayer("STCL")}</div>
+        <div>{renderPlayer("STC")}</div>
+        <div>{renderPlayer("STCR")}</div>
+        <div></div>
 
         {/* Attacking Midfielders */}
         <div>{renderPlayer("AML")}</div>
@@ -54,7 +56,6 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
         <div>{renderPlayer("AMC")}</div>
         <div>{renderPlayer("AMCR")}</div>
         <div>{renderPlayer("AMR")}</div>
-        <div className="col-span-2"></div>
 
         {/* Central Midfielders */}
         <div>{renderPlayer("ML")}</div>
@@ -62,7 +63,6 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
         <div>{renderPlayer("MC")}</div>
         <div>{renderPlayer("MCR")}</div>
         <div>{renderPlayer("MR")}</div>
-        <div className="col-span-2"></div>
 
         {/* Defensive Midfielders */}
         <div>{renderPlayer("WBR")}</div>
@@ -70,19 +70,27 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
         <div>{renderPlayer("DCM")}</div>
         <div>{renderPlayer("DCMR")}</div>
         <div>{renderPlayer("WBL")}</div>
-        <div className="col-span-2"></div>
 
         {/* Defenders */}
         <div>{renderPlayer("DL")}</div>
         <div>{renderPlayer("DCL")}</div>
-        <div className="col-span-3"></div>
+        <div>{renderPlayer("DC")}</div>
         <div>{renderPlayer("DCR")}</div>
         <div>{renderPlayer("DR")}</div>
 
+        {/* Sweeper Keeper */}
+        <div></div>
+        <div></div>
+        <div>{renderPlayer("SK")}</div>
+        <div></div>
+        <div></div>
+
         {/* Goalkeeper */}
-        <div className="col-span-3"></div>
+        <div></div>
+        <div></div>
         <div>{renderPlayer("GK")}</div>
-        <div className="col-span-3"></div>
+        <div></div>
+        <div></div>
       </div>
     </Card>
   );
