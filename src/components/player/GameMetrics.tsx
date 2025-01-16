@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { format } from "date-fns"
 
 interface GameMetricsProps {
   stats: {
@@ -15,21 +14,15 @@ interface GameMetricsProps {
   motmCount: number
   recentGames: Array<{
     opponent: string
-    date: string
     totalMinutes: number
     positions: Record<string, number>
     isMotm: boolean
     isCaptain: boolean
+    date: string
   }>
 }
 
 export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps) {
-  console.log("GameMetrics received stats:", stats)
-  console.log("GameMetrics received recentGames:", recentGames)
-
-  // Calculate total minutes from stats
-  const totalMinutes = stats?.total_minutes_played || 0
-
   return (
     <div className="border rounded-lg shadow-sm bg-white">
       <Collapsible defaultOpen>
@@ -68,7 +61,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                 <Award className="h-8 w-8 text-green-500" />
                 <p className="text-base font-medium text-gray-600">Total Minutes</p>
               </div>
-              <p className="text-4xl font-bold text-gray-900">{totalMinutes}</p>
+              <p className="text-4xl font-bold text-gray-900">{stats?.total_minutes_played || 0}</p>
             </div>
           </div>
 
@@ -90,59 +83,46 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
           <div className="space-y-4">
             <h4 className="text-lg font-semibold">Recent Games</h4>
             <div className="space-y-4">
-              {Array.isArray(recentGames) && recentGames.length > 0 ? (
-                recentGames.map((game, index) => (
-                  <div key={`${game.opponent}-${game.date}-${index}`} 
-                    className="border rounded-lg p-5 hover:bg-accent/5 transition-colors">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="text-lg font-semibold text-gray-900">
-                        vs {game.opponent}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {format(new Date(game.date), 'dd MMM yyyy')}
-                      </span>
-                      <Badge variant="secondary" className="text-sm font-medium">
-                        {game.totalMinutes} mins
-                      </Badge>
-                      {game.isCaptain && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Crown className="h-5 w-5 text-blue-500" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Captain</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-                      {game.isMotm && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Trophy className="h-5 w-5 text-yellow-500" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Man of the Match</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(game.positions).map(([pos, mins]) => (
-                        <Badge key={pos} variant="outline" className="text-sm">
-                          {pos}: {mins}m
-                        </Badge>
-                      ))}
-                    </div>
+              {recentGames.map((game, index) => (
+                <div key={index} 
+                  className="border rounded-lg p-5 hover:bg-accent/5 transition-colors">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-lg font-semibold text-gray-900">vs {game.opponent}</span>
+                    <Badge variant="secondary" className="text-sm font-medium">{game.totalMinutes} mins</Badge>
+                    {game.isCaptain && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Crown className="h-5 w-5 text-blue-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Captain</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    {game.isMotm && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Trophy className="h-5 w-5 text-yellow-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Man of the Match</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
-                ))
-              ) : (
-                <div className="text-center text-gray-500 py-4">
-                  No recent games found
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(game.positions).map(([pos, mins]) => (
+                      <Badge key={pos} variant="outline" className="text-sm">
+                        {pos}: {mins}m
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </CollapsibleContent>

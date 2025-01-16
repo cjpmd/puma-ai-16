@@ -18,7 +18,6 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
-import { GameMetrics } from "@/components/player/GameMetrics";
 
 interface PlayerDetailsProps {
   player: Player;
@@ -31,15 +30,22 @@ interface GameMetricsData {
     total_minutes_played: number;
     positions_played: Record<string, number>;
   };
-  motmCount: number;
   recentGames: Array<{
-    opponent: string;
-    date: string;
-    totalMinutes: number;
-    positions: Record<string, number>;
-    isMotm: boolean;
+    id: string;
+    fixture_id: string;
+    fixtures?: {
+      date: string;
+      opponent: string;
+      motm_player_id?: string;
+    };
+    fixture_playing_periods?: {
+      duration_minutes: number;
+    };
+    position: string;
     isCaptain: boolean;
+    isMotm: boolean;
   }>;
+  motmCount: number;
 }
 
 export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
@@ -51,97 +57,66 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const { data: gameMetrics } = useQuery<GameMetricsData>({
     queryKey: ["player-game-metrics", player.id],
     queryFn: async () => {
-      console.log("Fetching game metrics for player:", player.id);
-      
-      // First get the fixture stats
       const { data: fixtureStats, error: fixtureError } = await supabase
         .from("player_fixture_stats")
         .select("*")
         .eq("player_id", player.id)
         .maybeSingle();
 
-      // Get recent games with fixture details and all positions
       const { data: recentGames, error: gamesError } = await supabase
-        .from("fixtures")
+        .from("fixture_player_positions")
         .select(`
-          id,
-          date,
-          opponent,
-          motm_player_id,
-          fixture_player_positions!inner (
-            position,
-            player_id,
-            fixture_playing_periods (
-              duration_minutes
-            )
+          *,
+          fixtures (
+            date,
+            opponent,
+            motm_player_id
+          ),
+          fixture_playing_periods (
+            duration_minutes
           )
         `)
-        .eq("fixture_player_positions.player_id", player.id)
-        .order("date", { ascending: false })
+        .eq("player_id", player.id)
+        .order("created_at", { ascending: false })
         .limit(5);
 
-      console.log("Recent games data:", recentGames);
-
-      // Get captain information
+      // Fetch captain information separately
       const { data: captainData, error: captainError } = await supabase
         .from("fixture_team_selections")
         .select("fixture_id, is_captain")
         .eq("player_id", player.id);
 
-      if (fixtureError || gamesError || captainError) {
-        console.error("Error fetching data:", { fixtureError, gamesError, captainError });
-        throw fixtureError || gamesError || captainError;
-      }
+      if (fixtureError || gamesError || captainError) throw fixtureError || gamesError || captainError;
 
       // Create a map of fixture_id to captain status
       const captainMap = new Map(
         captainData?.map(item => [item.fixture_id, item.is_captain]) || []
       );
 
-      // Transform recent games data
-      const transformedGames = recentGames?.map(game => {
-        const positions: Record<string, number> = {};
-        let totalMinutes = 0;
+      // Transform the data to match the expected interface
+      const transformedStats = {
+        total_appearances: fixtureStats?.total_appearances || 0,
+        captain_appearances: fixtureStats?.captain_appearances || 0,
+        total_minutes_played: fixtureStats?.total_minutes_played || 0,
+        positions_played: (fixtureStats?.positions_played as Record<string, number>) || {}
+      };
 
-        game.fixture_player_positions?.forEach((pos: any) => {
-          const minutes = pos.fixture_playing_periods?.reduce((sum: number, period: any) => 
-            sum + (period.duration_minutes || 0), 0) || 0;
-          
-          if (!positions[pos.position]) {
-            positions[pos.position] = 0;
-          }
-          positions[pos.position] += minutes;
-          totalMinutes += minutes;
-        });
+      const transformedRecentGames = recentGames?.map(game => ({
+        id: game.id,
+        fixture_id: game.fixture_id,
+        fixtures: game.fixtures,
+        fixture_playing_periods: game.fixture_playing_periods,
+        position: game.position,
+        isCaptain: captainMap.get(game.fixture_id) || false,
+        isMotm: game.fixtures?.motm_player_id === player.id
+      })) || [];
 
-        console.log("Transformed game:", {
-          opponent: game.opponent,
-          date: game.date,
-          totalMinutes,
-          positions,
-          isMotm: game.motm_player_id === player.id,
-          isCaptain: captainMap.get(game.id) || false
-        });
-
-        return {
-          opponent: game.opponent,
-          date: game.date,
-          totalMinutes,
-          positions,
-          isMotm: game.motm_player_id === player.id,
-          isCaptain: captainMap.get(game.id) || false
-        };
-      }) || [];
+      const motmCount = transformedRecentGames.filter(game => game.isMotm).length;
 
       return {
-        stats: {
-          total_appearances: fixtureStats?.total_appearances || 0,
-          captain_appearances: fixtureStats?.captain_appearances || 0,
-          total_minutes_played: fixtureStats?.total_minutes_played || 0,
-          positions_played: fixtureStats?.positions_played as Record<string, number> || {}
-        },
-        motmCount: transformedGames.filter(game => game.isMotm).length,
-        recentGames: transformedGames
+        stats: transformedStats,
+        recentGames: transformedRecentGames,
+        motmCount
       };
     },
   });
@@ -333,16 +308,139 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
       </Card>
 
       {/* Game Metrics Section */}
-      <GameMetrics 
-        stats={gameMetrics?.stats || {
-          total_appearances: 0,
-          captain_appearances: 0,
-          total_minutes_played: 0,
-          positions_played: {}
-        }}
-        motmCount={gameMetrics?.motmCount || 0}
-        recentGames={gameMetrics?.recentGames || []}
-      />
+      <Card>
+        <Collapsible defaultOpen>
+          <CollapsibleTrigger className="flex w-full items-center justify-between p-6 hover:bg-accent/5 transition-colors">
+            <h3 className="text-xl font-semibold">Game Metrics</h3>
+            <ChevronDown className="h-5 w-5" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="p-6 pt-0 space-y-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="p-6 bg-accent/5 rounded-xl border border-accent/10 transform hover:scale-105 transition-transform">
+                <div className="flex items-center gap-3 mb-3">
+                  <Medal className="h-8 w-8 text-purple-500" />
+                  <p className="text-base font-medium text-gray-600">Total Games</p>
+                </div>
+                <p className="text-4xl font-bold text-gray-900">{gameMetrics?.stats?.total_appearances || 0}</p>
+              </div>
+              
+              <div className="p-6 bg-accent/5 rounded-xl border border-accent/10 transform hover:scale-105 transition-transform">
+                <div className="flex items-center gap-3 mb-3">
+                  <Crown className="h-8 w-8 text-blue-500" />
+                  <p className="text-base font-medium text-gray-600">Captain</p>
+                </div>
+                <p className="text-4xl font-bold text-gray-900">{gameMetrics?.stats?.captain_appearances || 0}</p>
+              </div>
+              
+              <div className="p-6 bg-accent/5 rounded-xl border border-accent/10 transform hover:scale-105 transition-transform">
+                <div className="flex items-center gap-3 mb-3">
+                  <Trophy className="h-8 w-8 text-yellow-500" />
+                  <p className="text-base font-medium text-gray-600">MOTM</p>
+                </div>
+                <p className="text-4xl font-bold text-gray-900">{gameMetrics?.motmCount || 0}</p>
+              </div>
+              
+              <div className="p-6 bg-accent/5 rounded-xl border border-accent/10 transform hover:scale-105 transition-transform">
+                <div className="flex items-center gap-3 mb-3">
+                  <Award className="h-8 w-8 text-green-500" />
+                  <p className="text-base font-medium text-gray-600">Total Minutes</p>
+                </div>
+                <p className="text-4xl font-bold text-gray-900">{gameMetrics?.stats?.total_minutes_played || 0}</p>
+              </div>
+            </div>
+
+            {gameMetrics?.stats?.positions_played && Object.keys(gameMetrics.stats.positions_played).length > 0 && (
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold">Minutes by Position</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Object.entries(gameMetrics.stats.positions_played).map(([position, minutes]) => (
+                    <div key={position} 
+                      className="flex justify-between items-center p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
+                      <span className="font-medium text-gray-800">{position}</span>
+                      <span className="text-gray-600 font-semibold">{minutes} mins</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold">Recent Games</h4>
+              <div className="space-y-4">
+                {gameMetrics?.recentGames.reduce((acc: Record<string, any>[], game) => {
+                  const existingGame = acc.find(g => g.opponent === game.fixtures?.opponent);
+                  
+                  if (existingGame) {
+                    existingGame.totalMinutes += game.fixture_playing_periods?.duration_minutes || 0;
+                    existingGame.positions.push({
+                      position: game.position,
+                      minutes: game.fixture_playing_periods?.duration_minutes || 0
+                    });
+                    if (game.isCaptain) existingGame.isCaptain = true;
+                    if (game.isMotm) existingGame.isMotm = true;
+                  } else {
+                    acc.push({
+                      id: game.id,
+                      fixtureId: game.fixture_id,
+                      opponent: game.fixtures?.opponent,
+                      totalMinutes: game.fixture_playing_periods?.duration_minutes || 0,
+                      isCaptain: game.isCaptain,
+                      isMotm: game.fixtures?.motm_player_id === player.id,
+                      positions: [{
+                        position: game.position,
+                        minutes: game.fixture_playing_periods?.duration_minutes || 0
+                      }]
+                    });
+                  }
+                  return acc;
+                }, []).map((game) => (
+                  <div key={game.id} 
+                    className="border rounded-lg p-5 hover:bg-accent/5 transition-colors cursor-pointer"
+                    onClick={() => handleFixtureClick(game.fixtureId)}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-lg font-semibold text-gray-900">vs {game.opponent}</span>
+                      <Badge variant="secondary" className="text-sm font-medium">
+                        {game.totalMinutes} mins
+                      </Badge>
+                      {game.isCaptain && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Crown className="h-5 w-5 text-blue-500" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Captain</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                      {game.isMotm && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Trophy className="h-5 w-5 text-yellow-500" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Man of the Match</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {game.positions.map((pos, index) => (
+                        <Badge key={index} variant="outline" className="text-sm">
+                          {pos.position}: {pos.minutes}m
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
 
       {/* Player Objectives and Coaching Comments */}
       <div className="grid gap-6 md:grid-cols-2">

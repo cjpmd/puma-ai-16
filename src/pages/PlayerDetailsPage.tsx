@@ -15,17 +15,13 @@ const PlayerDetailsPage = () => {
     queryFn: async () => {
       if (!id) throw new Error("No player ID provided");
 
-      console.log("Fetching player data for ID:", id);
-
       const { data, error } = await supabase
         .from("players")
         .select(`
           *,
           player_attributes (*),
           fixture_player_positions (
-            id,
-            position,
-            fixture_id,
+            *,
             fixtures (
               id,
               date,

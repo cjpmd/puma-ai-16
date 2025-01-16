@@ -20,17 +20,15 @@ export default async function Page({ params }: { params: { id: string } }) {
         *,
         player_attributes (*),
         fixture_player_positions (
-          id,
-          position,
-          fixture_id,
-          fixture_playing_periods (
-            duration_minutes
-          ),
+          *,
           fixtures (
             id,
             date,
             opponent,
             motm_player_id
+          ),
+          fixture_playing_periods (
+            duration_minutes
           )
         ),
         fixture_team_selections (
@@ -60,82 +58,41 @@ export default async function Page({ params }: { params: { id: string } }) {
     notFound()
   }
 
-  // First, group all positions by fixture
-  const fixturePositions = new Map()
-  
-  player.fixture_player_positions?.forEach(position => {
-    if (!position.fixtures || !position.fixture_id) return
-
-    const fixtureId = position.fixture_id
-    if (!fixturePositions.has(fixtureId)) {
-      fixturePositions.set(fixtureId, {
-        positions: [],
-        fixture: position.fixtures
-      })
-    }
-    fixturePositions.get(fixtureId).positions.push(position)
-  })
-
-  // Calculate total minutes played
-  let totalMinutesPlayed = 0
-
-  // Then create the final games array with aggregated data
-  const games = Array.from(fixturePositions.entries()).map(([fixtureId, data]) => {
-    const { positions, fixture } = data
-
-    // Calculate total minutes and positions for this game
-    const positionsMap = {}
-    let gameTotalMinutes = 0
-
-    positions.forEach(pos => {
-      const minutes = pos.fixture_playing_periods?.duration_minutes || 0
-      if (pos.position) {
-        positionsMap[pos.position] = (positionsMap[pos.position] || 0) + minutes
+  // Group games by opponent to consolidate positions and minutes
+  const gamesByOpponent = player.fixture_player_positions?.reduce((acc, curr) => {
+    const opponent = curr.fixtures?.opponent
+    const fixtureId = curr.fixtures?.id
+    if (!opponent || !fixtureId) return acc
+    
+    if (!acc[opponent]) {
+      acc[opponent] = {
+        opponent,
+        date: curr.fixtures?.date,
+        totalMinutes: 0,
+        positions: {},
+        isMotm: curr.fixtures?.motm_player_id === player.id,
+        isCaptain: player.fixture_team_selections?.some(
+          selection => selection.fixture_id === fixtureId && selection.is_captain
+        )
       }
-      gameTotalMinutes += minutes
-    })
-
-    // Add to total minutes
-    totalMinutesPlayed += gameTotalMinutes
-
-    // Check if player was captain in this fixture
-    const isCaptain = player.fixture_team_selections?.some(
-      selection => selection.fixture_id === fixtureId && selection.is_captain
-    )
-
-    return {
-      opponent: fixture.opponent,
-      date: fixture.date,
-      totalMinutes: gameTotalMinutes,
-      positions: positionsMap,
-      isMotm: fixture.motm_player_id === player.id,
-      isCaptain
     }
-  })
+    
+    acc[opponent].totalMinutes += curr.fixture_playing_periods?.duration_minutes || 0
+    if (curr.position) {
+      acc[opponent].positions[curr.position] = (acc[opponent].positions[curr.position] || 0) + 
+        (curr.fixture_playing_periods?.duration_minutes || 0)
+    }
+    
+    return acc
+  }, {} as Record<string, any>)
 
-  // Sort games by date (most recent first)
-  const sortedGames = games.sort((a, b) => 
+  const sortedGames = Object.values(gamesByOpponent || {}).sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
-  // Calculate MOTM count
-  const motmCount = sortedGames.filter(game => game.isMotm).length
-
-  // Create stats from calculated values
-  const calculatedStats = {
-    total_appearances: sortedGames.length,
-    captain_appearances: sortedGames.filter(game => game.isCaptain).length,
-    total_minutes_played: totalMinutesPlayed,
-    positions_played: sortedGames.reduce((acc, game) => {
-      Object.entries(game.positions).forEach(([pos, mins]) => {
-        acc[pos] = (acc[pos] || 0) + mins
-      })
-      return acc
-    }, {})
-  }
-
-  console.log('Processed games:', sortedGames)
-  console.log('Calculated stats:', calculatedStats)
+  const motmCount = player.fixture_player_positions?.filter(
+    pos => pos.fixtures?.motm_player_id === player.id
+  ).length || 0
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
@@ -151,7 +108,7 @@ export default async function Page({ params }: { params: { id: string } }) {
         <PlayerAttributes attributes={player.player_attributes} />
 
         <GameMetrics 
-          stats={calculatedStats}
+          stats={stats}
           motmCount={motmCount}
           recentGames={sortedGames}
         />

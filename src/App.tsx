@@ -27,7 +27,6 @@ function App() {
           <Route path="/squad" element={<Squad />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/fixtures" element={<Fixtures />} />
-          <Route path="/fixtures/:id" element={<Fixtures />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/player/:id" element={<PlayerDetails />} />
           <Route path="/formation" element={<FormationSelector />} />
