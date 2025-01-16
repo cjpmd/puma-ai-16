@@ -366,7 +366,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
   };
 
   return (
-    <div className="space-y-4 h-[calc(90vh-2rem)] flex flex-col">
+    <div className="space-y-4 max-h-[80vh] flex flex-col">
       <div className="sticky top-0 z-10 bg-background pt-4 pb-2 border-b">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2 mr-auto">
@@ -418,7 +418,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0 pb-4">
         {showFormation && (
           <div className="mb-4">
             {periods.map((period, index) => (
