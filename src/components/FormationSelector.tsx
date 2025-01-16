@@ -45,7 +45,7 @@ export const FormationSelector = () => {
   };
 
   const PositionSelect = ({ position, label }: { position: string; label: PositionType }) => (
-    <div className="w-48">
+    <div className="w-64">
       <Select
         value={selectedPositions[position]}
         onValueChange={(value) => handlePositionChange(position, value)}
@@ -55,11 +55,12 @@ export const FormationSelector = () => {
         </SelectTrigger>
         <SelectContent>
           {positionOptions[label].map((option) => {
+            const [abbrev, role] = option.split(" ");
             const positionDef = positionDefinitions?.find(
-              def => def.abbreviation === option.split(" ")[0]
+              def => def.abbreviation === abbrev
             );
             const displayText = positionDef 
-              ? `${positionDef.full_name} (${option})`
+              ? `${positionDef.full_name} ${role}`
               : option;
             
             return (
