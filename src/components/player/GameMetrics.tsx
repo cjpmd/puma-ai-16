@@ -4,6 +4,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Link } from "react-router-dom"
+import { useQuery } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
 
 interface GameMetricsProps {
   stats: {
@@ -27,30 +29,40 @@ interface GameMetricsProps {
   }>
 }
 
-const positionMappings: Record<string, string> = {
-  'GK': 'Goalkeeper',
-  'SK': 'Sweeper Keeper',
-  'DL': 'Left Back',
-  'DCL': 'Left Center Back',
-  'DCR': 'Right Center Back',
-  'DR': 'Right Back',
-  'WBL': 'Left Wing Back',
-  'WBR': 'Right Wing Back',
-  'DMCL': 'Left Defensive Midfielder',
-  'DMCR': 'Right Defensive Midfielder',
-  'ML': 'Left Midfielder',
-  'MCL': 'Left Center Midfielder',
-  'MCR': 'Right Center Midfielder',
-  'MR': 'Right Midfielder',
-  'AML': 'Left Attacking Midfielder',
-  'AMCL': 'Left Center Attacking Midfielder',
-  'AMCR': 'Right Center Attacking Midfielder',
-  'AMR': 'Right Attacking Midfielder',
-  'STCL': 'Left Striker',
-  'STCR': 'Right Striker'
-};
+interface PositionDefinition {
+  abbreviation: string
+  full_name: string
+}
 
 export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps) {
+  // Fetch position definitions from the database
+  const { data: positionDefinitions } = useQuery({
+    queryKey: ["position-definitions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("position_definitions")
+        .select("abbreviation, full_name")
+        .order("abbreviation");
+
+      if (error) throw error;
+      
+      // Create a map of abbreviation to full name
+      const posMap = (data as PositionDefinition[]).reduce((acc, pos) => {
+        acc[pos.abbreviation] = pos.full_name;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      return posMap;
+    },
+  });
+
+  const getPositionFullName = (abbreviation: string) => {
+    if (!positionDefinitions) return abbreviation;
+    return positionDefinitions[abbreviation] 
+      ? `${positionDefinitions[abbreviation]} [${abbreviation}]`
+      : abbreviation;
+  };
+
   return (
     <div className="border rounded-lg shadow-sm bg-white">
       <Collapsible defaultOpen>
@@ -101,7 +113,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                   <div key={position} 
                     className="flex justify-between items-center p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
                     <span className="font-medium text-gray-800">
-                      {positionMappings[position]} ({position})
+                      {getPositionFullName(position)}
                     </span>
                     <span className="text-gray-600 font-semibold">{minutes} mins</span>
                   </div>
@@ -152,7 +164,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                   <div className="flex flex-wrap gap-2">
                     {game.positions.map((pos) => (
                       <Badge key={pos.position} variant="outline" className="text-sm">
-                        {positionMappings[pos.position]} ({pos.position}): {pos.minutes}m
+                        {getPositionFullName(pos.position)}: {pos.minutes}m
                       </Badge>
                     ))}
                   </div>
