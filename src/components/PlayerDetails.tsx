@@ -57,66 +57,84 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const { data: gameMetrics } = useQuery<GameMetricsData>({
     queryKey: ["player-game-metrics", player.id],
     queryFn: async () => {
+      // First get the fixture stats
       const { data: fixtureStats, error: fixtureError } = await supabase
         .from("player_fixture_stats")
         .select("*")
         .eq("player_id", player.id)
         .maybeSingle();
 
+      // Get recent games with fixture details
       const { data: recentGames, error: gamesError } = await supabase
-        .from("fixture_player_positions")
+        .from("fixtures")
         .select(`
-          *,
-          fixtures (
-            date,
-            opponent,
-            motm_player_id,
-            id
-          ),
-          fixture_playing_periods (
-            duration_minutes
+          id,
+          date,
+          opponent,
+          motm_player_id,
+          fixture_player_positions!inner (
+            id,
+            position,
+            fixture_playing_periods (
+              duration_minutes
+            )
           )
         `)
-        .eq("player_id", player.id)
-        .order("created_at", { ascending: false })
+        .eq("fixture_player_positions.player_id", player.id)
+        .order("date", { ascending: false })
         .limit(5);
 
-      // Fetch captain information separately
+      // Get captain information
       const { data: captainData, error: captainError } = await supabase
         .from("fixture_team_selections")
         .select("fixture_id, is_captain")
         .eq("player_id", player.id);
 
-      if (fixtureError || gamesError || captainError) throw fixtureError || gamesError || captainError;
+      if (fixtureError || gamesError || captainError) {
+        throw fixtureError || gamesError || captainError;
+      }
 
       // Create a map of fixture_id to captain status
       const captainMap = new Map(
         captainData?.map(item => [item.fixture_id, item.is_captain]) || []
       );
 
-      // Transform the data to match the expected interface
-      const transformedStats = {
-        total_appearances: fixtureStats?.total_appearances || 0,
-        captain_appearances: fixtureStats?.captain_appearances || 0,
-        total_minutes_played: fixtureStats?.total_minutes_played || 0,
-        positions_played: (fixtureStats?.positions_played as Record<string, number>) || {}
-      };
+      // Transform the games data
+      const transformedGames = recentGames?.map(game => {
+        const positions = game.fixture_player_positions.map(pos => ({
+          position: pos.position,
+          minutes: pos.fixture_playing_periods?.duration_minutes || 0
+        }));
 
-      const transformedRecentGames = recentGames?.map(game => ({
-        id: game.id,
-        fixture_id: game.fixtures?.id,
-        fixtures: game.fixtures,
-        fixture_playing_periods: game.fixture_playing_periods,
-        position: game.position,
-        isCaptain: captainMap.get(game.fixtures?.id || '') || false,
-        isMotm: game.fixtures?.motm_player_id === player.id
-      })) || [];
+        const totalMinutes = positions.reduce((sum, pos) => sum + pos.minutes, 0);
 
-      const motmCount = transformedRecentGames.filter(game => game.isMotm).length;
+        return {
+          id: game.id,
+          fixture_id: game.id,
+          fixtures: {
+            date: game.date,
+            opponent: game.opponent,
+            motm_player_id: game.motm_player_id
+          },
+          position: positions[0]?.position, // Primary position
+          positions: positions,
+          totalMinutes,
+          isCaptain: captainMap.get(game.id) || false,
+          isMotm: game.motm_player_id === player.id
+        };
+      }) || [];
+
+      // Count MOTM appearances
+      const motmCount = transformedGames.filter(game => game.isMotm).length;
 
       return {
-        stats: transformedStats,
-        recentGames: transformedRecentGames,
+        stats: {
+          total_appearances: fixtureStats?.total_appearances || 0,
+          captain_appearances: fixtureStats?.captain_appearances || 0,
+          total_minutes_played: fixtureStats?.total_minutes_played || 0,
+          positions_played: fixtureStats?.positions_played || {}
+        },
+        recentGames: transformedGames,
         motmCount
       };
     },
