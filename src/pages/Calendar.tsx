@@ -327,6 +327,7 @@ export const Calendar = () => {
               selected={date}
               onSelect={setDate}
               className="rounded-md border"
+              weekStartsOn={1}
             />
           </CardContent>
         </Card>

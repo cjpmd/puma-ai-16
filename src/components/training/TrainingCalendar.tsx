@@ -18,6 +18,7 @@ export const TrainingCalendar = ({ date, onDateSelect }: TrainingCalendarProps) 
           selected={date}
           onSelect={onDateSelect}
           className="rounded-md border"
+          weekStartsOn={1}
         />
       </CardContent>
     </Card>
