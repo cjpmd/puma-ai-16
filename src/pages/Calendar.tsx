@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { CalendarComponent } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, isSameMonth, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
@@ -418,7 +418,7 @@ export const Calendar = () => {
                 <div className="w-3 h-3 rounded bg-orange-100 ml-4"></div>
                 <span>Fixture</span>
               </div>
-              <CalendarComponent
+              <Calendar
                 mode="single"
                 selected={date}
                 onSelect={setDate}
