@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -70,6 +71,7 @@ export const AddFixtureDialog = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showTeamSelection, setShowTeamSelection] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -84,7 +86,6 @@ export const AddFixtureDialog = ({
     },
   });
 
-  // Query for players based on current category
   const { data: players } = useQuery({
     queryKey: ["players", form.getValues("category")],
     queryFn: async () => {
@@ -103,7 +104,7 @@ export const AddFixtureDialog = ({
       console.log("Players fetched:", data);
       return data || [];
     },
-    enabled: isOpen, // Only run query when dialog is open
+    enabled: isOpen,
   });
 
   useEffect(() => {
@@ -120,7 +121,6 @@ export const AddFixtureDialog = ({
     }
   }, [editingFixture, form]);
 
-  // Reset MOTM and refetch players when category changes
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === "category") {
@@ -133,6 +133,8 @@ export const AddFixtureDialog = ({
 
   const onSubmit = async (data: FormData) => {
     try {
+      setIsSubmitting(true);
+      
       if (!selectedDate) {
         toast({
           variant: "destructive",
@@ -192,6 +194,8 @@ export const AddFixtureDialog = ({
         title: "Error",
         description: "Failed to save fixture",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -200,6 +204,9 @@ export const AddFixtureDialog = ({
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>{editingFixture ? "Edit Fixture" : "Add New Fixture"}</DialogTitle>
+          <DialogDescription>
+            Fill in the fixture details below. All fields marked with * are required.
+          </DialogDescription>
         </DialogHeader>
         
         {!showTeamSelection ? (
@@ -210,7 +217,7 @@ export const AddFixtureDialog = ({
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Team</FormLabel>
+                    <FormLabel>Team *</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
@@ -236,7 +243,7 @@ export const AddFixtureDialog = ({
                 name="opponent"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Opponent</FormLabel>
+                    <FormLabel>Opponent *</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -328,8 +335,12 @@ export const AddFixtureDialog = ({
                 )}
               />
               
-              <Button type="submit" className="w-full">
-                {editingFixture ? "Save Changes" : "Add Fixture"}
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Saving..." : editingFixture ? "Save Changes" : "Add Fixture"}
               </Button>
             </form>
           </Form>
