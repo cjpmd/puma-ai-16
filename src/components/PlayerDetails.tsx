@@ -34,6 +34,7 @@ interface GameMetricsData {
     fixtures?: {
       date: string;
       opponent: string;
+      motm_player_id?: string;
     };
     fixture_playing_periods?: {
       duration_minutes: number;
@@ -345,13 +346,36 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
             <div className="space-y-4">
               <h4 className="text-lg font-semibold">Recent Games</h4>
               <div className="space-y-4">
-                {gameMetrics?.recentGames.map((game) => (
+                {gameMetrics?.recentGames.reduce((acc: Record<string, any>[], game) => {
+                  const existingGame = acc.find(g => g.opponent === game.fixtures?.opponent);
+                  
+                  if (existingGame) {
+                    existingGame.totalMinutes += game.fixture_playing_periods?.duration_minutes || 0;
+                    existingGame.positions.push({
+                      position: game.position,
+                      minutes: game.fixture_playing_periods?.duration_minutes || 0
+                    });
+                  } else {
+                    acc.push({
+                      id: game.id,
+                      opponent: game.fixtures?.opponent,
+                      totalMinutes: game.fixture_playing_periods?.duration_minutes || 0,
+                      isCaptain: game.isCaptain,
+                      isMotm: game.isMotm,
+                      positions: [{
+                        position: game.position,
+                        minutes: game.fixture_playing_periods?.duration_minutes || 0
+                      }]
+                    });
+                  }
+                  return acc;
+                }, []).map((game) => (
                   <div key={game.id} 
                     className="border rounded-lg p-5 hover:bg-accent/5 transition-colors">
                     <div className="flex items-center gap-3 mb-3">
-                      <span className="text-lg font-semibold text-gray-900">vs {game.fixtures?.opponent}</span>
+                      <span className="text-lg font-semibold text-gray-900">vs {game.opponent}</span>
                       <Badge variant="secondary" className="text-sm font-medium">
-                        {game.fixture_playing_periods?.duration_minutes || 0} mins
+                        {game.totalMinutes} mins
                       </Badge>
                       {game.isCaptain && (
                         <TooltipProvider>
@@ -379,9 +403,11 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="text-sm">
-                        {game.position}
-                      </Badge>
+                      {game.positions.map((pos, index) => (
+                        <Badge key={index} variant="outline" className="text-sm">
+                          {pos.position}: {pos.minutes}m
+                        </Badge>
+                      ))}
                     </div>
                   </div>
                 ))}
