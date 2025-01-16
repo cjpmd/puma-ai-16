@@ -101,8 +101,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           )
         `)
         .eq("player_id", player.id)
-        .order("created_at", { ascending: false })
-        .limit(5);
+        .order("created_at", { ascending: false });
 
       const { data: captainData, error: captainError } = await supabase
         .from("fixture_team_selections")
@@ -131,22 +130,40 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         positions_played: (fixtureStats?.positions_played as Record<string, number>) || {}
       };
 
-      const uniqueFixtures = new Map();
+      // Group positions by fixture
+      const fixturePositions = new Map();
       recentGames?.forEach(game => {
-        if (!uniqueFixtures.has(game.fixture_id)) {
-          uniqueFixtures.set(game.fixture_id, {
+        const fixtureId = game.fixture_id;
+        if (!fixturePositions.has(fixtureId)) {
+          fixturePositions.set(fixtureId, {
             id: game.id,
-            fixture_id: game.fixture_id,
+            fixture_id: fixtureId,
             fixtures: game.fixtures,
-            fixture_playing_periods: game.fixture_playing_periods,
-            position: game.position,
-            isCaptain: captainMap.get(game.fixture_id) || false,
-            isMotm: game.fixtures?.motm_player_id === player.id
+            positions: [],
+            isCaptain: captainMap.get(fixtureId) || false,
+            isMotm: game.fixtures?.motm_player_id === player.id,
+            totalMinutes: 0
           });
+        }
+        
+        const fixture = fixturePositions.get(fixtureId);
+        if (game.fixture_playing_periods?.duration_minutes) {
+          fixture.positions.push({
+            position: game.position,
+            minutes: game.fixture_playing_periods.duration_minutes
+          });
+          fixture.totalMinutes += game.fixture_playing_periods.duration_minutes;
         }
       });
 
-      const transformedRecentGames = Array.from(uniqueFixtures.values());
+      const transformedRecentGames = Array.from(fixturePositions.values())
+        .sort((a, b) => {
+          const dateA = new Date(a.fixtures?.date || 0);
+          const dateB = new Date(b.fixtures?.date || 0);
+          return dateB.getTime() - dateA.getTime();
+        })
+        .slice(0, 5);
+
       const motmCount = transformedRecentGames.filter(game => game.isMotm).length;
 
       return {
@@ -442,38 +459,12 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
             <div className="space-y-4">
               <h4 className="text-lg font-semibold">Recent Games</h4>
               <div className="space-y-4">
-                {gameMetrics?.recentGames.reduce((acc: Record<string, any>[], game) => {
-                  const existingGame = acc.find(g => g.opponent === game.fixtures?.opponent);
-                  
-                  if (existingGame) {
-                    existingGame.totalMinutes += game.fixture_playing_periods?.duration_minutes || 0;
-                    existingGame.positions.push({
-                      position: game.position,
-                      minutes: game.fixture_playing_periods?.duration_minutes || 0
-                    });
-                    if (game.isCaptain) existingGame.isCaptain = true;
-                    if (game.isMotm) existingGame.isMotm = true;
-                  } else {
-                    acc.push({
-                      id: game.id,
-                      fixtureId: game.fixture_id,
-                      opponent: game.fixtures?.opponent,
-                      totalMinutes: game.fixture_playing_periods?.duration_minutes || 0,
-                      isCaptain: game.isCaptain,
-                      isMotm: game.fixtures?.motm_player_id === player.id,
-                      positions: [{
-                        position: game.position,
-                        minutes: game.fixture_playing_periods?.duration_minutes || 0
-                      }]
-                    });
-                  }
-                  return acc;
-                }, []).map((game) => (
+                {gameMetrics?.recentGames.map((game) => (
                   <div key={game.id} 
                     className="border rounded-lg p-5 hover:bg-accent/5 transition-colors cursor-pointer"
-                    onClick={() => handleFixtureClick(game.fixtureId)}>
+                    onClick={() => handleFixtureClick(game.fixture_id)}>
                     <div className="flex items-center gap-3 mb-3">
-                      <span className="text-lg font-semibold text-gray-900">vs {game.opponent}</span>
+                      <span className="text-lg font-semibold text-gray-900">vs {game.fixtures?.opponent}</span>
                       <Badge variant="secondary" className="text-sm font-medium">
                         {game.totalMinutes} mins
                       </Badge>
@@ -504,7 +495,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {game.positions.map((pos, index) => (
-                        <Badge key={index} variant="outline" className="text-sm">
+                        <Badge key={`${game.id}-${pos.position}-${index}`} variant="outline" className="text-sm">
                           {pos.position}: {pos.minutes}m
                         </Badge>
                       ))}
