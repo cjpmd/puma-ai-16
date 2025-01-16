@@ -446,14 +446,6 @@ export const Calendar = () => {
                 onSelect={setDate}
                 className="rounded-md border"
                 weekStartsOn={1}
-                modifiers={{
-                  customStyles: (date) => true,
-                }}
-                modifiersStyles={{
-                  customStyles: {
-                    position: 'relative',
-                  },
-                }}
                 classNames={{
                   day: getDayClassNames,
                 }}
