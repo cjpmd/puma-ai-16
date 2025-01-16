@@ -81,7 +81,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           date,
           opponent,
           motm_player_id,
-          fixture_player_positions!inner (
+          fixture_player_positions!left (
             id,
             position,
             player_id,
@@ -133,16 +133,20 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         }
 
         // Sum up minutes for each position in this fixture
-        game.fixture_player_positions.forEach((pos: any) => {
-          const minutes = pos.fixture_playing_periods?.reduce((sum: number, period: any) => 
-            sum + (period.duration_minutes || 0), 0) || 0;
-          
-          if (!acc[game.id].positions[pos.position]) {
-            acc[game.id].positions[pos.position] = 0;
-          }
-          acc[game.id].positions[pos.position] += minutes;
-          acc[game.id].totalMinutes += minutes;
-        });
+        if (game.fixture_player_positions) {
+          game.fixture_player_positions.forEach((pos: any) => {
+            if (pos.player_id === player.id) { // Only process positions for this player
+              const minutes = pos.fixture_playing_periods?.reduce((sum: number, period: any) => 
+                sum + (period.duration_minutes || 0), 0) || 0;
+              
+              if (!acc[game.id].positions[pos.position]) {
+                acc[game.id].positions[pos.position] = 0;
+              }
+              acc[game.id].positions[pos.position] += minutes;
+              acc[game.id].totalMinutes += minutes;
+            }
+          });
+        }
 
         console.log("Transformed game data:", acc[game.id]);
         return acc;
