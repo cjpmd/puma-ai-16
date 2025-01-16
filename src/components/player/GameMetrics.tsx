@@ -24,7 +24,11 @@ interface GameMetricsProps {
 }
 
 export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps) {
+  console.log("GameMetrics received stats:", stats)
   console.log("GameMetrics received recentGames:", recentGames)
+
+  // Calculate total minutes from stats
+  const totalMinutes = stats?.total_minutes_played || 0
 
   return (
     <div className="border rounded-lg shadow-sm bg-white">
@@ -64,7 +68,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                 <Award className="h-8 w-8 text-green-500" />
                 <p className="text-base font-medium text-gray-600">Total Minutes</p>
               </div>
-              <p className="text-4xl font-bold text-gray-900">{stats?.total_minutes_played || 0}</p>
+              <p className="text-4xl font-bold text-gray-900">{totalMinutes}</p>
             </div>
           </div>
 

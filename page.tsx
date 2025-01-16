@@ -68,27 +68,35 @@ export default async function Page({ params }: { params: { id: string } }) {
 
     const fixtureId = position.fixture_id
     if (!fixturePositions.has(fixtureId)) {
-      fixturePositions.set(fixtureId, [])
+      fixturePositions.set(fixtureId, {
+        positions: [],
+        fixture: position.fixtures
+      })
     }
-    fixturePositions.get(fixtureId).push(position)
+    fixturePositions.get(fixtureId).positions.push(position)
   })
 
-  // Then create the final games array with aggregated data
-  const games = Array.from(fixturePositions.entries()).map(([fixtureId, positions]) => {
-    const firstPosition = positions[0] // Use first position to get fixture details
-    const fixture = firstPosition.fixtures
+  // Calculate total minutes played
+  let totalMinutesPlayed = 0
 
-    // Calculate total minutes and positions
+  // Then create the final games array with aggregated data
+  const games = Array.from(fixturePositions.entries()).map(([fixtureId, data]) => {
+    const { positions, fixture } = data
+
+    // Calculate total minutes and positions for this game
     const positionsMap = {}
-    let totalMinutes = 0
+    let gameTotalMinutes = 0
 
     positions.forEach(pos => {
       const minutes = pos.fixture_playing_periods?.duration_minutes || 0
       if (pos.position) {
         positionsMap[pos.position] = (positionsMap[pos.position] || 0) + minutes
       }
-      totalMinutes += minutes
+      gameTotalMinutes += minutes
     })
+
+    // Add to total minutes
+    totalMinutesPlayed += gameTotalMinutes
 
     // Check if player was captain in this fixture
     const isCaptain = player.fixture_team_selections?.some(
@@ -98,7 +106,7 @@ export default async function Page({ params }: { params: { id: string } }) {
     return {
       opponent: fixture.opponent,
       date: fixture.date,
-      totalMinutes,
+      totalMinutes: gameTotalMinutes,
       positions: positionsMap,
       isMotm: fixture.motm_player_id === player.id,
       isCaptain
@@ -110,14 +118,28 @@ export default async function Page({ params }: { params: { id: string } }) {
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
-  // Calculate MOTM count from fixture positions
+  // Calculate MOTM count
   const motmCount = new Set(
     player.fixture_player_positions
       ?.filter(pos => pos.fixtures?.motm_player_id === player.id)
       .map(pos => pos.fixtures?.id)
   ).size
 
+  // If stats don't exist, create them from calculated values
+  const calculatedStats = stats || {
+    total_appearances: games.length,
+    captain_appearances: player.fixture_team_selections?.filter(s => s.is_captain).length || 0,
+    total_minutes_played: totalMinutesPlayed,
+    positions_played: games.reduce((acc, game) => {
+      Object.entries(game.positions).forEach(([pos, mins]) => {
+        acc[pos] = (acc[pos] || 0) + mins
+      })
+      return acc
+    }, {})
+  }
+
   console.log('Processed games:', sortedGames)
+  console.log('Calculated stats:', calculatedStats)
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
@@ -133,12 +155,7 @@ export default async function Page({ params }: { params: { id: string } }) {
         <PlayerAttributes attributes={player.player_attributes} />
 
         <GameMetrics 
-          stats={stats || {
-            total_appearances: 0,
-            captain_appearances: 0,
-            total_minutes_played: 0,
-            positions_played: {}
-          }}
+          stats={calculatedStats}
           motmCount={motmCount}
           recentGames={sortedGames}
         />
