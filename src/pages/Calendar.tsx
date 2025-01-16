@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, isSameMonth, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
@@ -363,28 +363,6 @@ export const Calendar = () => {
     enabled: !!date,
   });
 
-  const getDayClassNames = (day: Date): string => {
-    if (!date || !isSameMonth(day, date)) {
-      return "relative";
-    }
-    
-    const dateStr = format(day, "yyyy-MM-dd");
-    const hasTraining = sessions?.some(session => session.date === dateStr);
-    const hasFixture = fixtures?.some(fixture => fixture.date === dateStr);
-    
-    let className = "relative";
-    
-    if (hasTraining && hasFixture) {
-      className += " before:absolute before:inset-0 before:bg-gradient-to-br before:from-blue-100 before:to-orange-100 before:rounded-md before:-z-10";
-    } else if (hasTraining) {
-      className += " before:absolute before:inset-0 before:bg-blue-100 before:rounded-md before:-z-10";
-    } else if (hasFixture) {
-      className += " before:absolute before:inset-0 before:bg-orange-100 before:rounded-md before:-z-10";
-    }
-    
-    return className;
-  };
-
   return (
     <div className="container mx-auto p-6 space-y-8">
       <div className="flex justify-between items-center">
@@ -446,9 +424,6 @@ export const Calendar = () => {
                 onSelect={setDate}
                 className="rounded-md border"
                 weekStartsOn={1}
-                classNames={{
-                  day: "relative"
-                }}
                 modifiers={{
                   hasEvent: (day) => {
                     const dateStr = format(day, "yyyy-MM-dd");
@@ -512,6 +487,48 @@ export const Calendar = () => {
               {(!sessions?.length && !fixtures?.length) && (
                 <div className="text-center py-8 text-muted-foreground">
                   No events scheduled for this date
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Objectives Section */}
+        <Card className="md:col-span-3">
+          <CardHeader>
+            <CardTitle>Objectives for {date ? format(date, 'MMMM yyyy') : 'Selected Month'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {objectives?.map((objective) => (
+                <div key={objective.id} className="p-4 border rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium">{objective.title}</h4>
+                      <p className="text-sm text-muted-foreground">{objective.description}</p>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        <span>Player: {objective.players?.name}</span>
+                        <span className="mx-2">•</span>
+                        <span>Coach: {objective.profiles?.name}</span>
+                        <span className="mx-2">•</span>
+                        <span>Review: {format(new Date(objective.review_date), 'MMM d, yyyy')}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded text-sm ${
+                        objective.status === 'COMPLETE' ? 'bg-green-100 text-green-800' :
+                        objective.status === 'IMPROVING' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {objective.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {objectives?.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No objectives scheduled for review this month
                 </div>
               )}
             </div>
