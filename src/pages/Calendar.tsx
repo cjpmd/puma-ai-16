@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
+import { format, parseISO, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
 import { AddDrillDialog } from "@/components/training/AddDrillDialog";
 import { SessionCard } from "@/components/training/SessionCard";
@@ -303,7 +303,6 @@ export const CalendarPage = () => {
 
       if (error) throw error;
 
-      // Map database response to component interface
       return (data as DbTrainingSession[]).map(session => ({
         id: session.id,
         title: session.title,
@@ -358,7 +357,12 @@ export const CalendarPage = () => {
         .order('review_date', { ascending: true });
 
       if (error) throw error;
-      return data;
+      
+      // Filter objectives to only show those in the current month
+      return data.filter(objective => 
+        objective.review_date && 
+        isSameMonth(parseISO(objective.review_date), date)
+      );
     },
     enabled: !!date,
   });
@@ -413,27 +417,34 @@ export const CalendarPage = () => {
           <CardContent>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
-                <div className="w-3 h-3 rounded bg-blue-100"></div>
+                <div className="w-3 h-3 rounded bg-blue-500"></div>
                 <span>Training</span>
-                <div className="w-3 h-3 rounded bg-orange-100 ml-4"></div>
+                <div className="w-3 h-3 rounded bg-orange-500 ml-4"></div>
                 <span>Fixture</span>
               </div>
               <Calendar
+                mode="single"
                 selected={date}
                 onSelect={(newDate) => newDate && setDate(newDate)}
                 className="rounded-md border"
                 weekStartsOn={1}
                 modifiers={{
-                  hasEvent: (day) => {
+                  training: (day) => {
                     const dateStr = format(day, "yyyy-MM-dd");
-                    return (
-                      sessions?.some(session => session.date === dateStr) ||
-                      fixtures?.some(fixture => fixture.date === dateStr)
-                    );
+                    return sessions?.some(session => session.date === dateStr) || false;
+                  },
+                  fixture: (day) => {
+                    const dateStr = format(day, "yyyy-MM-dd");
+                    return fixtures?.some(fixture => fixture.date === dateStr) || false;
                   }
                 }}
-                modifiersClassNames={{
-                  hasEvent: "relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-blue-100 before:to-orange-100 before:rounded-md before:-z-10"
+                modifiersStyles={{
+                  training: {
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)'
+                  },
+                  fixture: {
+                    backgroundColor: 'rgba(249, 115, 22, 0.1)'
+                  }
                 }}
               />
             </div>
