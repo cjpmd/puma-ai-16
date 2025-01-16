@@ -128,6 +128,10 @@ export const Calendar = () => {
   });
 
   const getDayClassNames = (day: Date): string => {
+    if (!isSameMonth(day, date || new Date())) {
+      return "relative";
+    }
+    
     const dateStr = format(day, "yyyy-MM-dd");
     const hasTraining = sessions?.some(session => session.date === dateStr);
     const hasFixture = fixtures?.some(fixture => fixture.date === dateStr);
