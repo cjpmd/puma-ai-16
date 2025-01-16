@@ -122,8 +122,8 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
             opponent: game.opponent,
             motm_player_id: game.motm_player_id
           },
-          position: positions[0]?.position, // Primary position
-          positions: positions,
+          position: positions[0]?.position || '', // Primary position
+          positions,
           totalMinutes,
           isCaptain: captainMap.get(game.id) || false,
           isMotm: game.motm_player_id === player.id
@@ -396,10 +396,10 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                   const existingGame = acc.find(g => g.opponent === game.fixtures?.opponent);
                   
                   if (existingGame) {
-                    existingGame.totalMinutes += game.fixture_playing_periods?.duration_minutes || 0;
+                    existingGame.totalMinutes += game.totalMinutes;
                     existingGame.positions.push({
                       position: game.position,
-                      minutes: game.fixture_playing_periods?.duration_minutes || 0
+                      minutes: game.totalMinutes
                     });
                     if (game.isCaptain) existingGame.isCaptain = true;
                     if (game.isMotm) existingGame.isMotm = true;
@@ -408,12 +408,12 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                       id: game.id,
                       fixtureId: game.fixture_id,
                       opponent: game.fixtures?.opponent,
-                      totalMinutes: game.fixture_playing_periods?.duration_minutes || 0,
+                      totalMinutes: game.totalMinutes,
                       isCaptain: game.isCaptain,
-                      isMotm: game.fixtures?.motm_player_id === player.id,
+                      isMotm: game.isMotm,
                       positions: [{
                         position: game.position,
-                        minutes: game.fixture_playing_periods?.duration_minutes || 0
+                        minutes: game.totalMinutes
                       }]
                     });
                   }
