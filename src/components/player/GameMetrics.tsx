@@ -15,12 +15,15 @@ interface GameMetricsProps {
   motmCount: number
   recentGames: Array<{
     id: string
+    fixtureId: string
     opponent: string
     totalMinutes: number
-    positions: Record<string, number>
+    positions: Array<{
+      position: string
+      minutes: number
+    }>
     isMotm: boolean
     isCaptain: boolean
-    date: string
   }>
 }
 
@@ -98,7 +101,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                   <div key={position} 
                     className="flex justify-between items-center p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
                     <span className="font-medium text-gray-800">
-                      {positionMappings[position] || position} ({position})
+                      {positionMappings[position]} ({position})
                     </span>
                     <span className="text-gray-600 font-semibold">{minutes} mins</span>
                   </div>
@@ -110,15 +113,17 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
           <div className="space-y-4">
             <h4 className="text-lg font-semibold">Recent Games</h4>
             <div className="space-y-4">
-              {recentGames.map((game, index) => (
+              {recentGames.map((game) => (
                 <Link 
-                  key={index}
-                  to={`/fixtures/${game.id}`}
+                  key={game.id}
+                  to={`/fixtures/${game.fixtureId}`}
                   className="block border rounded-lg p-5 hover:bg-accent/5 transition-colors"
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-lg font-semibold text-gray-900">vs {game.opponent}</span>
-                    <Badge variant="secondary" className="text-sm font-medium">{game.totalMinutes} mins</Badge>
+                    <Badge variant="secondary" className="text-sm font-medium">
+                      {game.totalMinutes} mins
+                    </Badge>
                     {game.isCaptain && (
                       <TooltipProvider>
                         <Tooltip>
@@ -145,9 +150,9 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {Object.entries(game.positions).map(([pos, mins]) => (
-                      <Badge key={pos} variant="outline" className="text-sm">
-                        {positionMappings[pos] || pos} ({pos}): {mins}m
+                    {game.positions.map((pos) => (
+                      <Badge key={pos.position} variant="outline" className="text-sm">
+                        {positionMappings[pos.position]} ({pos.position}): {pos.minutes}m
                       </Badge>
                     ))}
                   </div>
