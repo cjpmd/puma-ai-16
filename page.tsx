@@ -119,18 +119,14 @@ export default async function Page({ params }: { params: { id: string } }) {
   )
 
   // Calculate MOTM count
-  const motmCount = new Set(
-    player.fixture_player_positions
-      ?.filter(pos => pos.fixtures?.motm_player_id === player.id)
-      .map(pos => pos.fixtures?.id)
-  ).size
+  const motmCount = sortedGames.filter(game => game.isMotm).length
 
-  // If stats don't exist, create them from calculated values
-  const calculatedStats = stats || {
-    total_appearances: games.length,
-    captain_appearances: player.fixture_team_selections?.filter(s => s.is_captain).length || 0,
+  // Create stats from calculated values
+  const calculatedStats = {
+    total_appearances: sortedGames.length,
+    captain_appearances: sortedGames.filter(game => game.isCaptain).length,
     total_minutes_played: totalMinutesPlayed,
-    positions_played: games.reduce((acc, game) => {
+    positions_played: sortedGames.reduce((acc, game) => {
       Object.entries(game.positions).forEach(([pos, mins]) => {
         acc[pos] = (acc[pos] || 0) + mins
       })
