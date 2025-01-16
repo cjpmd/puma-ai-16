@@ -19,7 +19,7 @@ export default async function Page({ params }: { params: { id: string } }) {
       .select(`
         *,
         player_attributes (*),
-        fixture_player_positions!inner (
+        fixture_player_positions (
           *,
           fixtures (
             id,
@@ -58,6 +58,8 @@ export default async function Page({ params }: { params: { id: string } }) {
     notFound()
   }
 
+  console.log('Raw player data:', player); // Debug log
+
   // Create a map of fixture IDs to consolidate positions and minutes
   const gamesByFixture = player.fixture_player_positions?.reduce((acc, curr) => {
     const fixtureId = curr.fixtures?.id
@@ -76,7 +78,8 @@ export default async function Page({ params }: { params: { id: string } }) {
       }
     }
     
-    const minutes = curr.fixture_playing_periods?.duration_minutes || 0
+    const minutes = curr.fixture_playing_periods?.reduce((sum, period) => 
+      sum + (period.duration_minutes || 0), 0) || 0
     acc[fixtureId].totalMinutes += minutes
     if (curr.position) {
       acc[fixtureId].positions[curr.position] = (acc[fixtureId].positions[curr.position] || 0) + minutes
@@ -85,9 +88,13 @@ export default async function Page({ params }: { params: { id: string } }) {
     return acc
   }, {} as Record<string, any>)
 
+  console.log('Processed games by fixture:', gamesByFixture); // Debug log
+
   const sortedGames = Object.values(gamesByFixture || {}).sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
+
+  console.log('Sorted games:', sortedGames); // Debug log
 
   // Calculate MOTM count correctly by counting unique fixtures where player was MOTM
   const motmCount = new Set(
@@ -95,6 +102,8 @@ export default async function Page({ params }: { params: { id: string } }) {
       ?.filter(pos => pos.fixtures?.motm_player_id === player.id)
       .map(pos => pos.fixtures?.id)
   ).size
+
+  console.log('MOTM count:', motmCount); // Debug log
 
   return (
     <div className="p-4 max-w-7xl mx-auto">

@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { format } from "date-fns";
+import { format } from "date-fns"
 
 interface GameMetricsProps {
   stats: {
@@ -15,11 +15,11 @@ interface GameMetricsProps {
   motmCount: number
   recentGames: Array<{
     opponent: string
+    date: string
     totalMinutes: number
     positions: Record<string, number>
     isMotm: boolean
     isCaptain: boolean
-    date: string
   }>
 }
 
