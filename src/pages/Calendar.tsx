@@ -363,8 +363,13 @@ export const Calendar = () => {
                 modifiers={{
                   customStyles: (date) => true,
                 }}
+                modifiersStyles={{
+                  customStyles: {
+                    position: 'relative',
+                  },
+                }}
                 modifiersClassNames={{
-                  customStyles: getDayClassNames,
+                  customStyles: getDayClassNames(new Date()),
                 }}
               />
             </div>
