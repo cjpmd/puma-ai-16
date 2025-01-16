@@ -11,6 +11,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@supabase/auth-helpers-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PlayerObjectivesProps {
   playerId: string;
@@ -20,6 +24,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [points, setPoints] = useState("5");
+  const [reviewDate, setReviewDate] = useState<Date>();
   const { toast } = useToast();
   const session = useSession();
 
@@ -36,7 +41,6 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
         console.error('Profile error:', error);
         return null;
       }
-      console.log('Profile data:', data);
       return data;
     },
     enabled: !!session?.user,
@@ -60,7 +64,6 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
         console.error('Error fetching objectives:', error);
         throw error;
       }
-      console.log('Objectives data:', data);
       return data;
     },
   });
@@ -85,7 +88,8 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
             title,
             description,
             points: parseInt(points),
-            status: 'ONGOING'
+            status: 'ONGOING',
+            review_date: reviewDate
           }
         ]);
 
@@ -94,6 +98,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
       setTitle("");
       setDescription("");
       setPoints("5");
+      setReviewDate(undefined);
       refetch();
       
       toast({
@@ -161,7 +166,29 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
               min="1"
               max="20"
             />
-            <Button onClick={handleAddObjective} disabled={!title.trim() || !profile?.id}>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !reviewDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {reviewDate ? format(reviewDate, "PPP") : <span>Pick a review date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={reviewDate}
+                  onSelect={setReviewDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            <Button onClick={handleAddObjective} disabled={!title.trim() || !profile?.id || !reviewDate}>
               Add Objective
             </Button>
           </div>
@@ -180,6 +207,12 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
                         <span>Added by {objective.profiles?.name || 'Anonymous Coach'}</span>
                         <span>•</span>
                         <span>{format(new Date(objective.created_at), 'MMM d, yyyy')}</span>
+                        {objective.review_date && (
+                          <>
+                            <span>•</span>
+                            <span>Review on {format(new Date(objective.review_date), 'MMM d, yyyy')}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                     <Badge variant="secondary">{objective.points} points</Badge>

@@ -503,6 +503,7 @@ export type Database = {
           id: string
           player_id: string | null
           points: number | null
+          review_date: string | null
           status: string
           title: string
           updated_at: string | null
@@ -514,6 +515,7 @@ export type Database = {
           id?: string
           player_id?: string | null
           points?: number | null
+          review_date?: string | null
           status?: string
           title: string
           updated_at?: string | null
@@ -525,6 +527,7 @@ export type Database = {
           id?: string
           player_id?: string | null
           points?: number | null
+          review_date?: string | null
           status?: string
           title?: string
           updated_at?: string | null
