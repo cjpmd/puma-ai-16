@@ -18,6 +18,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
+import { GameMetrics } from "@/components/player/GameMetrics";
 
 interface PlayerDetailsProps {
   player: Player;
@@ -113,32 +114,34 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
       );
 
       // Transform recent games data
-      const transformedGames = recentGames?.map(game => {
-        const positions: Record<string, number> = {};
-        let totalMinutes = 0;
-
-        game.fixture_player_positions?.forEach((pos: any) => {
-          if (pos.player_id === player.id) {
-            const minutes = pos.fixture_playing_periods?.reduce((sum: number, period: any) => 
-              sum + (period.duration_minutes || 0), 0) || 0;
-            
-            if (!positions[pos.position]) {
-              positions[pos.position] = 0;
-            }
-            positions[pos.position] += minutes;
-            totalMinutes += minutes;
-          }
-        });
-
-        return {
-          opponent: game.opponent,
+      const transformedGames = recentGames?.map(game => ({
+        id: game.id,
+        fixture_id: game.id,
+        fixtures: {
           date: game.date,
-          totalMinutes,
-          positions,
-          isMotm: game.motm_player_id === player.id,
-          isCaptain: captainMap.get(game.id) || false
-        };
-      }) || [];
+          opponent: game.opponent,
+          motm_player_id: game.motm_player_id
+        },
+        opponent: game.opponent,
+        date: game.date,
+        totalMinutes: game.fixture_player_positions?.reduce((sum, pos) => {
+          if (pos.player_id === player.id) {
+            return sum + (pos.fixture_playing_periods?.reduce((periodSum, period) => 
+              periodSum + (period.duration_minutes || 0), 0) || 0);
+          }
+          return sum;
+        }, 0) || 0,
+        positions: game.fixture_player_positions?.reduce((posMap: Record<string, number>, pos) => {
+          if (pos.player_id === player.id) {
+            const minutes = pos.fixture_playing_periods?.reduce((sum, period) => 
+              sum + (period.duration_minutes || 0), 0) || 0;
+            posMap[pos.position] = (posMap[pos.position] || 0) + minutes;
+          }
+          return posMap;
+        }, {}),
+        isMotm: game.motm_player_id === player.id,
+        isCaptain: captainMap.get(game.id) || false
+      })) || [];
 
       return {
         stats: {
@@ -341,7 +344,12 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
 
       {/* Game Metrics Section */}
       <GameMetrics 
-        stats={gameMetrics?.stats || {}}
+        stats={gameMetrics?.stats || {
+          total_appearances: 0,
+          captain_appearances: 0,
+          total_minutes_played: 0,
+          positions_played: {}
+        }}
         motmCount={gameMetrics?.motmCount || 0}
         recentGames={gameMetrics?.recentGames || []}
       />
