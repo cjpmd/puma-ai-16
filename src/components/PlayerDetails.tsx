@@ -70,7 +70,8 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
           fixtures (
             date,
             opponent,
-            motm_player_id
+            motm_player_id,
+            id
           ),
           fixture_playing_periods (
             duration_minutes
@@ -103,11 +104,11 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
 
       const transformedRecentGames = recentGames?.map(game => ({
         id: game.id,
-        fixture_id: game.fixture_id,
+        fixture_id: game.fixtures?.id,
         fixtures: game.fixtures,
         fixture_playing_periods: game.fixture_playing_periods,
         position: game.position,
-        isCaptain: captainMap.get(game.fixture_id) || false,
+        isCaptain: captainMap.get(game.fixtures?.id || '') || false,
         isMotm: game.fixtures?.motm_player_id === player.id
       })) || [];
 
