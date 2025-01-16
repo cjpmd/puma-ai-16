@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, isSameMonth, parseISO } from "date-fns";
+import { format, isSameMonth, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
 import { AddDrillDialog } from "@/components/training/AddDrillDialog";
 import { SessionCard } from "@/components/training/SessionCard";
@@ -456,7 +456,7 @@ export const Calendar = () => {
                   },
                 }}
                 modifiersClassNames={{
-                  customStyles: (day) => getDayClassNames(day),
+                  customStyles: getDayClassNames,
                 }}
               />
             </div>
