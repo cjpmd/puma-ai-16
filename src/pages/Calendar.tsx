@@ -336,7 +336,7 @@ export const CalendarPage = () => {
     },
   });
 
-  const { data: objectives } = useQuery({
+  const { data: objectives, refetch: refetchObjectives } = useQuery({
     queryKey: ["objectives", date],
     queryFn: async () => {
       if (!date) return [];
@@ -563,7 +563,7 @@ export const CalendarPage = () => {
           onOpenChange={setIsEditObjectiveOpen}
           onSuccess={() => {
             setEditingObjective(null);
-            refetch();
+            refetchObjectives();
           }}
         />
       )}
