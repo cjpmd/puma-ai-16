@@ -90,6 +90,25 @@ export const Calendar = () => {
     },
   });
 
+  // Function to determine the CSS classes for each day
+  const getDayClassNames = (day: Date) => {
+    const dateStr = format(day, "yyyy-MM-dd");
+    const hasTraining = sessions?.some(session => session.date === dateStr);
+    const hasFixture = fixtures?.some(fixture => fixture.date === dateStr);
+    
+    let className = "relative";
+    
+    if (hasTraining && hasFixture) {
+      className += " bg-gradient-to-br from-blue-100 to-orange-100";
+    } else if (hasTraining) {
+      className += " bg-blue-100";
+    } else if (hasFixture) {
+      className += " bg-orange-100";
+    }
+    
+    return className;
+  };
+
   const handleAddSession = async () => {
     if (!date || !sessionTitle) return;
 
@@ -322,13 +341,27 @@ export const Calendar = () => {
             <CardTitle>Calendar</CardTitle>
           </CardHeader>
           <CardContent>
-            <CalendarComponent
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md border"
-              weekStartsOn={1}
-            />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <div className="w-3 h-3 rounded bg-blue-100"></div>
+                <span>Training</span>
+                <div className="w-3 h-3 rounded bg-orange-100 ml-4"></div>
+                <span>Fixture</span>
+              </div>
+              <CalendarComponent
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                className="rounded-md border"
+                weekStartsOn={1}
+                modifiers={{
+                  customStyles: (date) => true,
+                }}
+                modifiersClassNames={{
+                  customStyles: (date) => getDayClassNames(date),
+                }}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -350,7 +383,6 @@ export const Calendar = () => {
                   }}
                   onDelete={handleDeleteFixture}
                   onTeamSelection={(fixture) => {
-                    // Handle team selection
                     console.log("Team selection for fixture:", fixture);
                   }}
                 />
