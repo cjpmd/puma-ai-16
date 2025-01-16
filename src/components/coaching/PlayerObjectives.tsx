@@ -25,6 +25,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
   const [description, setDescription] = useState("");
   const [points, setPoints] = useState("5");
   const [reviewDate, setReviewDate] = useState<Date>();
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const session = useSession();
 
@@ -69,12 +70,14 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
   });
 
   const handleAddObjective = async () => {
+    setIsSaving(true);
     if (!profile?.id) {
       toast({
         title: "Error",
         description: "You must be logged in to add objectives.",
         variant: "destructive",
       });
+      setIsSaving(false);
       return;
     }
 
@@ -84,6 +87,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
         description: "Please select a review date.",
         variant: "destructive",
       });
+      setIsSaving(false);
       return;
     }
 
@@ -104,11 +108,14 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
 
       if (error) throw error;
 
-      setTitle("");
-      setDescription("");
-      setPoints("5");
-      setReviewDate(undefined);
-      refetch();
+      setTimeout(() => {
+        setTitle("");
+        setDescription("");
+        setPoints("5");
+        setReviewDate(undefined);
+        setIsSaving(false);
+        refetch();
+      }, 1000);
       
       toast({
         title: "Success",
@@ -121,6 +128,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
         description: "Failed to add objective. Please try again.",
         variant: "destructive",
       });
+      setIsSaving(false);
     }
   };
 
@@ -197,8 +205,19 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
                 />
               </PopoverContent>
             </Popover>
-            <Button onClick={handleAddObjective} disabled={!title.trim() || !profile?.id || !reviewDate}>
-              Add Objective
+            <Button 
+              onClick={handleAddObjective} 
+              disabled={!title.trim() || !profile?.id || !reviewDate || isSaving}
+              className={`transition-all ${isSaving ? 'bg-green-500 hover:bg-green-600' : ''}`}
+            >
+              {isSaving ? (
+                <span className="flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  Saved!
+                </span>
+              ) : (
+                'Add Objective'
+              )}
             </Button>
           </div>
 

@@ -37,6 +37,7 @@ import {
 } from "@/constants/attributes";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Check } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -48,6 +49,7 @@ const formSchema = z.object({
 
 export const AddPlayerDialog = () => {
   const [open, setOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -63,6 +65,7 @@ export const AddPlayerDialog = () => {
   });
 
   const onSubmit = async (values: any) => {
+    setIsSaving(true);
     try {
       if (!values.dateOfBirth) {
         toast({
@@ -112,14 +115,18 @@ export const AddPlayerDialog = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: ["players"] });
-      setOpen(false);
-      form.reset();
+      setTimeout(() => {
+        setIsSaving(false);
+        setOpen(false);
+        form.reset();
+      }, 1000);
     } catch (error) {
       console.error("Error adding player:", error);
       toast({
         variant: "destructive",
         description: "Failed to add player",
       });
+      setIsSaving(false);
     }
   };
 
@@ -231,7 +238,20 @@ export const AddPlayerDialog = () => {
               )}
             />
 
-            <Button type="submit">Add Player</Button>
+            <Button 
+              type="submit" 
+              className={`w-full transition-all ${isSaving ? 'bg-green-500 hover:bg-green-600' : ''}`}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <span className="flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  Saved!
+                </span>
+              ) : (
+                'Add Player'
+              )}
+            </Button>
           </form>
         </Form>
       </DialogContent>
