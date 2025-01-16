@@ -24,7 +24,7 @@ interface GameMetricsProps {
 }
 
 export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps) {
-  console.log("Recent Games in GameMetrics:", recentGames); // Debug log
+  console.log("GameMetrics received recentGames:", recentGames)
 
   return (
     <div className="border rounded-lg shadow-sm bg-white">
