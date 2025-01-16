@@ -459,7 +459,7 @@ export const Calendar = () => {
                   }
                 }}
                 modifiersClassNames={{
-                  hasEvent: (day) => getDayClassNames(day)
+                  hasEvent: "relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-blue-100 before:to-orange-100 before:rounded-md before:-z-10"
                 }}
               />
             </div>
