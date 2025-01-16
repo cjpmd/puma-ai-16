@@ -19,7 +19,7 @@ export default async function Page({ params }: { params: { id: string } }) {
       .select(`
         *,
         player_attributes (*),
-        fixture_player_positions (
+        fixture_player_positions!inner (
           *,
           fixtures (
             id,
@@ -58,41 +58,43 @@ export default async function Page({ params }: { params: { id: string } }) {
     notFound()
   }
 
-  // Group games by opponent to consolidate positions and minutes
-  const gamesByOpponent = player.fixture_player_positions?.reduce((acc, curr) => {
-    const opponent = curr.fixtures?.opponent
+  // Create a map of fixture IDs to consolidate positions and minutes
+  const gamesByFixture = player.fixture_player_positions?.reduce((acc, curr) => {
     const fixtureId = curr.fixtures?.id
-    if (!opponent || !fixtureId) return acc
+    if (!fixtureId || !curr.fixtures) return acc
     
-    if (!acc[opponent]) {
-      acc[opponent] = {
-        opponent,
-        date: curr.fixtures?.date,
+    if (!acc[fixtureId]) {
+      acc[fixtureId] = {
+        opponent: curr.fixtures.opponent,
+        date: curr.fixtures.date,
         totalMinutes: 0,
         positions: {},
-        isMotm: curr.fixtures?.motm_player_id === player.id,
+        isMotm: curr.fixtures.motm_player_id === player.id,
         isCaptain: player.fixture_team_selections?.some(
           selection => selection.fixture_id === fixtureId && selection.is_captain
         )
       }
     }
     
-    acc[opponent].totalMinutes += curr.fixture_playing_periods?.duration_minutes || 0
+    const minutes = curr.fixture_playing_periods?.duration_minutes || 0
+    acc[fixtureId].totalMinutes += minutes
     if (curr.position) {
-      acc[opponent].positions[curr.position] = (acc[opponent].positions[curr.position] || 0) + 
-        (curr.fixture_playing_periods?.duration_minutes || 0)
+      acc[fixtureId].positions[curr.position] = (acc[fixtureId].positions[curr.position] || 0) + minutes
     }
     
     return acc
   }, {} as Record<string, any>)
 
-  const sortedGames = Object.values(gamesByOpponent || {}).sort((a, b) => 
+  const sortedGames = Object.values(gamesByFixture || {}).sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
-  const motmCount = player.fixture_player_positions?.filter(
-    pos => pos.fixtures?.motm_player_id === player.id
-  ).length || 0
+  // Calculate MOTM count correctly by counting unique fixtures where player was MOTM
+  const motmCount = new Set(
+    player.fixture_player_positions
+      ?.filter(pos => pos.fixtures?.motm_player_id === player.id)
+      .map(pos => pos.fixtures?.id)
+  ).size
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
