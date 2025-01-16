@@ -17,6 +17,7 @@ import { useToast } from "./ui/use-toast";
 import { ScrollArea } from "./ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useNavigate } from "react-router-dom";
 
 interface PlayerDetailsProps {
   player: Player;
@@ -31,6 +32,7 @@ interface GameMetricsData {
   };
   recentGames: Array<{
     id: string;
+    fixture_id: string;
     fixtures?: {
       date: string;
       opponent: string;
@@ -49,6 +51,7 @@ interface GameMetricsData {
 export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const updateAttribute = usePlayersStore((state) => state.updateAttribute);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Query for game metrics data
   const { data: gameMetrics } = useQuery<GameMetricsData>({
@@ -89,6 +92,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
 
       const transformedRecentGames = recentGames?.map(game => ({
         id: game.id,
+        fixture_id: game.fixture_id,
         fixtures: game.fixtures,
         fixture_playing_periods: game.fixture_playing_periods,
         position: game.position,
@@ -216,6 +220,10 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   console.log("Player type:", player.playerType);
   console.log("Categories:", categories);
   console.log("All attributes:", player.attributes);
+
+  const handleFixtureClick = (fixtureId: string) => {
+    navigate(`/fixtures/${fixtureId}`);
+  };
 
   return (
     <motion.div
@@ -358,10 +366,11 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                   } else {
                     acc.push({
                       id: game.id,
+                      fixtureId: game.fixture_id,
                       opponent: game.fixtures?.opponent,
                       totalMinutes: game.fixture_playing_periods?.duration_minutes || 0,
-                      isCaptain: game.isCaptain,
-                      isMotm: game.isMotm,
+                      isCaptain: game.isCaptain || false,
+                      isMotm: game.fixtures?.motm_player_id === player.id,
                       positions: [{
                         position: game.position,
                         minutes: game.fixture_playing_periods?.duration_minutes || 0
@@ -371,7 +380,8 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                   return acc;
                 }, []).map((game) => (
                   <div key={game.id} 
-                    className="border rounded-lg p-5 hover:bg-accent/5 transition-colors">
+                    className="border rounded-lg p-5 hover:bg-accent/5 transition-colors cursor-pointer"
+                    onClick={() => handleFixtureClick(game.fixtureId)}>
                     <div className="flex items-center gap-3 mb-3">
                       <span className="text-lg font-semibold text-gray-900">vs {game.opponent}</span>
                       <Badge variant="secondary" className="text-sm font-medium">
