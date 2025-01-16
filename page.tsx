@@ -59,8 +59,8 @@ export default async function Page({ params }: { params: { id: string } }) {
     notFound()
   }
 
-  // Group games by opponent to consolidate positions and minutes
-  const gamesByOpponent = player.fixture_player_positions?.reduce((acc, curr) => {
+  // Group games by fixture ID to consolidate positions and minutes
+  const gamesByFixture = player.fixture_player_positions?.reduce((acc, curr) => {
     const opponent = curr.fixtures?.opponent
     const fixtureId = curr.fixtures?.id
     if (!opponent || !fixtureId) return acc
@@ -90,11 +90,11 @@ export default async function Page({ params }: { params: { id: string } }) {
     return acc
   }, {} as Record<string, any>)
 
-  const sortedGames = Object.values(gamesByOpponent || {}).sort((a, b) => 
+  const sortedGames = Object.values(gamesByFixture || {}).sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
-  // Count unique MOTM and captain appearances
+  // Count unique MOTM appearances
   const motmCount = sortedGames.filter(game => game.isMotm).length
 
   return (
