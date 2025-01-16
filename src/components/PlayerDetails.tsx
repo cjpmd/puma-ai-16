@@ -124,7 +124,9 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
 
         // Sum up minutes for each position in this fixture
         game.fixture_player_positions.forEach((pos: any) => {
-          const minutes = pos.fixture_playing_periods?.duration_minutes || 0;
+          const minutes = pos.fixture_playing_periods?.reduce((sum: number, period: any) => 
+            sum + (period.duration_minutes || 0), 0) || 0;
+          
           if (!acc[game.id].positions[pos.position]) {
             acc[game.id].positions[pos.position] = 0;
           }
@@ -435,7 +437,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(game.positions).map(([position, minutes]) => (
-                        <Badge key={position} variant="outline" className="text-sm">
+                        <Badge key={`${game.id}-${position}`} variant="outline" className="text-sm">
                           {position}: {minutes}m
                         </Badge>
                       ))}
