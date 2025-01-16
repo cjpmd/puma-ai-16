@@ -224,18 +224,22 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
 
       // Save captain
       if (captain) {
-        await supabase
+        const { error: captainError } = await supabase
           .from("fixture_team_selections")
           .insert({
             fixture_id: fixtureId,
             player_id: captain,
             is_captain: true,
           });
+
+        if (captainError) throw captainError;
       }
 
       let startMinute = 0;
+      
+      // Create all periods first and store their IDs
+      const createdPeriods = [];
       for (const period of periods) {
-        // Create period
         const { data: periodData, error: periodError } = await supabase
           .from("fixture_playing_periods")
           .insert({
@@ -247,24 +251,33 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
           .single();
 
         if (periodError) throw periodError;
+        
+        createdPeriods.push({
+          periodId: periodData.id,
+          positions: period.positions,
+          substitutes: period.substitutes
+        });
 
-        // Create player positions for starters
+        startMinute += period.duration;
+      }
+
+      // Now create player positions using the stored period IDs
+      for (const period of createdPeriods) {
         const starterPositions = period.positions
           .filter(pos => pos.position && pos.playerId)
           .map((pos) => ({
             fixture_id: fixtureId,
-            period_id: periodData.id,
+            period_id: period.periodId,
             player_id: pos.playerId,
             position: pos.position,
             is_substitute: false,
           }));
 
-        // Create player positions for substitutes
         const substitutePositions = period.substitutes
           .filter(sub => sub.playerId)
           .map((sub) => ({
             fixture_id: fixtureId,
-            period_id: periodData.id,
+            period_id: period.periodId,
             player_id: sub.playerId,
             position: "SUB",
             is_substitute: true,
@@ -279,8 +292,6 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
 
           if (positionsError) throw positionsError;
         }
-
-        startMinute += period.duration;
       }
 
       toast({
