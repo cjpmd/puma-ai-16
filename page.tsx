@@ -81,7 +81,7 @@ export default async function Page({ params }: { params: { id: string } }) {
       }
     }
     
-    // Sum up minutes from all periods for this position
+    // Get minutes directly from fixture_playing_periods
     const minutes = curr.fixture_playing_periods?.duration_minutes || 0
     
     acc[fixtureId].totalMinutes += minutes
@@ -91,11 +91,11 @@ export default async function Page({ params }: { params: { id: string } }) {
     }
     
     return acc
-  }, {} as Record<string, any>)
+  }, {} as Record<string, any>) || {}
 
   console.log('Processed games by fixture:', gamesByFixture)
 
-  const sortedGames = Object.values(gamesByFixture || {}).sort((a, b) => 
+  const sortedGames = Object.values(gamesByFixture).sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
@@ -131,7 +131,7 @@ export default async function Page({ params }: { params: { id: string } }) {
             positions_played: {}
           }}
           motmCount={motmCount}
-          recentGames={sortedGames}
+          recentGames={sortedGames || []}
         />
       </div>
     </div>
