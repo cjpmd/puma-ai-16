@@ -363,26 +363,21 @@ export const Calendar = () => {
     enabled: !!date,
   });
 
-  const getDayClassNames = (day: Date) => {
+  const getDayClassNames = (day: Date): Record<string, boolean> => {
     if (!date || !isSameMonth(day, date)) {
-      return "relative";
+      return {};
     }
     
     const dateStr = format(day, "yyyy-MM-dd");
     const hasTraining = sessions?.some(session => session.date === dateStr);
     const hasFixture = fixtures?.some(fixture => fixture.date === dateStr);
     
-    let className = "relative";
-    
-    if (hasTraining && hasFixture) {
-      className += " before:absolute before:inset-0 before:bg-gradient-to-br before:from-blue-100 before:to-orange-100 before:rounded-md before:-z-10";
-    } else if (hasTraining) {
-      className += " before:absolute before:inset-0 before:bg-blue-100 before:rounded-md before:-z-10";
-    } else if (hasFixture) {
-      className += " before:absolute before:inset-0 before:bg-orange-100 before:rounded-md before:-z-10";
-    }
-    
-    return className;
+    return {
+      "relative": true,
+      "before:absolute before:inset-0 before:bg-gradient-to-br before:from-blue-100 before:to-orange-100 before:rounded-md before:-z-10": hasTraining && hasFixture,
+      "before:absolute before:inset-0 before:bg-blue-100 before:rounded-md before:-z-10": hasTraining && !hasFixture,
+      "before:absolute before:inset-0 before:bg-orange-100 before:rounded-md before:-z-10": !hasTraining && hasFixture,
+    };
   };
 
   return (
