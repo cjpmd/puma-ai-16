@@ -124,16 +124,25 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         positions_played: (fixtureStats?.positions_played as Record<string, number>) || {}
       };
 
-      const transformedRecentGames = recentGames?.map(game => ({
-        id: game.id,
-        fixture_id: game.fixture_id,
-        fixtures: game.fixtures,
-        fixture_playing_periods: game.fixture_playing_periods,
-        position: game.position,
-        isCaptain: captainMap.get(game.fixture_id) || false,
-        isMotm: game.fixtures?.motm_player_id === player.id
-      })) || [];
+      // Group games by fixture to avoid counting the same MOTM multiple times
+      const uniqueFixtures = new Map();
+      recentGames?.forEach(game => {
+        if (!uniqueFixtures.has(game.fixture_id)) {
+          uniqueFixtures.set(game.fixture_id, {
+            id: game.id,
+            fixture_id: game.fixture_id,
+            fixtures: game.fixtures,
+            fixture_playing_periods: game.fixture_playing_periods,
+            position: game.position,
+            isCaptain: captainMap.get(game.fixture_id) || false,
+            isMotm: game.fixtures?.motm_player_id === player.id
+          });
+        }
+      });
 
+      const transformedRecentGames = Array.from(uniqueFixtures.values());
+
+      // Count MOTM appearances from unique fixtures
       const motmCount = transformedRecentGames.filter(game => game.isMotm).length;
 
       return {
