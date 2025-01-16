@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Index from "./pages/Index";
 import Squad from "./pages/SquadManagement";
-import { Calendar } from "./pages/Calendar";
+import { CalendarPage } from "./pages/Calendar";
 import Fixtures from "./pages/Fixtures";
 import { Analytics } from "./pages/Analytics";
 import PlayerDetails from "./pages/PlayerDetailsPage";
@@ -25,7 +25,7 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/home" element={<Index />} />
           <Route path="/squad" element={<Squad />} />
-          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/fixtures" element={<Fixtures />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/player/:id" element={<PlayerDetails />} />
