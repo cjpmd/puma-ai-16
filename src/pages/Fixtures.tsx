@@ -45,7 +45,7 @@ const Fixtures = () => {
   const { data: fixtures, isLoading, error, refetch } = useQuery({
     queryKey: ["fixtures", filterYear, filterMonth, filterDate, filterOpponent, filterCategory],
     queryFn: async () => {
-      console.log("Fetching fixtures with filters:", {
+      console.log("Starting fixtures query with filters:", {
         filterYear,
         filterMonth,
         filterDate,
@@ -61,10 +61,12 @@ const Fixtures = () => {
 
         // Handle date filtering
         if (filterDate) {
+          console.log("Applying specific date filter:", filterDate);
           query = query.eq("date", filterDate);
         } else if (filterYear !== "all") {
           const yearStart = `${filterYear}-01-01`;
           const yearEnd = `${filterYear}-12-31`;
+          console.log("Applying year range filter:", { yearStart, yearEnd });
           query = query.gte("date", yearStart).lte("date", yearEnd);
           
           if (filterMonth !== "all") {
@@ -74,15 +76,18 @@ const Fixtures = () => {
               ? `${parseInt(filterYear) + 1}-01-01`
               : `${filterYear}-${String(nextMonth).padStart(2, '0')}-01`;
             
+            console.log("Applying month range filter:", { monthStart, monthEnd });
             query = query.gte("date", monthStart).lt("date", monthEnd);
           }
         }
 
         if (filterOpponent) {
+          console.log("Applying opponent filter:", filterOpponent);
           query = query.ilike("opponent", `%${filterOpponent}%`);
         }
         
         if (filterCategory !== "all") {
+          console.log("Applying category filter:", filterCategory);
           query = query.eq("category", filterCategory);
         }
 
@@ -154,7 +159,7 @@ const Fixtures = () => {
       <div className="container mx-auto p-6">
         <Alert variant="destructive">
           <AlertDescription>
-            Error loading fixtures: {error.message}
+            Error loading fixtures: {error instanceof Error ? error.message : 'Unknown error occurred'}
           </AlertDescription>
         </Alert>
       </div>
