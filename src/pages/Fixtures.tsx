@@ -173,7 +173,7 @@ const Fixtures = () => {
             <SelectValue placeholder="Year" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Years</SelectItem>
+            <SelectItem value="all">All Years</SelectItem>
             {years.map((year) => (
               <SelectItem key={year} value={year.toString()}>
                 {year}
@@ -187,7 +187,7 @@ const Fixtures = () => {
             <SelectValue placeholder="Month" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Months</SelectItem>
+            <SelectItem value="all">All Months</SelectItem>
             {months.map((month) => (
               <SelectItem key={month.value} value={month.value}>
                 {month.label}
@@ -215,7 +215,7 @@ const Fixtures = () => {
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Categories</SelectItem>
+            <SelectItem value="all">All Categories</SelectItem>
             <SelectItem value="Ronaldo">Ronaldo</SelectItem>
             <SelectItem value="Messi">Messi</SelectItem>
             <SelectItem value="Jags">Jags</SelectItem>
@@ -224,7 +224,7 @@ const Fixtures = () => {
       </div>
 
       <div className="space-y-8">
-        {Object.entries(fixtures).map(([date, dateFixtures]: [string, any[]]) => (
+        {Object.entries(fixtures || {}).map(([date, dateFixtures]: [string, any[]]) => (
           <div key={date} className="space-y-4">
             <h2 className="text-xl font-semibold">
               {format(parseISO(date), "EEEE, MMMM do, yyyy")}
@@ -288,6 +288,16 @@ const Fixtures = () => {
           </div>
         ))}
       </div>
+
+      <AddFixtureDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        editingFixture={selectedFixture}
+        onSuccess={() => {
+          refetch();
+          setIsDialogOpen(false);
+        }}
+      />
 
       <Dialog open={showTeamSelection} onOpenChange={setShowTeamSelection}>
         <DialogContent className="max-w-[95vw] w-full max-h-[90vh] overflow-hidden">
