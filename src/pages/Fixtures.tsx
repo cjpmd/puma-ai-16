@@ -53,24 +53,20 @@ const Fixtures = () => {
 
       // Handle date filtering
       if (filterDate) {
-        // Exact date match
         query = query.eq("date", filterDate);
-      } else {
-        // Year and month filtering
-        if (filterYear !== "all") {
-          const yearStart = `${filterYear}-01-01`;
-          const yearEnd = `${filterYear}-12-31`;
-          query = query.gte("date", yearStart).lte("date", yearEnd);
+      } else if (filterYear !== "all") {
+        const yearStart = `${filterYear}-01-01`;
+        const yearEnd = `${filterYear}-12-31`;
+        query = query.gte("date", yearStart).lte("date", yearEnd);
+        
+        if (filterMonth !== "all") {
+          const monthStart = `${filterYear}-${filterMonth}-01`;
+          const nextMonth = parseInt(filterMonth) + 1;
+          const monthEnd = nextMonth > 12 
+            ? `${parseInt(filterYear) + 1}-01-01`
+            : `${filterYear}-${String(nextMonth).padStart(2, '0')}-01`;
           
-          if (filterMonth !== "all") {
-            const monthStart = `${filterYear}-${filterMonth}-01`;
-            const nextMonth = parseInt(filterMonth) + 1;
-            const monthEnd = nextMonth > 12 
-              ? `${parseInt(filterYear) + 1}-01-01`
-              : `${filterYear}-${String(nextMonth).padStart(2, '0')}-01`;
-            
-            query = query.gte("date", monthStart).lt("date", monthEnd);
-          }
+          query = query.gte("date", monthStart).lt("date", monthEnd);
         }
       }
 

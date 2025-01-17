@@ -372,7 +372,7 @@ export const CalendarPage = () => {
     <div className="container mx-auto p-6 space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Calendar</h1>
-        <div className="space-x-4">
+        <div className="flex items-center gap-4">
           <Dialog open={isAddSessionOpen} onOpenChange={setIsAddSessionOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
