@@ -217,15 +217,26 @@ export const AddFixtureDialog = ({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               {showDateSelector && (
-                <div className="space-y-2">
-                  <FormLabel>Date *</FormLabel>
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    className="rounded-md border"
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="date_input"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="date" 
+                          value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''} 
+                          onChange={(e) => {
+                            const date = e.target.value ? new Date(e.target.value) : undefined;
+                            setSelectedDate(date);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
               
               <FormField
