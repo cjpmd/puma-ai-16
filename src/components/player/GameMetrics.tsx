@@ -1,10 +1,11 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Badge } from "@/components/ui/badge"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, Trophy, Minus, XCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Link } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
+import { format, parseISO } from "date-fns"
 
 interface GameMetricsProps {
   stats: {
@@ -26,11 +27,11 @@ interface GameMetricsProps {
       minutes: number;
     }>;
     category: string;
+    outcome: 'WIN' | 'DRAW' | 'LOSS' | null;
   }>;
 }
 
 export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps) {
-  // Calculate games per category
   const gamesPerCategory = recentGames.reduce((acc, game) => {
     acc[game.category] = (acc[game.category] || 0) + 1;
     return acc;
@@ -64,6 +65,19 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
     return positionDefinitions[abbreviation] 
       ? `${positionDefinitions[abbreviation]} [${abbreviation}]`
       : abbreviation;
+  };
+
+  const getOutcomeIcon = (outcome: string | null) => {
+    switch (outcome) {
+      case 'WIN':
+        return <Trophy className="h-4 w-4 text-green-500" />;
+      case 'DRAW':
+        return <Minus className="h-4 w-4 text-amber-500" />;
+      case 'LOSS':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -160,7 +174,12 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                     className="block p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors"
                   >
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-600">{game.date}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">
+                          {format(parseISO(game.date), "EEEE, MMMM do, yyyy")}
+                        </span>
+                        {getOutcomeIcon(game.outcome)}
+                      </div>
                       <span className="font-semibold">
                         {game.home_score !== null && game.away_score !== null
                           ? `${game.home_score} - ${game.away_score}`
