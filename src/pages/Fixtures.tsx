@@ -22,21 +22,52 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 const Fixtures = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedFixture, setSelectedFixture] = useState<any>(null);
   const [showTeamSelection, setShowTeamSelection] = useState(false);
+  const [filterYear, setFilterYear] = useState<string>("");
+  const [filterMonth, setFilterMonth] = useState<string>("");
+  const [filterDate, setFilterDate] = useState<string>("");
+  const [filterOpponent, setFilterOpponent] = useState("");
+  const [filterCategory, setFilterCategory] = useState<string>("");
   const { toast } = useToast();
 
   const { data: fixtures, isLoading, error, refetch } = useQuery({
-    queryKey: ["fixtures"],
+    queryKey: ["fixtures", filterYear, filterMonth, filterDate, filterOpponent, filterCategory],
     queryFn: async () => {
       console.log("Fetching fixtures...");
-      const { data, error } = await supabase
+      let query = supabase
         .from("fixtures")
         .select("*")
         .order("date", { ascending: true });
+
+      if (filterYear) {
+        query = query.ilike("date", `${filterYear}%`);
+      }
+      if (filterMonth) {
+        query = query.ilike("date", `${filterYear}-${filterMonth}%`);
+      }
+      if (filterDate) {
+        query = query.eq("date", filterDate);
+      }
+      if (filterOpponent) {
+        query = query.ilike("opponent", `%${filterOpponent}%`);
+      }
+      if (filterCategory) {
+        query = query.eq("category", filterCategory);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching fixtures:", error);
@@ -116,6 +147,12 @@ const Fixtures = () => {
     );
   }
 
+  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i);
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const month = (i + 1).toString().padStart(2, '0');
+    return { value: month, label: format(new Date(2024, i, 1), 'MMMM') };
+  });
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -130,92 +167,127 @@ const Fixtures = () => {
         </Button>
       </div>
 
-      <AddFixtureDialog 
-        isOpen={isDialogOpen}
-        onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) setSelectedFixture(null);
-        }}
-        onSuccess={() => {
-          refetch();
-          setSelectedFixture(null);
-        }}
-        editingFixture={selectedFixture}
-        selectedDate={selectedFixture ? parseISO(selectedFixture.date) : new Date()}
-        showDateSelector={!selectedFixture}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <Select value={filterYear} onValueChange={setFilterYear}>
+          <SelectTrigger>
+            <SelectValue placeholder="Year" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Years</SelectItem>
+            {years.map((year) => (
+              <SelectItem key={year} value={year.toString()}>
+                {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      {!fixtures || Object.keys(fixtures).length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">No fixtures found. Add your first fixture to get started.</p>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {Object.entries(fixtures).map(([date, dateFixtures]: [string, any[]]) => (
-            <div key={date} className="space-y-4">
-              <h2 className="text-xl font-semibold">
-                {format(parseISO(date), "EEEE, MMMM do, yyyy")}
-              </h2>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Team</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Opponent</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+        <Select value={filterMonth} onValueChange={setFilterMonth}>
+          <SelectTrigger>
+            <SelectValue placeholder="Month" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Months</SelectItem>
+            {months.map((month) => (
+              <SelectItem key={month.value} value={month.value}>
+                {month.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Input
+          type="date"
+          value={filterDate}
+          onChange={(e) => setFilterDate(e.target.value)}
+          className="h-10"
+        />
+
+        <Input
+          placeholder="Search opponent..."
+          value={filterOpponent}
+          onChange={(e) => setFilterOpponent(e.target.value)}
+          className="h-10"
+        />
+
+        <Select value={filterCategory} onValueChange={setFilterCategory}>
+          <SelectTrigger>
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Categories</SelectItem>
+            <SelectItem value="Ronaldo">Ronaldo</SelectItem>
+            <SelectItem value="Messi">Messi</SelectItem>
+            <SelectItem value="Jags">Jags</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-8">
+        {Object.entries(fixtures).map(([date, dateFixtures]: [string, any[]]) => (
+          <div key={date} className="space-y-4">
+            <h2 className="text-xl font-semibold">
+              {format(parseISO(date), "EEEE, MMMM do, yyyy")}
+            </h2>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Team</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Opponent</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dateFixtures.map((fixture) => (
+                  <TableRow 
+                    key={fixture.id} 
+                    className="cursor-pointer hover:bg-accent/50" 
+                    onClick={() => handleEdit(fixture)}
+                  >
+                    <TableCell>
+                      <Badge variant="outline">{fixture.category}</Badge>
+                    </TableCell>
+                    <TableCell>{fixture.location || "TBD"}</TableCell>
+                    <TableCell>{fixture.time || "TBD"}</TableCell>
+                    <TableCell>{fixture.opponent}</TableCell>
+                    <TableCell>
+                      {fixture.home_score !== null && fixture.away_score !== null
+                        ? `${fixture.home_score} - ${fixture.away_score}`
+                        : "Not played"}
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTeamSelection(fixture);
+                        }}
+                      >
+                        Team Selection
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(fixture.id);
+                        }}
+                        className="text-destructive hover:text-destructive/80"
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {dateFixtures.map((fixture) => (
-                    <TableRow 
-                      key={fixture.id} 
-                      className="cursor-pointer hover:bg-accent/50" 
-                      onClick={() => handleEdit(fixture)}
-                    >
-                      <TableCell>
-                        <Badge variant="outline">{fixture.category}</Badge>
-                      </TableCell>
-                      <TableCell>{fixture.location || "TBD"}</TableCell>
-                      <TableCell>{fixture.time || "TBD"}</TableCell>
-                      <TableCell>{fixture.opponent}</TableCell>
-                      <TableCell>
-                        {fixture.home_score !== null && fixture.away_score !== null
-                          ? `${fixture.home_score} - ${fixture.away_score}`
-                          : "Not played"}
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleTeamSelection(fixture);
-                          }}
-                        >
-                          Team Selection
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(fixture.id);
-                          }}
-                          className="text-destructive hover:text-destructive/80"
-                        >
-                          Delete
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ))}
-        </div>
-      )}
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ))}
+      </div>
 
       <Dialog open={showTeamSelection} onOpenChange={setShowTeamSelection}>
         <DialogContent className="max-w-[95vw] w-full max-h-[90vh] overflow-hidden">

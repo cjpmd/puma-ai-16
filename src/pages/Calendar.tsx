@@ -6,14 +6,14 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, parseISO, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
-import { AddDrillDialog } from "@/components/training/AddDrillDialog";
-import { SessionCard } from "@/components/training/SessionCard";
 import { AddFixtureDialog } from "@/components/calendar/AddFixtureDialog";
 import { Plus } from "lucide-react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
+import { SessionCard } from "@/components/training/SessionCard";
 import { EditObjectiveDialog } from "@/components/calendar/EditObjectiveDialog";
+import { Link } from "react-router-dom";
 
 interface DbTrainingSession {
   id: string;
@@ -36,7 +36,6 @@ interface DbTrainingSession {
   }[];
 }
 
-// Component types
 interface TrainingSession {
   id: string;
   title: string;
@@ -361,7 +360,6 @@ export const CalendarPage = () => {
 
       if (error) throw error;
       
-      // Filter objectives to only show those in the current month
       return data.filter(objective => 
         objective.review_date && 
         isSameMonth(parseISO(objective.review_date), date)
@@ -409,6 +407,11 @@ export const CalendarPage = () => {
               editingFixture={editingFixture}
             />
           </Dialog>
+          <Link to="/fixtures">
+            <Button variant="secondary">
+              View Fixtures
+            </Button>
+          </Link>
         </div>
       </div>
 
