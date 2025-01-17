@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Fixtures = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -28,7 +29,7 @@ const Fixtures = () => {
   const [showTeamSelection, setShowTeamSelection] = useState(false);
   const { toast } = useToast();
 
-  const { data: fixtures, isLoading, refetch } = useQuery({
+  const { data: fixtures, isLoading, error } = useQuery({
     queryKey: ["fixtures"],
     queryFn: async () => {
       console.log("Fetching fixtures...");
@@ -45,7 +46,7 @@ const Fixtures = () => {
       console.log("Fixtures data:", data);
 
       // Group fixtures by date
-      const groupedFixtures = data.reduce((acc: any, fixture: any) => {
+      const groupedFixtures = (data || []).reduce((acc: any, fixture: any) => {
         const date = fixture.date;
         if (!acc[date]) {
           acc[date] = [];
@@ -92,10 +93,17 @@ const Fixtures = () => {
     setShowTeamSelection(true);
   };
 
-  const getScoreDisplay = (homeScore: number | null, awayScore: number | null) => {
-    if (homeScore === null || awayScore === null) return "Not played";
-    return `${homeScore} - ${awayScore}`;
-  };
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <Alert variant="destructive">
+          <AlertDescription>
+            Error loading fixtures: {error.message}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -173,7 +181,9 @@ const Fixtures = () => {
                       <TableCell>{fixture.time || "TBD"}</TableCell>
                       <TableCell>{fixture.opponent}</TableCell>
                       <TableCell>
-                        {getScoreDisplay(fixture.home_score, fixture.away_score)}
+                        {fixture.home_score !== null && fixture.away_score !== null
+                          ? `${fixture.home_score} - ${fixture.away_score}`
+                          : "Not played"}
                       </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button 
