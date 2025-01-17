@@ -25,10 +25,17 @@ interface GameMetricsProps {
       position: string;
       minutes: number;
     }>;
+    category: string;
   }>;
 }
 
 export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps) {
+  // Calculate games per category
+  const gamesPerCategory = recentGames.reduce((acc, game) => {
+    acc[game.category] = (acc[game.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   // Fetch position definitions from the database
   const { data: positionDefinitions, isLoading } = useQuery({
     queryKey: ["position-definitions"],
@@ -48,7 +55,6 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
         return acc;
       }, {} as Record<string, string>);
     },
-    // Add some basic caching using the new v5 options
     gcTime: 30 * 60 * 1000, // 30 minutes
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -78,8 +84,18 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                 <Tooltip>
                   <TooltipTrigger>
                     <div className="p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
-                      <div className="text-sm text-gray-600">Total Appearances</div>
+                      <div className="text-sm text-gray-600">Total Games</div>
                       <div className="text-2xl font-bold text-gray-900">{stats.total_appearances}</div>
+                      <div className="mt-2 space-y-1">
+                        {Object.entries(gamesPerCategory).map(([category, count]) => (
+                          <div key={category} className="flex items-center justify-between text-sm">
+                            <Badge variant="outline" className="text-xs">
+                              {category}
+                            </Badge>
+                            <span className="text-gray-600">{count}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -158,6 +174,9 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                           {getPositionFullName(pos.position)}: {pos.minutes}m
                         </Badge>
                       ))}
+                      <Badge variant="secondary" className="text-sm">
+                        {game.category}
+                      </Badge>
                     </div>
                   </Link>
                 ))}
