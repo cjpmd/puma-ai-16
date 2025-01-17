@@ -28,11 +28,6 @@ interface GameMetricsProps {
   }>;
 }
 
-interface PositionDefinition {
-  abbreviation: string;
-  full_name: string;
-}
-
 export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps) {
   // Fetch position definitions from the database
   const { data: positionDefinitions, isLoading } = useQuery({
@@ -48,7 +43,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
       }
       
       // Create a map of abbreviation to full name
-      return (data as PositionDefinition[]).reduce((acc, pos) => {
+      return data.reduce((acc, pos) => {
         acc[pos.abbreviation] = pos.full_name;
         return acc;
       }, {} as Record<string, string>);
