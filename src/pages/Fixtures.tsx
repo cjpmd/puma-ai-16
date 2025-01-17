@@ -53,12 +53,12 @@ const Fixtures = () => {
         filterCategory
       });
 
-      let query = supabase
-        .from("fixtures")
-        .select("*")
-        .order("date", { ascending: true });
-
       try {
+        let query = supabase
+          .from("fixtures")
+          .select("*")
+          .order("date", { ascending: true });
+
         // Handle date filtering
         if (filterDate) {
           query = query.eq("date", filterDate);
@@ -87,17 +87,17 @@ const Fixtures = () => {
         }
 
         console.log("Executing Supabase query...");
-        const { data, error } = await query;
+        const { data: fixturesData, error: fixturesError } = await query;
 
-        if (error) {
-          console.error("Supabase query error:", error);
-          throw error;
+        if (fixturesError) {
+          console.error("Supabase query error:", fixturesError);
+          throw fixturesError;
         }
         
-        console.log("Fixtures data received:", data);
+        console.log("Fixtures data received:", fixturesData);
 
         // Group fixtures by date
-        const groupedFixtures = (data || []).reduce((acc: any, fixture: any) => {
+        const groupedFixtures = (fixturesData || []).reduce((acc: any, fixture: any) => {
           const date = fixture.date;
           if (!acc[date]) {
             acc[date] = [];
