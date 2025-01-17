@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Pencil, Trash2, Users } from "lucide-react";
+import { Calendar, Pencil, Trash2, Users, Trophy, Minus, XCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -24,11 +24,25 @@ interface FixtureCardProps {
     location?: string;
     time?: string | null;
     date: string;
+    outcome?: string | null;
   };
   onEdit: (fixture: FixtureCardProps["fixture"]) => void;
   onDelete: (fixtureId: string) => void;
   onDateChange: (newDate: Date) => void;
 }
+
+const getOutcomeIcon = (outcome: string | null | undefined) => {
+  switch (outcome) {
+    case 'WIN':
+      return <Trophy className="h-4 w-4 text-green-500" />;
+    case 'DRAW':
+      return <Minus className="h-4 w-4 text-amber-500" />;
+    case 'LOSS':
+      return <XCircle className="h-4 w-4 text-red-500" />;
+    default:
+      return null;
+  }
+};
 
 export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: FixtureCardProps) => {
   const [isTeamSelectionOpen, setIsTeamSelectionOpen] = useState(false);
@@ -99,13 +113,18 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
           </CardTitle>
         </CardHeader>
         <CardContent onClick={() => onEdit(fixture)} className="cursor-pointer">
-          {hasScores ? (
-            <p className="text-xl font-bold">
-              {fixture.home_score} - {fixture.away_score}
-            </p>
-          ) : (
-            <p className="text-muted-foreground">Score not yet recorded</p>
-          )}
+          <div className="flex items-center gap-2">
+            {hasScores ? (
+              <>
+                <p className="text-xl font-bold">
+                  {fixture.home_score} - {fixture.away_score}
+                </p>
+                {getOutcomeIcon(fixture.outcome)}
+              </>
+            ) : (
+              <p className="text-muted-foreground">Score not yet recorded</p>
+            )}
+          </div>
           <div className="space-y-1 mt-2 text-sm text-muted-foreground">
             {fixture.location && (
               <p>Location: {fixture.location}</p>

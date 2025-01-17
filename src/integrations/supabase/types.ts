@@ -323,6 +323,7 @@ export type Database = {
           location: string | null
           motm_player_id: string | null
           opponent: string
+          outcome: string | null
           time: string | null
           updated_at: string | null
         }
@@ -336,6 +337,7 @@ export type Database = {
           location?: string | null
           motm_player_id?: string | null
           opponent: string
+          outcome?: string | null
           time?: string | null
           updated_at?: string | null
         }
@@ -349,6 +351,7 @@ export type Database = {
           location?: string | null
           motm_player_id?: string | null
           opponent?: string
+          outcome?: string | null
           time?: string | null
           updated_at?: string | null
         }

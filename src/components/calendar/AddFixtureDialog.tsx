@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
+import { Trophy, Minus, XCircle } from "lucide-react";
 
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
@@ -147,6 +148,19 @@ export const AddFixtureDialog = ({
         return;
       }
 
+      let outcome: string | null = null;
+      if (data.home_score && data.away_score) {
+        const homeScore = parseInt(data.home_score);
+        const awayScore = parseInt(data.away_score);
+        if (homeScore > awayScore) {
+          outcome = 'WIN';
+        } else if (homeScore === awayScore) {
+          outcome = 'DRAW';
+        } else {
+          outcome = 'LOSS';
+        }
+      }
+
       const fixtureData = {
         opponent: data.opponent,
         location: data.location,
@@ -156,6 +170,7 @@ export const AddFixtureDialog = ({
         away_score: data.away_score ? parseInt(data.away_score) : null,
         motm_player_id: data.motm_player_id || null,
         time: data.time || null,
+        outcome,
       };
 
       if (editingFixture) {
