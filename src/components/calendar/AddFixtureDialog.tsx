@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
+import { Calendar } from "@/components/ui/calendar";
 
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
@@ -59,19 +60,22 @@ interface AddFixtureDialogProps {
     motm_player_id?: string | null;
     time?: string | null;
   } | null;
+  showDateSelector?: boolean;
 }
 
 export const AddFixtureDialog = ({ 
   isOpen, 
   onOpenChange, 
-  selectedDate,
+  selectedDate: initialSelectedDate,
   onSuccess,
-  editingFixture 
+  editingFixture,
+  showDateSelector = false
 }: AddFixtureDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showTeamSelection, setShowTeamSelection] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialSelectedDate);
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -212,6 +216,25 @@ export const AddFixtureDialog = ({
         {!showTeamSelection ? (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {showDateSelector && (
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Date *</FormLabel>
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        className="rounded-md border"
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
               <FormField
                 control={form.control}
                 name="category"

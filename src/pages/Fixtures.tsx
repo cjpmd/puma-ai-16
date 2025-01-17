@@ -133,7 +133,8 @@ const Fixtures = () => {
           setSelectedFixture(null);
         }}
         editingFixture={selectedFixture}
-        selectedDate={selectedFixture ? parseISO(selectedFixture.date) : undefined}
+        selectedDate={selectedFixture ? parseISO(selectedFixture.date) : new Date()}
+        showDateSelector={!selectedFixture}
       />
 
       {!fixtures || Object.keys(fixtures).length === 0 ? (
