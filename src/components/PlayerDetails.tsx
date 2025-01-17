@@ -77,6 +77,23 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Add a query to fetch position definitions
+  const { data: positionDefinitions } = useQuery({
+    queryKey: ["position-definitions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('position_definitions')
+        .select('abbreviation, full_name');
+      
+      if (error) throw error;
+      
+      return data.reduce((acc, pos) => {
+        acc[pos.abbreviation] = pos.full_name;
+        return acc;
+      }, {} as Record<string, string>);
+    },
+  });
+
   // Query for game metrics data with real-time updates enabled
   const { data: gameMetrics, refetch: refetchGameMetrics } = useQuery({
     queryKey: ["player-game-metrics", player.id],
@@ -447,7 +464,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                     <div key={position} 
                       className="flex justify-between items-center p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
                       <span className="font-medium text-gray-800">
-                        {positionMappings[position]} ({position})
+                        {positionDefinitions?.[position] || position} ({position})
                       </span>
                       <span className="text-gray-600 font-semibold">{minutes} mins</span>
                     </div>
@@ -533,3 +550,4 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
     </motion.div>
   );
 };
+
