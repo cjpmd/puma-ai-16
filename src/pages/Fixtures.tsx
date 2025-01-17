@@ -35,11 +35,11 @@ const Fixtures = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedFixture, setSelectedFixture] = useState<any>(null);
   const [showTeamSelection, setShowTeamSelection] = useState(false);
-  const [filterYear, setFilterYear] = useState<string>("");
-  const [filterMonth, setFilterMonth] = useState<string>("");
+  const [filterYear, setFilterYear] = useState<string>("all");
+  const [filterMonth, setFilterMonth] = useState<string>("all");
   const [filterDate, setFilterDate] = useState<string>("");
   const [filterOpponent, setFilterOpponent] = useState("");
-  const [filterCategory, setFilterCategory] = useState<string>("");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
   const { toast } = useToast();
 
   const { data: fixtures, isLoading, error, refetch } = useQuery({
@@ -51,19 +51,34 @@ const Fixtures = () => {
         .select("*")
         .order("date", { ascending: true });
 
-      if (filterYear) {
-        query = query.ilike("date", `${filterYear}%`);
-      }
-      if (filterMonth) {
-        query = query.ilike("date", `${filterYear}-${filterMonth}%`);
-      }
+      // Handle date filtering
       if (filterDate) {
+        // Exact date match
         query = query.eq("date", filterDate);
+      } else {
+        // Year and month filtering
+        if (filterYear !== "all") {
+          const yearStart = `${filterYear}-01-01`;
+          const yearEnd = `${filterYear}-12-31`;
+          query = query.gte("date", yearStart).lte("date", yearEnd);
+          
+          if (filterMonth !== "all") {
+            const monthStart = `${filterYear}-${filterMonth}-01`;
+            const nextMonth = parseInt(filterMonth) + 1;
+            const monthEnd = nextMonth > 12 
+              ? `${parseInt(filterYear) + 1}-01-01`
+              : `${filterYear}-${String(nextMonth).padStart(2, '0')}-01`;
+            
+            query = query.gte("date", monthStart).lt("date", monthEnd);
+          }
+        }
       }
+
       if (filterOpponent) {
         query = query.ilike("opponent", `%${filterOpponent}%`);
       }
-      if (filterCategory) {
+      
+      if (filterCategory !== "all") {
         query = query.eq("category", filterCategory);
       }
 
