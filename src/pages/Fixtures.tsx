@@ -29,7 +29,7 @@ const Fixtures = () => {
   const [showTeamSelection, setShowTeamSelection] = useState(false);
   const { toast } = useToast();
 
-  const { data: fixtures, isLoading, error } = useQuery({
+  const { data: fixtures, isLoading, error, refetch } = useQuery({
     queryKey: ["fixtures"],
     queryFn: async () => {
       console.log("Fetching fixtures...");
