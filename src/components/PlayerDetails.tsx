@@ -462,11 +462,16 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {Object.entries(gameMetrics.stats.positions_played).map(([position, minutes]) => (
                     <div key={position} 
-                      className="flex justify-between items-center p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
-                      <span className="font-medium text-gray-800">
-                        {positionDefinitions?.[position] || position} ({position})
-                      </span>
-                      <span className="text-gray-600 font-semibold">{minutes} mins</span>
+                      className="flex flex-col p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium text-gray-800">
+                          {positionDefinitions?.[position] || position} ({position})
+                        </span>
+                        <span className="text-gray-600 font-semibold">{minutes} mins</span>
+                      </div>
+                      <Badge variant="secondary" className="self-start text-xs">
+                        {player.playerCategory}
+                      </Badge>
                     </div>
                   ))}
                 </div>
@@ -509,6 +514,9 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                           </Tooltip>
                         </TooltipProvider>
                       )}
+                      <Badge variant="outline" className="ml-auto">
+                        {player.playerCategory}
+                      </Badge>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {game.positions.map((pos, index) => (
@@ -550,4 +558,3 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
     </motion.div>
   );
 };
-
