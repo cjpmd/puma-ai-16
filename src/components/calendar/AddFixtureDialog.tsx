@@ -31,7 +31,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
-import { Calendar } from "@/components/ui/calendar";
 
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
@@ -217,26 +216,17 @@ export const AddFixtureDialog = ({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               {showDateSelector && (
-                <FormField
-                  control={form.control}
-                  name="date_input"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date *</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="date" 
-                          value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''} 
-                          onChange={(e) => {
-                            const date = e.target.value ? new Date(e.target.value) : undefined;
-                            setSelectedDate(date);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="space-y-2">
+                  <FormLabel>Date *</FormLabel>
+                  <Input 
+                    type="date" 
+                    value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''} 
+                    onChange={(e) => {
+                      const date = e.target.value ? new Date(e.target.value) : undefined;
+                      setSelectedDate(date);
+                    }}
+                  />
+                </div>
               )}
               
               <FormField
