@@ -972,6 +972,8 @@ export type Database = {
         Row: {
           captain_appearances: number | null
           category: string | null
+          fixture_history: Json | null
+          motm_appearances: number | null
           player_id: string | null
           player_name: string | null
           positions_played: Json | null
