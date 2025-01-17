@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Trophy, Minus, XCircle } from "lucide-react";
 
 const Fixtures = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -151,6 +152,19 @@ const Fixtures = () => {
   const handleTeamSelection = (fixture: any) => {
     setSelectedFixture(fixture);
     setShowTeamSelection(true);
+  };
+
+  const getOutcomeIcon = (outcome: string | null | undefined) => {
+    switch (outcome) {
+      case 'WIN':
+        return <Trophy className="h-4 w-4 text-green-500" />;
+      case 'DRAW':
+        return <Minus className="h-4 w-4 text-amber-500" />;
+      case 'LOSS':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return null;
+    }
   };
 
   if (error) {
@@ -284,9 +298,16 @@ const Fixtures = () => {
                     <TableCell>{fixture.time || "TBD"}</TableCell>
                     <TableCell>{fixture.opponent}</TableCell>
                     <TableCell>
-                      {fixture.home_score !== null && fixture.away_score !== null
-                        ? `${fixture.home_score} - ${fixture.away_score}`
-                        : "Not played"}
+                      <div className="flex items-center gap-2">
+                        {fixture.home_score !== null && fixture.away_score !== null ? (
+                          <>
+                            <span>{fixture.home_score} - {fixture.away_score}</span>
+                            {getOutcomeIcon(fixture.outcome)}
+                          </>
+                        ) : (
+                          "Not played"
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button 
@@ -327,6 +348,7 @@ const Fixtures = () => {
           refetch();
           setIsDialogOpen(false);
         }}
+        showDateSelector={!selectedFixture}
       />
 
       <Dialog open={showTeamSelection} onOpenChange={setShowTeamSelection}>
