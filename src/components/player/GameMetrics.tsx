@@ -53,9 +53,9 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
         return acc;
       }, {} as Record<string, string>);
     },
-    // Add some basic caching to avoid unnecessary refetches
+    // Add some basic caching using the new v5 options
+    gcTime: 30 * 60 * 1000, // 30 minutes
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 30 * 60 * 1000, // 30 minutes
   });
 
   const getPositionFullName = (abbreviation: string) => {
