@@ -80,6 +80,11 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
     }
   };
 
+  const formatScore = (home: number | null, away: number | null) => {
+    if (home === null || away === null) return "vs";
+    return `${home} - ${away}`;
+  };
+
   return (
     <div className="border rounded-lg shadow-sm bg-white">
       <Collapsible defaultOpen>
@@ -181,10 +186,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                         {getOutcomeIcon(game.outcome)}
                       </div>
                       <span className="font-semibold">
-                        {game.home_score !== null && game.away_score !== null
-                          ? `${game.home_score} - ${game.away_score}`
-                          : "vs"}{" "}
-                        {game.opponent}
+                        {formatScore(game.home_score, game.away_score)} {game.opponent}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
