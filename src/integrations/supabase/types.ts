@@ -495,55 +495,6 @@ export type Database = {
           },
         ]
       }
-      player_category_history: {
-        Row: {
-          category: string
-          created_at: string | null
-          effective_from: string
-          id: string
-          player_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          category: string
-          created_at?: string | null
-          effective_from?: string
-          id?: string
-          player_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string
-          created_at?: string | null
-          effective_from?: string
-          id?: string
-          player_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "player_category_history_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "player_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "player_category_history_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "player_category_history_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "position_rankings"
-            referencedColumns: ["player_id"]
-          },
-        ]
-      }
       player_objectives: {
         Row: {
           coach_id: string | null
