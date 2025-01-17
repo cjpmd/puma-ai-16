@@ -1,6 +1,6 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Badge } from "@/components/ui/badge"
-import { ChevronDown, Trophy, Minus, XCircle } from "lucide-react"
+import { ChevronDown, Trophy, Minus, XCircle, Crown } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Link } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
@@ -28,6 +28,7 @@ interface GameMetricsProps {
     }>;
     category: string;
     outcome: 'WIN' | 'DRAW' | 'LOSS' | null;
+    isCaptain: boolean;
   }>;
 }
 
@@ -184,6 +185,18 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                           {format(parseISO(game.date), "EEEE, MMMM do, yyyy")}
                         </span>
                         {getOutcomeIcon(game.outcome)}
+                        {game.isCaptain && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Crown className="h-4 w-4 text-blue-500" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Captain</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                       </div>
                       <span className="font-semibold">
                         {formatScore(game.home_score, game.away_score)} {game.opponent}
@@ -191,8 +204,8 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {game.positions.map((pos) => (
-                        <Badge key={pos.position} variant="outline" className="text-sm">
-                          {getPositionFullName(pos.position)}: {pos.minutes}m
+                        <Badge key={`${pos.position}-${pos.minutes}`} variant="outline" className="text-sm">
+                          {pos.position}: {pos.minutes}m
                         </Badge>
                       ))}
                       <Badge variant="secondary" className="text-sm">
