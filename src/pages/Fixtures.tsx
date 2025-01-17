@@ -45,59 +45,72 @@ const Fixtures = () => {
   const { data: fixtures, isLoading, error, refetch } = useQuery({
     queryKey: ["fixtures", filterYear, filterMonth, filterDate, filterOpponent, filterCategory],
     queryFn: async () => {
-      console.log("Fetching fixtures...");
+      console.log("Fetching fixtures with filters:", {
+        filterYear,
+        filterMonth,
+        filterDate,
+        filterOpponent,
+        filterCategory
+      });
+
       let query = supabase
         .from("fixtures")
         .select("*")
         .order("date", { ascending: true });
 
-      // Handle date filtering
-      if (filterDate) {
-        query = query.eq("date", filterDate);
-      } else if (filterYear !== "all") {
-        const yearStart = `${filterYear}-01-01`;
-        const yearEnd = `${filterYear}-12-31`;
-        query = query.gte("date", yearStart).lte("date", yearEnd);
-        
-        if (filterMonth !== "all") {
-          const monthStart = `${filterYear}-${filterMonth}-01`;
-          const nextMonth = parseInt(filterMonth) + 1;
-          const monthEnd = nextMonth > 12 
-            ? `${parseInt(filterYear) + 1}-01-01`
-            : `${filterYear}-${String(nextMonth).padStart(2, '0')}-01`;
+      try {
+        // Handle date filtering
+        if (filterDate) {
+          query = query.eq("date", filterDate);
+        } else if (filterYear !== "all") {
+          const yearStart = `${filterYear}-01-01`;
+          const yearEnd = `${filterYear}-12-31`;
+          query = query.gte("date", yearStart).lte("date", yearEnd);
           
-          query = query.gte("date", monthStart).lt("date", monthEnd);
+          if (filterMonth !== "all") {
+            const monthStart = `${filterYear}-${filterMonth}-01`;
+            const nextMonth = parseInt(filterMonth) + 1;
+            const monthEnd = nextMonth > 12 
+              ? `${parseInt(filterYear) + 1}-01-01`
+              : `${filterYear}-${String(nextMonth).padStart(2, '0')}-01`;
+            
+            query = query.gte("date", monthStart).lt("date", monthEnd);
+          }
         }
-      }
 
-      if (filterOpponent) {
-        query = query.ilike("opponent", `%${filterOpponent}%`);
-      }
-      
-      if (filterCategory !== "all") {
-        query = query.eq("category", filterCategory);
-      }
+        if (filterOpponent) {
+          query = query.ilike("opponent", `%${filterOpponent}%`);
+        }
+        
+        if (filterCategory !== "all") {
+          query = query.eq("category", filterCategory);
+        }
 
-      const { data, error } = await query;
+        console.log("Executing Supabase query...");
+        const { data, error } = await query;
 
-      if (error) {
-        console.error("Error fetching fixtures:", error);
+        if (error) {
+          console.error("Supabase query error:", error);
+          throw error;
+        }
+        
+        console.log("Fixtures data received:", data);
+
+        // Group fixtures by date
+        const groupedFixtures = (data || []).reduce((acc: any, fixture: any) => {
+          const date = fixture.date;
+          if (!acc[date]) {
+            acc[date] = [];
+          }
+          acc[date].push(fixture);
+          return acc;
+        }, {});
+
+        return groupedFixtures;
+      } catch (error) {
+        console.error("Error in fixtures query:", error);
         throw error;
       }
-      
-      console.log("Fixtures data:", data);
-
-      // Group fixtures by date
-      const groupedFixtures = (data || []).reduce((acc: any, fixture: any) => {
-        const date = fixture.date;
-        if (!acc[date]) {
-          acc[date] = [];
-        }
-        acc[date].push(fixture);
-        return acc;
-      }, {});
-
-      return groupedFixtures;
     },
   });
 
@@ -136,6 +149,7 @@ const Fixtures = () => {
   };
 
   if (error) {
+    console.error("Fixtures error:", error);
     return (
       <div className="container mx-auto p-6">
         <Alert variant="destructive">
