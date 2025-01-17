@@ -410,7 +410,7 @@ export const CalendarPage = () => {
           <Link to="/fixtures">
             <Button variant="secondary">
               View Fixtures
-            </Button>
+              </Button>
           </Link>
         </div>
       </div>
