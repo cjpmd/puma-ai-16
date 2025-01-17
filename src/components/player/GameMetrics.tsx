@@ -29,9 +29,10 @@ interface GameMetricsProps {
     category: string;
   }>;
   playerCategory: string;
+  playerId: string; // Add this to receive player ID as a separate prop
 }
 
-export function GameMetrics({ stats, motmCount, recentGames, playerCategory }: GameMetricsProps) {
+export function GameMetrics({ stats, motmCount, recentGames, playerCategory, playerId }: GameMetricsProps) {
   // Fetch position definitions and category history
   const { data: positionDefinitions, isLoading: isLoadingPositions } = useQuery({
     queryKey: ["position-definitions"],
@@ -53,12 +54,12 @@ export function GameMetrics({ stats, motmCount, recentGames, playerCategory }: G
   });
 
   const { data: categoryHistory } = useQuery({
-    queryKey: ["category-history", stats.player_id],
+    queryKey: ["category-history", playerId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("player_category_history")
         .select("*")
-        .eq("player_id", stats.player_id)
+        .eq("player_id", playerId)
         .order("effective_from", { ascending: false });
 
       if (error) throw error;
@@ -175,7 +176,7 @@ export function GameMetrics({ stats, motmCount, recentGames, playerCategory }: G
                   <div key={position} 
                     className="flex justify-between items-center p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
                     <span className="font-medium text-gray-800">
-                      {getPositionFullName(position)}
+                      {positionDefinitions?.[position] || position}
                     </span>
                     <span className="text-gray-600 font-semibold">{minutes} mins</span>
                   </div>
@@ -213,7 +214,7 @@ export function GameMetrics({ stats, motmCount, recentGames, playerCategory }: G
                     <div className="flex flex-wrap gap-2">
                       {game.positions.map((pos) => (
                         <Badge key={pos.position} variant="outline" className="text-sm">
-                          {getPositionFullName(pos.position)}: {pos.minutes}m
+                          {positionDefinitions?.[pos.position] || pos.position}: {pos.minutes}m
                         </Badge>
                       ))}
                     </div>

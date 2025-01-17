@@ -19,6 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { GameMetrics } from "./player/GameMetrics";
 
 interface PlayerDetailsProps {
   player: Player;
@@ -416,113 +417,17 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
 
       {/* Game Metrics Section */}
       <Card>
-        <Collapsible defaultOpen>
-          <CollapsibleTrigger className="flex w-full items-center justify-between p-6 hover:bg-accent/5 transition-colors">
-            <h3 className="text-xl font-semibold">Game Metrics</h3>
-            <ChevronDown className="h-5 w-5" />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="p-6 pt-0 space-y-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="p-6 bg-accent/5 rounded-xl border border-accent/10 transform hover:scale-105 transition-transform">
-                <div className="flex items-center gap-3 mb-3">
-                  <Medal className="h-8 w-8 text-purple-500" />
-                  <p className="text-base font-medium text-gray-600">Total Games</p>
-                </div>
-                <p className="text-4xl font-bold text-gray-900">{gameMetrics?.stats?.total_appearances || 0}</p>
-              </div>
-              
-              <div className="p-6 bg-accent/5 rounded-xl border border-accent/10 transform hover:scale-105 transition-transform">
-                <div className="flex items-center gap-3 mb-3">
-                  <Crown className="h-8 w-8 text-blue-500" />
-                  <p className="text-base font-medium text-gray-600">Captain</p>
-                </div>
-                <p className="text-4xl font-bold text-gray-900">{gameMetrics?.stats?.captain_appearances || 0}</p>
-              </div>
-              
-              <div className="p-6 bg-accent/5 rounded-xl border border-accent/10 transform hover:scale-105 transition-transform">
-                <div className="flex items-center gap-3 mb-3">
-                  <Trophy className="h-8 w-8 text-yellow-500" />
-                  <p className="text-base font-medium text-gray-600">MOTM</p>
-                </div>
-                <p className="text-4xl font-bold text-gray-900">{gameMetrics?.motmCount || 0}</p>
-              </div>
-              
-              <div className="p-6 bg-accent/5 rounded-xl border border-accent/10 transform hover:scale-105 transition-transform">
-                <div className="flex items-center gap-3 mb-3">
-                  <Award className="h-8 w-8 text-green-500" />
-                  <p className="text-base font-medium text-gray-600">Total Minutes</p>
-                </div>
-                <p className="text-4xl font-bold text-gray-900">{gameMetrics?.stats?.total_minutes_played || 0}</p>
-              </div>
-            </div>
-
-            {gameMetrics?.stats?.positions_played && Object.keys(gameMetrics.stats.positions_played).length > 0 && (
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold">Minutes by Position</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {Object.entries(gameMetrics.stats.positions_played).map(([position, minutes]) => (
-                    <div key={position} 
-                      className="flex justify-between items-center p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
-                      <span className="font-medium text-gray-800">
-                        {positionDefinitions?.[position] || position} ({position})
-                      </span>
-                      <span className="text-gray-600 font-semibold">{minutes} mins</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold">Recent Games</h4>
-              <div className="space-y-4">
-                {gameMetrics?.recentGames.map((game) => (
-                  <div key={game.id} 
-                    className="border rounded-lg p-5 hover:bg-accent/5 transition-colors cursor-pointer"
-                    onClick={() => handleFixtureClick(game.fixture_id)}>
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="text-lg font-semibold text-gray-900">vs {game.fixtures?.opponent}</span>
-                      <Badge variant="secondary" className="text-sm font-medium">
-                        {game.totalMinutes} mins
-                      </Badge>
-                      {game.isCaptain && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Crown className="h-5 w-5 text-blue-500" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Captain</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-                      {game.isMotm && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Trophy className="h-5 w-5 text-yellow-500" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Man of the Match</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {game.positions.map((pos, index) => (
-                        <Badge key={`${game.id}-${pos.position}-${index}`} variant="outline" className="text-sm">
-                          {pos.position}: {pos.minutes}m
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+        <GameMetrics 
+          stats={gameMetrics?.stats || { 
+            total_appearances: 0, 
+            total_minutes_played: 0, 
+            positions_played: {} 
+          }}
+          motmCount={gameMetrics?.motmCount || 0}
+          recentGames={gameMetrics?.recentGames || []}
+          playerCategory={player.playerCategory}
+          playerId={player.id}
+        />
       </Card>
 
       {/* Player Objectives and Coaching Comments */}
@@ -550,4 +455,3 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
     </motion.div>
   );
 };
-
