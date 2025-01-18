@@ -2,9 +2,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Badge } from "@/components/ui/badge"
 import { ChevronDown, Trophy, Minus, XCircle, Crown } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Link } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
-import { supabase } from "@/integrations/supabase/client"
 import { format, parseISO } from "date-fns"
 
 interface GameMetricsProps {
@@ -14,7 +11,7 @@ interface GameMetricsProps {
     positions_played: {
       [key: string]: number;
     };
-  };
+  } | null;
   motmCount: number;
   recentGames: Array<{
     id: string;
@@ -22,19 +19,22 @@ interface GameMetricsProps {
     opponent: string;
     home_score: number | null;
     away_score: number | null;
-    positions: Array<{
-      position: string;
-      minutes: number;
-    }>;
-    category: string;
     outcome: 'WIN' | 'DRAW' | 'LOSS' | null;
+    totalMinutes: number;
+    positions: Record<string, number>;
+    isMotm: boolean;
     isCaptain: boolean;
+    category: string;
   }>;
 }
 
 export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps) {
-  const gamesPerCategory = recentGames.reduce((acc, game) => {
-    acc[game.category] = (acc[game.category] || 0) + 1;
+  // Ensure recentGames is an array, default to empty array if undefined
+  const games = recentGames || [];
+  
+  const gamesPerCategory = games.reduce((acc, game) => {
+    const category = game.category;
+    acc[category] = (acc[category] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
@@ -105,7 +105,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                   <TooltipTrigger>
                     <div className="p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
                       <div className="text-sm text-gray-600">Total Games</div>
-                      <div className="text-2xl font-bold text-gray-900">{stats.total_appearances}</div>
+                      <div className="text-2xl font-bold text-gray-900">{stats?.total_appearances || 0}</div>
                       <div className="mt-2 space-y-1">
                         {Object.entries(gamesPerCategory).map(([category, count]) => (
                           <div key={category} className="flex items-center justify-between text-sm">
@@ -129,7 +129,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                   <TooltipTrigger>
                     <div className="p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
                       <div className="text-sm text-gray-600">Total Minutes</div>
-                      <div className="text-2xl font-bold text-gray-900">{stats.total_minutes_played}</div>
+                      <div className="text-2xl font-bold text-gray-900">{stats?.total_minutes_played || 0}</div>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -157,7 +157,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
             <div className="space-y-4">
               <h4 className="font-semibold text-gray-900">Minutes by Position</h4>
               <div className="grid gap-2">
-                {Object.entries(stats.positions_played).map(([position, minutes]) => (
+                {Object.entries(stats?.positions_played || {}).map(([position, minutes]) => (
                   <div key={position} 
                     className="flex justify-between items-center p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
                     <span className="font-medium text-gray-800">
@@ -173,10 +173,9 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
             <div className="space-y-4">
               <h4 className="font-semibold text-gray-900">Recent Games</h4>
               <div className="grid gap-4">
-                {recentGames.map((game) => (
-                  <Link
+                {games.map((game) => (
+                  <div
                     key={game.id}
-                    to={`/fixtures/${game.id}`}
                     className="block p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors"
                   >
                     <div className="flex justify-between items-center mb-2">
@@ -203,16 +202,16 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {game.positions.map((pos) => (
-                        <Badge key={`${pos.position}-${pos.minutes}`} variant="outline" className="text-sm">
-                          {pos.position}: {pos.minutes}m
+                      {Object.entries(game.positions).map(([position, minutes]) => (
+                        <Badge key={`${position}-${minutes}`} variant="outline" className="text-sm">
+                          {position}: {minutes}m
                         </Badge>
                       ))}
                       <Badge variant="secondary" className="text-sm">
                         {game.category}
                       </Badge>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </div>

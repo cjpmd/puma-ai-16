@@ -1,7 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { PlayerHeader } from '@/components/player/PlayerHeader'
 import { PlayerAttributes } from '@/components/player/PlayerAttributes'
 import { GameMetrics } from '@/components/player/GameMetrics'
@@ -29,7 +28,8 @@ export default async function Page({ params }: { params: { id: string } }) {
             motm_player_id,
             home_score,
             away_score,
-            outcome
+            outcome,
+            category
           ),
           fixture_playing_periods (
             duration_minutes
@@ -77,6 +77,7 @@ export default async function Page({ params }: { params: { id: string } }) {
         home_score: curr.fixtures?.home_score,
         away_score: curr.fixtures?.away_score,
         outcome: curr.fixtures?.outcome,
+        category: curr.fixtures?.category,
         totalMinutes: 0,
         positions: {},
         isMotm: curr.fixtures?.motm_player_id === player.id,
