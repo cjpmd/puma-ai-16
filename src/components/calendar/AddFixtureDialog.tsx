@@ -173,6 +173,8 @@ export const AddFixtureDialog = ({
         outcome,
       };
 
+      let newFixture;
+      
       if (editingFixture) {
         const { error } = await supabase
           .from("fixtures")
@@ -180,17 +182,42 @@ export const AddFixtureDialog = ({
           .eq("id", editingFixture.id);
           
         if (error) throw error;
-        setShowTeamSelection(true);
+        newFixture = { ...editingFixture, ...fixtureData };
       } else {
-        const { data: newFixture, error } = await supabase
+        const { data: insertedFixture, error } = await supabase
           .from("fixtures")
           .insert([fixtureData])
           .select()
           .single();
           
         if (error) throw error;
-        if (newFixture) {
-          setShowTeamSelection(true);
+        newFixture = insertedFixture;
+
+        // Send WhatsApp notification for new fixtures
+        try {
+          const { error: notificationError } = await supabase.functions.invoke('send-whatsapp-notification', {
+            body: {
+              eventData: {
+                type: 'FIXTURE',
+                date: format(selectedDate, "dd/MM/yyyy"),
+                time: data.time,
+                opponent: data.opponent,
+                location: data.location,
+                category: data.category
+              }
+            }
+          });
+
+          if (notificationError) {
+            console.error('Error sending WhatsApp notification:', notificationError);
+            toast({
+              title: "Warning",
+              description: "Fixture created but there was an error sending notifications",
+              variant: "destructive",
+            });
+          }
+        } catch (notificationError) {
+          console.error('Error invoking WhatsApp notification function:', notificationError);
         }
       }
 
