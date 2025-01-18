@@ -37,6 +37,7 @@ interface AttributeSetting {
   is_enabled: boolean;
   display_name: string | null;
   display_order: number | null;
+  is_deleted: boolean | null;
 }
 
 export function AttributeSettingsManager() {

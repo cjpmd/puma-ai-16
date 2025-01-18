@@ -8,8 +8,32 @@ import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings } from "lucide-react";
+import { Settings, Plus, Edit, Trash2 } from "lucide-react";
 import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+interface PlayerCategory {
+  id: string;
+  name: string;
+  description: string | null;
+}
 
 interface AttributeSetting {
   id: string;
@@ -143,6 +167,116 @@ const TeamSettings = () => {
       toast({
         title: "Error",
         description: "Failed to update team name",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const addPlayerCategory = async () => {
+    try {
+      const { error } = await supabase
+        .from('player_categories')
+        .insert([{ 
+          name: newCategory.name,
+          description: newCategory.description
+        }]);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Category added successfully",
+      });
+      
+      setNewCategory({ name: "", description: "" });
+      fetchPlayerCategories();
+    } catch (error) {
+      console.error('Error adding category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updatePlayerCategory = async () => {
+    if (!editingCategory) return;
+    
+    try {
+      const { error } = await supabase
+        .from('player_categories')
+        .update({ 
+          name: editingCategory.name,
+          description: editingCategory.description
+        })
+        .eq('id', editingCategory.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Category updated successfully",
+      });
+      
+      setEditingCategory(null);
+      fetchPlayerCategories();
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deletePlayerCategory = async (categoryId: string) => {
+    try {
+      const { error } = await supabase
+        .from('player_categories')
+        .delete()
+        .eq('id', categoryId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Category deleted successfully",
+      });
+      
+      fetchPlayerCategories();
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleAllAttributes = async (enabled: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('attribute_settings')
+        .update({ is_enabled: enabled })
+        .is('is_deleted', false);
+      
+      if (error) throw error;
+      
+      setAttributesEnabled(enabled);
+      fetchAttributeSettings();
+      
+      toast({
+        title: "Success",
+        description: `All attributes ${enabled ? 'enabled' : 'disabled'} successfully`,
+      });
+    } catch (error) {
+      console.error('Error toggling attributes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update attributes",
         variant: "destructive",
       });
     }
