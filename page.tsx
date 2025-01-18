@@ -10,7 +10,7 @@ export default async function Page({ params }: { params: { id: string } }) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
 
-  if (!params.id) {
+  if (!params.id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id)) {
     notFound()
   }
 
