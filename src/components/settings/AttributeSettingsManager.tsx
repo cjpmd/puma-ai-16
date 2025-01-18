@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,10 @@ export function AttributeSettingsManager() {
   const [editingCategory, setEditingCategory] = useState<{ original: string; new: string } | null>(null);
   const [editingAttribute, setEditingAttribute] = useState<AttributeSetting | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchAttributeSettings();
+  }, []);
 
   const fetchAttributeSettings = async () => {
     try {
@@ -267,10 +271,10 @@ export function AttributeSettingsManager() {
         </Dialog>
       </div>
 
-      <Accordion type="single" collapsible className="w-full">
+      <Accordion type="multiple" className="w-full space-y-4">
         {Object.entries(groupedAttributes).map(([category, attributes]) => (
-          <AccordionItem key={category} value={category}>
-            <AccordionTrigger className="flex justify-between items-center">
+          <AccordionItem key={category} value={category} className="border rounded-lg px-4">
+            <AccordionTrigger className="flex justify-between items-center py-4">
               <div className="flex items-center gap-4">
                 {editingCategory?.original === category ? (
                   <Input
@@ -282,6 +286,7 @@ export function AttributeSettingsManager() {
                       }
                     }}
                     className="w-48"
+                    onClick={(e) => e.stopPropagation()}
                   />
                 ) : (
                   <span>{category}</span>
