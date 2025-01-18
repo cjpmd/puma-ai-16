@@ -7,12 +7,12 @@ import { PlayerAttributes } from '@/components/player/PlayerAttributes'
 import { GameMetrics } from '@/components/player/GameMetrics'
 
 export default async function Page({ params }: { params: { id: string } }) {
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
+
   if (!params.id) {
     notFound()
   }
-
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
 
   const [playerResult, statsResult] = await Promise.all([
     supabase
@@ -26,7 +26,10 @@ export default async function Page({ params }: { params: { id: string } }) {
             id,
             date,
             opponent,
-            motm_player_id
+            motm_player_id,
+            home_score,
+            away_score,
+            outcome
           ),
           fixture_playing_periods (
             duration_minutes
@@ -71,6 +74,9 @@ export default async function Page({ params }: { params: { id: string } }) {
         id: fixtureId,
         opponent,
         date: curr.fixtures?.date,
+        home_score: curr.fixtures?.home_score,
+        away_score: curr.fixtures?.away_score,
+        outcome: curr.fixtures?.outcome,
         totalMinutes: 0,
         positions: {},
         isMotm: curr.fixtures?.motm_player_id === player.id,
