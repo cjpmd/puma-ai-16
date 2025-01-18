@@ -1,59 +1,45 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { PlayerHeader } from "@/components/player/PlayerHeader";
-import { PlayerAttributes } from "@/components/player/PlayerAttributes";
-import { GameMetrics } from "@/components/player/GameMetrics";
-import { CoachingComments } from "@/components/coaching/CoachingComments";
-import { PlayerObjectives } from "@/components/coaching/PlayerObjectives";
-import { ParentDetails } from "@/components/player/ParentDetails";
+import { PlayerDetails } from "@/components/PlayerDetails";
 import { useQuery } from "@tanstack/react-query";
+import { ParentDetailsDialog } from "@/components/parents/ParentDetailsDialog";
+import { Button } from "@/components/ui/button";
 
 interface Player {
   id: string;
   name: string;
+  age: number;
   squad_number: number;
   player_category: string;
   player_type: string;
-}
-
-interface Attribute {
-  id: string;
-  name: string;
-  value: number;
+  attributes: Array<{
+    id: string;
+    name: string;
+    value: number;
+    category: string;
+  }>;
 }
 
 const PlayerDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const [player, setPlayer] = useState<Player | null>(null);
 
-  // Query for player details
+  // Query for player details and attributes
   const { data: playerData } = useQuery({
-    queryKey: ["player", id],
+    queryKey: ["player-with-attributes", id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: playerResult, error: playerError } = await supabase
         .from("players")
-        .select("*")
+        .select(`
+          *,
+          attributes:player_attributes(*)
+        `)
         .eq("id", id)
         .single();
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id,
-  });
-
-  // Query for player attributes
-  const { data: attributes = [] } = useQuery({
-    queryKey: ["player-attributes", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("player_attributes")
-        .select("*")
-        .eq("player_id", id);
-
-      if (error) throw error;
-      return data as Attribute[];
+      if (playerError) throw playerError;
+      return playerResult;
     },
     enabled: !!id,
   });
@@ -68,29 +54,11 @@ const PlayerDetailsPage = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <PlayerHeader 
-        name={player.name}
-        squadNumber={player.squad_number}
-        category={player.player_category}
-      />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <PlayerAttributes 
-            playerId={id}
-            playerType={player.player_type}
-            playerCategory={player.player_category}
-            attributes={attributes}
-          />
-          <ParentDetails playerId={id} />
-        </div>
-        <div className="space-y-6">
-          <GameMetrics 
-            playerId={id}
-          />
-          <PlayerObjectives playerId={id} />
-          <CoachingComments playerId={id} />
-        </div>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">{player.name}</h1>
+        <ParentDetailsDialog playerId={id} onSave={() => {}} />
       </div>
+      <PlayerDetails player={player} />
     </div>
   );
 };
