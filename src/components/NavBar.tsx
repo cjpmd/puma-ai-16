@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
-import { Users, BarChart2, UserCircle, Calendar, LogOut } from "lucide-react";
+import { Users, BarChart2, UserCircle, Calendar, LogOut, Cog } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -111,6 +111,12 @@ export const NavBar = () => {
             <Button variant="ghost">
               <Calendar className="mr-2 h-4 w-4" />
               Calendar
+            </Button>
+          </Link>
+          <Link to="/settings">
+            <Button variant="ghost">
+              <Cog className="mr-2 h-4 w-4" />
+              Settings
             </Button>
           </Link>
           {profile && (
