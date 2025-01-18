@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings } from "lucide-react";
+import { Settings, Bell } from "lucide-react";
 import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
 import {
   Collapsible,
@@ -15,6 +16,7 @@ import {
 
 const TeamSettings = () => {
   const [teamName, setTeamName] = useState("");
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -30,6 +32,7 @@ const TeamSettings = () => {
 
       if (error) throw error;
       setTeamName(data?.team_name ?? "");
+      setNotificationsEnabled(data?.parent_notification_enabled ?? false);
     } catch (error) {
       console.error('Error fetching team settings:', error);
       toast({
@@ -65,6 +68,31 @@ const TeamSettings = () => {
     }
   };
 
+  const updateNotificationSettings = async (enabled: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('team_settings')
+        .upsert({
+          parent_notification_enabled: enabled,
+          id: '00000000-0000-0000-0000-000000000000'
+        });
+
+      if (error) throw error;
+      setNotificationsEnabled(enabled);
+      toast({
+        title: "Success",
+        description: "Notification settings updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating notification settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update notification settings",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <motion.div
@@ -90,6 +118,29 @@ const TeamSettings = () => {
                 className="max-w-sm"
               />
               <Button onClick={() => updateTeamName(teamName)}>Save</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Parent Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h4 className="text-sm font-medium">Enable Parent Notifications</h4>
+                <p className="text-sm text-muted-foreground">
+                  Send notifications to parents about team updates and player performance
+                </p>
+              </div>
+              <Switch
+                checked={notificationsEnabled}
+                onCheckedChange={updateNotificationSettings}
+              />
             </div>
           </CardContent>
         </Card>
