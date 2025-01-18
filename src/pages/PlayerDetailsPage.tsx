@@ -4,31 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { PlayerDetails } from "@/components/PlayerDetails";
 import { useQuery } from "@tanstack/react-query";
 import { ParentDetailsDialog } from "@/components/parents/ParentDetailsDialog";
-import { Button } from "@/components/ui/button";
-
-interface Player {
-  id: string;
-  name: string;
-  age: number;
-  squad_number: number;
-  player_category: string;
-  player_type: string;
-  attributes: Array<{
-    id: string;
-    name: string;
-    value: number;
-    category: string;
-  }>;
-}
+import { Player } from "@/types/player";
 
 const PlayerDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const [player, setPlayer] = useState<Player | null>(null);
 
-  // Query for player details and attributes
+  // Query for player details, attributes, and attribute history
   const { data: playerData } = useQuery({
     queryKey: ["player-with-attributes", id],
     queryFn: async () => {
+      // Fetch player details
       const { data: playerResult, error: playerError } = await supabase
         .from("players")
         .select(`
@@ -39,7 +25,49 @@ const PlayerDetailsPage = () => {
         .single();
 
       if (playerError) throw playerError;
-      return playerResult;
+
+      // Fetch attribute history
+      const { data: historyData, error: historyError } = await supabase
+        .from("player_attributes")
+        .select("*")
+        .eq("player_id", id)
+        .order("created_at", { ascending: true });
+
+      if (historyError) throw historyError;
+
+      // Transform history data into the required format
+      const attributeHistory: Record<string, { date: string; value: number }[]> = {};
+      historyData?.forEach((attr) => {
+        if (!attributeHistory[attr.name]) {
+          attributeHistory[attr.name] = [];
+        }
+        attributeHistory[attr.name].push({
+          date: attr.created_at,
+          value: attr.value,
+        });
+      });
+
+      // Transform the player data to match the Player type
+      const transformedPlayer: Player = {
+        id: playerResult.id,
+        name: playerResult.name,
+        age: playerResult.age,
+        dateOfBirth: playerResult.date_of_birth,
+        squadNumber: playerResult.squad_number,
+        playerCategory: playerResult.player_category,
+        playerType: playerResult.player_type,
+        attributes: playerResult.attributes.map((attr: any) => ({
+          id: attr.id,
+          name: attr.name,
+          value: attr.value,
+          category: attr.category,
+        })),
+        attributeHistory,
+        created_at: playerResult.created_at,
+        updated_at: playerResult.updated_at,
+      };
+
+      return transformedPlayer;
     },
     enabled: !!id,
   });
