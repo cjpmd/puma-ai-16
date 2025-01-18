@@ -1,14 +1,31 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, BarChart2, Calendar } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Index() {
+  const { data: teamSettings } = useQuery({
+    queryKey: ["team-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('team_settings')
+        .select('*')
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const teamName = teamSettings?.team_name || "Broughty Pumas";
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex flex-col items-center mb-12">
         <img src="/lovable-uploads/0e21bdb0-5451-4dcf-a2ca-a4d572b82e47.png" alt="Logo" className="w-48 mb-8" />
-        <h1 className="text-4xl font-bold text-center mb-4">Welcome to Broughty Pumas</h1>
-        <p className="text-lg text-muted-foreground text-center">Broughty Puma's Performance and Development. Powered by Puma.AI</p>
+        <h1 className="text-4xl font-bold text-center mb-4">Welcome to {teamName}</h1>
+        <p className="text-lg text-muted-foreground text-center">{teamName} Performance and Development. Powered by Puma.AI</p>
       </div>
       
       <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
