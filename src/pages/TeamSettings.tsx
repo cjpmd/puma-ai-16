@@ -23,13 +23,12 @@ const TeamSettings = () => {
       const { data, error } = await supabase
         .from('team_settings')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
-      if (data) {
-        setParentNotifications(data.parent_notification_enabled);
-      }
+      // If data exists, use it; otherwise use default value (false)
+      setParentNotifications(data?.parent_notification_enabled ?? false);
     } catch (error) {
       console.error('Error fetching team settings:', error);
       toast({
