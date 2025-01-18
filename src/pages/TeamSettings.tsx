@@ -8,21 +8,8 @@ import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings, Plus, Trash2, Edit } from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Settings } from "lucide-react";
+import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
 
 interface AttributeSetting {
   id: string;
@@ -30,12 +17,7 @@ interface AttributeSetting {
   name: string;
   is_enabled: boolean;
   display_name: string | null;
-}
-
-interface PlayerCategory {
-  id: string;
-  name: string;
-  description: string | null;
+  display_order: number | null;
 }
 
 const TeamSettings = () => {
@@ -161,138 +143,6 @@ const TeamSettings = () => {
       toast({
         title: "Error",
         description: "Failed to update team name",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const updateAttributeSetting = async (id: string, updates: Partial<AttributeSetting>) => {
-    try {
-      const { error } = await supabase
-        .from('attribute_settings')
-        .update(updates)
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setAttributeSettings(prev => 
-        prev.map(attr => 
-          attr.id === id ? { ...attr, ...updates } : attr
-        )
-      );
-
-      toast({
-        title: "Success",
-        description: "Attribute setting updated successfully",
-      });
-    } catch (error) {
-      console.error('Error updating attribute setting:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update attribute setting",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const toggleAllAttributes = async (enabled: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('attribute_settings')
-        .update({ is_enabled: enabled })
-        .neq('id', 'dummy'); // Update all records
-
-      if (error) throw error;
-
-      setAttributesEnabled(enabled);
-      setAttributeSettings(prev => 
-        prev.map(attr => ({ ...attr, is_enabled: enabled }))
-      );
-
-      toast({
-        title: "Success",
-        description: `All attributes ${enabled ? 'enabled' : 'disabled'}`,
-      });
-    } catch (error) {
-      console.error('Error updating attributes:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update attributes",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const addPlayerCategory = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('player_categories')
-        .insert([newCategory])
-        .select()
-        .single();
-
-      if (error) throw error;
-      setPlayerCategories([...playerCategories, data]);
-      setNewCategory({ name: "", description: "" });
-      toast({
-        title: "Success",
-        description: "Player category added successfully",
-      });
-    } catch (error) {
-      console.error('Error adding player category:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add player category",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const updatePlayerCategory = async () => {
-    if (!editingCategory) return;
-    try {
-      const { error } = await supabase
-        .from('player_categories')
-        .update(editingCategory)
-        .eq('id', editingCategory.id);
-
-      if (error) throw error;
-      setPlayerCategories(playerCategories.map(cat => 
-        cat.id === editingCategory.id ? editingCategory : cat
-      ));
-      setEditingCategory(null);
-      toast({
-        title: "Success",
-        description: "Player category updated successfully",
-      });
-    } catch (error) {
-      console.error('Error updating player category:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update player category",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const deletePlayerCategory = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('player_categories')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      setPlayerCategories(playerCategories.filter(cat => cat.id !== id));
-      toast({
-        title: "Success",
-        description: "Player category deleted successfully",
-      });
-    } catch (error) {
-      console.error('Error deleting player category:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete player category",
         variant: "destructive",
       });
     }
@@ -512,36 +362,7 @@ const TeamSettings = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {attributesEnabled && (
-              <Accordion type="single" collapsible className="w-full">
-                {Object.entries(groupedAttributes).map(([category, attributes]) => (
-                  <AccordionItem key={category} value={category}>
-                    <AccordionTrigger className="text-lg font-semibold">
-                      {category}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-4">
-                        {attributes.map((attr) => (
-                          <div key={attr.id} className="flex items-center justify-between gap-4">
-                            <div className="flex-1">
-                              <Input
-                                value={attr.display_name || attr.name}
-                                onChange={(e) => updateAttributeSetting(attr.id, { display_name: e.target.value })}
-                                className="w-full"
-                              />
-                            </div>
-                            <Switch
-                              checked={attr.is_enabled}
-                              onCheckedChange={(checked) => updateAttributeSetting(attr.id, { is_enabled: checked })}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            )}
+            <AttributeSettingsManager />
           </CardContent>
         </Card>
       </motion.div>

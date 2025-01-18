@@ -14,7 +14,9 @@ export type Database = {
           category: string
           created_at: string | null
           display_name: string | null
+          display_order: number | null
           id: string
+          is_deleted: boolean | null
           is_enabled: boolean | null
           name: string
           updated_at: string | null
@@ -23,7 +25,9 @@ export type Database = {
           category: string
           created_at?: string | null
           display_name?: string | null
+          display_order?: number | null
           id?: string
+          is_deleted?: boolean | null
           is_enabled?: boolean | null
           name: string
           updated_at?: string | null
@@ -32,7 +36,9 @@ export type Database = {
           category?: string
           created_at?: string | null
           display_name?: string | null
+          display_order?: number | null
           id?: string
+          is_deleted?: boolean | null
           is_enabled?: boolean | null
           name?: string
           updated_at?: string | null
