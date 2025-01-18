@@ -1,12 +1,70 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePlayersStore } from "@/store/players";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const TeamSettings = () => {
   const updateGlobalMultiplier = usePlayersStore((state) => state.updateGlobalMultiplier);
   const globalMultiplier = usePlayersStore((state) => state.globalMultiplier);
+  const [parentNotifications, setParentNotifications] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchTeamSettings();
+  }, []);
+
+  const fetchTeamSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('team_settings')
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setParentNotifications(data.parent_notification_enabled);
+      }
+    } catch (error) {
+      console.error('Error fetching team settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load team settings",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateParentNotifications = async (enabled: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('team_settings')
+        .upsert({ 
+          parent_notification_enabled: enabled,
+          id: '00000000-0000-0000-0000-000000000000' // Using a default ID for single record
+        });
+
+      if (error) throw error;
+
+      setParentNotifications(enabled);
+      toast({
+        title: "Success",
+        description: `Parent notifications ${enabled ? 'enabled' : 'disabled'}`,
+      });
+    } catch (error) {
+      console.error('Error updating parent notifications:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update parent notification settings",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -44,6 +102,24 @@ const TeamSettings = () => {
               <span className="text-sm text-muted-foreground">
                 (Applies to all Ronaldo players)
               </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Parent Notifications</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="parent-notifications" className="text-sm text-muted-foreground">
+                Enable WhatsApp notifications for parents
+              </Label>
+              <Switch
+                id="parent-notifications"
+                checked={parentNotifications}
+                onCheckedChange={updateParentNotifications}
+              />
             </div>
           </CardContent>
         </Card>
