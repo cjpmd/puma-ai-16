@@ -6,10 +6,13 @@ interface PlayerAttributesProps {
     id: string
     name: string
     value: number
-  }>
+  }>;
+  playerId: string;
+  playerType: string;
+  playerCategory: string;
 }
 
-export function PlayerAttributes({ attributes }: PlayerAttributesProps) {
+export function PlayerAttributes({ attributes, playerId, playerType, playerCategory }: PlayerAttributesProps) {
   return (
     <div className="border rounded-lg shadow-sm bg-white">
       <Collapsible>

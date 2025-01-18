@@ -204,7 +204,7 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {Object.entries(game.positions).map(([position, minutes]) => (
+                      {Object.entries(game.positions || {}).map(([position, minutes]) => (
                         <Badge key={`${position}-${minutes}`} variant="outline" className="text-sm">
                           {position}: {minutes}m
                         </Badge>
