@@ -108,11 +108,22 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
     });
   }
 
+  // Sort positions by minutes played
+  const topPositions = Object.entries(positionMinutes)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3);
+
   return (
     <Card className="hover:bg-accent cursor-pointer" onClick={onClick}>
       <CardHeader>
-        <CardTitle className="text-xl">
-          {player.name} - #{player.squadNumber}
+        <CardTitle className="text-xl flex items-center justify-between">
+          <div>
+            {player.name} - #{player.squadNumber}
+          </div>
+          <div className="text-sm font-normal space-x-2">
+            <Badge variant="outline">{player.playerCategory}</Badge>
+            <Badge variant="outline">{player.playerType}</Badge>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -176,17 +187,16 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
                   </div>
                 )}
 
-                {Object.entries(positionMinutes).length > 0 && (
+                {topPositions.length > 0 && (
                   <div className="space-y-2">
-                    <div className="text-sm font-medium">Minutes by Position:</div>
-                    {Object.entries(positionMinutes).map(([position, minutes]) => (
-                      <div key={position} className="flex justify-between text-sm">
-                        <span>{position}:</span>
-                        <Badge variant="outline" className="bg-purple-500/10">
-                          {minutes} mins
+                    <div className="text-sm font-medium">Top Positions:</div>
+                    <div className="flex justify-between text-sm">
+                      {topPositions.map(([position, minutes], index) => (
+                        <Badge key={position} variant="outline" className="bg-purple-500/10">
+                          {position}: {minutes}m
                         </Badge>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
 
