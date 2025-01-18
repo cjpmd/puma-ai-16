@@ -7,6 +7,7 @@ import { GameMetrics } from "@/components/player/GameMetrics";
 import { CoachingComments } from "@/components/coaching/CoachingComments";
 import { PlayerObjectives } from "@/components/coaching/PlayerObjectives";
 import { ParentDetails } from "@/components/player/ParentDetails";
+import { useQuery } from "@tanstack/react-query";
 
 interface Player {
   id: string;
@@ -16,38 +17,52 @@ interface Player {
   player_type: string;
 }
 
+interface Attribute {
+  id: string;
+  name: string;
+  value: number;
+}
+
 const PlayerDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const [player, setPlayer] = useState<Player | null>(null);
-  const [gameMetrics, setGameMetrics] = useState<any>(null);
+
+  // Query for player details
+  const { data: playerData } = useQuery({
+    queryKey: ["player", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  // Query for player attributes
+  const { data: attributes = [] } = useQuery({
+    queryKey: ["player-attributes", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_attributes")
+        .select("*")
+        .eq("player_id", id);
+
+      if (error) throw error;
+      return data as Attribute[];
+    },
+    enabled: !!id,
+  });
 
   useEffect(() => {
-    const fetchPlayer = async () => {
-      if (!id) return;
-      
-      const [playerResult, metricsResult] = await Promise.all([
-        supabase
-          .from("players")
-          .select("*")
-          .eq("id", id)
-          .single(),
-        supabase
-          .from("player_fixture_stats")
-          .select("*")
-          .eq("player_id", id)
-          .single()
-      ]);
-
-      if (playerResult.data) {
-        setPlayer(playerResult.data);
-      }
-      if (metricsResult.data) {
-        setGameMetrics(metricsResult.data);
-      }
-    };
-    
-    fetchPlayer();
-  }, [id]);
+    if (playerData) {
+      setPlayer(playerData);
+    }
+  }, [playerData]);
 
   if (!player || !id) return null;
 
@@ -64,17 +79,14 @@ const PlayerDetailsPage = () => {
             playerId={id}
             playerType={player.player_type}
             playerCategory={player.player_category}
+            attributes={attributes}
           />
           <ParentDetails playerId={id} />
         </div>
         <div className="space-y-6">
-          {gameMetrics && (
-            <GameMetrics 
-              stats={gameMetrics}
-              motmCount={gameMetrics.motm_appearances || 0}
-              recentGames={gameMetrics.fixture_history || []}
-            />
-          )}
+          <GameMetrics 
+            playerId={id}
+          />
           <PlayerObjectives playerId={id} />
           <CoachingComments playerId={id} />
         </div>
