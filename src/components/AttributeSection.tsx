@@ -4,6 +4,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import {
   Accordion,
   AccordionContent,
@@ -60,6 +61,26 @@ export const AttributeSection = ({
   const { toast } = useToast();
   const [localValues, setLocalValues] = useState<Record<string, number>>({});
 
+  // Query to fetch enabled attributes
+  const { data: enabledAttributes } = useQuery({
+    queryKey: ["attribute-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('attribute_settings')
+        .select('*')
+        .eq('is_enabled', true)
+        .eq('is_deleted', false);
+      
+      if (error) throw error;
+      return data.map(attr => attr.name);
+    },
+  });
+
+  // Filter attributes based on enabled settings
+  const filteredAttributes = attributes.filter(attr => 
+    enabledAttributes?.includes(attr.name)
+  );
+
   const handleSliderChange = (name: string, value: number) => {
     setLocalValues(prev => ({ ...prev, [name]: value }));
     onUpdateAttribute(name, value);
@@ -67,7 +88,6 @@ export const AttributeSection = ({
 
   const handleSliderCommit = async (name: string, value: number) => {
     try {
-      // First, try to update the existing record
       const { error } = await supabase
         .from('player_attributes')
         .upsert({ 
@@ -95,7 +115,10 @@ export const AttributeSection = ({
     }
   };
 
-  const headerColor = getHeaderColor(attributes, attributeHistory);
+  const headerColor = getHeaderColor(filteredAttributes, attributeHistory);
+
+  // Don't render the section if there are no enabled attributes
+  if (filteredAttributes.length === 0) return null;
 
   return (
     <Accordion type="single" collapsible className="w-full">
@@ -105,7 +128,7 @@ export const AttributeSection = ({
         </AccordionTrigger>
         <AccordionContent>
           <div className="space-y-6">
-            {attributes.map((attr) => {
+            {filteredAttributes.map((attr) => {
               const history = attributeHistory[attr.name] || [];
               const previousValue = history.length > 1 
                 ? history[history.length - 2].value 
