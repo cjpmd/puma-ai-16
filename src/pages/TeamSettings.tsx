@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings, Bell } from "lucide-react";
+import { Settings, Bell, Users } from "lucide-react";
 import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
 import {
   Collapsible,
@@ -17,10 +17,13 @@ import {
 const TeamSettings = () => {
   const [teamName, setTeamName] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [categories, setCategories] = useState<{ id: string; name: string; description: string | null }[]>([]);
+  const [newCategory, setNewCategory] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
     fetchTeamSettings();
+    fetchCategories();
   }, []);
 
   const fetchTeamSettings = async () => {
@@ -38,6 +41,25 @@ const TeamSettings = () => {
       toast({
         title: "Error",
         description: "Failed to load team settings",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('player_categories')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load player categories",
         variant: "destructive",
       });
     }
@@ -93,6 +115,53 @@ const TeamSettings = () => {
     }
   };
 
+  const addCategory = async () => {
+    if (!newCategory.trim()) return;
+    try {
+      const { error } = await supabase
+        .from('player_categories')
+        .insert({ name: newCategory.trim() });
+
+      if (error) throw error;
+      setNewCategory("");
+      fetchCategories();
+      toast({
+        title: "Success",
+        description: "Category added successfully",
+      });
+    } catch (error) {
+      console.error('Error adding category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteCategory = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('player_categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      fetchCategories();
+      toast({
+        title: "Success",
+        description: "Category deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete category",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <motion.div
@@ -141,6 +210,42 @@ const TeamSettings = () => {
                 checked={notificationsEnabled}
                 onCheckedChange={updateNotificationSettings}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Player Categories
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Input
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="New category name"
+                  className="max-w-sm"
+                />
+                <Button onClick={addCategory}>Add Category</Button>
+              </div>
+              <div className="space-y-2">
+                {categories.map((category) => (
+                  <div key={category.id} className="flex items-center justify-between bg-secondary/20 p-3 rounded-lg">
+                    <span>{category.name}</span>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteCategory(category.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
