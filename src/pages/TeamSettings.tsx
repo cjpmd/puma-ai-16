@@ -19,6 +19,8 @@ const TeamSettings = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [categories, setCategories] = useState<{ id: string; name: string; description: string | null }[]>([]);
   const [newCategory, setNewCategory] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -120,10 +122,14 @@ const TeamSettings = () => {
     try {
       const { error } = await supabase
         .from('player_categories')
-        .insert({ name: newCategory.trim() });
+        .insert({ 
+          name: newCategory.trim(),
+          description: newDescription.trim() || null
+        });
 
       if (error) throw error;
       setNewCategory("");
+      setNewDescription("");
       fetchCategories();
       toast({
         title: "Success",
@@ -134,6 +140,30 @@ const TeamSettings = () => {
       toast({
         title: "Error",
         description: "Failed to add category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateCategory = async (id: string, name: string, description: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('player_categories')
+        .update({ name, description })
+        .eq('id', id);
+
+      if (error) throw error;
+      setEditingCategory(null);
+      fetchCategories();
+      toast({
+        title: "Success",
+        description: "Category updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update category",
         variant: "destructive",
       });
     }
@@ -223,26 +253,94 @@ const TeamSettings = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center gap-4">
+              <div className="space-y-4">
                 <Input
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
                   placeholder="New category name"
                   className="max-w-sm"
                 />
+                <Input
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Category description (optional)"
+                  className="max-w-sm"
+                />
                 <Button onClick={addCategory}>Add Category</Button>
               </div>
               <div className="space-y-2">
                 {categories.map((category) => (
-                  <div key={category.id} className="flex items-center justify-between bg-secondary/20 p-3 rounded-lg">
-                    <span>{category.name}</span>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteCategory(category.id)}
-                    >
-                      Delete
-                    </Button>
+                  <div key={category.id} className="flex flex-col space-y-2 bg-secondary/20 p-3 rounded-lg">
+                    {editingCategory === category.id ? (
+                      <div className="space-y-2">
+                        <Input
+                          defaultValue={category.name}
+                          className="max-w-sm"
+                          onChange={(e) => {
+                            const updatedCategories = categories.map(c =>
+                              c.id === category.id ? { ...c, name: e.target.value } : c
+                            );
+                            setCategories(updatedCategories);
+                          }}
+                        />
+                        <Input
+                          defaultValue={category.description || ''}
+                          className="max-w-sm"
+                          placeholder="Description"
+                          onChange={(e) => {
+                            const updatedCategories = categories.map(c =>
+                              c.id === category.id ? { ...c, description: e.target.value } : c
+                            );
+                            setCategories(updatedCategories);
+                          }}
+                        />
+                        <div className="space-x-2">
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const updatedCategory = categories.find(c => c.id === category.id);
+                              if (updatedCategory) {
+                                updateCategory(category.id, updatedCategory.name, updatedCategory.description);
+                              }
+                            }}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setEditingCategory(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{category.name}</span>
+                          <div className="space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditingCategory(category.id)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => deleteCategory(category.id)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                        {category.description && (
+                          <p className="text-sm text-muted-foreground">{category.description}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
