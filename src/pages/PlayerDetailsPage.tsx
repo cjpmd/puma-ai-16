@@ -1,110 +1,46 @@
-import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { PlayerDetails } from "@/components/PlayerDetails";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { motion } from "framer-motion";
-import { Player } from "@/types/player";
+import { PlayerHeader } from "@/components/player/PlayerHeader";
+import { PlayerAttributes } from "@/components/player/PlayerAttributes";
+import { GameMetrics } from "@/components/player/GameMetrics";
+import { CoachingComments } from "@/components/coaching/CoachingComments";
+import { PlayerObjectives } from "@/components/coaching/PlayerObjectives";
+import { ParentDetails } from "@/components/player/ParentDetails";
 
 const PlayerDetailsPage = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
+  const [player, setPlayer] = useState(null);
 
-  const { data: player, isLoading } = useQuery({
-    queryKey: ["player", id],
-    queryFn: async () => {
-      if (!id) throw new Error("No player ID provided");
-
-      const { data, error } = await supabase
+  useEffect(() => {
+    const fetchPlayer = async () => {
+      if (!id) return;
+      const { data } = await supabase
         .from("players")
-        .select(`
-          *,
-          player_attributes (*),
-          fixture_player_positions (
-            *,
-            fixtures (
-              id,
-              date,
-              opponent,
-              motm_player_id
-            ),
-            fixture_playing_periods (
-              duration_minutes
-            )
-          ),
-          fixture_team_selections (
-            fixture_id,
-            is_captain
-          )
-        `)
+        .select("*")
         .eq("id", id)
         .single();
+      setPlayer(data);
+    };
+    fetchPlayer();
+  }, [id]);
 
-      if (error) {
-        console.error("Error fetching player:", error);
-        throw error;
-      }
-
-      if (!data) throw new Error("Player not found");
-
-      console.log("Raw player data:", data);
-
-      return {
-        id: data.id,
-        name: data.name,
-        age: data.age,
-        dateOfBirth: data.date_of_birth,
-        squadNumber: data.squad_number,
-        playerCategory: data.player_category,
-        playerType: data.player_type || "OUTFIELD",
-        attributes: data.player_attributes.map((attr: any) => ({
-          id: attr.id,
-          name: attr.name,
-          value: attr.value,
-          category: attr.category,
-          player_id: attr.player_id,
-          created_at: attr.created_at,
-        })),
-        fixture_player_positions: data.fixture_player_positions,
-        fixture_team_selections: data.fixture_team_selections,
-        attributeHistory: {},
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-      } as Player & {
-        fixture_player_positions: any[];
-        fixture_team_selections: any[];
-      };
-    },
-    enabled: !!id,
-  });
-
-  if (isLoading) {
-    return <div className="container mx-auto p-6">Loading...</div>;
-  }
-
-  if (!player) {
-    return <div className="container mx-auto p-6">Player not found</div>;
-  }
+  if (!player || !id) return null;
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="container mx-auto space-y-8"
-      >
-        <div className="flex items-center gap-4">
-          <Link to="/squad">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <h1 className="text-4xl font-bold">Player Details</h1>
+    <div className="container mx-auto p-6 space-y-6">
+      <PlayerHeader player={player} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          <PlayerAttributes playerId={id} />
+          <ParentDetails playerId={id} />
         </div>
-
-        <PlayerDetails player={player} />
-      </motion.div>
+        <div className="space-y-6">
+          <GameMetrics playerId={id} />
+          <PlayerObjectives playerId={id} />
+          <CoachingComments playerId={id} />
+        </div>
+      </div>
     </div>
   );
 };
