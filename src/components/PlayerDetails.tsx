@@ -277,7 +277,6 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
     updateAttribute(player.id, name, value);
   };
 
-  // Add missing functions
   const handleDownloadReport = async () => {
     toast({
       title: "Downloading report...",
@@ -303,7 +302,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
     return filteredAttributes
       .filter((attr) => attr.category === category)
       .map((attr) => ({
-        attribute: attr.name,
+        name: attr.name,
         value: attr.value,
         fullMark: 20,
       }));
