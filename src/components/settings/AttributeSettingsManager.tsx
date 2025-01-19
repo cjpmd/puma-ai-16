@@ -42,6 +42,7 @@ interface AttributeSetting {
 
 export function AttributeSettingsManager() {
   const [attributeSettings, setAttributeSettings] = useState<AttributeSetting[]>([]);
+  const [teamName, setTeamName] = useState<string | null>(null);
   const [newCategory, setNewCategory] = useState("");
   const [newAttribute, setNewAttribute] = useState({ category: "", name: "" });
   const [editingCategory, setEditingCategory] = useState<{ original: string; new: string } | null>(null);
@@ -50,7 +51,20 @@ export function AttributeSettingsManager() {
 
   useEffect(() => {
     fetchAttributeSettings();
+    fetchTeamName();
   }, []);
+
+  const fetchTeamName = async () => {
+    try {
+      const { data } = await supabase
+        .from('team_settings')
+        .select('team_name')
+        .single();
+      setTeamName(data?.team_name || null);
+    } catch (error) {
+      console.error('Error fetching team name:', error);
+    }
+  };
 
   const fetchAttributeSettings = async () => {
     try {
@@ -271,6 +285,17 @@ export function AttributeSettingsManager() {
         </Dialog>
       </div>
 
+      {teamName && (
+        <div className="bg-secondary/20 p-4 rounded-lg mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium">{teamName}</h3>
+              <p className="text-sm text-muted-foreground">Team Category (System)</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Accordion type="multiple" className="w-full space-y-4">
         {Object.entries(groupedAttributes).map(([category, attributes]) => (
           <AccordionItem key={category} value={category} className="border rounded-lg px-4">
@@ -292,43 +317,45 @@ export function AttributeSettingsManager() {
                   <span>{category}</span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingCategory({ original: category, new: category });
-                  }}
-                >
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Category</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this category? This will mark all attributes in this category as deleted.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => deleteCategory(category)}>
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+              {category !== teamName && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingCategory({ original: category, new: category });
+                    }}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this category? This will mark all attributes in this category as deleted.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteCategory(category)}>
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
             </AccordionTrigger>
             <AccordionContent>
               <div className="space-y-4 pt-4">
