@@ -91,7 +91,7 @@ export function AttributeSettingsManager() {
       const { error } = await supabase
         .from('attribute_settings')
         .update({ is_enabled: enabled })
-        .neq('id', '');  // Update all records
+        .is('is_deleted', false);  // Only update non-deleted records
       
       if (error) throw error;
       
@@ -306,7 +306,9 @@ export function AttributeSettingsManager() {
     return acc;
   }, {} as Record<string, AttributeSetting[]>);
 
-  const areAllAttributesEnabled = attributeSettings.every(attr => attr.is_enabled);
+  const areAllAttributesEnabled = attributeSettings
+    .filter(attr => !attr.is_deleted)
+    .every(attr => attr.is_enabled);
 
   return (
     <div className="space-y-6">
