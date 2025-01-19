@@ -41,6 +41,21 @@ const getPerformanceStatus = (change: number) => {
 };
 
 export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
+  // Query to fetch enabled attributes
+  const { data: enabledAttributes } = useQuery({
+    queryKey: ["attribute-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('attribute_settings')
+        .select('*')
+        .eq('is_enabled', true)
+        .eq('is_deleted', false);
+      
+      if (error) throw error;
+      return data.map(attr => attr.name);
+    },
+  });
+
   const { data: playerStats } = useQuery({
     queryKey: ["player-stats", player.id],
     queryFn: async () => {
@@ -92,11 +107,16 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
     },
   });
 
-  const averageChange = calculateAverageChange(player.attributes, player.attributeHistory);
+  // Filter attributes based on enabled settings
+  const filteredAttributes = player.attributes.filter(attr => 
+    enabledAttributes?.includes(attr.name)
+  );
+
+  const averageChange = calculateAverageChange(filteredAttributes, player.attributeHistory);
   const performance = getPerformanceStatus(averageChange);
 
   const calculateCategoryAverage = (category: string) => {
-    const categoryAttributes = player.attributes.filter(
+    const categoryAttributes = filteredAttributes.filter(
       (attr) => attr.category === category
     );
     if (categoryAttributes.length === 0) return 0;
@@ -120,6 +140,9 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
     .sort(([, a], [, b]) => b - a)
     .slice(0, 3);
 
+  // Don't show attributes section if no attributes are enabled
+  const showAttributes = filteredAttributes.length > 0;
+
   return (
     <div className="space-y-4">
       <PlayerCardHeader
@@ -127,43 +150,45 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
         squadNumber={player.squadNumber}
         playerCategory={player.playerCategory}
         playerType={player.playerType}
-        topPositions={topPositions}
+        topPositions={showAttributes ? topPositions : []}
         onEdit={onClick}
         onDownloadReport={() => {}} // Implement report download
       />
 
       <Accordion type="single" collapsible className="w-full">
-        <AccordionItem value="attributes">
-          <AccordionTrigger>Attributes</AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-sm text-muted-foreground">Technical</span>
-                <p className="text-xl font-bold">
-                  {calculateCategoryAverage("TECHNICAL")}
-                </p>
+        {showAttributes && (
+          <AccordionItem value="attributes">
+            <AccordionTrigger>Attributes</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-sm text-muted-foreground">Technical</span>
+                  <p className="text-xl font-bold">
+                    {calculateCategoryAverage("TECHNICAL")}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Mental</span>
+                  <p className="text-xl font-bold">
+                    {calculateCategoryAverage("MENTAL")}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Physical</span>
+                  <p className="text-xl font-bold">
+                    {calculateCategoryAverage("PHYSICAL")}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Goalkeeping</span>
+                  <p className="text-xl font-bold">
+                    {calculateCategoryAverage("GOALKEEPING")}
+                  </p>
+                </div>
               </div>
-              <div>
-                <span className="text-sm text-muted-foreground">Mental</span>
-                <p className="text-xl font-bold">
-                  {calculateCategoryAverage("MENTAL")}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">Physical</span>
-                <p className="text-xl font-bold">
-                  {calculateCategoryAverage("PHYSICAL")}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">Goalkeeping</span>
-                <p className="text-xl font-bold">
-                  {calculateCategoryAverage("GOALKEEPING")}
-                </p>
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+            </AccordionContent>
+          </AccordionItem>
+        )}
 
         <AccordionItem value="metrics">
           <AccordionTrigger>Game Metrics</AccordionTrigger>

@@ -77,20 +77,18 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Add a query to fetch position definitions
-  const { data: positionDefinitions } = useQuery({
-    queryKey: ["position-definitions"],
+  // Query to fetch enabled attributes
+  const { data: enabledAttributes } = useQuery({
+    queryKey: ["attribute-settings"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('position_definitions')
-        .select('abbreviation, full_name');
+        .from('attribute_settings')
+        .select('*')
+        .eq('is_enabled', true)
+        .eq('is_deleted', false);
       
       if (error) throw error;
-      
-      return data.reduce((acc, pos) => {
-        acc[pos.abbreviation] = pos.full_name;
-        return acc;
-      }, {} as Record<string, string>);
+      return data.map(attr => attr.name);
     },
   });
 
@@ -279,71 +277,23 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
     updateAttribute(player.id, name, value);
   };
 
-  const calculateCategoryAverage = (category: string) => {
-    const categoryAttributes = player.attributes.filter(
-      (attr) => attr.category === category
-    );
-    if (categoryAttributes.length === 0) return 0;
-    const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
-    return (sum / categoryAttributes.length).toFixed(1);
-  };
+  // Filter attributes based on enabled settings
+  const filteredAttributes = player.attributes.filter(attr => 
+    enabledAttributes?.includes(attr.name)
+  );
 
-  const getRadarData = (category: string) => {
-    return player.attributes
-      .filter((attr) => attr.category === category)
-      .map((attr) => ({
-        name: attr.name,
-        value: attr.value,
-      }));
-  };
-
-  const handleDownloadReport = async () => {
-    try {
-      const response = await supabase.functions.invoke('generate-player-report', {
-        body: { playerId: player.id }
-      });
-
-      if (response.error) throw response.error;
-
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `player-report-${player.name}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Report Generated",
-        description: "Your player report has been downloaded.",
-      });
-    } catch (error) {
-      console.error('Error downloading report:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate report. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Get categories based on player type
+  // Get categories based on player type and enabled attributes
   const categories = player.playerType === "GOALKEEPER" 
     ? ["GOALKEEPING"] 
     : ["TECHNICAL", "MENTAL", "PHYSICAL"];
 
-  console.log("Player type:", player.playerType);
-  console.log("Categories:", categories);
-  console.log("All attributes:", player.attributes);
+  // Only show categories that have enabled attributes
+  const activeCategories = categories.filter(category => 
+    filteredAttributes.some(attr => attr.category === category)
+  );
 
-  const handleFixtureClick = (fixtureId: string) => {
-    if (fixtureId) {
-      navigate(`/fixtures/${fixtureId}`);
-    }
-  };
+  // Don't show radar charts or position suggestions if no attributes are enabled
+  const showAttributeVisuals = filteredAttributes.length > 0;
 
   return (
     <motion.div
@@ -372,7 +322,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                 Download Report
               </Button>
             </div>
-            {topPositions && (
+            {topPositions && showAttributeVisuals && (
               <div className="flex gap-2">
                 {topPositions.map((pos: any) => (
                   <Badge key={pos.position_definitions.abbreviation} variant="outline">
@@ -388,12 +338,10 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         </CardHeader>
         <CardContent>
           <div className="space-y-8">
-            {categories.map((category) => {
-              const categoryAttributes = player.attributes.filter(
+            {activeCategories.map((category) => {
+              const categoryAttributes = filteredAttributes.filter(
                 (attr) => attr.category === category
               );
-              
-              console.log(`Filtered attributes for ${category}:`, categoryAttributes);
               
               if (categoryAttributes.length > 0) {
                 return (
@@ -465,7 +413,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
                       className="flex flex-col p-4 bg-accent/5 rounded-lg border border-accent/10 hover:bg-accent/10 transition-colors">
                       <div className="flex justify-between items-center mb-2">
                         <span className="font-medium text-gray-800">
-                          {positionDefinitions?.[position] || position} ({position})
+                          {positionMappings[position] || position} ({position})
                         </span>
                         <span className="text-gray-600 font-semibold">{minutes} mins</span>
                       </div>
@@ -539,22 +487,24 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         <CoachingComments playerId={player.id} />
       </div>
 
-      {/* Radar Charts */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {categories.map((category) => {
-          const radarData = getRadarData(category);
-          if (radarData.length > 0) {
-            return (
-              <Card key={category}>
-                <CardContent className="pt-6">
-                  <RadarChart data={radarData} title={category} />
-                </CardContent>
-              </Card>
-            );
-          }
-          return null;
-        })}
-      </div>
+      {/* Radar Charts - only show if attributes are enabled */}
+      {showAttributeVisuals && (
+        <div className="grid gap-6 md:grid-cols-2">
+          {activeCategories.map((category) => {
+            const radarData = getRadarData(category);
+            if (radarData.length > 0) {
+              return (
+                <Card key={category}>
+                  <CardContent className="pt-6">
+                    <RadarChart data={radarData} title={category} />
+                  </CardContent>
+                </Card>
+              );
+            }
+            return null;
+          })}
+        </div>
+      )}
     </motion.div>
   );
 };
