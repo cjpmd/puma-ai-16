@@ -86,6 +86,31 @@ export function AttributeSettingsManager() {
     }
   };
 
+  const toggleAllAttributes = async (category: string, enabled: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('attribute_settings')
+        .update({ is_enabled: enabled })
+        .eq('category', category);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: `All attributes in ${category} ${enabled ? 'enabled' : 'disabled'} successfully`,
+      });
+      
+      fetchAttributeSettings();
+    } catch (error) {
+      console.error('Error toggling attributes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update attributes",
+        variant: "destructive",
+      });
+    }
+  };
+
   const addCategory = async () => {
     if (!newCategory.trim()) return;
     
@@ -317,45 +342,56 @@ export function AttributeSettingsManager() {
                   <span>{category}</span>
                 )}
               </div>
-              {category !== teamName && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingCategory({ original: category, new: category });
-                    }}
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
+              <div className="flex items-center gap-4">
+                {category !== teamName && (
+                  <>
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-sm text-muted-foreground">Enable All</span>
+                      <Switch
+                        checked={attributes.every(attr => attr.is_enabled)}
+                        onCheckedChange={(checked) => toggleAllAttributes(category, checked)}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingCategory({ original: category, new: category });
+                        }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Edit2 className="h-4 w-4" />
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Category</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this category? This will mark all attributes in this category as deleted.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteCategory(category)}>
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              )}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this category? This will mark all attributes in this category as deleted.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteCategory(category)}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </>
+                )}
+              </div>
             </AccordionTrigger>
             <AccordionContent>
               <div className="space-y-4 pt-4">
