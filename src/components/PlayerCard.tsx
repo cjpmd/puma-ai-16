@@ -1,9 +1,16 @@
 import { Player } from "@/types/player";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { PlayerCardHeader } from "./player/PlayerCardHeader";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface PlayerCardProps {
   player: Player;
@@ -114,54 +121,53 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
     .slice(0, 3);
 
   return (
-    <Card className="hover:bg-accent cursor-pointer" onClick={onClick}>
-      <CardHeader>
-        <CardTitle className="text-xl flex items-center justify-between">
-          <div>
-            {player.name} - #{player.squadNumber}
-          </div>
-          <div className="text-sm font-normal space-x-2">
-            <Badge variant="outline">{player.playerCategory}</Badge>
-            <Badge variant="outline">{player.playerType}</Badge>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <span>Current Performance</span>
-            <Badge className={performance.color}>{performance.label}</Badge>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <span className="text-sm text-muted-foreground">Technical</span>
-              <p className="text-xl font-bold">
-                {calculateCategoryAverage("TECHNICAL")}
-              </p>
-            </div>
-            <div>
-              <span className="text-sm text-muted-foreground">Mental</span>
-              <p className="text-xl font-bold">
-                {calculateCategoryAverage("MENTAL")}
-              </p>
-            </div>
-            <div>
-              <span className="text-sm text-muted-foreground">Physical</span>
-              <p className="text-xl font-bold">
-                {calculateCategoryAverage("PHYSICAL")}
-              </p>
-            </div>
-            <div>
-              <span className="text-sm text-muted-foreground">Goalkeeping</span>
-              <p className="text-xl font-bold">
-                {calculateCategoryAverage("GOALKEEPING")}
-              </p>
-            </div>
-          </div>
+    <div className="space-y-4">
+      <PlayerCardHeader
+        name={player.name}
+        squadNumber={player.squadNumber}
+        playerCategory={player.playerCategory}
+        playerType={player.playerType}
+        topPositions={topPositions}
+        onEdit={onClick}
+        onDownloadReport={() => {}} // Implement report download
+      />
 
-          {/* Game Metrics Section */}
-          <div className="border-t pt-4">
-            <h3 className="font-semibold mb-2">Game Metrics</h3>
+      <Accordion type="single" collapsible className="w-full">
+        <AccordionItem value="attributes">
+          <AccordionTrigger>Attributes</AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="text-sm text-muted-foreground">Technical</span>
+                <p className="text-xl font-bold">
+                  {calculateCategoryAverage("TECHNICAL")}
+                </p>
+              </div>
+              <div>
+                <span className="text-sm text-muted-foreground">Mental</span>
+                <p className="text-xl font-bold">
+                  {calculateCategoryAverage("MENTAL")}
+                </p>
+              </div>
+              <div>
+                <span className="text-sm text-muted-foreground">Physical</span>
+                <p className="text-xl font-bold">
+                  {calculateCategoryAverage("PHYSICAL")}
+                </p>
+              </div>
+              <div>
+                <span className="text-sm text-muted-foreground">Goalkeeping</span>
+                <p className="text-xl font-bold">
+                  {calculateCategoryAverage("GOALKEEPING")}
+                </p>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="metrics">
+          <AccordionTrigger>Game Metrics</AccordionTrigger>
+          <AccordionContent>
             <ScrollArea className="h-[200px]">
               <div className="space-y-4">
                 {fixtureStats && (
@@ -187,19 +193,6 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
                   </div>
                 )}
 
-                {topPositions.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium">Top Positions:</div>
-                    <div className="flex justify-between text-sm">
-                      {topPositions.map(([position, minutes], index) => (
-                        <Badge key={position} variant="outline" className="bg-purple-500/10">
-                          {position}: {minutes}m
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {gameDetails && gameDetails.length > 0 && (
                   <div className="space-y-2">
                     <div className="text-sm font-medium">Recent Games:</div>
@@ -217,12 +210,14 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
                 )}
               </div>
             </ScrollArea>
-          </div>
+          </AccordionContent>
+        </AccordionItem>
 
-          {playerStats && (
-            <div className="border-t pt-4">
+        {playerStats && (
+          <AccordionItem value="objectives">
+            <AccordionTrigger>Objectives</AccordionTrigger>
+            <AccordionContent>
               <div className="flex justify-between text-sm">
-                <span>Objectives:</span>
                 <div className="space-x-2">
                   <Badge variant="outline" className="bg-green-500/10">
                     Complete: {playerStats.completed_objectives || 0}
@@ -235,10 +230,10 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
                   </Badge>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+      </Accordion>
+    </div>
   );
 };
