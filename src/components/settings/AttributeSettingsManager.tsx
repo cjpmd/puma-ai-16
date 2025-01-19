@@ -86,7 +86,32 @@ export function AttributeSettingsManager() {
     }
   };
 
-  const toggleAllAttributes = async (category: string, enabled: boolean) => {
+  const toggleAllAttributes = async (enabled: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('attribute_settings')
+        .update({ is_enabled: enabled })
+        .neq('id', '');  // Update all records
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: `All attributes ${enabled ? 'enabled' : 'disabled'} successfully`,
+      });
+      
+      fetchAttributeSettings();
+    } catch (error) {
+      console.error('Error toggling all attributes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update attributes",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleCategoryAttributes = async (category: string, enabled: boolean) => {
     try {
       const { error } = await supabase
         .from('attribute_settings')
@@ -281,33 +306,44 @@ export function AttributeSettingsManager() {
     return acc;
   }, {} as Record<string, AttributeSetting[]>);
 
+  const areAllAttributesEnabled = attributeSettings.every(attr => attr.is_enabled);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Attribute Settings</h2>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Category
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Category</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Input
-                placeholder="Category name"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-              />
-              <Button onClick={addCategory} className="w-full">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Enable All Attributes</span>
+            <Switch
+              checked={areAllAttributesEnabled}
+              onCheckedChange={toggleAllAttributes}
+            />
+          </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
                 Add Category
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Category</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Input
+                  placeholder="Category name"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                />
+                <Button onClick={addCategory} className="w-full">
+                  Add Category
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {teamName && (
@@ -349,7 +385,7 @@ export function AttributeSettingsManager() {
                       <span className="text-sm text-muted-foreground">Enable All</span>
                       <Switch
                         checked={attributes.every(attr => attr.is_enabled)}
-                        onCheckedChange={(checked) => toggleAllAttributes(category, checked)}
+                        onCheckedChange={(checked) => toggleCategoryAttributes(category, checked)}
                       />
                     </div>
                     <div className="flex items-center gap-2">
