@@ -737,6 +737,7 @@ export type Database = {
           player_category: string
           player_type: string
           squad_number: number
+          team_category: string | null
           updated_at: string | null
         }
         Insert: {
@@ -748,6 +749,7 @@ export type Database = {
           player_category: string
           player_type?: string
           squad_number: number
+          team_category?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -759,6 +761,7 @@ export type Database = {
           player_category?: string
           player_type?: string
           squad_number?: number
+          team_category?: string | null
           updated_at?: string | null
         }
         Relationships: []

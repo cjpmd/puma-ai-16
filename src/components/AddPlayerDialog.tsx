@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerCategory, PlayerType } from "@/types/player";
@@ -50,8 +50,20 @@ const formSchema = z.object({
 export const AddPlayerDialog = () => {
   const [open, setOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [teamName, setTeamName] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const fetchTeamName = async () => {
+      const { data } = await supabase
+        .from('team_settings')
+        .select('team_name')
+        .single();
+      setTeamName(data?.team_name || null);
+    };
+    fetchTeamName();
+  }, []);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -206,6 +218,9 @@ export const AddPlayerDialog = () => {
                       <SelectItem value="RONALDO">Ronaldo</SelectItem>
                       <SelectItem value="MESSI">Messi</SelectItem>
                       <SelectItem value="JAGS">Jags</SelectItem>
+                      {teamName && (
+                        <SelectItem value={teamName}>{teamName}</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />

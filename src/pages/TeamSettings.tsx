@@ -253,6 +253,16 @@ const TeamSettings = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {teamName && (
+                <div className="bg-secondary/20 p-3 rounded-lg mb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-medium">{teamName}</span>
+                      <p className="text-sm text-muted-foreground">Team Category (System)</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="space-y-4">
                 <Input
                   value={newCategory}
