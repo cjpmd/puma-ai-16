@@ -277,6 +277,38 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
     updateAttribute(player.id, name, value);
   };
 
+  // Add missing functions
+  const handleDownloadReport = async () => {
+    toast({
+      title: "Downloading report...",
+      description: "Your report will be ready shortly.",
+    });
+    // TODO: Implement report download logic
+  };
+
+  const calculateCategoryAverage = (category: string) => {
+    const categoryAttributes = filteredAttributes.filter(
+      (attr) => attr.category === category
+    );
+    if (categoryAttributes.length === 0) return 0;
+    const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
+    return (sum / categoryAttributes.length).toFixed(1);
+  };
+
+  const handleFixtureClick = (fixtureId: string) => {
+    navigate(`/fixtures/${fixtureId}`);
+  };
+
+  const getRadarData = (category: string) => {
+    return filteredAttributes
+      .filter((attr) => attr.category === category)
+      .map((attr) => ({
+        attribute: attr.name,
+        value: attr.value,
+        fullMark: 20,
+      }));
+  };
+
   // Filter attributes based on enabled settings
   const filteredAttributes = player.attributes.filter(attr => 
     enabledAttributes?.includes(attr.name)
