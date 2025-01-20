@@ -63,7 +63,10 @@ const Fixtures = () => {
 
         const { data: fixturesData, error: fixturesError } = await query;
 
-        if (fixturesError) throw fixturesError;
+        if (fixturesError) {
+          console.error("Fixtures query error:", fixturesError);
+          throw fixturesError;
+        }
 
         // Group fixtures by date
         const groupedFixtures = (fixturesData || []).reduce((acc: any, fixture: any) => {
@@ -92,7 +95,11 @@ const Fixtures = () => {
         .eq("id", fixtureId)
         .maybeSingle();
 
-      if (eventError) throw eventError;
+      if (eventError) {
+        console.error("Error fetching event type:", eventError);
+        throw eventError;
+      }
+      
       if (!eventData) {
         throw new Error("Event not found");
       }
@@ -125,7 +132,10 @@ const Fixtures = () => {
           break;
       }
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error("Error deleting event:", deleteError);
+        throw deleteError;
+      }
 
       toast({
         title: "Success",
