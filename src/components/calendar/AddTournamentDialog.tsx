@@ -44,7 +44,7 @@ export const AddTournamentDialog = ({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Get default team category from team settings using React Query
+  // Get team settings to use as system category
   const { data: teamSettings } = useQuery({
     queryKey: ["team-settings"],
     queryFn: async () => {
@@ -97,6 +97,7 @@ export const AddTournamentDialog = ({
           location,
           format: gameFormat,
           number_of_teams: parseInt(numberOfTeams),
+          system_category: teamSettings?.team_name
         }])
         .select()
         .single();
@@ -107,7 +108,7 @@ export const AddTournamentDialog = ({
       const teamsToCreate = Array.from({ length: parseInt(numberOfTeams) }, (_, i) => ({
         tournament_id: tournamentData.id,
         team_name: `Team ${i + 1}`,
-        category: teamCategories[i] || defaultCategory, // Use default if no category selected
+        category: teamCategories[i] || defaultCategory,
       }));
 
       const { error: teamsError } = await supabase

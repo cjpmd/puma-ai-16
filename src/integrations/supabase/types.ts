@@ -304,6 +304,7 @@ export type Database = {
           id: string
           location: string | null
           number_of_teams: number
+          system_category: string
           time: string | null
           updated_at: string | null
         }
@@ -314,6 +315,7 @@ export type Database = {
           id?: string
           location?: string | null
           number_of_teams: number
+          system_category: string
           time?: string | null
           updated_at?: string | null
         }
@@ -324,6 +326,7 @@ export type Database = {
           id?: string
           location?: string | null
           number_of_teams?: number
+          system_category?: string
           time?: string | null
           updated_at?: string | null
         }
@@ -1312,6 +1315,7 @@ export type Database = {
           id: string
           location: string | null
           number_of_teams: number
+          system_category: string
           time: string | null
           updated_at: string | null
         }
@@ -1322,6 +1326,7 @@ export type Database = {
           id?: string
           location?: string | null
           number_of_teams: number
+          system_category: string
           time?: string | null
           updated_at?: string | null
         }
@@ -1332,6 +1337,7 @@ export type Database = {
           id?: string
           location?: string | null
           number_of_teams?: number
+          system_category?: string
           time?: string | null
           updated_at?: string | null
         }
