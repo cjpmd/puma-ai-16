@@ -41,6 +41,7 @@ const formSchema = z.object({
   away_score: z.string().optional(),
   motm_player_id: z.string().optional(),
   time: z.string().optional(),
+  format: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -59,6 +60,7 @@ interface AddFixtureDialogProps {
     location?: string;
     motm_player_id?: string | null;
     time?: string | null;
+    format?: string | null;
   } | null;
   showDateSelector?: boolean;
 }
@@ -77,6 +79,20 @@ export const AddFixtureDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialSelectedDate);
   
+  // Fetch default format from team settings
+  const { data: teamSettings } = useQuery({
+    queryKey: ["team-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("team_settings")
+        .select("format")
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -87,8 +103,16 @@ export const AddFixtureDialog = ({
       away_score: editingFixture?.away_score?.toString() || "",
       motm_player_id: editingFixture?.motm_player_id || undefined,
       time: editingFixture?.time || "",
+      format: editingFixture?.format || teamSettings?.format || "7-a-side",
     },
   });
+
+  // Update form when team settings are loaded
+  useEffect(() => {
+    if (teamSettings?.format && !editingFixture?.format) {
+      form.setValue("format", teamSettings.format);
+    }
+  }, [teamSettings, form, editingFixture]);
 
   const { data: players } = useQuery({
     queryKey: ["players", form.getValues("category")],
@@ -121,9 +145,10 @@ export const AddFixtureDialog = ({
         away_score: editingFixture.away_score?.toString() || "",
         motm_player_id: editingFixture.motm_player_id || undefined,
         time: editingFixture.time || "",
+        format: editingFixture.format || teamSettings?.format || "7-a-side",
       });
     }
-  }, [editingFixture, form]);
+  }, [editingFixture, form, teamSettings]);
 
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
@@ -171,6 +196,7 @@ export const AddFixtureDialog = ({
         motm_player_id: data.motm_player_id || null,
         time: data.time || null,
         outcome,
+        format: data.format,
       };
 
       let newFixture;
@@ -294,6 +320,34 @@ export const AddFixtureDialog = ({
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="format"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Format *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select format" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="4-a-side">4-a-side</SelectItem>
+                        <SelectItem value="5-a-side">5-a-side</SelectItem>
+                        <SelectItem value="7-a-side">7-a-side</SelectItem>
+                        <SelectItem value="9-a-side">9-a-side</SelectItem>
+                        <SelectItem value="11-a-side">11-a-side</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <FormField
                 control={form.control}
@@ -405,6 +459,7 @@ export const AddFixtureDialog = ({
           <TeamSelectionManager 
             fixtureId={editingFixture?.id || ""} 
             category={form.getValues("category")}
+            format={form.getValues("format")}
           />
         )}
       </DialogContent>

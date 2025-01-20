@@ -28,6 +28,7 @@ import { FormationView } from "./FormationView";
 interface TeamSelectionManagerProps {
   fixtureId: string;
   category: string;
+  format?: string;
 }
 
 interface Period {
@@ -60,20 +61,41 @@ interface PositionDefinition {
   full_name: string;
 }
 
-export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManagerProps) => {
+export const TeamSelectionManager = ({ fixtureId, category, format = "7-a-side" }: TeamSelectionManagerProps) => {
   const { toast } = useToast();
-  const [periods, setPeriods] = useState<Period[]>([
-    { 
-      duration: 10, 
-      positions: Array.from({ length: 7 }, (_, i) => ({ index: i, position: "", playerId: "" })),
-      substitutes: Array.from({ length: 3 }, (_, i) => ({ index: i, playerId: "" }))
-    },
-  ]);
+  const [periods, setPeriods] = useState<Period[]>([]);
   const [captain, setCaptain] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
-  const [players, setPlayers] = useState<any[]>(null);
-  const [fixtures, setFixtures] = useState<any[]>(null);
   const [showFormation, setShowFormation] = useState(false);
+
+  // Get the number of positions based on format
+  const getPositionsCount = (format: string) => {
+    switch (format) {
+      case "4-a-side": return 4;
+      case "5-a-side": return 5;
+      case "7-a-side": return 7;
+      case "9-a-side": return 9;
+      case "11-a-side": return 11;
+      default: return 7;
+    }
+  };
+
+  // Initialize periods with correct number of positions
+  useEffect(() => {
+    const positionsCount = getPositionsCount(format);
+    setPeriods([{
+      duration: 10,
+      positions: Array.from({ length: positionsCount }, (_, i) => ({ 
+        index: i, 
+        position: "", 
+        playerId: "" 
+      })),
+      substitutes: Array.from({ length: Math.ceil(positionsCount / 2) }, (_, i) => ({ 
+        index: i, 
+        playerId: "" 
+      }))
+    }]);
+  }, [format]);
 
   // Fetch positions from the database
   const { data: positions } = useQuery({
@@ -160,7 +182,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         return {
           id: period.id,
           duration: period.duration_minutes,
-          positions: Array.from({ length: 7 }, (_, i) => {
+          positions: Array.from({ length: getPositionsCount(format) }, (_, i) => {
             const existingPosition = starters[i];
             return {
               index: i,
@@ -168,7 +190,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
               playerId: existingPosition?.player_id || "",
             };
           }),
-          substitutes: Array.from({ length: 3 }, (_, i) => {
+          substitutes: Array.from({ length: Math.ceil(getPositionsCount(format) / 2) }, (_, i) => {
             const existingSub = subs[i];
             return {
               index: i,
@@ -182,7 +204,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
         setCaptain(existingSelection.captain);
       }
     }
-  }, [existingSelection]);
+  }, [existingSelection, format]);
 
   const handlePositionChange = (periodIndex: number, positionIndex: number, position: string) => {
     setPeriods((currentPeriods) => {
@@ -221,8 +243,8 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
       ...current,
       {
         duration: 10,
-        positions: Array.from({ length: 7 }, (_, i) => ({ index: i, position: "", playerId: "" })),
-        substitutes: Array.from({ length: 3 }, (_, i) => ({ index: i, playerId: "" })),
+        positions: Array.from({ length: getPositionsCount(format) }, (_, i) => ({ index: i, position: "", playerId: "" })),
+        substitutes: Array.from({ length: Math.ceil(getPositionsCount(format) / 2) }, (_, i) => ({ index: i, playerId: "" })),
       },
     ]);
   };
@@ -476,7 +498,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
               </TableHeader>
               <TableBody>
                 {/* Starting players */}
-                {Array.from({ length: 7 }, (_, positionIndex) => (
+                {Array.from({ length: getPositionsCount(format) }, (_, positionIndex) => (
                   <TableRow key={positionIndex}>
                     <TableCell className="font-medium">{positionIndex + 1}</TableCell>
                     {periods.map((period, periodIndex) => (
@@ -524,7 +546,7 @@ export const TeamSelectionManager = ({ fixtureId, category }: TeamSelectionManag
                     Substitutes
                   </TableCell>
                 </TableRow>
-                {Array.from({ length: 3 }, (_, subIndex) => (
+                {Array.from({ length: Math.ceil(getPositionsCount(format) / 2) }, (_, subIndex) => (
                   <TableRow key={`sub-${subIndex}`}>
                     <TableCell className="font-medium">SUB {subIndex + 1}</TableCell>
                     {periods.map((period, periodIndex) => (
