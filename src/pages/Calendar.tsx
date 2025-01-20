@@ -94,7 +94,10 @@ export const CalendarPage = () => {
         .select("*, players!fixtures_motm_player_id_fkey(name)")
         .eq("date", dateStr);
 
-      if (fixturesError) throw fixturesError;
+      if (fixturesError) {
+        console.error("Error fetching fixtures:", fixturesError);
+        throw fixturesError;
+      }
 
       // Fetch tournaments
       const { data: tournamentsData, error: tournamentsError } = await supabase
@@ -102,7 +105,10 @@ export const CalendarPage = () => {
         .select("*")
         .eq("date", dateStr);
 
-      if (tournamentsError) throw tournamentsError;
+      if (tournamentsError) {
+        console.error("Error fetching tournaments:", tournamentsError);
+        throw tournamentsError;
+      }
 
       // Fetch festivals
       const { data: festivalsData, error: festivalsError } = await supabase
@@ -110,7 +116,10 @@ export const CalendarPage = () => {
         .select("*")
         .eq("date", dateStr);
 
-      if (festivalsError) throw festivalsError;
+      if (festivalsError) {
+        console.error("Error fetching festivals:", festivalsError);
+        throw festivalsError;
+      }
 
       // Transform tournaments
       const transformedTournaments = (tournamentsData || []).map(t => ({
@@ -197,36 +206,65 @@ export const CalendarPage = () => {
 
   const handleDeleteFixture = async (fixtureId: string) => {
     try {
-      const event = fixtures.find(f => f.id === fixtureId);
-      
-      if (!event) {
-        throw new Error("Event not found");
+      // First, get the event type
+      const { data: eventData, error: eventError } = await supabase
+        .from("fixtures")
+        .select("event_type")
+        .eq("id", fixtureId)
+        .maybeSingle();
+
+      if (eventError) {
+        console.error("Error fetching event type:", eventError);
+        throw eventError;
       }
 
-      let deleteError;
-      
-      if (event.event_type === 'tournament') {
-        const { error } = await supabase
+      // If no fixture found, try tournaments
+      if (!eventData) {
+        const { data: tournamentData, error: tournamentError } = await supabase
           .from("tournaments")
-          .delete()
-          .eq("id", fixtureId);
-        deleteError = error;
-      } else if (event.event_type === 'festival') {
-        const { error } = await supabase
-          .from("festivals")
-          .delete()
-          .eq("id", fixtureId);
-        deleteError = error;
+          .select("id")
+          .eq("id", fixtureId)
+          .maybeSingle();
+
+        if (tournamentError) {
+          console.error("Error checking tournament:", tournamentError);
+          throw tournamentError;
+        }
+
+        if (tournamentData) {
+          const { error: deleteError } = await supabase
+            .from("tournaments")
+            .delete()
+            .eq("id", fixtureId);
+
+          if (deleteError) {
+            console.error("Error deleting tournament:", deleteError);
+            throw deleteError;
+          }
+        } else {
+          // Try festivals
+          const { error: deleteError } = await supabase
+            .from("festivals")
+            .delete()
+            .eq("id", fixtureId);
+
+          if (deleteError) {
+            console.error("Error deleting festival:", deleteError);
+            throw deleteError;
+          }
+        }
       } else {
         // Regular fixture
-        const { error } = await supabase
+        const { error: deleteError } = await supabase
           .from("fixtures")
           .delete()
           .eq("id", fixtureId);
-        deleteError = error;
-      }
 
-      if (deleteError) throw deleteError;
+        if (deleteError) {
+          console.error("Error deleting fixture:", deleteError);
+          throw deleteError;
+        }
+      }
 
       toast({
         title: "Success",
@@ -252,7 +290,10 @@ export const CalendarPage = () => {
         })
         .eq("id", fixtureId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating fixture date:", error);
+        throw error;
+      }
 
       toast({
         title: "Success",
