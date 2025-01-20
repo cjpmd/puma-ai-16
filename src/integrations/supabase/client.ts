@@ -11,14 +11,13 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
     detectSessionInUrl: true,
     storage: typeof window !== 'undefined' ? window.localStorage : undefined
   },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
-    }
-  },
   global: {
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
     }
+  },
+  db: {
+    schema: 'public'
   }
 });
