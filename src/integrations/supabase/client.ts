@@ -11,11 +11,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
     detectSessionInUrl: true,
     storage: typeof window !== 'undefined' ? window.localStorage : undefined
   },
-  global: {
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY
-    }
+  headers: {
+    'apikey': SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json'
   },
   db: {
     schema: 'public'
