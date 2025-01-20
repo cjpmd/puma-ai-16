@@ -1,6 +1,6 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -20,10 +20,38 @@ const positionOptions = {
 
 type PositionType = keyof typeof positionOptions;
 
+const formatPositions = {
+  "4-a-side": ["gk", "dl", "dr", "st"],
+  "5-a-side": ["gk", "dl", "dc", "dr", "st"],
+  "7-a-side": ["gk", "dl", "dc", "dr", "ml", "mr", "st"],
+  "9-a-side": ["gk", "dl", "dcl", "dcr", "dr", "ml", "mc", "mr", "st"],
+  "11-a-side": ["gk", "dl", "dcl", "dc", "dcr", "dr", "ml", "mc", "mr", "amc", "st"]
+} as const;
+
 export const FormationSelector = () => {
   const [selectedPositions, setSelectedPositions] = useState<Record<string, string>>({});
+  const [teamFormat, setTeamFormat] = useState<keyof typeof formatPositions>("7-a-side");
 
-  // Fetch position definitions from the database
+  // Fetch team format from settings
+  const { data: teamSettings } = useQuery({
+    queryKey: ["team-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("team_settings")
+        .select("format")
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (teamSettings?.format) {
+      setTeamFormat(teamSettings.format as keyof typeof formatPositions);
+    }
+  }, [teamSettings]);
+
   const { data: positionDefinitions } = useQuery({
     queryKey: ["position-definitions"],
     queryFn: async () => {
@@ -74,57 +102,40 @@ export const FormationSelector = () => {
     </div>
   );
 
+  const currentPositions = formatPositions[teamFormat];
+  const maxSubstitutes = Math.ceil(currentPositions.length / 2);
+
   return (
     <Card className="p-6 w-full max-w-4xl mx-auto">
       <div className="flex flex-col items-center space-y-8">
-        {/* Strikers */}
-        <div className="flex justify-center space-x-4">
-          <PositionSelect position="st1" label="ST" />
-          <PositionSelect position="st2" label="ST" />
-        </div>
+        {/* Dynamic position layout based on format */}
+        {currentPositions.map((position, index) => (
+          <div key={index} className="flex justify-center space-x-4">
+            <PositionSelect 
+              position={position} 
+              label={
+                position.includes('gk') ? 'GK' :
+                position.includes('dc') ? 'DC' :
+                position.includes('d') ? 'DRL' :
+                position.includes('mc') ? 'MC' :
+                position.includes('m') ? 'MRL' :
+                position.includes('amc') ? 'AMC' :
+                'ST'
+              } 
+            />
+          </div>
+        ))}
 
-        {/* Attacking Midfielders */}
+        {/* Substitutes */}
         <div className="flex justify-center space-x-4">
-          <PositionSelect position="aml" label="AMRL" />
-          <PositionSelect position="amc" label="AMC" />
-          <PositionSelect position="amr" label="AMRL" />
-        </div>
-
-        {/* Central Midfielders */}
-        <div className="flex justify-center space-x-4">
-          <PositionSelect position="ml" label="MRL" />
-          <PositionSelect position="mcl" label="MC" />
-          <PositionSelect position="mc" label="MC" />
-          <PositionSelect position="mcr" label="MC" />
-          <PositionSelect position="mr" label="MRL" />
-        </div>
-
-        {/* Defensive Midfielders */}
-        <div className="flex justify-center space-x-4">
-          <PositionSelect position="dml" label="DM" />
-          <PositionSelect position="dm" label="DM" />
-          <PositionSelect position="dmr" label="DM" />
-        </div>
-
-        {/* Defenders */}
-        <div className="flex justify-center space-x-4">
-          <PositionSelect position="wbl" label="WBRL" />
-          <PositionSelect position="dl" label="DRL" />
-          <PositionSelect position="dcl" label="DC" />
-          <PositionSelect position="dc" label="DC" />
-          <PositionSelect position="dcr" label="DC" />
-          <PositionSelect position="dr" label="DRL" />
-          <PositionSelect position="wbr" label="WBRL" />
-        </div>
-
-        {/* Goalkeeper */}
-        <div className="flex justify-center">
-          <PositionSelect position="gk" label="GK" />
+          {Array.from({ length: maxSubstitutes }, (_, i) => (
+            <PositionSelect key={`sub${i}`} position={`sub${i + 1}`} label="ST" />
+          ))}
         </div>
 
         {/* Position Counter */}
         <div className="text-sm text-gray-600 mt-4">
-          Positions Selected: {Object.keys(selectedPositions).length}/23
+          Positions Selected: {Object.keys(selectedPositions).length}/{currentPositions.length + maxSubstitutes}
         </div>
       </div>
     </Card>

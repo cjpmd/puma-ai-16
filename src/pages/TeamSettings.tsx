@@ -13,10 +13,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const TeamSettings = () => {
   const [teamName, setTeamName] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [format, setFormat] = useState("7-a-side");
   const [categories, setCategories] = useState<{ id: string; name: string; description: string | null }[]>([]);
   const [newCategory, setNewCategory] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -38,11 +40,40 @@ const TeamSettings = () => {
       if (error) throw error;
       setTeamName(data?.team_name ?? "");
       setNotificationsEnabled(data?.parent_notification_enabled ?? false);
+      setFormat(data?.format ?? "7-a-side");
     } catch (error) {
       console.error('Error fetching team settings:', error);
       toast({
         title: "Error",
         description: "Failed to load team settings",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateTeamSettings = async (updates: { team_name?: string; format?: string }) => {
+    try {
+      const { error } = await supabase
+        .from('team_settings')
+        .upsert({ 
+          ...updates,
+          id: '00000000-0000-0000-0000-000000000000'
+        });
+
+      if (error) throw error;
+      
+      if (updates.team_name) setTeamName(updates.team_name);
+      if (updates.format) setFormat(updates.format);
+      
+      toast({
+        title: "Success",
+        description: "Team settings updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating team settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update team settings",
         variant: "destructive",
       });
     }
@@ -62,56 +93,6 @@ const TeamSettings = () => {
       toast({
         title: "Error",
         description: "Failed to load player categories",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const updateTeamName = async (newName: string) => {
-    try {
-      const { error } = await supabase
-        .from('team_settings')
-        .upsert({ 
-          team_name: newName,
-          id: '00000000-0000-0000-0000-000000000000'
-        });
-
-      if (error) throw error;
-      setTeamName(newName);
-      toast({
-        title: "Success",
-        description: "Team name updated successfully",
-      });
-    } catch (error) {
-      console.error('Error updating team name:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update team name",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const updateNotificationSettings = async (enabled: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('team_settings')
-        .upsert({
-          parent_notification_enabled: enabled,
-          id: '00000000-0000-0000-0000-000000000000'
-        });
-
-      if (error) throw error;
-      setNotificationsEnabled(enabled);
-      toast({
-        title: "Success",
-        description: "Notification settings updated successfully",
-      });
-    } catch (error) {
-      console.error('Error updating notification settings:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update notification settings",
         variant: "destructive",
       });
     }
@@ -206,9 +187,9 @@ const TeamSettings = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Team Name</CardTitle>
+            <CardTitle>Team Settings</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
               <Input
                 value={teamName}
@@ -216,7 +197,27 @@ const TeamSettings = () => {
                 placeholder="Enter team name"
                 className="max-w-sm"
               />
-              <Button onClick={() => updateTeamName(teamName)}>Save</Button>
+              <Button onClick={() => updateTeamSettings({ team_name: teamName })}>
+                Save Name
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <Select
+                value={format}
+                onValueChange={(value) => updateTeamSettings({ format: value })}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="4-a-side">4-a-side</SelectItem>
+                  <SelectItem value="5-a-side">5-a-side</SelectItem>
+                  <SelectItem value="7-a-side">7-a-side</SelectItem>
+                  <SelectItem value="9-a-side">9-a-side</SelectItem>
+                  <SelectItem value="11-a-side">11-a-side</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>

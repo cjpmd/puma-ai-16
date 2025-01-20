@@ -962,6 +962,7 @@ export type Database = {
       team_settings: {
         Row: {
           created_at: string | null
+          format: string | null
           id: string
           parent_notification_enabled: boolean | null
           team_name: string | null
@@ -969,6 +970,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          format?: string | null
           id?: string
           parent_notification_enabled?: boolean | null
           team_name?: string | null
@@ -976,6 +978,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          format?: string | null
           id?: string
           parent_notification_enabled?: boolean | null
           team_name?: string | null
