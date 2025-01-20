@@ -69,7 +69,7 @@ export const AddFixtureDialog = ({
 
       const fixtureData = {
         date,
-        time,
+        time: time || null, // Convert empty string to null
         opponent,
         location,
         category,
