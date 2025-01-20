@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { PlayerHeader } from '@/components/player/PlayerHeader'
 import { PlayerAttributes } from '@/components/player/PlayerAttributes'
 import { GameMetrics } from '@/components/player/GameMetrics'
+import { ParentDetails } from '@/components/player/ParentDetails'
 
 export default async function Page({ params }: { params: { id: string } }) {
   const cookieStore = cookies()
@@ -118,7 +119,10 @@ export default async function Page({ params }: { params: { id: string } }) {
           category={player.player_category}
         />
         
-        <PlayerAttributes attributes={player.player_attributes} />
+        <div className="grid gap-6 md:grid-cols-2">
+          <PlayerAttributes attributes={player.player_attributes} />
+          <ParentDetails playerId={params.id} />
+        </div>
 
         <GameMetrics 
           stats={stats}
