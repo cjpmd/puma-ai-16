@@ -82,6 +82,20 @@ export const CalendarPage = () => {
     retryDelay: 1000,
   });
 
+  const handleEditFixture = (fixture: any) => {
+    // Only set editingFixture and open dialog if it's a regular fixture
+    if (fixture.event_type === 'fixture') {
+      setEditingFixture(fixture);
+      setIsAddFixtureOpen(true);
+    } else if (fixture.event_type === 'tournament') {
+      setEditingFixture(fixture);
+      setIsAddTournamentOpen(true);
+    } else if (fixture.event_type === 'festival') {
+      setEditingFixture(fixture);
+      setIsAddFestivalOpen(true);
+    }
+  };
+
   const { data: fixtures = [], refetch: refetchFixtures } = useQuery<CalendarEvent[]>({
     queryKey: ["fixtures", date],
     queryFn: async () => {
@@ -355,10 +369,7 @@ export const CalendarPage = () => {
           fixtures={fixtures}
           sessions={sessions || []}
           onDeleteSession={handleDeleteSession}
-          onEditFixture={(fixture) => {
-            setEditingFixture(fixture);
-            setIsAddFixtureOpen(true);
-          }}
+          onEditFixture={handleEditFixture}
           onDeleteFixture={handleDeleteFixture}
           onUpdateFixtureDate={handleUpdateFixtureDate}
         />

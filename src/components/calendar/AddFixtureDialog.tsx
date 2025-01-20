@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -41,27 +41,33 @@ export const AddFixtureDialog = ({
   const [time, setTime] = useState(editingFixture?.time || "");
   const [opponent, setOpponent] = useState(editingFixture?.opponent || "");
   const [location, setLocation] = useState(editingFixture?.location || "");
-  const [category, setCategory] = useState(editingFixture?.category || "Ronaldo");
+  const [category, setCategory] = useState(editingFixture?.category || "");
   const [gameFormat, setGameFormat] = useState(editingFixture?.format || "");
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Fetch default format from team settings
-  useEffect(() => {
-    const fetchDefaultFormat = async () => {
+  // Fetch team settings for default values
+  const { data: teamSettings } = useQuery({
+    queryKey: ["team-settings"],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("team_settings")
-        .select("format")
+        .select("*")
         .single();
 
-      if (!error && data) {
-        setGameFormat(editingFixture?.format || data.format);
-      }
-    };
+      if (error) throw error;
+      return data;
+    },
+  });
 
-    fetchDefaultFormat();
-  }, [editingFixture]);
+  // Set default category and format from team settings
+  useEffect(() => {
+    if (teamSettings && !editingFixture) {
+      setCategory(teamSettings.team_name);
+      setGameFormat(teamSettings.format || '7-a-side');
+    }
+  }, [teamSettings, editingFixture]);
 
   const handleSave = async () => {
     try {
@@ -69,7 +75,7 @@ export const AddFixtureDialog = ({
 
       const fixtureData = {
         date,
-        time: time || null, // Convert empty string to null
+        time: time || null,
         opponent,
         location,
         category,
