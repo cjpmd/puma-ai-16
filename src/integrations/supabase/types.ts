@@ -484,6 +484,7 @@ export type Database = {
           format: string | null
           home_score: number | null
           id: string
+          is_friendly: boolean | null
           location: string | null
           motm_player_id: string | null
           opponent: string
@@ -499,6 +500,7 @@ export type Database = {
           format?: string | null
           home_score?: number | null
           id?: string
+          is_friendly?: boolean | null
           location?: string | null
           motm_player_id?: string | null
           opponent: string
@@ -514,6 +516,7 @@ export type Database = {
           format?: string | null
           home_score?: number | null
           id?: string
+          is_friendly?: boolean | null
           location?: string | null
           motm_player_id?: string | null
           opponent?: string
@@ -1369,6 +1372,21 @@ export type Database = {
             referencedColumns: ["player_id"]
           },
         ]
+      }
+      combined_game_metrics: {
+        Row: {
+          away_score: number | null
+          category: string | null
+          date: string | null
+          event_type: string | null
+          home_score: number | null
+          id: string | null
+          is_friendly: boolean | null
+          motm_player_id: string | null
+          opponent: string | null
+          outcome: string | null
+        }
+        Relationships: []
       }
       player_fixture_stats: {
         Row: {

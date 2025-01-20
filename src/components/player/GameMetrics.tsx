@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Badge } from "@/components/ui/badge"
-import { ChevronDown, Trophy, Minus, XCircle, Crown } from "lucide-react"
+import { ChevronDown, Trophy, Minus, XCircle, Crown, Sparkles } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { format, parseISO } from "date-fns"
 
@@ -27,6 +27,8 @@ interface GameMetricsProps {
     isMotm: boolean;
     isCaptain: boolean;
     category: string;
+    event_type?: 'FIXTURE' | 'FESTIVAL' | 'TOURNAMENT';
+    is_friendly?: boolean;
   }>;
 }
 
@@ -86,6 +88,17 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
   const formatScore = (home: number | null, away: number | null) => {
     if (home === null || away === null) return "vs";
     return `${home} - ${away}`;
+  };
+
+  const getEventTypeLabel = (eventType: string | undefined) => {
+    switch (eventType) {
+      case 'FESTIVAL':
+        return <Badge variant="secondary" className="bg-purple-100 text-purple-800">Festival</Badge>;
+      case 'TOURNAMENT':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Tournament</Badge>;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -198,10 +211,25 @@ export function GameMetrics({ stats, motmCount, recentGames }: GameMetricsProps)
                             </Tooltip>
                           </TooltipProvider>
                         )}
+                        {game.is_friendly && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Sparkles className="h-4 w-4 text-yellow-500" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Friendly Match</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                       </div>
-                      <span className="font-semibold">
-                        {formatScore(game.home_score, game.away_score)} {game.opponent}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {getEventTypeLabel(game.event_type)}
+                        <span className="font-semibold">
+                          {game.opponent ? `${formatScore(game.home_score, game.away_score)} ${game.opponent}` : 'Tournament/Festival'}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(game.positions || {}).map(([position, minutes]) => (
