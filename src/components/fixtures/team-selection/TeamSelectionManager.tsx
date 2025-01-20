@@ -41,34 +41,44 @@ export const TeamSelectionManager = ({
   useEffect(() => {
     const positionsCount = getPositionsCount(format);
     setPeriods([{
-      duration: 10,
+      id: crypto.randomUUID(),
+      start_minute: 0,
+      duration_minutes: 20,
       positions: Array.from({ length: positionsCount }, (_, i) => ({ 
-        index: i, 
         position: "", 
         playerId: "" 
       })),
       substitutes: Array.from({ length: Math.ceil(positionsCount / 2) }, (_, i) => ({ 
-        index: i, 
         playerId: "" 
       }))
     }]);
   }, [format]);
 
-  // Fetch positions from the database
-  const { data: positions } = useQuery({
-    queryKey: ["positions"],
+  // Query fixture details including format
+  const { data: fixture } = useQuery({
+    queryKey: ["fixture", fixtureId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("position_definitions")
-        .select("abbreviation, full_name")
-        .order("abbreviation");
+        .from("fixtures")
+        .select("*")
+        .eq("id", fixtureId)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching fixture:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch fixture details",
+        });
+        throw error;
+      }
+
       return data;
     },
   });
 
-  // Fetch available players for the category
+  // Query players for the given category
   const { data: playersData, error: playersError } = useQuery({
     queryKey: ["players", category],
     queryFn: async () => {
@@ -78,8 +88,17 @@ export const TeamSelectionManager = ({
         .eq("player_category", category.toUpperCase())
         .order("squad_number");
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error("Error fetching players:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch players",
+        });
+        throw error;
+      }
+
+      return data || [];
     },
   });
 
@@ -129,7 +148,7 @@ export const TeamSelectionManager = ({
         
         return {
           id: period.id,
-          duration: period.duration_minutes,
+          duration_minutes: period.duration_minutes,
           positions: Array.from({ length: getPositionsCount(format) }, (_, i) => {
             const existingPosition = starters[i];
             return {
@@ -181,7 +200,7 @@ export const TeamSelectionManager = ({
   const handleDurationChange = (periodIndex: number, duration: number) => {
     setPeriods((currentPeriods) => {
       const newPeriods = [...currentPeriods];
-      newPeriods[periodIndex].duration = duration;
+      newPeriods[periodIndex].duration_minutes = duration;
       return newPeriods;
     });
   };
@@ -190,14 +209,14 @@ export const TeamSelectionManager = ({
     setPeriods((current) => [
       ...current,
       {
-        duration: 10,
+        id: crypto.randomUUID(),
+        start_minute: 0,
+        duration_minutes: 20,
         positions: Array.from({ length: getPositionsCount(format) }, (_, i) => ({ 
-          index: i, 
           position: "", 
           playerId: "" 
         })),
         substitutes: Array.from({ length: Math.ceil(getPositionsCount(format) / 2) }, (_, i) => ({ 
-          index: i, 
           playerId: "" 
         })),
       },
@@ -246,7 +265,7 @@ export const TeamSelectionManager = ({
           .insert({
             fixture_id: fixtureId,
             start_minute: startMinute,
-            duration_minutes: period.duration,
+            duration_minutes: period.duration_minutes,
           })
           .select()
           .single();
@@ -259,7 +278,7 @@ export const TeamSelectionManager = ({
           substitutes: period.substitutes
         });
 
-        startMinute += period.duration;
+        startMinute += period.duration_minutes;
       }
 
       // Now create player positions using the stored period IDs
@@ -380,7 +399,7 @@ export const TeamSelectionManager = ({
                 positions={period.positions}
                 players={playersData || []}
                 periodNumber={index + 1}
-                duration={period.duration}
+                duration={period.duration_minutes}
               />
             ))}
           </div>
@@ -405,18 +424,8 @@ export const TeamSelectionManager = ({
         {playersData && fixture && (
           <PrintTeamSelection
             fixture={fixture}
-            periods={periods.map(period => ({
-              duration: period.duration,
-              positions: period.positions.map(pos => ({
-                position: pos.position,
-                playerId: pos.playerId
-              })),
-              substitutes: period.substitutes.map(sub => ({
-                playerId: sub.playerId
-              }))
-            }))}
+            periods={periods}
             players={playersData}
-            captain={captain}
           />
         )}
       </div>

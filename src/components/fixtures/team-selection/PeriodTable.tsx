@@ -15,10 +15,21 @@ interface Player {
   squad_number: number;
 }
 
+interface PeriodPosition {
+  position: string;
+  playerId: string;
+}
+
+interface PeriodSubstitute {
+  playerId: string;
+}
+
 interface Period {
   id: string;
   start_minute: number;
   duration_minutes: number;
+  positions: PeriodPosition[];
+  substitutes: PeriodSubstitute[];
 }
 
 interface PeriodTableProps {
@@ -88,7 +99,7 @@ export const PeriodTable = ({
               <TableCell key={periodIndex} className="p-1">
                 <div className="space-y-1">
                   <Select
-                    value={period.positions[positionIndex].position}
+                    value={period.positions?.[positionIndex]?.position || ""}
                     onValueChange={(value) => onPositionChange(periodIndex, positionIndex, value)}
                   >
                     <SelectTrigger className="h-7">
@@ -103,7 +114,7 @@ export const PeriodTable = ({
                     </SelectContent>
                   </Select>
                   <Select
-                    value={period.positions[positionIndex].playerId}
+                    value={period.positions?.[positionIndex]?.playerId || ""}
                     onValueChange={(value) => onPlayerChange(periodIndex, positionIndex, value)}
                   >
                     <SelectTrigger className="h-7">
@@ -135,7 +146,7 @@ export const PeriodTable = ({
             {periods.map((period, periodIndex) => (
               <TableCell key={periodIndex} className="p-1">
                 <Select
-                  value={period.substitutes[subIndex].playerId}
+                  value={period.substitutes?.[subIndex]?.playerId || ""}
                   onValueChange={(value) => onSubstituteChange(periodIndex, subIndex, value)}
                 >
                   <SelectTrigger className="h-7">
