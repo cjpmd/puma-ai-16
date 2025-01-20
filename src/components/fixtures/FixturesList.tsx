@@ -32,6 +32,17 @@ export const FixturesList = ({ fixtures, onEdit, onDelete, onTeamSelection }: Fi
     }
   };
 
+  const getEventTypeBadge = (event_type: string | undefined, category: string) => {
+    switch (event_type) {
+      case 'tournament':
+        return <Badge variant="secondary">Tournament</Badge>;
+      case 'festival':
+        return <Badge variant="secondary">Festival</Badge>;
+      default:
+        return <Badge variant="outline">{category}</Badge>;
+    }
+  };
+
   return (
     <div className="space-y-8">
       {Object.entries(fixtures || {}).map(([date, dateFixtures]: [string, any[]]) => (
@@ -58,7 +69,7 @@ export const FixturesList = ({ fixtures, onEdit, onDelete, onTeamSelection }: Fi
                   onClick={() => onEdit(fixture)}
                 >
                   <TableCell>
-                    <Badge variant="outline">{fixture.category}</Badge>
+                    {getEventTypeBadge(fixture.event_type, fixture.category)}
                   </TableCell>
                   <TableCell>{fixture.location || "TBD"}</TableCell>
                   <TableCell>{fixture.time || "TBD"}</TableCell>
@@ -76,16 +87,18 @@ export const FixturesList = ({ fixtures, onEdit, onDelete, onTeamSelection }: Fi
                     </div>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onTeamSelection(fixture);
-                      }}
-                    >
-                      Team Selection
-                    </Button>
+                    {fixture.event_type !== 'tournament' && fixture.event_type !== 'festival' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onTeamSelection(fixture);
+                        }}
+                      >
+                        Team Selection
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
