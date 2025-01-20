@@ -140,19 +140,16 @@ export const CalendarPage = () => {
         return [...transformedFixtures, ...transformedTournaments, ...transformedFestivals] as CalendarEvent[];
       } catch (error) {
         console.error("Error fetching calendar events:", error);
-        throw error;
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load calendar events. Please try again.",
+        });
+        return [];
       }
     },
     retry: 3,
     retryDelay: 1000,
-    onError: (error) => {
-      console.error("Error in calendar events query:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load calendar events. Please try again.",
-      });
-    }
   });
 
   const handleAddSession = async () => {
@@ -214,7 +211,7 @@ export const CalendarPage = () => {
   const handleDeleteFixture = async (fixtureId: string) => {
     try {
       // Find the event in our local state first
-      const event = fixtures.find(f => f.id === fixtureId);
+      const event = (fixtures as CalendarEvent[]).find(f => f.id === fixtureId);
       
       if (!event) {
         throw new Error("Event not found");
@@ -272,7 +269,7 @@ export const CalendarPage = () => {
   const handleUpdateFixtureDate = async (fixtureId: string, newDate: Date) => {
     try {
       // Find the event in our local state first
-      const event = fixtures.find(f => f.id === fixtureId);
+      const event = (fixtures as CalendarEvent[]).find(f => f.id === fixtureId);
       
       if (!event) {
         throw new Error("Event not found");
@@ -349,14 +346,14 @@ export const CalendarPage = () => {
         <CalendarGrid
           date={date}
           setDate={setDate}
-          sessions={sessions}
+          sessions={sessions || []}
           fixtures={fixtures}
         />
 
         <EventsList
           date={date}
           fixtures={fixtures}
-          sessions={sessions}
+          sessions={sessions || []}
           onDeleteSession={handleDeleteSession}
           onEditFixture={(fixture) => {
             setEditingFixture(fixture);
