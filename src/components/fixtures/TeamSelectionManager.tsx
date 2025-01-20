@@ -3,10 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FormationView } from "../FormationView";
-import { PrintTeamSelection } from "../PrintTeamSelection";
-import { TeamSelectionHeader } from "./TeamSelectionHeader";
-import { PeriodTable } from "./PeriodTable";
+import { FormationView } from "@/components/fixtures/FormationView";
+import { PrintTeamSelection } from "@/components/fixtures/PrintTeamSelection";
+import { TeamSelectionHeader } from "@/components/fixtures/team-selection/TeamSelectionHeader";
+import { PeriodTable } from "@/components/fixtures/team-selection/PeriodTable";
 
 interface TeamSelectionManagerProps {
   fixtureId: string;
@@ -360,3 +360,4 @@ export const TeamSelectionManager = ({
 };
 
 export default TeamSelectionManager;
+
