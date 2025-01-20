@@ -48,7 +48,6 @@ export const AddTournamentDialog = ({
   const { data: teamSettings } = useQuery({
     queryKey: ["team-settings"],
     queryFn: async () => {
-      console.log("Fetching team settings...");
       const { data, error } = await supabase
         .from("team_settings")
         .select("*")
@@ -59,8 +58,21 @@ export const AddTournamentDialog = ({
         throw error;
       }
 
-      console.log("Team settings data:", data);
       return data;
+    },
+  });
+
+  // Get available player categories
+  const { data: playerCategories } = useQuery({
+    queryKey: ["player-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_categories")
+        .select("name")
+        .order("name");
+
+      if (error) throw error;
+      return data || [];
     },
   });
 
@@ -201,6 +213,8 @@ export const AddTournamentDialog = ({
                 key={i}
                 teamIndex={i}
                 onTeamUpdate={handleTeamCategoryUpdate}
+                defaultCategory={defaultCategory}
+                availableCategories={playerCategories?.map(pc => pc.name) || []}
               />
             ))}
           </div>
