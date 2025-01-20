@@ -197,14 +197,12 @@ export const AddFixtureDialog = ({
         try {
           const { error: notificationError } = await supabase.functions.invoke('send-whatsapp-notification', {
             body: {
-              eventData: {
-                type: 'FIXTURE',
-                date: format(selectedDate, "dd/MM/yyyy"),
-                time: data.time,
-                opponent: data.opponent,
-                location: data.location,
-                category: data.category
-              }
+              type: 'FIXTURE',
+              date: format(selectedDate, "dd/MM/yyyy"),
+              time: data.time,
+              opponent: data.opponent,
+              location: data.location,
+              category: data.category
             }
           });
 

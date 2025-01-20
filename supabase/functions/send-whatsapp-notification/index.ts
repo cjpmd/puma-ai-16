@@ -27,8 +27,15 @@ serve(async (req) => {
     const PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')
     const TEST_NUMBER = Deno.env.get('WHATSAPP_TEST_NUMBER')
 
-    const { data } = await req.json()
-    const eventData: NotificationData = data.eventData
+    const requestData = await req.json()
+    console.log('Received request data:', requestData);
+
+    if (!requestData || typeof requestData !== 'object') {
+      throw new Error('Invalid request data');
+    }
+
+    const notificationData: NotificationData = requestData;
+    console.log('Parsed notification data:', notificationData);
 
     // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -46,7 +53,7 @@ serve(async (req) => {
           phone
         )
       `)
-      .eq('player_category', eventData.category)
+      .eq('player_category', notificationData.category)
       .not('player_parents', 'is', null)
 
     if (playersError) {
@@ -55,23 +62,23 @@ serve(async (req) => {
 
     // Construct message based on event type
     let message = ''
-    if (eventData.type === 'FIXTURE') {
+    if (notificationData.type === 'FIXTURE') {
       message = `🏃‍♂️ New Fixture Alert!\n\n`
-      message += `📅 Date: ${eventData.date}\n`
-      if (eventData.time) message += `⏰ Time: ${eventData.time}\n`
-      message += `🆚 Opponent: ${eventData.opponent}\n`
-      if (eventData.location) message += `📍 Location: ${eventData.location}\n`
+      message += `📅 Date: ${notificationData.date}\n`
+      if (notificationData.time) message += `⏰ Time: ${notificationData.time}\n`
+      message += `🆚 Opponent: ${notificationData.opponent}\n`
+      if (notificationData.location) message += `📍 Location: ${notificationData.location}\n`
       message += `\nPlease reply with:\n1️⃣ for YES - Player will attend\n2️⃣ for NO - Player cannot attend`
     } else {
       message = `⚽ New Training Session!\n\n`
-      message += `📅 Date: ${eventData.date}\n`
-      if (eventData.time) message += `⏰ Time: ${eventData.time}\n`
-      message += `📝 Title: ${eventData.title}\n`
-      if (eventData.location) message += `📍 Location: ${eventData.location}\n`
+      message += `📅 Date: ${notificationData.date}\n`
+      if (notificationData.time) message += `⏰ Time: ${notificationData.time}\n`
+      message += `📝 Title: ${notificationData.title}\n`
+      if (notificationData.location) message += `📍 Location: ${notificationData.location}\n`
       message += `\nPlease reply with:\n1️⃣ for YES - Player will attend\n2️⃣ for NO - Player cannot attend`
     }
 
-    console.log('Sending WhatsApp notifications for:', eventData)
+    console.log('Sending WhatsApp notifications for:', notificationData)
 
     // For now, just send to test number in development
     const response = await fetch(
