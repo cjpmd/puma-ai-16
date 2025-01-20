@@ -5,24 +5,26 @@ import { Button } from "@/components/ui/button";
 import { MinusCircle } from "lucide-react";
 
 interface Position {
-  position: string;
-  playerId: string;
+  abbreviation: string;
+  full_name: string;
 }
 
-interface Substitute {
-  playerId: string;
+interface Player {
+  id: string;
+  name: string;
+  squad_number: number;
 }
 
 interface Period {
-  duration: number;
-  positions: Position[];
-  substitutes: Substitute[];
+  id: string;
+  start_minute: number;
+  duration_minutes: number;
 }
 
 interface PeriodTableProps {
   periods: Period[];
-  positions: Array<{ abbreviation: string; full_name: string }>;
-  players: Array<{ id: string; name: string; squad_number: number }>;
+  positions: Position[];
+  players: Player[];
   format: string;
   onPositionChange: (periodIndex: number, positionIndex: number, value: string) => void;
   onPlayerChange: (periodIndex: number, positionIndex: number, value: string) => void;
@@ -159,7 +161,7 @@ export const PeriodTable = ({
             <TableCell key={index} className="p-1">
               <Input
                 type="number"
-                value={period.duration}
+                value={period.duration_minutes}
                 onChange={(e) => onDurationChange(index, parseInt(e.target.value))}
                 className="h-7 w-16"
               />

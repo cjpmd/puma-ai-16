@@ -144,8 +144,6 @@ export const FormationSelector = ({ players, fixtureId, format }: FormationSelec
     fetchPeriods();
   }, [fixtureId]);
 
-  const positions = getPositionsForFormat(format);
-
   if (!fixture) {
     return null;
   }
@@ -156,7 +154,6 @@ export const FormationSelector = ({ players, fixtureId, format }: FormationSelec
         <PrintTeamSelection
           fixture={fixture}
           periods={periods}
-          positions={positions}
           players={players}
         />
       </div>
@@ -164,10 +161,15 @@ export const FormationSelector = ({ players, fixtureId, format }: FormationSelec
       {periods.map((period) => (
         <PeriodTable
           key={period.id}
-          period={period}
-          positions={positions}
+          periods={[period]}
+          positions={getPositionsForFormat(format)}
           players={players}
-          fixtureId={fixtureId}
+          format={format}
+          onPositionChange={() => {}}
+          onPlayerChange={() => {}}
+          onSubstituteChange={() => {}}
+          onDurationChange={() => {}}
+          onRemovePeriod={() => {}}
         />
       ))}
     </div>
