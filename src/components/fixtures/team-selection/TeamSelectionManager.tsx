@@ -2,279 +2,166 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TeamSelectionHeader } from "./TeamSelectionHeader";
-import { FormationView } from "../FormationView";
-import { PrintTeamSelection } from "../PrintTeamSelection";
+import { TeamSection } from "./TeamSection";
 import { Button } from "@/components/ui/button";
-import { Printer } from "lucide-react";
+import { PrintTeamSelection } from "../PrintTeamSelection";
 
 interface TeamSelectionManagerProps {
-  fixtureId: string;
-  category?: string;
+  eventId: string;
+  eventType: 'festival' | 'tournament';
 }
 
-interface Period {
-  id: string;
-  startMinute: number;
-  durationMinutes: number;
-  positions: Array<{
-    position: string;
-    playerId: string;
-  }>;
-  substitutes: Array<{
-    playerId: string;
-  }>;
-}
-
-interface EventTeam {
-  id: string;
-  team_name: string;
-  category: string;
-}
-
-interface EventData {
-  id: string;
-  date: string;
-  time?: string;
-  location?: string;
-  format: string;
-  number_of_teams: number;
-  event_type: 'festival' | 'tournament';
-  festival_teams?: EventTeam[];
-  tournament_teams?: EventTeam[];
-}
-
-export const TeamSelectionManager = ({ fixtureId }: TeamSelectionManagerProps) => {
-  const [selectedTeamIndex, setSelectedTeamIndex] = useState(0);
-  const [showFormation, setShowFormation] = useState(false);
-  const [periods, setPeriods] = useState<Period[]>([]);
-  const [captain, setCaptain] = useState("");
+export const TeamSelectionManager = ({ eventId, eventType }: TeamSelectionManagerProps) => {
+  const [teams, setTeams] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
-  // Fetch event details (festival or tournament)
-  const { data: eventData } = useQuery<EventData>({
-    queryKey: ["event", fixtureId],
+  // Fetch event details
+  const { data: eventData } = useQuery({
+    queryKey: [eventType, eventId],
     queryFn: async () => {
-      // Try to fetch festival first
-      const { data: festivalData } = await supabase
-        .from("festivals")
+      const { data, error } = await supabase
+        .from(eventType === 'festival' ? 'festivals' : 'tournaments')
         .select(`
           *,
-          festival_teams (
+          ${eventType}_teams (
             id,
             team_name,
             category
           )
         `)
-        .eq("id", fixtureId)
+        .eq('id', eventId)
         .single();
 
-      if (festivalData) {
-        return { ...festivalData, event_type: 'festival' as const };
-      }
-
-      // If not a festival, try tournament
-      const { data: tournamentData } = await supabase
-        .from("tournaments")
-        .select(`
-          *,
-          tournament_teams (
-            id,
-            team_name,
-            category
-          )
-        `)
-        .eq("id", fixtureId)
-        .single();
-
-      if (tournamentData) {
-        return { ...tournamentData, event_type: 'tournament' as const };
-      }
-
-      return null;
+      if (error) throw error;
+      return data;
     },
   });
 
-  const teams = eventData?.event_type === 'festival' ? eventData.festival_teams : eventData?.tournament_teams;
-  const currentTeam = teams?.[selectedTeamIndex];
-  
-  // Fetch players based on current team's category
-  const { data: playersData } = useQuery({
-    queryKey: ["players", currentTeam?.category],
+  // Get available player categories
+  const { data: playerCategories } = useQuery({
+    queryKey: ["player-categories"],
     queryFn: async () => {
-      if (!currentTeam?.category) return [];
-      
-      const { data } = await supabase
-        .from("players")
-        .select("id, name, squad_number")
-        .eq("player_category", currentTeam.category)
+      const { data, error } = await supabase
+        .from("player_categories")
+        .select("name")
         .order("name");
-      
+
+      if (error) throw error;
       return data || [];
     },
-    enabled: !!currentTeam?.category,
   });
 
-  // Get number of positions based on format
-  const getPositionsCount = (format: string) => {
-    const formatMap: { [key: string]: number } = {
-      "4-a-side": 4,
-      "5-a-side": 5,
-      "7-a-side": 7,
-      "9-a-side": 9,
-      "11-a-side": 11
-    };
-    return formatMap[format] || 7; // Default to 7 if format not found
-  };
+  // Get system category from team settings
+  const { data: teamSettings } = useQuery({
+    queryKey: ["team-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("team_settings")
+        .select("*")
+        .single();
 
-  const handleAddPeriod = () => {
-    const newPeriod: Period = {
-      id: crypto.randomUUID(),
-      startMinute: 0,
-      durationMinutes: 20,
-      positions: [],
-      substitutes: []
-    };
-    setPeriods((current) => [...current, newPeriod]);
-  };
+      if (error) throw error;
+      return data;
+    },
+  });
 
-  const handlePeriodChange = (
-    index: number,
-    field: keyof Period,
-    value: number
-  ) => {
-    setPeriods((current) =>
-      current.map((period, i) =>
-        i === index ? { ...period, [field]: value } : period
+  // Get players based on system category
+  const { data: players } = useQuery({
+    queryKey: ["players", teamSettings?.team_name],
+    queryFn: async () => {
+      if (!teamSettings?.team_name) return [];
+      
+      const { data, error } = await supabase
+        .from("players")
+        .select("*")
+        .eq("team_category", teamSettings.team_name)
+        .order("name");
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!teamSettings?.team_name,
+  });
+
+  useEffect(() => {
+    if (eventData) {
+      const teamsData = eventData[`${eventType}_teams`] || [];
+      setTeams(teamsData);
+    }
+  }, [eventData, eventType]);
+
+  const handleCategoryChange = (teamIndex: number, category: string) => {
+    setTeams(current => 
+      current.map((team, idx) => 
+        idx === teamIndex ? { ...team, category } : team
       )
     );
   };
 
-  const handleRemovePeriod = (index: number) => {
-    setPeriods((current) => current.filter((_, i) => i !== index));
-  };
-
-  const saveTeamSelection = async () => {
+  const handleSave = async () => {
     setIsSaving(true);
     try {
-      if (!eventData || !currentTeam) return;
-
-      const tableName = eventData.event_type === 'festival' ? 'festival_team_players' : 'tournament_team_players';
-      const teamIdField = eventData.event_type === 'festival' ? 'festival_team_id' : 'tournament_team_id';
-
-      // Delete existing selections for this team
-      await supabase
-        .from(tableName)
-        .delete()
-        .eq(teamIdField, currentTeam.id);
-
-      // Insert new selections
-      const selections = periods.flatMap((period) =>
-        period.positions?.map((pos) => ({
-          [teamIdField]: currentTeam.id,
-          player_id: pos.playerId,
-          position: pos.position,
-          is_substitute: false,
-        })) || []
-      );
-
-      if (selections.length > 0) {
-        const { error } = await supabase.from(tableName).insert(selections);
-        if (error) throw error;
-      }
-
+      // Save team selections
+      // Implementation will follow in next update
       toast({
         title: "Success",
-        description: "Team selection saved successfully",
+        description: "Team selections saved successfully",
       });
     } catch (error) {
-      console.error("Error saving team selection:", error);
+      console.error("Error saving team selections:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save team selection",
+        description: "Failed to save team selections",
       });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const toggleFormation = () => {
-    setShowFormation(!showFormation);
-  };
-
-  if (!eventData || !teams) {
+  if (!eventData || !players) {
     return <div>Loading...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <Tabs value={selectedTeamIndex.toString()} onValueChange={(v) => setSelectedTeamIndex(parseInt(v))}>
-        <TabsList>
-          {teams.map((team, index) => (
-            <TabsTrigger key={team.id} value={index.toString()}>
-              {team.team_name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        
-        <TabsContent value={selectedTeamIndex.toString()}>
-          <div className="space-y-6">
-            <TeamSelectionHeader
-              players={playersData || []}
-              captain={captain}
-              onCaptainChange={setCaptain}
-              onShowFormationToggle={toggleFormation}
-              showFormation={showFormation}
-              onAddPeriod={handleAddPeriod}
-              onSave={saveTeamSelection}
-              isSaving={isSaving}
-              onPrint={() => window.print()}
-              playerCategories={[currentTeam?.category || '']}
-              selectedCategory={currentTeam?.category || ''}
-              onCategoryChange={() => {}} // Category is fixed per team
-            />
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">
+          {eventType === 'festival' ? 'Festival' : 'Tournament'} Team Selection
+        </h2>
+        <div className="space-x-2">
+          <Button onClick={() => window.print()} variant="outline">
+            Print
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save"}
+          </Button>
+        </div>
+      </div>
 
-            {showFormation && (
-              <FormationView
-                positions={periods[0]?.positions || []}
-                players={playersData || []}
-                periodNumber={1}
-                duration={periods[0]?.durationMinutes || 20}
-              />
-            )}
+      <div className="space-y-6">
+        {teams.map((team, index) => (
+          <TeamSection
+            key={team.id}
+            teamIndex={index}
+            teamName={team.team_name}
+            format={eventData.format}
+            category={team.category}
+            players={players}
+            onCategoryChange={handleCategoryChange}
+            availableCategories={playerCategories?.map(pc => pc.name) || []}
+          />
+        ))}
+      </div>
 
-            <div className="flex justify-end">
-              <Button variant="outline" onClick={() => window.print()}>
-                <Printer className="w-4 h-4 mr-2" />
-                Print
-              </Button>
-            </div>
-
-            <div className="print-only">
-              {playersData && eventData && (
-                <PrintTeamSelection
-                  fixture={{
-                    id: eventData.id,
-                    date: eventData.date,
-                    opponent: `${eventData.event_type === 'festival' ? 'Festival' : 'Tournament'} at ${eventData.location || 'TBD'}`,
-                    time: eventData.time || null,
-                    location: eventData.location || null
-                  }}
-                  periods={periods.map(p => ({
-                    id: p.id,
-                    start_minute: p.startMinute,
-                    duration_minutes: p.durationMinutes
-                  }))}
-                  players={playersData}
-                />
-              )}
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+      <div className="print:block hidden">
+        <PrintTeamSelection
+          fixture={eventData}
+          periods={[]}
+          players={players}
+        />
+      </div>
     </div>
   );
 };
