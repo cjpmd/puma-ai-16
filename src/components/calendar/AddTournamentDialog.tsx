@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TeamSetupForm } from "./TeamSetupForm";
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -39,27 +40,38 @@ export const AddTournamentDialog = ({
   const [gameFormat, setGameFormat] = useState("7-a-side");
   const [numberOfTeams, setNumberOfTeams] = useState("4");
   const [isSaving, setIsSaving] = useState(false);
-  const [playerCategories, setPlayerCategories] = useState<string[]>([]);
+  const [teamCategories, setTeamCategories] = useState<string[]>([]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Get default team category from team settings
+  const [defaultCategory, setDefaultCategory] = useState<string>("");
+
   useEffect(() => {
-    const fetchPlayerCategories = async () => {
+    const fetchDefaultCategory = async () => {
       const { data, error } = await supabase
-        .from("player_categories")
-        .select("name")
-        .order("name");
+        .from("team_settings")
+        .select("team_name")
+        .single();
 
       if (error) {
-        console.error("Error fetching player categories:", error);
+        console.error("Error fetching default category:", error);
         return;
       }
 
-      setPlayerCategories(data.map(cat => cat.name));
+      if (data) {
+        setDefaultCategory(data.team_name);
+      }
     };
 
-    fetchPlayerCategories();
+    fetchDefaultCategory();
   }, []);
+
+  const handleTeamCategoryUpdate = (index: number, category: string) => {
+    const newCategories = [...teamCategories];
+    newCategories[index] = category;
+    setTeamCategories(newCategories);
+  };
 
   const handleSave = async () => {
     try {
@@ -80,10 +92,11 @@ export const AddTournamentDialog = ({
 
       if (tournamentError) throw tournamentError;
 
-      // Then create the teams
+      // Then create the teams with their categories
       const teamsToCreate = Array.from({ length: parseInt(numberOfTeams) }, (_, i) => ({
         tournament_id: tournamentData.id,
         team_name: `Team ${i + 1}`,
+        category: teamCategories[i] || defaultCategory, // Use default if no category selected
       }));
 
       const { error: teamsError } = await supabase
@@ -114,7 +127,7 @@ export const AddTournamentDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Tournament</DialogTitle>
         </DialogHeader>
@@ -180,6 +193,17 @@ export const AddTournamentDialog = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-4">
+            <Label>Team Setup</Label>
+            {Array.from({ length: parseInt(numberOfTeams) }, (_, i) => (
+              <TeamSetupForm
+                key={i}
+                teamIndex={i}
+                onTeamUpdate={handleTeamCategoryUpdate}
+              />
+            ))}
           </div>
 
           <div className="flex justify-end space-x-2">
