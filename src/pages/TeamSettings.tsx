@@ -19,6 +19,7 @@ const TeamSettings = () => {
   const [teamName, setTeamName] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [format, setFormat] = useState("7-a-side");
+  const [tempFormat, setTempFormat] = useState("7-a-side");
   const [categories, setCategories] = useState<{ id: string; name: string; description: string | null }[]>([]);
   const [newCategory, setNewCategory] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -41,6 +42,7 @@ const TeamSettings = () => {
       setTeamName(data?.team_name ?? "");
       setNotificationsEnabled(data?.parent_notification_enabled ?? false);
       setFormat(data?.format ?? "7-a-side");
+      setTempFormat(data?.format ?? "7-a-side");
     } catch (error) {
       console.error('Error fetching team settings:', error);
       toast({
@@ -63,7 +65,10 @@ const TeamSettings = () => {
       if (error) throw error;
       
       if (updates.team_name) setTeamName(updates.team_name);
-      if (updates.format) setFormat(updates.format);
+      if (updates.format) {
+        setFormat(updates.format);
+        setTempFormat(updates.format);
+      }
       
       toast({
         title: "Success",
@@ -229,8 +234,8 @@ const TeamSettings = () => {
             
             <div className="flex items-center gap-4">
               <Select
-                value={format}
-                onValueChange={(value) => updateTeamSettings({ format: value })}
+                value={tempFormat}
+                onValueChange={setTempFormat}
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select format" />
@@ -243,6 +248,12 @@ const TeamSettings = () => {
                   <SelectItem value="11-a-side">11-a-side</SelectItem>
                 </SelectContent>
               </Select>
+              <Button 
+                onClick={() => updateTeamSettings({ format: tempFormat })}
+                disabled={tempFormat === format}
+              >
+                Save Format
+              </Button>
             </div>
           </CardContent>
         </Card>
