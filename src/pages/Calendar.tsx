@@ -148,42 +148,34 @@ export const CalendarPage = () => {
 
   const handleDeleteFixture = async (fixtureId: string) => {
     try {
-      const { data: eventData } = await supabase
-        .from("combined_game_metrics")
-        .select("event_type")
-        .eq("id", fixtureId)
-        .single();
-
-      if (!eventData) {
+      // First try to determine the event type directly from our fixtures data
+      const event = fixtures?.find(f => f.id === fixtureId);
+      
+      if (!event) {
         throw new Error("Event not found");
       }
 
       let deleteError;
       
-      switch (eventData.event_type) {
-        case 'fixture':
-          const { error: fixtureError } = await supabase
-            .from("fixtures")
-            .delete()
-            .eq("id", fixtureId);
-          deleteError = fixtureError;
-          break;
-          
-        case 'tournament':
-          const { error: tournamentError } = await supabase
-            .from("tournaments")
-            .delete()
-            .eq("id", fixtureId);
-          deleteError = tournamentError;
-          break;
-          
-        case 'festival':
-          const { error: festivalError } = await supabase
-            .from("festivals")
-            .delete()
-            .eq("id", fixtureId);
-          deleteError = festivalError;
-          break;
+      if (event.event_type === 'tournament') {
+        const { error } = await supabase
+          .from("tournaments")
+          .delete()
+          .eq("id", fixtureId);
+        deleteError = error;
+      } else if (event.event_type === 'festival') {
+        const { error } = await supabase
+          .from("festivals")
+          .delete()
+          .eq("id", fixtureId);
+        deleteError = error;
+      } else {
+        // Regular fixture
+        const { error } = await supabase
+          .from("fixtures")
+          .delete()
+          .eq("id", fixtureId);
+        deleteError = error;
       }
 
       if (deleteError) throw deleteError;
@@ -281,4 +273,3 @@ export const CalendarPage = () => {
     </div>
   );
 };
-
