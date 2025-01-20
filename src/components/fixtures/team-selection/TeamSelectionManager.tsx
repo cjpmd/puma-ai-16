@@ -191,10 +191,6 @@ export const TeamSelectionManager = ({
     setPeriods((current) => current.filter((_, i) => i !== index));
   };
 
-  const handleCategoryChange = (newCategory: string) => {
-    setSelectedCategory(newCategory);
-  };
-
   const saveTeamSelection = async () => {
     setIsSaving(true);
     try {
@@ -377,7 +373,13 @@ export const TeamSelectionManager = ({
 
                 {playersData && eventData && (
                   <PrintTeamSelection
-                    fixture={eventData}
+                    fixture={{
+                      id: eventData.id,
+                      date: eventData.date,
+                      opponent: `${eventType === 'festival' ? 'Festival' : 'Tournament'} at ${eventData.location || 'TBD'}`,
+                      time: eventData.time,
+                      location: eventData.location
+                    }}
                     periods={periods}
                     players={playersData}
                   />
