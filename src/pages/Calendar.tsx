@@ -8,7 +8,6 @@ import { CalendarGrid } from "@/components/calendar/CalendarGrid";
 import { EventsList } from "@/components/calendar/EventsList";
 import { EditObjectiveDialog } from "@/components/calendar/EditObjectiveDialog";
 
-// Define types for our fixtures
 type BaseEvent = {
   id: string;
   date: string;
@@ -79,6 +78,8 @@ export const CalendarPage = () => {
       if (error) throw error;
       return data || [];
     },
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const { data: fixtures = [], refetch: refetchFixtures } = useQuery<CalendarEvent[]>({
@@ -88,64 +89,70 @@ export const CalendarPage = () => {
       
       const dateStr = format(date, "yyyy-MM-dd");
 
-      // Fetch fixtures
-      const { data: fixturesData, error: fixturesError } = await supabase
-        .from("fixtures")
-        .select("*, players!fixtures_motm_player_id_fkey(name)")
-        .eq("date", dateStr);
+      try {
+        // Fetch fixtures
+        const { data: fixturesData, error: fixturesError } = await supabase
+          .from("fixtures")
+          .select("*, players!fixtures_motm_player_id_fkey(name)")
+          .eq("date", dateStr);
 
-      if (fixturesError) {
-        console.error("Error fetching fixtures:", fixturesError);
-        throw fixturesError;
+        if (fixturesError) throw fixturesError;
+
+        // Fetch tournaments
+        const { data: tournamentsData, error: tournamentsError } = await supabase
+          .from("tournaments")
+          .select("*")
+          .eq("date", dateStr);
+
+        if (tournamentsError) throw tournamentsError;
+
+        // Fetch festivals
+        const { data: festivalsData, error: festivalsError } = await supabase
+          .from("festivals")
+          .select("*")
+          .eq("date", dateStr);
+
+        if (festivalsError) throw festivalsError;
+
+        // Transform tournaments
+        const transformedTournaments = (tournamentsData || []).map(t => ({
+          ...t,
+          event_type: 'tournament' as const,
+          opponent: `Tournament at ${t.location || 'TBD'}`,
+          category: 'Tournament'
+        }));
+
+        // Transform festivals
+        const transformedFestivals = (festivalsData || []).map(f => ({
+          ...f,
+          event_type: 'festival' as const,
+          opponent: `Festival at ${f.location || 'TBD'}`,
+          category: 'Festival'
+        }));
+
+        // Transform fixtures
+        const transformedFixtures = (fixturesData || []).map(f => ({
+          ...f,
+          event_type: 'fixture' as const,
+          players: f.players ? [f.players].flat() : []
+        }));
+
+        return [...transformedFixtures, ...transformedTournaments, ...transformedFestivals] as CalendarEvent[];
+      } catch (error) {
+        console.error("Error fetching calendar events:", error);
+        throw error;
       }
-
-      // Fetch tournaments
-      const { data: tournamentsData, error: tournamentsError } = await supabase
-        .from("tournaments")
-        .select("*")
-        .eq("date", dateStr);
-
-      if (tournamentsError) {
-        console.error("Error fetching tournaments:", tournamentsError);
-        throw tournamentsError;
-      }
-
-      // Fetch festivals
-      const { data: festivalsData, error: festivalsError } = await supabase
-        .from("festivals")
-        .select("*")
-        .eq("date", dateStr);
-
-      if (festivalsError) {
-        console.error("Error fetching festivals:", festivalsError);
-        throw festivalsError;
-      }
-
-      // Transform tournaments
-      const transformedTournaments = (tournamentsData || []).map(t => ({
-        ...t,
-        event_type: 'tournament' as const,
-        opponent: `Tournament at ${t.location || 'TBD'}`,
-        category: 'Tournament'
-      }));
-
-      // Transform festivals
-      const transformedFestivals = (festivalsData || []).map(f => ({
-        ...f,
-        event_type: 'festival' as const,
-        opponent: `Festival at ${f.location || 'TBD'}`,
-        category: 'Festival'
-      }));
-
-      // Transform fixtures
-      const transformedFixtures = (fixturesData || []).map(f => ({
-        ...f,
-        event_type: 'fixture' as const,
-        players: f.players ? [f.players].flat() : []
-      }));
-
-      return [...transformedFixtures, ...transformedTournaments, ...transformedFestivals] as CalendarEvent[];
     },
+    retry: 3,
+    retryDelay: 1000,
+    onError: (error) => {
+      console.error("Error in calendar events query:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load calendar events. Please try again.",
+      });
+    }
   });
 
   const handleAddSession = async () => {
