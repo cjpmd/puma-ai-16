@@ -56,7 +56,7 @@ const Fixtures = () => {
 
       try {
         let query = supabase
-          .from("fixtures")
+          .from("combined_game_metrics")
           .select("*")
           .order("date", { ascending: true });
 

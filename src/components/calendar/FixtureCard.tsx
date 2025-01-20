@@ -25,6 +25,7 @@ interface FixtureCardProps {
     time?: string | null;
     date: string;
     outcome?: string | null;
+    event_type?: string;
   };
   onEdit: (fixture: FixtureCardProps["fixture"]) => void;
   onDelete: (fixtureId: string) => void;
@@ -49,13 +50,24 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const hasScores = fixture.home_score !== null && fixture.away_score !== null;
 
+  const getEventTypeBadge = () => {
+    switch (fixture.event_type) {
+      case 'tournament':
+        return <Badge variant="secondary">Tournament</Badge>;
+      case 'festival':
+        return <Badge variant="secondary">Festival</Badge>;
+      default:
+        return <Badge variant="outline">{fixture.category}</Badge>;
+    }
+  };
+
   return (
     <>
       <Card className="hover:bg-accent/50 transition-colors">
         <CardHeader>
           <CardTitle className="text-lg flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <Badge variant="outline">{fixture.category}</Badge>
+              {getEventTypeBadge()}
               <span>vs {fixture.opponent}</span>
             </div>
             <div className="flex gap-2">
@@ -89,16 +101,18 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
               >
                 <Pencil className="h-4 w-4" />
               </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsTeamSelectionOpen(true);
-                }}
-              >
-                <Users className="h-4 w-4" />
-              </Button>
+              {fixture.event_type === 'fixture' && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsTeamSelectionOpen(true);
+                  }}
+                >
+                  <Users className="h-4 w-4" />
+                </Button>
+              )}
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -137,17 +151,19 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
         </CardContent>
       </Card>
 
-      <Dialog open={isTeamSelectionOpen} onOpenChange={setIsTeamSelectionOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Team Selection - {fixture.opponent}</DialogTitle>
-          </DialogHeader>
-          <TeamSelectionManager 
-            fixtureId={fixture.id} 
-            category={fixture.category}
-          />
-        </DialogContent>
-      </Dialog>
+      {fixture.event_type === 'fixture' && (
+        <Dialog open={isTeamSelectionOpen} onOpenChange={setIsTeamSelectionOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Team Selection - {fixture.opponent}</DialogTitle>
+            </DialogHeader>
+            <TeamSelectionManager 
+              fixtureId={fixture.id} 
+              category={fixture.category}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 };

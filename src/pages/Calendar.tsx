@@ -329,13 +329,13 @@ export const CalendarPage = () => {
       if (!date) return [];
       
       const { data, error } = await supabase
-        .from("fixtures")
+        .from("combined_game_metrics")
         .select("*")
         .eq("date", format(date, "yyyy-MM-dd"))
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
