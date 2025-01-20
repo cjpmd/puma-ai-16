@@ -38,6 +38,7 @@ export const EventsList = ({
               onEdit={onEditFixture}
               onDelete={onDeleteFixture}
               onDateChange={(newDate) => onUpdateFixtureDate(fixture.id, newDate)}
+              showTeamSelection={true}
             />
           ))}
           {sessions?.map((session) => (
