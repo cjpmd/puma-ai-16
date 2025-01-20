@@ -79,6 +79,31 @@ const TeamSettings = () => {
     }
   };
 
+  const updateNotificationSettings = async (enabled: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('team_settings')
+        .upsert({ 
+          parent_notification_enabled: enabled,
+          id: '00000000-0000-0000-0000-000000000000'
+        });
+
+      if (error) throw error;
+      setNotificationsEnabled(enabled);
+      toast({
+        title: "Success",
+        description: "Notification settings updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating notification settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update notification settings",
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
