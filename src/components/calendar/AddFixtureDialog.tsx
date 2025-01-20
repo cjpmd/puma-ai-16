@@ -1,28 +1,16 @@
 import { useState, useEffect } from "react";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -30,439 +18,192 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
-import { Trophy, Minus, XCircle } from "lucide-react";
-
-const formSchema = z.object({
-  opponent: z.string().min(1, "Opponent name is required"),
-  location: z.string().optional(),
-  category: z.enum(["Ronaldo", "Messi", "Jags"]),
-  home_score: z.string().optional(),
-  away_score: z.string().optional(),
-  motm_player_id: z.string().optional(),
-  time: z.string().optional(),
-  format: z.string().optional(),
-});
-
-type FormData = z.infer<typeof formSchema>;
 
 interface AddFixtureDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedDate?: Date;
-  onSuccess: () => void;
-  editingFixture?: {
-    id: string;
-    opponent: string;
-    home_score: number | null;
-    away_score: number | null;
-    category?: string;
-    location?: string;
-    motm_player_id?: string | null;
-    time?: string | null;
-    format?: string | null;
-  } | null;
+  editingFixture?: any;
+  onSuccess?: () => void;
   showDateSelector?: boolean;
 }
 
-export const AddFixtureDialog = ({ 
-  isOpen, 
-  onOpenChange, 
-  selectedDate: initialSelectedDate,
-  onSuccess,
+export const AddFixtureDialog = ({
+  isOpen,
+  onOpenChange,
   editingFixture,
-  showDateSelector = false
+  onSuccess,
+  showDateSelector = true,
 }: AddFixtureDialogProps) => {
-  const { toast } = useToast();
+  const [date, setDate] = useState(editingFixture?.date || "");
+  const [time, setTime] = useState(editingFixture?.time || "");
+  const [opponent, setOpponent] = useState(editingFixture?.opponent || "");
+  const [location, setLocation] = useState(editingFixture?.location || "");
+  const [category, setCategory] = useState(editingFixture?.category || "Ronaldo");
+  const [format, setFormat] = useState(editingFixture?.format || "");
+  const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
-  const [showTeamSelection, setShowTeamSelection] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialSelectedDate);
-  
+  const { toast } = useToast();
+
   // Fetch default format from team settings
-  const { data: teamSettings } = useQuery({
-    queryKey: ["team-settings"],
-    queryFn: async () => {
+  useEffect(() => {
+    const fetchDefaultFormat = async () => {
       const { data, error } = await supabase
         .from("team_settings")
         .select("format")
         .single();
 
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      opponent: editingFixture?.opponent || "",
-      location: editingFixture?.location || "",
-      category: (editingFixture?.category || "Ronaldo") as "Ronaldo" | "Messi" | "Jags",
-      home_score: editingFixture?.home_score?.toString() || "",
-      away_score: editingFixture?.away_score?.toString() || "",
-      motm_player_id: editingFixture?.motm_player_id || undefined,
-      time: editingFixture?.time || "",
-      format: editingFixture?.format || teamSettings?.format || "7-a-side",
-    },
-  });
-
-  // Update form when team settings are loaded
-  useEffect(() => {
-    if (teamSettings?.format && !editingFixture?.format) {
-      form.setValue("format", teamSettings.format);
-    }
-  }, [teamSettings, form, editingFixture]);
-
-  const { data: players } = useQuery({
-    queryKey: ["players", form.getValues("category")],
-    queryFn: async () => {
-      const category = form.getValues("category").toUpperCase();
-      console.log("Fetching players for category:", category);
-      const { data, error } = await supabase
-        .from("players")
-        .select("id, name, squad_number")
-        .eq("player_category", category)
-        .order('name');
-      
-      if (error) {
-        console.error("Error fetching players:", error);
-        throw error;
+      if (!error && data) {
+        setFormat(editingFixture?.format || data.format);
       }
-      console.log("Players fetched:", data);
-      return data || [];
-    },
-    enabled: isOpen,
-  });
+    };
 
-  useEffect(() => {
-    if (editingFixture) {
-      form.reset({
-        opponent: editingFixture.opponent,
-        location: editingFixture.location || "",
-        category: (editingFixture.category || "Ronaldo") as "Ronaldo" | "Messi" | "Jags",
-        home_score: editingFixture.home_score?.toString() || "",
-        away_score: editingFixture.away_score?.toString() || "",
-        motm_player_id: editingFixture.motm_player_id || undefined,
-        time: editingFixture.time || "",
-        format: editingFixture.format || teamSettings?.format || "7-a-side",
-      });
-    }
-  }, [editingFixture, form, teamSettings]);
+    fetchDefaultFormat();
+  }, [editingFixture]);
 
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === "category") {
-        form.setValue("motm_player_id", undefined);
-        queryClient.invalidateQueries({ queryKey: ["players", value.category] });
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form, queryClient]);
-
-  const onSubmit = async (data: FormData) => {
+  const handleSave = async () => {
     try {
-      setIsSubmitting(true);
-      
-      if (!selectedDate) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Please select a date",
-        });
-        return;
-      }
-
-      let outcome: string | null = null;
-      if (data.home_score && data.away_score) {
-        const homeScore = parseInt(data.home_score);
-        const awayScore = parseInt(data.away_score);
-        if (homeScore > awayScore) {
-          outcome = 'WIN';
-        } else if (homeScore === awayScore) {
-          outcome = 'DRAW';
-        } else {
-          outcome = 'LOSS';
-        }
-      }
+      setIsSaving(true);
 
       const fixtureData = {
-        opponent: data.opponent,
-        location: data.location,
-        category: data.category,
-        date: format(selectedDate, "yyyy-MM-dd"),
-        home_score: data.home_score ? parseInt(data.home_score) : null,
-        away_score: data.away_score ? parseInt(data.away_score) : null,
-        motm_player_id: data.motm_player_id || null,
-        time: data.time || null,
-        outcome,
-        format: data.format,
+        date,
+        time,
+        opponent,
+        location,
+        category,
+        format,
       };
 
-      let newFixture;
-      
       if (editingFixture) {
         const { error } = await supabase
           .from("fixtures")
           .update(fixtureData)
           .eq("id", editingFixture.id);
-          
+
         if (error) throw error;
-        newFixture = { ...editingFixture, ...fixtureData };
       } else {
-        const { data: insertedFixture, error } = await supabase
-          .from("fixtures")
-          .insert([fixtureData])
-          .select()
-          .single();
-          
+        const { error } = await supabase.from("fixtures").insert([fixtureData]);
+
         if (error) throw error;
-        newFixture = insertedFixture;
-
-        // Send WhatsApp notification for new fixtures
-        try {
-          const { error: notificationError } = await supabase.functions.invoke('send-whatsapp-notification', {
-            body: {
-              type: 'FIXTURE',
-              date: format(selectedDate, "dd/MM/yyyy"),
-              time: data.time,
-              opponent: data.opponent,
-              location: data.location,
-              category: data.category
-            }
-          });
-
-          if (notificationError) {
-            console.error('Error sending WhatsApp notification:', notificationError);
-            toast({
-              title: "Warning",
-              description: "Fixture created but there was an error sending notifications",
-              variant: "destructive",
-            });
-          }
-        } catch (notificationError) {
-          console.error('Error invoking WhatsApp notification function:', notificationError);
-        }
       }
 
-      onSuccess();
-      if (!showTeamSelection) {
-        form.reset();
-        onOpenChange(false);
-      }
       toast({
         title: "Success",
-        description: editingFixture 
-          ? "Fixture updated successfully" 
-          : "Fixture added successfully",
+        description: `Fixture ${editingFixture ? "updated" : "added"} successfully`,
       });
+
+      queryClient.invalidateQueries({ queryKey: ["fixtures"] });
+      onSuccess?.();
+      onOpenChange(false);
     } catch (error) {
       console.error("Error saving fixture:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save fixture",
+        description: `Failed to ${editingFixture ? "update" : "add"} fixture`,
       });
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>{editingFixture ? "Edit Fixture" : "Add New Fixture"}</DialogTitle>
-          <DialogDescription>
-            Fill in the fixture details below. All fields marked with * are required.
-          </DialogDescription>
+          <DialogTitle>
+            {editingFixture ? "Edit Fixture" : "Add Fixture"}
+          </DialogTitle>
         </DialogHeader>
-        
-        {!showTeamSelection ? (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {showDateSelector && (
-                <div className="space-y-2">
-                  <FormLabel>Date *</FormLabel>
-                  <Input 
-                    type="date" 
-                    value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''} 
-                    onChange={(e) => {
-                      const date = e.target.value ? new Date(e.target.value) : undefined;
-                      setSelectedDate(date);
-                    }}
-                  />
-                </div>
-              )}
-              
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Team *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select team" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Ronaldo">Ronaldo</SelectItem>
-                        <SelectItem value="Messi">Messi</SelectItem>
-                        <SelectItem value="Jags">Jags</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
-              <FormField
-                control={form.control}
-                name="format"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Format *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select format" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="4-a-side">4-a-side</SelectItem>
-                        <SelectItem value="5-a-side">5-a-side</SelectItem>
-                        <SelectItem value="7-a-side">7-a-side</SelectItem>
-                        <SelectItem value="9-a-side">9-a-side</SelectItem>
-                        <SelectItem value="11-a-side">11-a-side</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+        <div className="space-y-4 py-4">
+          {showDateSelector && (
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                type="date"
+                id="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
               />
-              
-              <FormField
-                control={form.control}
-                name="opponent"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Opponent *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location (optional)</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="time"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time (optional)</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="home_score"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Puma Score</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="away_score"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Opponent Score</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="motm_player_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Man of the Match</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select player" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {players?.map((player) => (
-                          <SelectItem key={player.id} value={player.id}>
-                            {player.name} (#{player.squad_number})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <Button 
-                type="submit" 
-                className="w-full"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Saving..." : editingFixture ? "Save Changes" : "Add Fixture"}
-              </Button>
-            </form>
-          </Form>
-        ) : (
-          <TeamSelectionManager 
-            fixtureId={editingFixture?.id || ""} 
-            category={form.getValues("category")}
-            format={form.getValues("format")}
-          />
-        )}
+            </div>
+          )}
+
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="time">Time</Label>
+            <Input
+              type="time"
+              id="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+            />
+          </div>
+
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="opponent">Opponent</Label>
+            <Input
+              type="text"
+              id="opponent"
+              value={opponent}
+              onChange={(e) => setOpponent(e.target.value)}
+            />
+          </div>
+
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              type="text"
+              id="location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </div>
+
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="category">Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Ronaldo">Ronaldo</SelectItem>
+                <SelectItem value="Messi">Messi</SelectItem>
+                <SelectItem value="Jags">Jags</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="format">Format</Label>
+            <Select value={format} onValueChange={setFormat}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="4-a-side">4-a-side</SelectItem>
+                <SelectItem value="5-a-side">5-a-side</SelectItem>
+                <SelectItem value="7-a-side">7-a-side</SelectItem>
+                <SelectItem value="9-a-side">9-a-side</SelectItem>
+                <SelectItem value="11-a-side">11-a-side</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              type="button"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
+
+export default AddFixtureDialog;

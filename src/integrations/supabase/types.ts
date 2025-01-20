@@ -354,6 +354,7 @@ export type Database = {
           category: string
           created_at: string | null
           date: string
+          format: string | null
           home_score: number | null
           id: string
           location: string | null
@@ -368,6 +369,7 @@ export type Database = {
           category?: string
           created_at?: string | null
           date: string
+          format?: string | null
           home_score?: number | null
           id?: string
           location?: string | null
@@ -382,6 +384,7 @@ export type Database = {
           category?: string
           created_at?: string | null
           date?: string
+          format?: string | null
           home_score?: number | null
           id?: string
           location?: string | null
