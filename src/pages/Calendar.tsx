@@ -58,43 +58,48 @@ export const CalendarPage = () => {
 
   const { toast } = useToast();
 
-  const { data: sessions, refetch: refetchSessions } = useQuery({
+  const { data: sessions = [], refetch: refetchSessions } = useQuery({
     queryKey: ["training-sessions", date],
     queryFn: async () => {
       if (!date) return [];
       
-      const { data, error } = await supabase
-        .from("training_sessions")
-        .select(`
-          *,
-          training_drills (
+      try {
+        const { data, error } = await supabase
+          .from("training_sessions")
+          .select(`
             *,
-            training_files (*)
-          )
-        `)
-        .eq("date", format(date, "yyyy-MM-dd"))
-        .order("date", { ascending: true });
+            training_drills (
+              *,
+              training_files (*)
+            )
+          `)
+          .eq("date", format(date, "yyyy-MM-dd"))
+          .order("date", { ascending: true });
 
-      if (error) throw error;
-      return data || [];
+        if (error) {
+          console.error("Error fetching training sessions:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load training sessions. Please try again.",
+          });
+          return [];
+        }
+
+        return data || [];
+      } catch (error) {
+        console.error("Error in training sessions query:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load training sessions. Please try again.",
+        });
+        return [];
+      }
     },
     retry: 3,
-    retryDelay: 1000,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
-
-  const handleEditFixture = (fixture: any) => {
-    // Only set editingFixture and open dialog if it's a regular fixture
-    if (fixture.event_type === 'fixture') {
-      setEditingFixture(fixture);
-      setIsAddFixtureOpen(true);
-    } else if (fixture.event_type === 'tournament') {
-      setEditingFixture(fixture);
-      setIsAddTournamentOpen(true);
-    } else if (fixture.event_type === 'festival') {
-      setEditingFixture(fixture);
-      setIsAddFestivalOpen(true);
-    }
-  };
 
   const { data: fixtures = [], refetch: refetchFixtures } = useQuery<CalendarEvent[]>({
     queryKey: ["fixtures", date],
@@ -163,7 +168,7 @@ export const CalendarPage = () => {
       }
     },
     retry: 3,
-    retryDelay: 1000,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const handleAddSession = async () => {
