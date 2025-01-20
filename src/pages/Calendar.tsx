@@ -111,16 +111,13 @@ export const CalendarPage = () => {
   });
 
   const handleEditFixture = (fixture: any) => {
-    // Only set editingFixture and open dialog if it's a regular fixture
-    if (fixture.event_type === 'fixture') {
-      setEditingFixture(fixture);
-      setIsAddFixtureOpen(true);
-    } else if (fixture.event_type === 'tournament') {
-      setEditingFixture(fixture);
+    setEditingFixture(fixture);
+    if (fixture.event_type === 'tournament') {
       setIsAddTournamentOpen(true);
     } else if (fixture.event_type === 'festival') {
-      setEditingFixture(fixture);
       setIsAddFestivalOpen(true);
+    } else {
+      setIsAddFixtureOpen(true);
     }
   };
 
