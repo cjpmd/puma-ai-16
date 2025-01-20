@@ -14,6 +14,11 @@ interface TeamSelectionManagerProps {
   format?: string;
 }
 
+interface Position {
+  abbreviation: string;
+  full_name: string;
+}
+
 export const TeamSelectionManager = ({ 
   fixtureId, 
   category, 
@@ -24,6 +29,7 @@ export const TeamSelectionManager = ({
   const [captain, setCaptain] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [showFormation, setShowFormation] = useState(false);
+  const [positions, setPositions] = useState<Position[]>([]);
 
   // Get the number of positions based on format
   const getPositionsCount = (format: string) => {
@@ -36,6 +42,38 @@ export const TeamSelectionManager = ({
       default: return 7;
     }
   };
+
+  // Query fixture details including format
+  const { data: fixtureData } = useQuery({
+    queryKey: ["fixture", fixtureId],
+    queryFn: async () => {
+      if (!fixtureId) return null;
+      const { data, error } = await supabase
+        .from("fixtures")
+        .select("*")
+        .eq("id", fixtureId)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!fixtureId,
+  });
+
+  // Query players for the given category
+  const { data: playersData, error: playersError } = useQuery({
+    queryKey: ["players", category],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, name, squad_number")
+        .eq("player_category", category.toUpperCase())
+        .order("squad_number");
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   // Initialize periods with correct number of positions
   useEffect(() => {
@@ -53,125 +91,6 @@ export const TeamSelectionManager = ({
       }))
     }]);
   }, [format]);
-
-  // Query fixture details including format
-  const { data: fixture } = useQuery({
-    queryKey: ["fixture", fixtureId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("fixtures")
-        .select("*")
-        .eq("id", fixtureId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Error fetching fixture:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to fetch fixture details",
-        });
-        throw error;
-      }
-
-      return data;
-    },
-  });
-
-  // Query players for the given category
-  const { data: playersData, error: playersError } = useQuery({
-    queryKey: ["players", category],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("players")
-        .select("id, name, squad_number")
-        .eq("player_category", category.toUpperCase())
-        .order("squad_number");
-
-      if (error) {
-        console.error("Error fetching players:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to fetch players",
-        });
-        throw error;
-      }
-
-      return data || [];
-    },
-  });
-
-  // Fetch existing team selection if any
-  const { data: existingSelection } = useQuery({
-    queryKey: ["team-selection", fixtureId],
-    queryFn: async () => {
-      if (!fixtureId) return null;
-
-      const { data: periodsData, error: periodsError } = await supabase
-        .from("fixture_playing_periods")
-        .select(`
-          id,
-          duration_minutes,
-          fixture_player_positions (
-            id,
-            player_id,
-            position,
-            is_substitute
-          )
-        `)
-        .eq("fixture_id", fixtureId)
-        .order("start_minute");
-
-      if (periodsError) throw periodsError;
-
-      const { data: captainData } = await supabase
-        .from("fixture_team_selections")
-        .select("player_id")
-        .eq("fixture_id", fixtureId)
-        .eq("is_captain", true)
-        .maybeSingle();
-
-      return {
-        periods: periodsData,
-        captain: captainData?.player_id
-      };
-    },
-    enabled: !!fixtureId,
-  });
-
-  useEffect(() => {
-    if (existingSelection) {
-      const mappedPeriods = existingSelection.periods.map((period) => {
-        const starters = period.fixture_player_positions.filter(pos => !pos.is_substitute);
-        const subs = period.fixture_player_positions.filter(pos => pos.is_substitute);
-        
-        return {
-          id: period.id,
-          duration_minutes: period.duration_minutes,
-          positions: Array.from({ length: getPositionsCount(format) }, (_, i) => {
-            const existingPosition = starters[i];
-            return {
-              index: i,
-              position: existingPosition?.position || "",
-              playerId: existingPosition?.player_id || "",
-            };
-          }),
-          substitutes: Array.from({ length: Math.ceil(getPositionsCount(format) / 2) }, (_, i) => {
-            const existingSub = subs[i];
-            return {
-              index: i,
-              playerId: existingSub?.player_id || "",
-            };
-          }),
-        };
-      });
-      setPeriods(mappedPeriods);
-      if (existingSelection.captain) {
-        setCaptain(existingSelection.captain);
-      }
-    }
-  }, [existingSelection, format]);
 
   const handlePositionChange = (periodIndex: number, positionIndex: number, position: string) => {
     setPeriods((currentPeriods) => {
@@ -333,23 +252,6 @@ export const TeamSelectionManager = ({
     }
   };
 
-  // Fetch fixture data
-  const { data: fixture } = useQuery({
-    queryKey: ["fixture", fixtureId],
-    queryFn: async () => {
-      if (!fixtureId) return null;
-      const { data, error } = await supabase
-        .from("fixtures")
-        .select("*")
-        .eq("id", fixtureId)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!fixtureId,
-  });
-
   if (playersError) {
     return (
       <Alert variant="destructive">
@@ -360,7 +262,7 @@ export const TeamSelectionManager = ({
     );
   }
 
-  if (!positions || !playersData) return <div>Loading...</div>;
+  if (!playersData) return <div>Loading...</div>;
 
   if (playersData.length === 0) {
     return (
@@ -372,10 +274,6 @@ export const TeamSelectionManager = ({
     );
   }
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
     <div className="space-y-4 max-h-[80vh] flex flex-col">
       <TeamSelectionHeader
@@ -385,7 +283,7 @@ export const TeamSelectionManager = ({
         onShowFormationToggle={() => setShowFormation(!showFormation)}
         showFormation={showFormation}
         onAddPeriod={addPeriod}
-        onPrint={handlePrint}
+        onPrint={() => window.print()}
         onSave={saveTeamSelection}
         isSaving={isSaving}
       />
@@ -421,9 +319,9 @@ export const TeamSelectionManager = ({
           </div>
         </div>
 
-        {playersData && fixture && (
+        {playersData && fixtureData && (
           <PrintTeamSelection
-            fixture={fixture}
+            fixture={fixtureData}
             periods={periods}
             players={playersData}
           />
