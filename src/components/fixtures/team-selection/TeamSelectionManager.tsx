@@ -3,20 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FormationView } from "../FormationView";
-import { PrintTeamSelection } from "../PrintTeamSelection";
-import { TeamSelectionHeader } from "./TeamSelectionHeader";
-import { PeriodTable } from "./PeriodTable";
+import { FormationView } from "@/components/fixtures/FormationView";
+import { PrintTeamSelection } from "@/components/fixtures/PrintTeamSelection";
+import { TeamSelectionHeader } from "@/components/fixtures/team-selection/TeamSelectionHeader";
+import { PeriodTable } from "@/components/fixtures/team-selection/PeriodTable";
 
 interface TeamSelectionManagerProps {
   fixtureId: string;
   category: string;
   format?: string;
-}
-
-interface Position {
-  abbreviation: string;
-  full_name: string;
 }
 
 export const TeamSelectionManager = ({ 
@@ -29,9 +24,9 @@ export const TeamSelectionManager = ({
   const [captain, setCaptain] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [showFormation, setShowFormation] = useState(false);
-  const [positions, setPositions] = useState<Position[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState(category);
 
-  // Get the number of positions based on format
   const getPositionsCount = (format: string) => {
     switch (format) {
       case "4-a-side": return 4;
@@ -43,7 +38,6 @@ export const TeamSelectionManager = ({
     }
   };
 
-  // Query fixture details including format
   const { data: fixtureData } = useQuery({
     queryKey: ["fixture", fixtureId],
     queryFn: async () => {
@@ -60,7 +54,22 @@ export const TeamSelectionManager = ({
     enabled: !!fixtureId,
   });
 
-  // Query players for the given category
+  // ... keep existing code (teamSettings query)
+
+  // Get available player categories
+  const { data: playerCategories } = useQuery({
+    queryKey: ["player-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_categories")
+        .select("name")
+        .order("name");
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const { data: playersData, error: playersError } = useQuery({
     queryKey: ["players", category],
     queryFn: async () => {
@@ -75,7 +84,6 @@ export const TeamSelectionManager = ({
     },
   });
 
-  // Initialize periods with correct number of positions
   useEffect(() => {
     const positionsCount = getPositionsCount(format);
     setPeriods([{
@@ -144,6 +152,10 @@ export const TeamSelectionManager = ({
 
   const removePeriod = (index: number) => {
     setPeriods((current) => current.filter((_, i) => i !== index));
+  };
+
+  const handleCategoryChange = (newCategory: string) => {
+    setSelectedCategory(newCategory);
   };
 
   const saveTeamSelection = async () => {
@@ -268,7 +280,7 @@ export const TeamSelectionManager = ({
     return (
       <Alert>
         <AlertDescription>
-          No players found for category: {category}. Please add players to this category first.
+          No players found. Players will be loaded from the team category if available.
         </AlertDescription>
       </Alert>
     );
@@ -286,6 +298,9 @@ export const TeamSelectionManager = ({
         onPrint={() => window.print()}
         onSave={saveTeamSelection}
         isSaving={isSaving}
+        playerCategories={playerCategories?.map(pc => pc.name) || []}
+        selectedCategory={selectedCategory}
+        onCategoryChange={handleCategoryChange}
       />
 
       <div className="flex-1 overflow-y-auto min-h-0 pb-4">
