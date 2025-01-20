@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format as dateFormat } from "date-fns";
@@ -44,28 +44,39 @@ export const AddFestivalDialog = ({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Get default team category from team settings
-  const [defaultCategory, setDefaultCategory] = useState<string>("");
-
-  useEffect(() => {
-    const fetchDefaultCategory = async () => {
+  // Get default team category from team settings using React Query
+  const { data: teamSettings } = useQuery({
+    queryKey: ["team-settings"],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("team_settings")
-        .select("team_name")
+        .select("*")
         .single();
 
       if (error) {
-        console.error("Error fetching default category:", error);
-        return;
+        console.error("Error fetching team settings:", error);
+        throw error;
       }
 
-      if (data?.team_name) {
-        setDefaultCategory(data.team_name);
-      }
-    };
+      return data;
+    },
+  });
 
-    fetchDefaultCategory();
-  }, []);
+  // Get available player categories
+  const { data: playerCategories } = useQuery({
+    queryKey: ["player-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_categories")
+        .select("name")
+        .order("name");
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const defaultCategory = teamSettings?.team_name || "";
 
   const handleTeamCategoryUpdate = (index: number, category: string) => {
     const newCategories = [...teamCategories];
@@ -202,6 +213,8 @@ export const AddFestivalDialog = ({
                 key={i}
                 teamIndex={i}
                 onTeamUpdate={handleTeamCategoryUpdate}
+                defaultCategory={defaultCategory}
+                availableCategories={playerCategories?.map(pc => pc.name) || []}
               />
             ))}
           </div>
