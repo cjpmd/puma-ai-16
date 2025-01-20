@@ -55,16 +55,6 @@ export const NavBar = () => {
       >
         Coaches
       </Link>
-      <div className="flex-1"></div>
-      <Link
-        to="/privacy-policy"
-        className={cn(
-          "hover:text-primary transition-colors text-sm text-muted-foreground",
-          isActive("/privacy-policy") && "text-primary font-medium"
-        )}
-      >
-        Privacy Policy
-      </Link>
     </nav>
   );
 };

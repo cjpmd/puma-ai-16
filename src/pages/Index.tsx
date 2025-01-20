@@ -37,7 +37,7 @@ export default function Index() {
         </p>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
+      <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto mb-12">
         <Link to="/squad">
           <Card className="hover:shadow-lg transition-shadow h-full">
             <CardHeader className="text-center p-4">
@@ -84,6 +84,15 @@ export default function Index() {
               </p>
             </CardContent>
           </Card>
+        </Link>
+      </div>
+
+      <div className="text-center mt-8">
+        <Link 
+          to="/privacy-policy" 
+          className="text-sm text-muted-foreground hover:text-primary transition-colors"
+        >
+          Privacy Policy
         </Link>
       </div>
     </div>
