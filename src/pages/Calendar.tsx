@@ -58,11 +58,20 @@ export const CalendarPage = () => {
 
   const { toast } = useToast();
 
+  // Add retry configuration for React Query
+  const defaultQueryConfig = {
+    retry: 3,
+    retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
+  };
+
   const { data: sessions = [], refetch: refetchSessions } = useQuery({
     queryKey: ["training-sessions", date],
     queryFn: async () => {
       if (!date) return [];
       
+      console.log("Fetching training sessions...");
       try {
         const { data, error } = await supabase
           .from("training_sessions")
@@ -83,9 +92,10 @@ export const CalendarPage = () => {
             title: "Error",
             description: "Failed to load training sessions. Please try again.",
           });
-          return [];
+          throw error;
         }
 
+        console.log("Training sessions fetched:", data);
         return data || [];
       } catch (error) {
         console.error("Error in training sessions query:", error);
@@ -94,26 +104,11 @@ export const CalendarPage = () => {
           title: "Error",
           description: "Failed to load training sessions. Please try again.",
         });
-        return [];
+        throw error;
       }
     },
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    ...defaultQueryConfig,
   });
-
-  const handleEditFixture = (fixture: any) => {
-    // Only set editingFixture and open dialog if it's a regular fixture
-    if (fixture.event_type === 'fixture') {
-      setEditingFixture(fixture);
-      setIsAddFixtureOpen(true);
-    } else if (fixture.event_type === 'tournament') {
-      setEditingFixture(fixture);
-      setIsAddTournamentOpen(true);
-    } else if (fixture.event_type === 'festival') {
-      setEditingFixture(fixture);
-      setIsAddFestivalOpen(true);
-    }
-  };
 
   const { data: fixtures = [], refetch: refetchFixtures } = useQuery<CalendarEvent[]>({
     queryKey: ["fixtures", date],
@@ -121,6 +116,7 @@ export const CalendarPage = () => {
       if (!date) return [];
       
       const dateStr = format(date, "yyyy-MM-dd");
+      console.log("Fetching calendar events for date:", dateStr);
 
       try {
         // Fetch fixtures
@@ -129,7 +125,10 @@ export const CalendarPage = () => {
           .select("*, players!fixtures_motm_player_id_fkey(name)")
           .eq("date", dateStr);
 
-        if (fixturesError) throw fixturesError;
+        if (fixturesError) {
+          console.error("Fixtures fetch error:", fixturesError);
+          throw fixturesError;
+        }
 
         // Fetch tournaments
         const { data: tournamentsData, error: tournamentsError } = await supabase
@@ -137,7 +136,10 @@ export const CalendarPage = () => {
           .select("*")
           .eq("date", dateStr);
 
-        if (tournamentsError) throw tournamentsError;
+        if (tournamentsError) {
+          console.error("Tournaments fetch error:", tournamentsError);
+          throw tournamentsError;
+        }
 
         // Fetch festivals
         const { data: festivalsData, error: festivalsError } = await supabase
@@ -145,7 +147,12 @@ export const CalendarPage = () => {
           .select("*")
           .eq("date", dateStr);
 
-        if (festivalsError) throw festivalsError;
+        if (festivalsError) {
+          console.error("Festivals fetch error:", festivalsError);
+          throw festivalsError;
+        }
+
+        console.log("Fetched data:", { fixturesData, tournamentsData, festivalsData });
 
         // Transform tournaments
         const transformedTournaments = (tournamentsData || []).map(t => ({
@@ -178,11 +185,10 @@ export const CalendarPage = () => {
           title: "Error",
           description: "Failed to load calendar events. Please try again.",
         });
-        return [];
+        throw error;
       }
     },
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    ...defaultQueryConfig,
   });
 
   const handleAddSession = async () => {
