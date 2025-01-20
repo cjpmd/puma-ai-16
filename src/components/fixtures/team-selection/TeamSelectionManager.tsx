@@ -18,6 +18,31 @@ interface Period {
   id: string;
   startMinute: number;
   durationMinutes: number;
+  positions: Array<{
+    position: string;
+    playerId: string;
+  }>;
+  substitutes: Array<{
+    playerId: string;
+  }>;
+}
+
+interface EventTeam {
+  id: string;
+  team_name: string;
+  category: string;
+}
+
+interface EventData {
+  id: string;
+  date: string;
+  time?: string;
+  location?: string;
+  format: string;
+  number_of_teams: number;
+  event_type: 'festival' | 'tournament';
+  festival_teams?: EventTeam[];
+  tournament_teams?: EventTeam[];
 }
 
 export const TeamSelectionManager = ({ fixtureId }: TeamSelectionManagerProps) => {
@@ -29,7 +54,7 @@ export const TeamSelectionManager = ({ fixtureId }: TeamSelectionManagerProps) =
   const { toast } = useToast();
 
   // Fetch event details (festival or tournament)
-  const { data: eventData } = useQuery({
+  const { data: eventData } = useQuery<EventData>({
     queryKey: ["event", fixtureId],
     queryFn: async () => {
       // Try to fetch festival first
@@ -47,7 +72,7 @@ export const TeamSelectionManager = ({ fixtureId }: TeamSelectionManagerProps) =
         .single();
 
       if (festivalData) {
-        return { ...festivalData, event_type: 'festival' };
+        return { ...festivalData, event_type: 'festival' as const };
       }
 
       // If not a festival, try tournament
@@ -65,15 +90,14 @@ export const TeamSelectionManager = ({ fixtureId }: TeamSelectionManagerProps) =
         .single();
 
       if (tournamentData) {
-        return { ...tournamentData, event_type: 'tournament' };
+        return { ...tournamentData, event_type: 'tournament' as const };
       }
 
       return null;
     },
   });
 
-  const eventType = eventData?.event_type;
-  const teams = eventType === 'festival' ? eventData?.festival_teams : eventData?.tournament_teams;
+  const teams = eventData?.event_type === 'festival' ? eventData.festival_teams : eventData?.tournament_teams;
   const currentTeam = teams?.[selectedTeamIndex];
   
   // Fetch players based on current team's category
@@ -110,6 +134,8 @@ export const TeamSelectionManager = ({ fixtureId }: TeamSelectionManagerProps) =
       id: crypto.randomUUID(),
       startMinute: 0,
       durationMinutes: 20,
+      positions: [],
+      substitutes: []
     };
     setPeriods((current) => [...current, newPeriod]);
   };
@@ -135,8 +161,8 @@ export const TeamSelectionManager = ({ fixtureId }: TeamSelectionManagerProps) =
     try {
       if (!eventData || !currentTeam) return;
 
-      const tableName = eventType === 'festival' ? 'festival_team_players' : 'tournament_team_players';
-      const teamIdField = eventType === 'festival' ? 'festival_team_id' : 'tournament_team_id';
+      const tableName = eventData.event_type === 'festival' ? 'festival_team_players' : 'tournament_team_players';
+      const teamIdField = eventData.event_type === 'festival' ? 'festival_team_id' : 'tournament_team_id';
 
       // Delete existing selections for this team
       await supabase
@@ -146,17 +172,16 @@ export const TeamSelectionManager = ({ fixtureId }: TeamSelectionManagerProps) =
 
       // Insert new selections
       const selections = periods.flatMap((period) =>
-        period.positions?.map((pos: any) => ({
+        period.positions?.map((pos) => ({
           [teamIdField]: currentTeam.id,
           player_id: pos.playerId,
           position: pos.position,
-          is_substitute: pos.isSubstitute || false,
+          is_substitute: false,
         })) || []
       );
 
       if (selections.length > 0) {
         const { error } = await supabase.from(tableName).insert(selections);
-
         if (error) throw error;
       }
 
@@ -184,8 +209,6 @@ export const TeamSelectionManager = ({ fixtureId }: TeamSelectionManagerProps) =
     return <div>Loading...</div>;
   }
 
-  const positionsCount = getPositionsCount(eventData.format);
-
   return (
     <div className="space-y-6">
       <Tabs value={selectedTeamIndex.toString()} onValueChange={(v) => setSelectedTeamIndex(parseInt(v))}>
@@ -204,19 +227,22 @@ export const TeamSelectionManager = ({ fixtureId }: TeamSelectionManagerProps) =
               captain={captain}
               onCaptainChange={setCaptain}
               onShowFormationToggle={toggleFormation}
+              showFormation={showFormation}
               onAddPeriod={handleAddPeriod}
               onSave={saveTeamSelection}
               isSaving={isSaving}
+              onPrint={() => window.print()}
+              playerCategories={[currentTeam?.category || '']}
+              selectedCategory={currentTeam?.category || ''}
+              onCategoryChange={() => {}} // Category is fixed per team
             />
 
             {showFormation && (
               <FormationView
-                format={eventData.format}
-                numPositions={positionsCount}
+                positions={periods[0]?.positions || []}
                 players={playersData || []}
-                periods={periods}
-                onPeriodChange={handlePeriodChange}
-                onRemovePeriod={handleRemovePeriod}
+                periodNumber={1}
+                duration={periods[0]?.durationMinutes || 20}
               />
             )}
 
@@ -233,11 +259,15 @@ export const TeamSelectionManager = ({ fixtureId }: TeamSelectionManagerProps) =
                   fixture={{
                     id: eventData.id,
                     date: eventData.date,
-                    opponent: `${eventType === 'festival' ? 'Festival' : 'Tournament'} at ${eventData.location || 'TBD'}`,
-                    time: eventData.time,
-                    location: eventData.location
+                    opponent: `${eventData.event_type === 'festival' ? 'Festival' : 'Tournament'} at ${eventData.location || 'TBD'}`,
+                    time: eventData.time || null,
+                    location: eventData.location || null
                   }}
-                  periods={periods}
+                  periods={periods.map(p => ({
+                    id: p.id,
+                    start_minute: p.startMinute,
+                    duration_minutes: p.durationMinutes
+                  }))}
                   players={playersData}
                 />
               )}
