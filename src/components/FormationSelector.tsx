@@ -39,7 +39,7 @@ export const FormationSelector = () => {
       const { data, error } = await supabase
         .from("team_settings")
         .select("format")
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;

@@ -44,19 +44,55 @@ export const CalendarPage = () => {
     },
   });
 
+  // Updated query to include all event types
   const { data: fixtures, refetch: refetchFixtures } = useQuery({
     queryKey: ["fixtures", date],
     queryFn: async () => {
       if (!date) return [];
       
-      const { data, error } = await supabase
-        .from("combined_game_metrics")
-        .select("*")
-        .eq("date", format(date, "yyyy-MM-dd"))
-        .order("date", { ascending: true });
+      const dateStr = format(date, "yyyy-MM-dd");
 
-      if (error) throw error;
-      return data || [];
+      // Get regular fixtures
+      const { data: fixturesData, error: fixturesError } = await supabase
+        .from("fixtures")
+        .select("*, players!fixtures_motm_player_id_fkey(name)")
+        .eq("date", dateStr);
+
+      if (fixturesError) throw fixturesError;
+
+      // Get tournaments
+      const { data: tournamentsData, error: tournamentsError } = await supabase
+        .from("tournaments")
+        .select("*")
+        .eq("date", dateStr);
+
+      if (tournamentsError) throw tournamentsError;
+
+      // Get festivals
+      const { data: festivalsData, error: festivalsError } = await supabase
+        .from("festivals")
+        .select("*")
+        .eq("date", dateStr);
+
+      if (festivalsError) throw festivalsError;
+
+      // Transform tournaments and festivals to match fixture format
+      const transformedTournaments = (tournamentsData || []).map(t => ({
+        ...t,
+        event_type: 'tournament',
+        opponent: `Tournament at ${t.location}`,
+        category: 'Tournament'
+      }));
+
+      const transformedFestivals = (festivalsData || []).map(f => ({
+        ...f,
+        event_type: 'festival',
+        opponent: `Festival at ${f.location}`,
+        category: 'Festival'
+      }));
+
+      // Combine all events
+      return [...(fixturesData || []), ...transformedTournaments, ...transformedFestivals];
     },
   });
 
