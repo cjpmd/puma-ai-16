@@ -19,19 +19,80 @@ interface FormationSelectorProps {
 
 export const FormationSelector = ({ players, fixtureId, format }: FormationSelectorProps) => {
   const [periods, setPeriods] = useState<any[]>([]);
+  const [fixture, setFixture] = useState<any>(null);
   const { toast } = useToast();
 
   const getPositionsForFormat = (format: string) => {
-    const formatPositions: { [key: string]: string[] } = {
-      "4-a-side": ["GK", "D", "M", "ST"],
-      "5-a-side": ["GK", "DL", "DR", "M", "ST"],
-      "7-a-side": ["GK", "DL", "DCR", "DR", "ML", "MR", "ST"],
-      "9-a-side": ["GK", "DL", "DC", "DR", "ML", "MC", "MR", "AMC", "ST"],
-      "11-a-side": ["GK", "DL", "DCL", "DCR", "DR", "ML", "MC", "MR", "AML", "ST", "AMR"]
+    const formatPositions: { [key: string]: { abbreviation: string; full_name: string }[] } = {
+      "4-a-side": [
+        { abbreviation: "GK", full_name: "Goalkeeper" },
+        { abbreviation: "D", full_name: "Defender" },
+        { abbreviation: "M", full_name: "Midfielder" },
+        { abbreviation: "ST", full_name: "Striker" }
+      ],
+      "5-a-side": [
+        { abbreviation: "GK", full_name: "Goalkeeper" },
+        { abbreviation: "DL", full_name: "Left Defender" },
+        { abbreviation: "DR", full_name: "Right Defender" },
+        { abbreviation: "M", full_name: "Midfielder" },
+        { abbreviation: "ST", full_name: "Striker" }
+      ],
+      "7-a-side": [
+        { abbreviation: "GK", full_name: "Goalkeeper" },
+        { abbreviation: "DL", full_name: "Left Defender" },
+        { abbreviation: "DCR", full_name: "Central Defender" },
+        { abbreviation: "DR", full_name: "Right Defender" },
+        { abbreviation: "ML", full_name: "Left Midfielder" },
+        { abbreviation: "MR", full_name: "Right Midfielder" },
+        { abbreviation: "ST", full_name: "Striker" }
+      ],
+      "9-a-side": [
+        { abbreviation: "GK", full_name: "Goalkeeper" },
+        { abbreviation: "DL", full_name: "Left Defender" },
+        { abbreviation: "DC", full_name: "Central Defender" },
+        { abbreviation: "DR", full_name: "Right Defender" },
+        { abbreviation: "ML", full_name: "Left Midfielder" },
+        { abbreviation: "MC", full_name: "Central Midfielder" },
+        { abbreviation: "MR", full_name: "Right Midfielder" },
+        { abbreviation: "AMC", full_name: "Attacking Midfielder" },
+        { abbreviation: "ST", full_name: "Striker" }
+      ],
+      "11-a-side": [
+        { abbreviation: "GK", full_name: "Goalkeeper" },
+        { abbreviation: "DL", full_name: "Left Back" },
+        { abbreviation: "DCL", full_name: "Left Center Back" },
+        { abbreviation: "DCR", full_name: "Right Center Back" },
+        { abbreviation: "DR", full_name: "Right Back" },
+        { abbreviation: "ML", full_name: "Left Midfielder" },
+        { abbreviation: "MC", full_name: "Central Midfielder" },
+        { abbreviation: "MR", full_name: "Right Midfielder" },
+        { abbreviation: "AML", full_name: "Left Winger" },
+        { abbreviation: "ST", full_name: "Striker" },
+        { abbreviation: "AMR", full_name: "Right Winger" }
+      ]
     };
 
     return formatPositions[format] || formatPositions["7-a-side"];
   };
+
+  useEffect(() => {
+    const fetchFixture = async () => {
+      const { data, error } = await supabase
+        .from("fixtures")
+        .select("*")
+        .eq("id", fixtureId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching fixture:", error);
+        return;
+      }
+
+      setFixture(data);
+    };
+
+    fetchFixture();
+  }, [fixtureId]);
 
   useEffect(() => {
     const fetchPeriods = async () => {
@@ -85,13 +146,18 @@ export const FormationSelector = ({ players, fixtureId, format }: FormationSelec
 
   const positions = getPositionsForFormat(format);
 
+  if (!fixture) {
+    return null;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
         <PrintTeamSelection
-          fixtureId={fixtureId}
+          fixture={fixture}
           periods={periods}
           positions={positions}
+          players={players}
         />
       </div>
 

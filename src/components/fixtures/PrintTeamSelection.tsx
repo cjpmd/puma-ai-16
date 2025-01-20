@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 
 interface PrintTeamSelectionProps {
   fixture: {
+    id: string;
     date: string;
     opponent: string;
     time?: string | null;
@@ -36,6 +37,10 @@ export const PrintTeamSelection: React.FC<PrintTeamSelectionProps> = ({
     const player = players?.find(p => p.id === playerId);
     return player ? `${player.name} (${player.squad_number})` : '';
   };
+
+  if (!fixture) {
+    return null;
+  }
 
   return (
     <div className="print-only p-8 hidden">
