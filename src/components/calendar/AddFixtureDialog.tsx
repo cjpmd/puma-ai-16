@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { format } from "date-fns";
 
 interface AddFixtureDialogProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ interface AddFixtureDialogProps {
   editingFixture?: any;
   onSuccess?: () => void;
   showDateSelector?: boolean;
+  selectedDate?: Date;
 }
 
 export const AddFixtureDialog = ({
@@ -33,8 +35,9 @@ export const AddFixtureDialog = ({
   editingFixture,
   onSuccess,
   showDateSelector = true,
+  selectedDate,
 }: AddFixtureDialogProps) => {
-  const [date, setDate] = useState(editingFixture?.date || "");
+  const [date, setDate] = useState(editingFixture?.date || (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''));
   const [time, setTime] = useState(editingFixture?.time || "");
   const [opponent, setOpponent] = useState(editingFixture?.opponent || "");
   const [location, setLocation] = useState(editingFixture?.location || "");
