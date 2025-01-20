@@ -12,22 +12,22 @@ import { EditObjectiveDialog } from "@/components/calendar/EditObjectiveDialog";
 type BaseEvent = {
   id: string;
   date: string;
-  location?: string;
+  location?: string | null;
   category?: string;
-  home_score?: number;
-  away_score?: number;
-  outcome?: string;
-  format?: string;
-  time?: string;
-  is_friendly?: boolean;
-  created_at: string;
-  updated_at: string;
+  home_score?: number | null;
+  away_score?: number | null;
+  outcome?: string | null;
+  format?: string | null;
+  time?: string | null;
+  is_friendly?: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 type Fixture = BaseEvent & {
   opponent: string;
-  motm_player_id?: string;
-  players?: { name: string }[];
+  motm_player_id?: string | null;
+  players?: { name: string }[] | null;
   event_type?: 'fixture';
 };
 
@@ -81,7 +81,7 @@ export const CalendarPage = () => {
     },
   });
 
-  const { data: fixtures, refetch: refetchFixtures } = useQuery<CalendarEvent[]>({
+  const { data: fixtures = [], refetch: refetchFixtures } = useQuery<CalendarEvent[]>({
     queryKey: ["fixtures", date],
     queryFn: async () => {
       if (!date) return [];
@@ -126,10 +126,11 @@ export const CalendarPage = () => {
       // Add event_type to fixtures
       const transformedFixtures = (fixturesData || []).map(f => ({
         ...f,
-        event_type: 'fixture' as const
+        event_type: 'fixture' as const,
+        players: f.players ? [f.players].flat() : []
       }));
 
-      return [...transformedFixtures, ...transformedTournaments, ...transformedFestivals];
+      return [...transformedFixtures, ...transformedTournaments, ...transformedFestivals] as CalendarEvent[];
     },
   });
 
@@ -191,7 +192,7 @@ export const CalendarPage = () => {
 
   const handleDeleteFixture = async (fixtureId: string) => {
     try {
-      const event = fixtures?.find(f => f.id === fixtureId);
+      const event = fixtures.find(f => f.id === fixtureId);
       
       if (!event) {
         throw new Error("Event not found");
