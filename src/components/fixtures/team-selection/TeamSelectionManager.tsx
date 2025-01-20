@@ -7,17 +7,20 @@ import { FormationView } from "@/components/fixtures/FormationView";
 import { PrintTeamSelection } from "@/components/fixtures/PrintTeamSelection";
 import { TeamSelectionHeader } from "@/components/fixtures/team-selection/TeamSelectionHeader";
 import { PeriodTable } from "@/components/fixtures/team-selection/PeriodTable";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TeamSelectionManagerProps {
   fixtureId: string;
   category: string;
   format?: string;
+  eventType: 'festival' | 'tournament';
 }
 
 export const TeamSelectionManager = ({ 
   fixtureId, 
-  category, 
-  format = "7-a-side" 
+  category,
+  format = "7-a-side",
+  eventType
 }: TeamSelectionManagerProps) => {
   const { toast } = useToast();
   const [periods, setPeriods] = useState<any[]>([]);
@@ -25,8 +28,9 @@ export const TeamSelectionManager = ({
   const [isSaving, setIsSaving] = useState(false);
   const [showFormation, setShowFormation] = useState(false);
   const [positions, setPositions] = useState<any[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState(category);
+  const [selectedTeamIndex, setSelectedTeamIndex] = useState("0");
 
+  // Get the number of positions based on format
   const getPositionsCount = (format: string) => {
     switch (format) {
       case "4-a-side": return 4;
@@ -38,14 +42,22 @@ export const TeamSelectionManager = ({
     }
   };
 
-  const { data: fixtureData } = useQuery({
-    queryKey: ["fixture", fixtureId],
+  // Query event details (festival or tournament)
+  const { data: eventData } = useQuery({
+    queryKey: [eventType, fixtureId],
     queryFn: async () => {
       if (!fixtureId) return null;
       const { data, error } = await supabase
-        .from("fixtures")
-        .select("*")
-        .eq("id", fixtureId)
+        .from(eventType === 'festival' ? 'festivals' : 'tournaments')
+        .select(`
+          *,
+          ${eventType}_teams (
+            id,
+            team_name,
+            category
+          )
+        `)
+        .eq('id', fixtureId)
         .maybeSingle();
 
       if (error) throw error;
@@ -53,8 +65,6 @@ export const TeamSelectionManager = ({
     },
     enabled: !!fixtureId,
   });
-
-  // ... keep existing code (teamSettings query)
 
   // Get available player categories
   const { data: playerCategories } = useQuery({
@@ -70,20 +80,47 @@ export const TeamSelectionManager = ({
     },
   });
 
-  const { data: playersData, error: playersError } = useQuery({
-    queryKey: ["players", category],
+  // Get position definitions
+  const { data: positionDefinitions } = useQuery({
+    queryKey: ["position-definitions"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("players")
-        .select("id, name, squad_number")
-        .eq("player_category", category.toUpperCase())
-        .order("squad_number");
+        .from("position_definitions")
+        .select("*")
+        .order("abbreviation");
 
       if (error) throw error;
       return data || [];
     },
   });
 
+  // Query players for the selected team's category
+  const { data: playersData, error: playersError } = useQuery({
+    queryKey: ["players", eventData?.[`${eventType}_teams`]?.[parseInt(selectedTeamIndex)]?.category],
+    queryFn: async () => {
+      const teamCategory = eventData?.[`${eventType}_teams`]?.[parseInt(selectedTeamIndex)]?.category;
+      if (!teamCategory) return [];
+
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, name, squad_number")
+        .eq("player_category", teamCategory.toUpperCase())
+        .order("squad_number");
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!eventData?.[`${eventType}_teams`]?.[parseInt(selectedTeamIndex)]?.category,
+  });
+
+  // Set positions from definitions
+  useEffect(() => {
+    if (positionDefinitions) {
+      setPositions(positionDefinitions);
+    }
+  }, [positionDefinitions]);
+
+  // Initialize periods with correct number of positions
   useEffect(() => {
     const positionsCount = getPositionsCount(format);
     setPeriods([{
@@ -274,74 +311,82 @@ export const TeamSelectionManager = ({
     );
   }
 
-  if (!playersData) return <div>Loading...</div>;
+  if (!eventData) return <div>Loading...</div>;
 
-  if (playersData.length === 0) {
-    return (
-      <Alert>
-        <AlertDescription>
-          No players found. Players will be loaded from the team category if available.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  const teams = eventData[`${eventType}_teams`] || [];
 
   return (
-    <div className="space-y-4 max-h-[80vh] flex flex-col">
-      <TeamSelectionHeader
-        players={playersData}
-        captain={captain}
-        onCaptainChange={setCaptain}
-        onShowFormationToggle={() => setShowFormation(!showFormation)}
-        showFormation={showFormation}
-        onAddPeriod={addPeriod}
-        onPrint={() => window.print()}
-        onSave={saveTeamSelection}
-        isSaving={isSaving}
-        playerCategories={playerCategories?.map(pc => pc.name) || []}
-        selectedCategory={selectedCategory}
-        onCategoryChange={handleCategoryChange}
-      />
+    <div className="space-y-4">
+      <Tabs value={selectedTeamIndex} onValueChange={setSelectedTeamIndex}>
+        <TabsList className="w-full justify-start">
+          {teams.map((team: any, index: number) => (
+            <TabsTrigger key={team.id} value={index.toString()}>
+              {team.team_name} ({team.category})
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      <div className="flex-1 overflow-y-auto min-h-0 pb-4">
-        {showFormation && (
-          <div className="mb-4">
-            {periods.map((period, index) => (
-              <FormationView
-                key={index}
-                positions={period.positions}
+        {teams.map((team: any, index: number) => (
+          <TabsContent key={team.id} value={index.toString()}>
+            <div className="space-y-4 max-h-[80vh] flex flex-col">
+              <TeamSelectionHeader
                 players={playersData || []}
-                periodNumber={index + 1}
-                duration={period.duration_minutes}
+                captain={captain}
+                onCaptainChange={setCaptain}
+                onShowFormationToggle={() => setShowFormation(!showFormation)}
+                showFormation={showFormation}
+                onAddPeriod={addPeriod}
+                onPrint={() => window.print()}
+                onSave={saveTeamSelection}
+                isSaving={isSaving}
+                playerCategories={playerCategories?.map(pc => pc.name) || []}
+                selectedCategory={team.category}
+                onCategoryChange={() => {}} // Category is fixed per team
               />
-            ))}
-          </div>
-        )}
 
-        <div className="print:hidden">
-          <div className="overflow-x-auto">
-            <PeriodTable
-              periods={periods}
-              positions={positions}
-              players={playersData}
-              format={format}
-              onPositionChange={handlePositionChange}
-              onPlayerChange={handlePlayerChange}
-              onSubstituteChange={handleSubstituteChange}
-              onDurationChange={handleDurationChange}
-              onRemovePeriod={removePeriod}
-            />
-          </div>
-        </div>
+              <div className="flex-1 overflow-y-auto min-h-0 pb-4">
+                {showFormation && (
+                  <div className="mb-4">
+                    {periods.map((period, index) => (
+                      <FormationView
+                        key={index}
+                        positions={period.positions}
+                        players={playersData || []}
+                        periodNumber={index + 1}
+                        duration={period.duration_minutes}
+                      />
+                    ))}
+                  </div>
+                )}
 
-        {playersData && fixtureData && (
-          <PrintTeamSelection
-            fixture={fixtureData}
-            periods={periods}
-            players={playersData}
-          />
-        )}
-      </div>
+                <div className="print:hidden">
+                  <div className="overflow-x-auto">
+                    <PeriodTable
+                      periods={periods}
+                      positions={positions}
+                      players={playersData || []}
+                      format={format}
+                      onPositionChange={handlePositionChange}
+                      onPlayerChange={handlePlayerChange}
+                      onSubstituteChange={handleSubstituteChange}
+                      onDurationChange={handleDurationChange}
+                      onRemovePeriod={removePeriod}
+                    />
+                  </div>
+                </div>
+
+                {playersData && eventData && (
+                  <PrintTeamSelection
+                    fixture={eventData}
+                    periods={periods}
+                    players={playersData}
+                  />
+                )}
+              </div>
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 };
