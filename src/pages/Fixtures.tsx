@@ -88,33 +88,24 @@ const Fixtures = () => {
 
   const handleDelete = async (fixtureId: string) => {
     try {
-      // First get the event type
-      const { data: eventData, error: eventError } = await supabase
-        .from("combined_game_metrics")
-        .select("event_type")
-        .eq("id", fixtureId)
-        .maybeSingle();
-
-      if (eventError) {
-        console.error("Error fetching event type:", eventError);
-        throw eventError;
+      // Find the event in our local state first to determine its type
+      let eventType = null;
+      for (const dateEvents of Object.values(fixtures || {})) {
+        const event = (dateEvents as any[]).find((e) => e.id === fixtureId);
+        if (event) {
+          eventType = event.event_type;
+          break;
+        }
       }
-      
-      if (!eventData) {
+
+      if (!eventType) {
         throw new Error("Event not found");
       }
 
       let deleteError;
       
-      switch (eventData.event_type) {
-        case 'fixture':
-          const { error: fixtureError } = await supabase
-            .from("fixtures")
-            .delete()
-            .eq("id", fixtureId);
-          deleteError = fixtureError;
-          break;
-          
+      // Use the event_type to determine which table to delete from
+      switch (eventType) {
         case 'tournament':
           const { error: tournamentError } = await supabase
             .from("tournaments")
@@ -130,6 +121,14 @@ const Fixtures = () => {
             .eq("id", fixtureId);
           deleteError = festivalError;
           break;
+          
+        default:
+          // Regular fixture
+          const { error: fixtureError } = await supabase
+            .from("fixtures")
+            .delete()
+            .eq("id", fixtureId);
+          deleteError = fixtureError;
       }
 
       if (deleteError) {
