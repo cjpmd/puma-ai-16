@@ -332,7 +332,7 @@ export const CalendarPage = () => {
         .from("combined_game_metrics")
         .select("*")
         .eq("date", format(date, "yyyy-MM-dd"))
-        .order("created_at", { ascending: false });
+        .order("date", { ascending: true });
 
       if (error) throw error;
       return data || [];
