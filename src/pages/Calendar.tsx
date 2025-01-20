@@ -88,6 +88,7 @@ export const CalendarPage = () => {
       
       const dateStr = format(date, "yyyy-MM-dd");
 
+      // Fetch fixtures
       const { data: fixturesData, error: fixturesError } = await supabase
         .from("fixtures")
         .select("*, players!fixtures_motm_player_id_fkey(name)")
@@ -95,6 +96,7 @@ export const CalendarPage = () => {
 
       if (fixturesError) throw fixturesError;
 
+      // Fetch tournaments
       const { data: tournamentsData, error: tournamentsError } = await supabase
         .from("tournaments")
         .select("*")
@@ -102,6 +104,7 @@ export const CalendarPage = () => {
 
       if (tournamentsError) throw tournamentsError;
 
+      // Fetch festivals
       const { data: festivalsData, error: festivalsError } = await supabase
         .from("festivals")
         .select("*")
@@ -109,21 +112,23 @@ export const CalendarPage = () => {
 
       if (festivalsError) throw festivalsError;
 
+      // Transform tournaments
       const transformedTournaments = (tournamentsData || []).map(t => ({
         ...t,
         event_type: 'tournament' as const,
-        opponent: `Tournament at ${t.location}`,
+        opponent: `Tournament at ${t.location || 'TBD'}`,
         category: 'Tournament'
       }));
 
+      // Transform festivals
       const transformedFestivals = (festivalsData || []).map(f => ({
         ...f,
         event_type: 'festival' as const,
-        opponent: `Festival at ${f.location}`,
+        opponent: `Festival at ${f.location || 'TBD'}`,
         category: 'Festival'
       }));
 
-      // Add event_type to fixtures
+      // Transform fixtures
       const transformedFixtures = (fixturesData || []).map(f => ({
         ...f,
         event_type: 'fixture' as const,
@@ -316,3 +321,5 @@ export const CalendarPage = () => {
     </div>
   );
 };
+
+export default CalendarPage;
