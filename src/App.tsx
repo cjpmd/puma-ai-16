@@ -1,13 +1,13 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { NavBar } from "@/components/NavBar";
-import SquadManagement from "@/pages/SquadManagement";
-import Calendar from "@/pages/Calendar";
-import Fixtures from "@/pages/Fixtures";
-import Analytics from "@/pages/Analytics";
-import Coaches from "@/pages/Coaches";
+import { SquadManagement } from "@/pages/SquadManagement";
+import { Calendar } from "@/pages/Calendar";
+import { Fixtures } from "@/pages/Fixtures";
+import { Analytics } from "@/pages/Analytics";
+import { Coaches } from "@/pages/Coaches";
 import PlayerDetailsPage from "@/pages/PlayerDetailsPage";
-import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import { PrivacyPolicy } from "@/pages/PrivacyPolicy";
 
 function App() {
   return (

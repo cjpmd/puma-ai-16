@@ -8,7 +8,7 @@ import { CalendarGrid } from "@/components/calendar/CalendarGrid";
 import { EventsList } from "@/components/calendar/EventsList";
 import { EditObjectiveDialog } from "@/components/calendar/EditObjectiveDialog";
 
-export const CalendarPage = () => {
+export const Calendar = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
   const [isAddFixtureOpen, setIsAddFixtureOpen] = useState(false);
