@@ -124,6 +124,15 @@ export const TeamSelectionManager = ({ eventId, eventType }: TeamSelectionManage
     return <div>Loading...</div>;
   }
 
+  // Transform event data to match PrintTeamSelection fixture interface
+  const printFixture = {
+    id: eventData.id,
+    date: eventData.date,
+    opponent: `${eventType === 'festival' ? 'Festival' : 'Tournament'} at ${eventData.location || 'TBD'}`,
+    time: eventData.time,
+    location: eventData.location
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -157,7 +166,7 @@ export const TeamSelectionManager = ({ eventId, eventType }: TeamSelectionManage
 
       <div className="print:block hidden">
         <PrintTeamSelection
-          fixture={eventData}
+          fixture={printFixture}
           periods={[]}
           players={players}
         />
