@@ -96,6 +96,23 @@ export const FormationSelector = ({ players, fixtureId, format }: FormationSelec
 
   useEffect(() => {
     const fetchPeriods = async () => {
+      // First check if the fixture exists
+      const { data: fixtureExists, error: fixtureError } = await supabase
+        .from("fixtures")
+        .select("id")
+        .eq("id", fixtureId)
+        .maybeSingle();
+
+      if (fixtureError || !fixtureExists) {
+        console.error("Fixture does not exist:", fixtureError);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Unable to load fixture details",
+        });
+        return;
+      }
+
       const { data: existingPeriods, error } = await supabase
         .from("fixture_playing_periods")
         .select("*")
@@ -108,41 +125,53 @@ export const FormationSelector = ({ players, fixtureId, format }: FormationSelec
       }
 
       if (existingPeriods.length === 0) {
-        // Create default periods if none exist
-        const defaultPeriods = [
-          { start_minute: 0, duration_minutes: 20 },
-          { start_minute: 20, duration_minutes: 20 }
-        ];
+        try {
+          // Create default periods if none exist
+          const defaultPeriods = [
+            { start_minute: 0, duration_minutes: 20 },
+            { start_minute: 20, duration_minutes: 20 }
+          ];
 
-        for (const period of defaultPeriods) {
-          const { error: insertError } = await supabase
-            .from("fixture_playing_periods")
-            .insert({
-              fixture_id: fixtureId,
-              start_minute: period.start_minute,
-              duration_minutes: period.duration_minutes
-            });
+          for (const period of defaultPeriods) {
+            const { error: insertError } = await supabase
+              .from("fixture_playing_periods")
+              .insert({
+                fixture_id: fixtureId,
+                start_minute: period.start_minute,
+                duration_minutes: period.duration_minutes
+              });
 
-          if (insertError) {
-            console.error("Error creating period:", insertError);
+            if (insertError) {
+              throw insertError;
+            }
           }
+
+          // Fetch the newly created periods
+          const { data: newPeriods, error: fetchError } = await supabase
+            .from("fixture_playing_periods")
+            .select("*")
+            .eq("fixture_id", fixtureId)
+            .order("start_minute", { ascending: true });
+
+          if (fetchError) throw fetchError;
+          setPeriods(newPeriods || []);
+        } catch (error) {
+          console.error("Error creating periods:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to create playing periods",
+          });
         }
-
-        // Fetch the newly created periods
-        const { data: newPeriods } = await supabase
-          .from("fixture_playing_periods")
-          .select("*")
-          .eq("fixture_id", fixtureId)
-          .order("start_minute", { ascending: true });
-
-        setPeriods(newPeriods || []);
       } else {
         setPeriods(existingPeriods);
       }
     };
 
-    fetchPeriods();
-  }, [fixtureId]);
+    if (fixtureId) {
+      fetchPeriods();
+    }
+  }, [fixtureId, toast]);
 
   if (!fixture) {
     return null;
