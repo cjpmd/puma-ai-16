@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format as dateFormat } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -33,10 +33,10 @@ export const AddTournamentDialog = ({
   selectedDate,
   onSuccess,
 }: AddTournamentDialogProps) => {
-  const [date, setDate] = useState(selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '');
+  const [date, setDate] = useState(selectedDate ? dateFormat(selectedDate, 'yyyy-MM-dd') : '');
   const [time, setTime] = useState("");
   const [location, setLocation] = useState("");
-  const [format, setFormat] = useState("7-a-side");
+  const [gameFormat, setGameFormat] = useState("7-a-side");
   const [numberOfTeams, setNumberOfTeams] = useState("4");
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
@@ -50,7 +50,7 @@ export const AddTournamentDialog = ({
         date,
         time: time || null,
         location,
-        format,
+        format: gameFormat,
         number_of_teams: parseInt(numberOfTeams),
       }]);
 
@@ -116,7 +116,7 @@ export const AddTournamentDialog = ({
 
           <div className="grid w-full items-center gap-1.5">
             <Label htmlFor="format">Format</Label>
-            <Select value={format} onValueChange={setFormat}>
+            <Select value={gameFormat} onValueChange={setGameFormat}>
               <SelectTrigger>
                 <SelectValue placeholder="Select format" />
               </SelectTrigger>
