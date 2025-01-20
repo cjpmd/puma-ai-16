@@ -32,6 +32,11 @@ export const TeamSection = ({
   const [positions, setPositions] = useState<any[]>([]);
   const [showFormation, setShowFormation] = useState(false);
 
+  // Filter players based on team category
+  const filteredPlayers = players.filter(player => 
+    player.player_category === category || player.team_category === category
+  );
+
   const getPositionsForFormat = (format: string) => {
     const formatPositions: { [key: string]: { abbreviation: string; full_name: string }[] } = {
       "4-a-side": [
@@ -111,7 +116,7 @@ export const TeamSection = ({
       {showFormation && (
         <FormationView
           positions={positions}
-          players={players}
+          players={filteredPlayers}
           periodNumber={teamIndex + 1}
           duration={0}
         />
@@ -126,7 +131,7 @@ export const TeamSection = ({
           substitutes: []
         }]}
         positions={getPositionsForFormat(format)}
-        players={players}
+        players={filteredPlayers}
         format={format}
         onPositionChange={() => {}}
         onPlayerChange={(_, posIndex, playerId) => {
