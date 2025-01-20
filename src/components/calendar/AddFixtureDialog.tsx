@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format } from "date-fns";
 
 interface AddFixtureDialogProps {
   isOpen: boolean;
