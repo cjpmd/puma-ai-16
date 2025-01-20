@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format as dateFormat } from "date-fns";
@@ -44,28 +44,27 @@ export const AddTournamentDialog = ({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Get default team category from team settings
-  const [defaultCategory, setDefaultCategory] = useState<string>("");
-
-  useEffect(() => {
-    const fetchDefaultCategory = async () => {
+  // Get default team category from team settings using React Query
+  const { data: teamSettings } = useQuery({
+    queryKey: ["team-settings"],
+    queryFn: async () => {
+      console.log("Fetching team settings...");
       const { data, error } = await supabase
         .from("team_settings")
-        .select("team_name")
+        .select("*")
         .single();
 
       if (error) {
-        console.error("Error fetching default category:", error);
-        return;
+        console.error("Error fetching team settings:", error);
+        throw error;
       }
 
-      if (data?.team_name) {
-        setDefaultCategory(data.team_name);
-      }
-    };
+      console.log("Team settings data:", data);
+      return data;
+    },
+  });
 
-    fetchDefaultCategory();
-  }, []);
+  const defaultCategory = teamSettings?.team_name || "";
 
   const handleTeamCategoryUpdate = (index: number, category: string) => {
     const newCategories = [...teamCategories];
