@@ -85,12 +85,14 @@ const Fixtures = () => {
 
   const handleDelete = async (fixtureId: string) => {
     try {
-      const { data: eventData } = await supabase
+      // First get the event type
+      const { data: eventData, error: eventError } = await supabase
         .from("combined_game_metrics")
         .select("event_type")
         .eq("id", fixtureId)
-        .single();
+        .maybeSingle();
 
+      if (eventError) throw eventError;
       if (!eventData) {
         throw new Error("Event not found");
       }
