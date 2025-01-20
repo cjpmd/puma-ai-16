@@ -42,7 +42,7 @@ export const AddFixtureDialog = ({
   const [opponent, setOpponent] = useState(editingFixture?.opponent || "");
   const [location, setLocation] = useState(editingFixture?.location || "");
   const [category, setCategory] = useState(editingFixture?.category || "Ronaldo");
-  const [format, setFormat] = useState(editingFixture?.format || "");
+  const [gameFormat, setGameFormat] = useState(editingFixture?.format || "");
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -56,7 +56,7 @@ export const AddFixtureDialog = ({
         .single();
 
       if (!error && data) {
-        setFormat(editingFixture?.format || data.format);
+        setGameFormat(editingFixture?.format || data.format);
       }
     };
 
@@ -73,7 +73,7 @@ export const AddFixtureDialog = ({
         opponent,
         location,
         category,
-        format,
+        format: gameFormat,
       };
 
       if (editingFixture) {
@@ -177,7 +177,7 @@ export const AddFixtureDialog = ({
 
           <div className="grid w-full items-center gap-1.5">
             <Label htmlFor="format">Format</Label>
-            <Select value={format} onValueChange={setFormat}>
+            <Select value={gameFormat} onValueChange={setGameFormat}>
               <SelectTrigger>
                 <SelectValue placeholder="Select format" />
               </SelectTrigger>
