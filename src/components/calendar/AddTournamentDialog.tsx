@@ -59,7 +59,7 @@ export const AddTournamentDialog = ({
         return;
       }
 
-      if (data) {
+      if (data?.team_name) {
         setDefaultCategory(data.team_name);
       }
     };
