@@ -86,6 +86,12 @@ export default function Index() {
           </Card>
         </Link>
       </div>
+
+      <footer className="mt-16 text-center text-sm text-muted-foreground">
+        <Link to="/privacy-policy" className="hover:underline">
+          Privacy Policy & Data Retention
+        </Link>
+      </footer>
     </div>
   );
 }
