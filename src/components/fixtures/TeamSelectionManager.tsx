@@ -14,11 +14,6 @@ interface TeamSelectionManagerProps {
   format?: string;
 }
 
-interface Position {
-  abbreviation: string;
-  full_name: string;
-}
-
 export const TeamSelectionManager = ({ 
   fixtureId, 
   category, 
@@ -29,7 +24,8 @@ export const TeamSelectionManager = ({
   const [captain, setCaptain] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [showFormation, setShowFormation] = useState(false);
-  const [positions, setPositions] = useState<Position[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState(category);
 
   // Get the number of positions based on format
   const getPositionsCount = (format: string) => {
@@ -74,15 +70,43 @@ export const TeamSelectionManager = ({
     },
   });
 
+  // Get available player categories
+  const { data: playerCategories } = useQuery({
+    queryKey: ["player-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_categories")
+        .select("name")
+        .order("name");
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Get available positions
+  const { data: positionDefinitions } = useQuery({
+    queryKey: ["position-definitions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("position_definitions")
+        .select("*")
+        .order("abbreviation");
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // Query players for the given category or team category
   const { data: playersData, error: playersError } = useQuery({
-    queryKey: ["players", category, teamSettings?.team_name],
+    queryKey: ["players", selectedCategory, teamSettings?.team_name],
     queryFn: async () => {
       // First try to get players by the provided category
       let { data: categoryPlayers, error: categoryError } = await supabase
         .from("players")
         .select("id, name, squad_number")
-        .eq("player_category", category.toUpperCase())
+        .eq("player_category", selectedCategory.toUpperCase())
         .order("squad_number");
 
       // If no players found and we have team settings, try team_category
@@ -100,8 +124,15 @@ export const TeamSelectionManager = ({
       if (categoryError) throw categoryError;
       return categoryPlayers || [];
     },
-    enabled: !!category || !!teamSettings?.team_name,
+    enabled: !!selectedCategory || !!teamSettings?.team_name,
   });
+
+  // Set positions from position definitions
+  useEffect(() => {
+    if (positionDefinitions) {
+      setPositions(positionDefinitions);
+    }
+  }, [positionDefinitions]);
 
   // Initialize periods with correct number of positions
   useEffect(() => {
@@ -172,6 +203,10 @@ export const TeamSelectionManager = ({
 
   const removePeriod = (index: number) => {
     setPeriods((current) => current.filter((_, i) => i !== index));
+  };
+
+  const handleCategoryChange = (newCategory: string) => {
+    setSelectedCategory(newCategory);
   };
 
   const saveTeamSelection = async () => {
@@ -314,6 +349,9 @@ export const TeamSelectionManager = ({
         onPrint={() => window.print()}
         onSave={saveTeamSelection}
         isSaving={isSaving}
+        playerCategories={playerCategories?.map(pc => pc.name) || []}
+        selectedCategory={selectedCategory}
+        onCategoryChange={handleCategoryChange}
       />
 
       <div className="flex-1 overflow-y-auto min-h-0 pb-4">
@@ -360,4 +398,3 @@ export const TeamSelectionManager = ({
 };
 
 export default TeamSelectionManager;
-
