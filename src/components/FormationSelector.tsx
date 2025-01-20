@@ -96,6 +96,8 @@ export const FormationSelector = ({ players, fixtureId, format }: FormationSelec
 
   useEffect(() => {
     const fetchPeriods = async () => {
+      if (!fixtureId) return;
+      
       // First check if the fixture exists
       const { data: fixtureExists, error: fixtureError } = await supabase
         .from("fixtures")
@@ -127,40 +129,25 @@ export const FormationSelector = ({ players, fixtureId, format }: FormationSelec
       if (existingPeriods.length === 0) {
         try {
           // Create default periods if none exist
-          const defaultPeriods = [
-            { start_minute: 0, duration_minutes: 20 },
-            { start_minute: 20, duration_minutes: 20 }
-          ];
-
-          for (const period of defaultPeriods) {
-            const { error: insertError } = await supabase
-              .from("fixture_playing_periods")
-              .insert({
-                fixture_id: fixtureId,
-                start_minute: period.start_minute,
-                duration_minutes: period.duration_minutes
-              });
-
-            if (insertError) {
-              throw insertError;
-            }
-          }
-
-          // Fetch the newly created periods
-          const { data: newPeriods, error: fetchError } = await supabase
+          const { data: newPeriod, error: insertError } = await supabase
             .from("fixture_playing_periods")
-            .select("*")
-            .eq("fixture_id", fixtureId)
-            .order("start_minute", { ascending: true });
+            .insert({
+              fixture_id: fixtureId,
+              start_minute: 0,
+              duration_minutes: 20
+            })
+            .select()
+            .single();
 
-          if (fetchError) throw fetchError;
-          setPeriods(newPeriods || []);
+          if (insertError) throw insertError;
+          
+          setPeriods([newPeriod]);
         } catch (error) {
-          console.error("Error creating periods:", error);
+          console.error("Error creating period:", error);
           toast({
             variant: "destructive",
             title: "Error",
-            description: "Failed to create playing periods",
+            description: "Failed to create playing period",
           });
         }
       } else {

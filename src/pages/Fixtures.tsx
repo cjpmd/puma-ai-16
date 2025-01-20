@@ -85,24 +85,57 @@ const Fixtures = () => {
 
   const handleDelete = async (fixtureId: string) => {
     try {
-      const { error } = await supabase
-        .from("fixtures")
-        .delete()
-        .eq("id", fixtureId);
+      const { data: eventData } = await supabase
+        .from("combined_game_metrics")
+        .select("event_type")
+        .eq("id", fixtureId)
+        .single();
 
-      if (error) throw error;
+      if (!eventData) {
+        throw new Error("Event not found");
+      }
+
+      let deleteError;
+      
+      switch (eventData.event_type) {
+        case 'fixture':
+          const { error: fixtureError } = await supabase
+            .from("fixtures")
+            .delete()
+            .eq("id", fixtureId);
+          deleteError = fixtureError;
+          break;
+          
+        case 'tournament':
+          const { error: tournamentError } = await supabase
+            .from("tournaments")
+            .delete()
+            .eq("id", fixtureId);
+          deleteError = tournamentError;
+          break;
+          
+        case 'festival':
+          const { error: festivalError } = await supabase
+            .from("festivals")
+            .delete()
+            .eq("id", fixtureId);
+          deleteError = festivalError;
+          break;
+      }
+
+      if (deleteError) throw deleteError;
 
       toast({
         title: "Success",
-        description: "Fixture deleted successfully",
+        description: "Event deleted successfully",
       });
       refetch();
     } catch (error) {
-      console.error("Error deleting fixture:", error);
+      console.error("Error deleting event:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete fixture",
+        description: "Failed to delete event",
       });
     }
   };
@@ -113,8 +146,16 @@ const Fixtures = () => {
   };
 
   const handleTeamSelection = (fixture: any) => {
-    setSelectedFixture(fixture);
-    setShowTeamSelection(true);
+    if (fixture.event_type === 'fixture' || (fixture.category && fixture.category !== 'Tournament' && fixture.category !== 'Festival')) {
+      setSelectedFixture(fixture);
+      setShowTeamSelection(true);
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Team Selection Unavailable",
+        description: "Team selection is only available for fixtures or teams with specific categories",
+      });
+    }
   };
 
   if (error) {

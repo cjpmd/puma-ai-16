@@ -44,7 +44,6 @@ export const CalendarPage = () => {
     },
   });
 
-  // Updated query to include all event types
   const { data: fixtures, refetch: refetchFixtures } = useQuery({
     queryKey: ["fixtures", date],
     queryFn: async () => {
@@ -52,7 +51,6 @@ export const CalendarPage = () => {
       
       const dateStr = format(date, "yyyy-MM-dd");
 
-      // Get regular fixtures
       const { data: fixturesData, error: fixturesError } = await supabase
         .from("fixtures")
         .select("*, players!fixtures_motm_player_id_fkey(name)")
@@ -60,7 +58,6 @@ export const CalendarPage = () => {
 
       if (fixturesError) throw fixturesError;
 
-      // Get tournaments
       const { data: tournamentsData, error: tournamentsError } = await supabase
         .from("tournaments")
         .select("*")
@@ -68,7 +65,6 @@ export const CalendarPage = () => {
 
       if (tournamentsError) throw tournamentsError;
 
-      // Get festivals
       const { data: festivalsData, error: festivalsError } = await supabase
         .from("festivals")
         .select("*")
@@ -76,7 +72,6 @@ export const CalendarPage = () => {
 
       if (festivalsError) throw festivalsError;
 
-      // Transform tournaments and festivals to match fixture format
       const transformedTournaments = (tournamentsData || []).map(t => ({
         ...t,
         event_type: 'tournament',
@@ -91,7 +86,6 @@ export const CalendarPage = () => {
         category: 'Festival'
       }));
 
-      // Combine all events
       return [...(fixturesData || []), ...transformedTournaments, ...transformedFestivals];
     },
   });
@@ -154,24 +148,57 @@ export const CalendarPage = () => {
 
   const handleDeleteFixture = async (fixtureId: string) => {
     try {
-      const { error } = await supabase
-        .from("fixtures")
-        .delete()
-        .eq("id", fixtureId);
+      const { data: eventData } = await supabase
+        .from("combined_game_metrics")
+        .select("event_type")
+        .eq("id", fixtureId)
+        .single();
 
-      if (error) throw error;
+      if (!eventData) {
+        throw new Error("Event not found");
+      }
+
+      let deleteError;
+      
+      switch (eventData.event_type) {
+        case 'fixture':
+          const { error: fixtureError } = await supabase
+            .from("fixtures")
+            .delete()
+            .eq("id", fixtureId);
+          deleteError = fixtureError;
+          break;
+          
+        case 'tournament':
+          const { error: tournamentError } = await supabase
+            .from("tournaments")
+            .delete()
+            .eq("id", fixtureId);
+          deleteError = tournamentError;
+          break;
+          
+        case 'festival':
+          const { error: festivalError } = await supabase
+            .from("festivals")
+            .delete()
+            .eq("id", fixtureId);
+          deleteError = festivalError;
+          break;
+      }
+
+      if (deleteError) throw deleteError;
 
       toast({
         title: "Success",
-        description: "Fixture deleted successfully",
+        description: "Event deleted successfully",
       });
       refetchFixtures();
     } catch (error) {
-      console.error("Error deleting fixture:", error);
+      console.error("Error deleting event:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete fixture",
+        description: "Failed to delete event",
       });
     }
   };
@@ -254,3 +281,4 @@ export const CalendarPage = () => {
     </div>
   );
 };
+
