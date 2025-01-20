@@ -29,7 +29,8 @@ export default async function Page({ params }: { params: { id: string } }) {
             home_score,
             away_score,
             outcome,
-            category
+            category,
+            is_friendly
           ),
           fixture_playing_periods (
             duration_minutes
@@ -83,7 +84,9 @@ export default async function Page({ params }: { params: { id: string } }) {
         isMotm: curr.fixtures?.motm_player_id === player.id,
         isCaptain: player.fixture_team_selections?.some(
           selection => selection.fixture_id === fixtureId && selection.is_captain
-        )
+        ),
+        event_type: 'FIXTURE',
+        is_friendly: curr.fixtures?.is_friendly || false
       }
     }
     
