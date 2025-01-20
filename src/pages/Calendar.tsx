@@ -206,64 +206,45 @@ export const CalendarPage = () => {
 
   const handleDeleteFixture = async (fixtureId: string) => {
     try {
-      // First, get the event type
-      const { data: eventData, error: eventError } = await supabase
-        .from("fixtures")
-        .select("event_type")
-        .eq("id", fixtureId)
-        .maybeSingle();
-
-      if (eventError) {
-        console.error("Error fetching event type:", eventError);
-        throw eventError;
+      // Find the event in our local state first
+      const event = fixtures.find(f => f.id === fixtureId);
+      
+      if (!event) {
+        throw new Error("Event not found");
       }
 
-      // If no fixture found, try tournaments
-      if (!eventData) {
-        const { data: tournamentData, error: tournamentError } = await supabase
-          .from("tournaments")
-          .select("id")
-          .eq("id", fixtureId)
-          .maybeSingle();
-
-        if (tournamentError) {
-          console.error("Error checking tournament:", tournamentError);
-          throw tournamentError;
-        }
-
-        if (tournamentData) {
-          const { error: deleteError } = await supabase
+      let deleteError;
+      
+      // Use the event_type from our transformed data to determine which table to delete from
+      switch (event.event_type) {
+        case 'tournament':
+          const { error: tournamentError } = await supabase
             .from("tournaments")
             .delete()
             .eq("id", fixtureId);
-
-          if (deleteError) {
-            console.error("Error deleting tournament:", deleteError);
-            throw deleteError;
-          }
-        } else {
-          // Try festivals
-          const { error: deleteError } = await supabase
+          deleteError = tournamentError;
+          break;
+          
+        case 'festival':
+          const { error: festivalError } = await supabase
             .from("festivals")
             .delete()
             .eq("id", fixtureId);
+          deleteError = festivalError;
+          break;
+          
+        default:
+          // Regular fixture
+          const { error: fixtureError } = await supabase
+            .from("fixtures")
+            .delete()
+            .eq("id", fixtureId);
+          deleteError = fixtureError;
+      }
 
-          if (deleteError) {
-            console.error("Error deleting festival:", deleteError);
-            throw deleteError;
-          }
-        }
-      } else {
-        // Regular fixture
-        const { error: deleteError } = await supabase
-          .from("fixtures")
-          .delete()
-          .eq("id", fixtureId);
-
-        if (deleteError) {
-          console.error("Error deleting fixture:", deleteError);
-          throw deleteError;
-        }
+      if (deleteError) {
+        console.error("Error deleting event:", deleteError);
+        throw deleteError;
       }
 
       toast({
@@ -283,29 +264,59 @@ export const CalendarPage = () => {
 
   const handleUpdateFixtureDate = async (fixtureId: string, newDate: Date) => {
     try {
-      const { error } = await supabase
-        .from("fixtures")
-        .update({
-          date: format(newDate, "yyyy-MM-dd"),
-        })
-        .eq("id", fixtureId);
+      // Find the event in our local state first
+      const event = fixtures.find(f => f.id === fixtureId);
+      
+      if (!event) {
+        throw new Error("Event not found");
+      }
 
-      if (error) {
-        console.error("Error updating fixture date:", error);
-        throw error;
+      let updateError;
+      const formattedDate = format(newDate, "yyyy-MM-dd");
+      
+      // Use the event_type from our transformed data to determine which table to update
+      switch (event.event_type) {
+        case 'tournament':
+          const { error: tournamentError } = await supabase
+            .from("tournaments")
+            .update({ date: formattedDate })
+            .eq("id", fixtureId);
+          updateError = tournamentError;
+          break;
+          
+        case 'festival':
+          const { error: festivalError } = await supabase
+            .from("festivals")
+            .update({ date: formattedDate })
+            .eq("id", fixtureId);
+          updateError = festivalError;
+          break;
+          
+        default:
+          // Regular fixture
+          const { error: fixtureError } = await supabase
+            .from("fixtures")
+            .update({ date: formattedDate })
+            .eq("id", fixtureId);
+          updateError = fixtureError;
+      }
+
+      if (updateError) {
+        console.error("Error updating event date:", updateError);
+        throw updateError;
       }
 
       toast({
         title: "Success",
-        description: "Fixture date updated successfully",
+        description: "Event date updated successfully",
       });
       refetchFixtures();
     } catch (error) {
-      console.error("Error updating fixture date:", error);
+      console.error("Error updating event date:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update fixture date",
+        description: "Failed to update event date",
       });
     }
   };
