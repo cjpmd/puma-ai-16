@@ -17,6 +17,7 @@ import { ArrowLeft, ArrowUpDown } from "lucide-react";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { motion } from "framer-motion";
 import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
+import { useToast } from "@/hooks/use-toast";
 
 type SortField = "squadNumber" | "technical" | "mental" | "physical" | "goalkeeping";
 type SortOrder = "asc" | "desc";
@@ -26,65 +27,89 @@ const SquadManagement = () => {
   const [sortField, setSortField] = useState<SortField>("squadNumber");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const { data: players, isLoading } = useQuery({
+  const { data: players, isLoading, error } = useQuery({
     queryKey: ["players"],
     queryFn: async () => {
-      const { data: playersData, error: playersError } = await supabase
-        .from("players")
-        .select(`
-          *,
-          player_attributes (*),
-          position_suitability (
-            suitability_score,
-            position_definitions (
-              abbreviation,
-              full_name
+      try {
+        const { data: playersData, error: playersError } = await supabase
+          .from("players")
+          .select(`
+            *,
+            player_attributes (*),
+            position_suitability (
+              suitability_score,
+              position_definitions (
+                abbreviation,
+                full_name
+              )
             )
-          )
-        `);
+          `);
 
-      if (playersError) throw playersError;
+        if (playersError) {
+          console.error("Error fetching players:", playersError);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to fetch players data. Please try again.",
+          });
+          throw playersError;
+        }
 
-      const { data: statsData, error: statsError } = await supabase
-        .from("player_stats")
-        .select('*');
+        const { data: statsData, error: statsError } = await supabase
+          .from("player_stats")
+          .select('*');
 
-      if (statsError) throw statsError;
+        if (statsError) {
+          console.error("Error fetching stats:", statsError);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to fetch player statistics. Please try again.",
+          });
+          throw statsError;
+        }
 
-      return (playersData as any[]).map((player): Player => ({
-        id: player.id,
-        name: player.name,
-        age: player.age,
-        dateOfBirth: player.date_of_birth,
-        squadNumber: player.squad_number,
-        playerCategory: player.player_category as PlayerCategory,
-        playerType: player.player_type as PlayerType,
-        attributes: player.player_attributes.map((attr: any): Attribute => ({
-          id: attr.id,
-          name: attr.name,
-          value: attr.value,
-          category: attr.category,
-          player_id: attr.player_id,
-          created_at: attr.created_at,
-        })),
-        attributeHistory: {},
-        objectives: statsData?.find((stat: any) => stat.player_id === player.id) ? {
-          completed: statsData.find((stat: any) => stat.player_id === player.id).completed_objectives,
-          improving: statsData.find((stat: any) => stat.player_id === player.id).improving_objectives,
-          ongoing: statsData.find((stat: any) => stat.player_id === player.id).ongoing_objectives,
-        } : undefined,
-        topPositions: player.position_suitability
-          ?.sort((a: any, b: any) => b.suitability_score - a.suitability_score)
-          .slice(0, 3)
-          .map((pos: any) => ({
-            position: pos.position_definitions.abbreviation,
-            suitability_score: Number(pos.suitability_score)
-          })) || [],
-        created_at: player.created_at,
-        updated_at: player.updated_at,
-      }));
+        return (playersData as any[]).map((player): Player => ({
+          id: player.id,
+          name: player.name,
+          age: player.age,
+          dateOfBirth: player.date_of_birth,
+          squadNumber: player.squad_number,
+          playerCategory: player.player_category as PlayerCategory,
+          playerType: player.player_type as PlayerType,
+          attributes: player.player_attributes.map((attr: any): Attribute => ({
+            id: attr.id,
+            name: attr.name,
+            value: attr.value,
+            category: attr.category,
+            player_id: attr.player_id,
+            created_at: attr.created_at,
+          })),
+          attributeHistory: {},
+          objectives: statsData?.find((stat: any) => stat.player_id === player.id) ? {
+            completed: statsData.find((stat: any) => stat.player_id === player.id).completed_objectives,
+            improving: statsData.find((stat: any) => stat.player_id === player.id).improving_objectives,
+            ongoing: statsData.find((stat: any) => stat.player_id === player.id).ongoing_objectives,
+          } : undefined,
+          topPositions: player.position_suitability
+            ?.sort((a: any, b: any) => b.suitability_score - a.suitability_score)
+            .slice(0, 3)
+            .map((pos: any) => ({
+              position: pos.position_definitions.abbreviation,
+              suitability_score: Number(pos.suitability_score)
+            })) || [],
+          created_at: player.created_at,
+          updated_at: player.updated_at,
+        }));
+      } catch (error) {
+        console.error("Error in players query:", error);
+        throw error;
+      }
     },
+    retry: 2,
+    retryDelay: 1000,
   });
 
   const calculateAttributeAverage = (attributes: Attribute[], category: string): number => {
@@ -159,6 +184,24 @@ const SquadManagement = () => {
   };
 
   const categoryCounts = getCategoryCounts();
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="container mx-auto text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Squad Data</h2>
+          <p className="text-gray-600 mb-4">There was a problem loading the squad information.</p>
+          <Button 
+            variant="outline" 
+            onClick={() => window.location.reload()}
+            className="mx-auto"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">
