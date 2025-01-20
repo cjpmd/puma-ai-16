@@ -8,6 +8,43 @@ import { CalendarGrid } from "@/components/calendar/CalendarGrid";
 import { EventsList } from "@/components/calendar/EventsList";
 import { EditObjectiveDialog } from "@/components/calendar/EditObjectiveDialog";
 
+// Define types for our fixtures
+type BaseEvent = {
+  id: string;
+  date: string;
+  location?: string;
+  category?: string;
+  home_score?: number;
+  away_score?: number;
+  outcome?: string;
+  format?: string;
+  time?: string;
+  is_friendly?: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type Fixture = BaseEvent & {
+  opponent: string;
+  motm_player_id?: string;
+  players?: { name: string }[];
+  event_type?: 'fixture';
+};
+
+type Tournament = BaseEvent & {
+  number_of_teams: number;
+  event_type: 'tournament';
+  opponent: string;
+};
+
+type Festival = BaseEvent & {
+  number_of_teams: number;
+  event_type: 'festival';
+  opponent: string;
+};
+
+type CalendarEvent = Fixture | Tournament | Festival;
+
 export const CalendarPage = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
@@ -44,7 +81,7 @@ export const CalendarPage = () => {
     },
   });
 
-  const { data: fixtures, refetch: refetchFixtures } = useQuery({
+  const { data: fixtures, refetch: refetchFixtures } = useQuery<CalendarEvent[]>({
     queryKey: ["fixtures", date],
     queryFn: async () => {
       if (!date) return [];
@@ -74,19 +111,25 @@ export const CalendarPage = () => {
 
       const transformedTournaments = (tournamentsData || []).map(t => ({
         ...t,
-        event_type: 'tournament',
+        event_type: 'tournament' as const,
         opponent: `Tournament at ${t.location}`,
         category: 'Tournament'
       }));
 
       const transformedFestivals = (festivalsData || []).map(f => ({
         ...f,
-        event_type: 'festival',
+        event_type: 'festival' as const,
         opponent: `Festival at ${f.location}`,
         category: 'Festival'
       }));
 
-      return [...(fixturesData || []), ...transformedTournaments, ...transformedFestivals];
+      // Add event_type to fixtures
+      const transformedFixtures = (fixturesData || []).map(f => ({
+        ...f,
+        event_type: 'fixture' as const
+      }));
+
+      return [...transformedFixtures, ...transformedTournaments, ...transformedFestivals];
     },
   });
 
@@ -148,7 +191,6 @@ export const CalendarPage = () => {
 
   const handleDeleteFixture = async (fixtureId: string) => {
     try {
-      // First try to determine the event type directly from our fixtures data
       const event = fixtures?.find(f => f.id === fixtureId);
       
       if (!event) {
