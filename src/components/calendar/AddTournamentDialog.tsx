@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,22 +39,58 @@ export const AddTournamentDialog = ({
   const [gameFormat, setGameFormat] = useState("7-a-side");
   const [numberOfTeams, setNumberOfTeams] = useState("4");
   const [isSaving, setIsSaving] = useState(false);
+  const [playerCategories, setPlayerCategories] = useState<string[]>([]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchPlayerCategories = async () => {
+      const { data, error } = await supabase
+        .from("player_categories")
+        .select("name")
+        .order("name");
+
+      if (error) {
+        console.error("Error fetching player categories:", error);
+        return;
+      }
+
+      setPlayerCategories(data.map(cat => cat.name));
+    };
+
+    fetchPlayerCategories();
+  }, []);
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
 
-      const { error } = await supabase.from("tournaments").insert([{
-        date,
-        time: time || null,
-        location,
-        format: gameFormat,
-        number_of_teams: parseInt(numberOfTeams),
-      }]);
+      // First create the tournament
+      const { data: tournamentData, error: tournamentError } = await supabase
+        .from("tournaments")
+        .insert([{
+          date,
+          time: time || null,
+          location,
+          format: gameFormat,
+          number_of_teams: parseInt(numberOfTeams),
+        }])
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (tournamentError) throw tournamentError;
+
+      // Then create the teams
+      const teamsToCreate = Array.from({ length: parseInt(numberOfTeams) }, (_, i) => ({
+        tournament_id: tournamentData.id,
+        team_name: `Team ${i + 1}`,
+      }));
+
+      const { error: teamsError } = await supabase
+        .from("tournament_teams")
+        .insert(teamsToCreate);
+
+      if (teamsError) throw teamsError;
 
       toast({
         title: "Success",

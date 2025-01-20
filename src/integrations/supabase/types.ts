@@ -249,7 +249,7 @@ export type Database = {
       }
       festival_teams: {
         Row: {
-          category: string
+          category: string | null
           created_at: string | null
           festival_id: string | null
           id: string
@@ -257,7 +257,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          category?: string
+          category?: string | null
           created_at?: string | null
           festival_id?: string | null
           id?: string
@@ -265,7 +265,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          category?: string
+          category?: string | null
           created_at?: string | null
           festival_id?: string | null
           id?: string
@@ -1180,7 +1180,7 @@ export type Database = {
       }
       tournament_teams: {
         Row: {
-          category: string
+          category: string | null
           created_at: string | null
           id: string
           team_name: string
@@ -1188,7 +1188,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          category?: string
+          category?: string | null
           created_at?: string | null
           id?: string
           team_name: string
@@ -1196,7 +1196,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          category?: string
+          category?: string | null
           created_at?: string | null
           id?: string
           team_name?: string
