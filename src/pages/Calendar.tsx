@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, parseISO, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
 import { AddFixtureDialog } from "@/components/calendar/AddFixtureDialog";
+import { AddTournamentDialog } from "@/components/calendar/AddTournamentDialog";
+import { AddFestivalDialog } from "@/components/calendar/AddFestivalDialog";
 import { Plus } from "lucide-react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -56,6 +58,8 @@ export const CalendarPage = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
   const [isAddFixtureOpen, setIsAddFixtureOpen] = useState(false);
+  const [isAddTournamentOpen, setIsAddTournamentOpen] = useState(false);
+  const [isAddFestivalOpen, setIsAddFestivalOpen] = useState(false);
   const [sessionTitle, setSessionTitle] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [isAddDrillOpen, setIsAddDrillOpen] = useState(false);
@@ -405,6 +409,40 @@ export const CalendarPage = () => {
                 setEditingFixture(null);
               }}
               editingFixture={editingFixture}
+            />
+          </Dialog>
+          <Dialog open={isAddTournamentOpen} onOpenChange={setIsAddTournamentOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Tournament
+              </Button>
+            </DialogTrigger>
+            <AddTournamentDialog
+              isOpen={isAddTournamentOpen}
+              onOpenChange={setIsAddTournamentOpen}
+              selectedDate={date}
+              onSuccess={() => {
+                refetchFixtures();
+                setIsAddTournamentOpen(false);
+              }}
+            />
+          </Dialog>
+          <Dialog open={isAddFestivalOpen} onOpenChange={setIsAddFestivalOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Festival
+              </Button>
+            </DialogTrigger>
+            <AddFestivalDialog
+              isOpen={isAddFestivalOpen}
+              onOpenChange={setIsAddFestivalOpen}
+              selectedDate={date}
+              onSuccess={() => {
+                refetchFixtures();
+                setIsAddFestivalOpen(false);
+              }}
             />
           </Dialog>
           <Link to="/fixtures">

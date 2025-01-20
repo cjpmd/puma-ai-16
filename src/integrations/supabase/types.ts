@@ -188,6 +188,133 @@ export type Database = {
           },
         ]
       }
+      festival_team_players: {
+        Row: {
+          created_at: string | null
+          festival_team_id: string | null
+          id: string
+          is_substitute: boolean | null
+          player_id: string | null
+          position: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          festival_team_id?: string | null
+          id?: string
+          is_substitute?: boolean | null
+          player_id?: string | null
+          position: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          festival_team_id?: string | null
+          id?: string
+          is_substitute?: boolean | null
+          player_id?: string | null
+          position?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "festival_team_players_festival_team_id_fkey"
+            columns: ["festival_team_id"]
+            isOneToOne: false
+            referencedRelation: "festival_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "festival_team_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "festival_team_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "festival_team_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
+      festival_teams: {
+        Row: {
+          category: string
+          created_at: string | null
+          festival_id: string | null
+          id: string
+          team_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          festival_id?: string | null
+          id?: string
+          team_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          festival_id?: string | null
+          id?: string
+          team_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "festival_teams_festival_id_fkey"
+            columns: ["festival_id"]
+            isOneToOne: false
+            referencedRelation: "festivals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      festivals: {
+        Row: {
+          created_at: string | null
+          date: string
+          format: string | null
+          id: string
+          location: string | null
+          number_of_teams: number
+          time: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          format?: string | null
+          id?: string
+          location?: string | null
+          number_of_teams: number
+          time?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          format?: string | null
+          id?: string
+          location?: string | null
+          number_of_teams?: number
+          time?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       fixture_player_positions: {
         Row: {
           created_at: string | null
@@ -985,6 +1112,133 @@ export type Database = {
           id?: string
           parent_notification_enabled?: boolean | null
           team_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tournament_team_players: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_substitute: boolean | null
+          player_id: string | null
+          position: string
+          tournament_team_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_substitute?: boolean | null
+          player_id?: string | null
+          position: string
+          tournament_team_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_substitute?: boolean | null
+          player_id?: string | null
+          position?: string
+          tournament_team_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_team_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "tournament_team_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_team_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "tournament_team_players_tournament_team_id_fkey"
+            columns: ["tournament_team_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_teams: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          team_name: string
+          tournament_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          team_name: string
+          tournament_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          team_name?: string
+          tournament_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_teams_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournaments: {
+        Row: {
+          created_at: string | null
+          date: string
+          format: string | null
+          id: string
+          location: string | null
+          number_of_teams: number
+          time: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          format?: string | null
+          id?: string
+          location?: string | null
+          number_of_teams: number
+          time?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          format?: string | null
+          id?: string
+          location?: string | null
+          number_of_teams?: number
+          time?: string | null
           updated_at?: string | null
         }
         Relationships: []
