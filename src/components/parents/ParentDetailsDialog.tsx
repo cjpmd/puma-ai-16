@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ParentDetailsDialogProps {
@@ -28,14 +28,20 @@ export const ParentDetailsDialog = ({ playerId, existingParent, onSave }: Parent
     e.preventDefault();
     try {
       if (existingParent) {
-        await supabase
+        // Update existing parent
+        const { error } = await supabase
           .from('player_parents')
           .update({ name, email, phone })
           .eq('id', existingParent.id);
+
+        if (error) throw error;
       } else {
-        await supabase
+        // Add new parent
+        const { error } = await supabase
           .from('player_parents')
           .insert([{ player_id: playerId, name, email, phone }]);
+
+        if (error) throw error;
       }
       
       toast({
