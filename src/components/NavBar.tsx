@@ -86,8 +86,8 @@ export const NavBar = () => {
           />
         </div>
         <div className="flex items-center gap-4">
-          <Link to="/home">
-            <Button variant="ghost">Home</Button>
+          <Link to="/dashboard">
+            <Button variant="ghost">Dashboard</Button>
           </Link>
           <Link to="/squad">
             <Button variant="ghost">
