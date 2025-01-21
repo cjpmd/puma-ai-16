@@ -125,7 +125,7 @@ export default function Home() {
           <div className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow border-2 border-transparent">
             <h3 className="text-xl font-semibold mb-4">Starter</h3>
             <div className="mb-6">
-              <span className="text-4xl font-bold">£29</span>
+              <span className="text-4xl font-bold">£0</span>
               <span className="text-gray-600">/month</span>
             </div>
             <ul className="space-y-4 mb-8">
@@ -154,7 +154,7 @@ export default function Home() {
             </div>
             <h3 className="text-xl font-semibold mb-4">Professional</h3>
             <div className="mb-6">
-              <span className="text-4xl font-bold">£79</span>
+              <span className="text-4xl font-bold">£0</span>
               <span className="text-gray-600">/month</span>
             </div>
             <ul className="space-y-4 mb-8">
@@ -184,7 +184,7 @@ export default function Home() {
           <div className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow border-2 border-transparent">
             <h3 className="text-xl font-semibold mb-4">Enterprise</h3>
             <div className="mb-6">
-              <span className="text-4xl font-bold">£199</span>
+              <span className="text-4xl font-bold">£0</span>
               <span className="text-gray-600">/month</span>
             </div>
             <ul className="space-y-4 mb-8">
