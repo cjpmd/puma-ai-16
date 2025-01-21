@@ -37,7 +37,8 @@ export default function Home() {
       {/* Hero Section */}
       <section className="container mx-auto px-6 py-16 text-center">
         <h1 className="text-5xl md:text-6xl font-bold mb-8 bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent animate-fade-in">
-          Transform Your Team Management
+          Welcome to Puma.AI 
+          Grass Roots to Academy - Transform Your Team Management
         </h1>
         <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto animate-slide-up">
           Elevate your football team's performance with AI-powered analytics, 
