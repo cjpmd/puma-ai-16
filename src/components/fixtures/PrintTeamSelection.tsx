@@ -3,32 +3,39 @@ import { format } from 'date-fns';
 
 interface PrintTeamSelectionProps {
   fixture: {
-    id: string;
     date: string;
     opponent: string;
     time?: string | null;
     location?: string | null;
   };
   periods: Array<{
-    id: string;
-    start_minute: number;
-    duration_minutes: number;
+    duration: number;
+    positions: Array<{
+      position: string;
+      playerId: string;
+    }>;
+    substitutes: Array<{
+      playerId: string;
+    }>;
   }>;
   players: Array<{
     id: string;
     name: string;
     squad_number: number;
   }>;
+  captain?: string;
 }
 
 export const PrintTeamSelection: React.FC<PrintTeamSelectionProps> = ({
   fixture,
   periods,
   players,
+  captain,
 }) => {
-  if (!fixture) {
-    return null;
-  }
+  const getPlayerName = (playerId: string) => {
+    const player = players?.find(p => p.id === playerId);
+    return player ? `${player.name} (${player.squad_number})` : '';
+  };
 
   return (
     <div className="print-only p-8 hidden">
@@ -46,7 +53,7 @@ export const PrintTeamSelection: React.FC<PrintTeamSelectionProps> = ({
       {periods.map((period, periodIndex) => (
         <div key={periodIndex} className="mb-8">
           <h2 className="text-xl font-semibold mb-4">
-            Period {periodIndex + 1} ({period.duration_minutes} minutes)
+            Period {periodIndex + 1} ({period.duration} minutes)
           </h2>
           
           <div className="grid grid-cols-2 gap-8">
@@ -54,12 +61,25 @@ export const PrintTeamSelection: React.FC<PrintTeamSelectionProps> = ({
             <div>
               <h3 className="text-lg font-medium mb-2">Starting XI</h3>
               <div className="space-y-1">
-                {players.map((player, idx) => (
+                {period.positions.map((pos, idx) => (
                   <div key={idx} className="flex">
-                    <span className="w-16 font-medium">{idx + 1}</span>
+                    <span className="w-16 font-medium">{pos.position}</span>
                     <span>
-                      {player.name} (#{player.squad_number})
+                      {getPlayerName(pos.playerId)}
+                      {captain === pos.playerId && " (C)"}
                     </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Substitutes */}
+            <div>
+              <h3 className="text-lg font-medium mb-2">Substitutes</h3>
+              <div className="space-y-1">
+                {period.substitutes.map((sub, idx) => (
+                  <div key={idx}>
+                    {getPlayerName(sub.playerId)}
                   </div>
                 ))}
               </div>

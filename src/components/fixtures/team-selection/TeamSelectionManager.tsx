@@ -14,11 +14,6 @@ interface TeamSelectionManagerProps {
   format?: string;
 }
 
-interface Position {
-  abbreviation: string;
-  full_name: string;
-}
-
 export const TeamSelectionManager = ({ 
   fixtureId, 
   category, 
@@ -29,7 +24,6 @@ export const TeamSelectionManager = ({
   const [captain, setCaptain] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [showFormation, setShowFormation] = useState(false);
-  const [positions, setPositions] = useState<Position[]>([]);
 
   // Get the number of positions based on format
   const getPositionsCount = (format: string) => {
@@ -43,24 +37,38 @@ export const TeamSelectionManager = ({
     }
   };
 
-  // Query fixture details including format
-  const { data: fixtureData } = useQuery({
-    queryKey: ["fixture", fixtureId],
+  // Initialize periods with correct number of positions
+  useEffect(() => {
+    const positionsCount = getPositionsCount(format);
+    setPeriods([{
+      duration: 10,
+      positions: Array.from({ length: positionsCount }, (_, i) => ({ 
+        index: i, 
+        position: "", 
+        playerId: "" 
+      })),
+      substitutes: Array.from({ length: Math.ceil(positionsCount / 2) }, (_, i) => ({ 
+        index: i, 
+        playerId: "" 
+      }))
+    }]);
+  }, [format]);
+
+  // Fetch positions from the database
+  const { data: positions } = useQuery({
+    queryKey: ["positions"],
     queryFn: async () => {
-      if (!fixtureId) return null;
       const { data, error } = await supabase
-        .from("fixtures")
-        .select("*")
-        .eq("id", fixtureId)
-        .maybeSingle();
+        .from("position_definitions")
+        .select("abbreviation, full_name")
+        .order("abbreviation");
 
       if (error) throw error;
       return data;
     },
-    enabled: !!fixtureId,
   });
 
-  // Query players for the given category
+  // Fetch available players for the category
   const { data: playersData, error: playersError } = useQuery({
     queryKey: ["players", category],
     queryFn: async () => {
@@ -71,26 +79,80 @@ export const TeamSelectionManager = ({
         .order("squad_number");
 
       if (error) throw error;
-      return data || [];
+      return data;
     },
   });
 
-  // Initialize periods with correct number of positions
+  // Fetch existing team selection if any
+  const { data: existingSelection } = useQuery({
+    queryKey: ["team-selection", fixtureId],
+    queryFn: async () => {
+      if (!fixtureId) return null;
+
+      const { data: periodsData, error: periodsError } = await supabase
+        .from("fixture_playing_periods")
+        .select(`
+          id,
+          duration_minutes,
+          fixture_player_positions (
+            id,
+            player_id,
+            position,
+            is_substitute
+          )
+        `)
+        .eq("fixture_id", fixtureId)
+        .order("start_minute");
+
+      if (periodsError) throw periodsError;
+
+      const { data: captainData } = await supabase
+        .from("fixture_team_selections")
+        .select("player_id")
+        .eq("fixture_id", fixtureId)
+        .eq("is_captain", true)
+        .maybeSingle();
+
+      return {
+        periods: periodsData,
+        captain: captainData?.player_id
+      };
+    },
+    enabled: !!fixtureId,
+  });
+
   useEffect(() => {
-    const positionsCount = getPositionsCount(format);
-    setPeriods([{
-      id: crypto.randomUUID(),
-      start_minute: 0,
-      duration_minutes: 20,
-      positions: Array.from({ length: positionsCount }, (_, i) => ({ 
-        position: "", 
-        playerId: "" 
-      })),
-      substitutes: Array.from({ length: Math.ceil(positionsCount / 2) }, (_, i) => ({ 
-        playerId: "" 
-      }))
-    }]);
-  }, [format]);
+    if (existingSelection) {
+      const mappedPeriods = existingSelection.periods.map((period) => {
+        const starters = period.fixture_player_positions.filter(pos => !pos.is_substitute);
+        const subs = period.fixture_player_positions.filter(pos => pos.is_substitute);
+        
+        return {
+          id: period.id,
+          duration: period.duration_minutes,
+          positions: Array.from({ length: getPositionsCount(format) }, (_, i) => {
+            const existingPosition = starters[i];
+            return {
+              index: i,
+              position: existingPosition?.position || "",
+              playerId: existingPosition?.player_id || "",
+            };
+          }),
+          substitutes: Array.from({ length: Math.ceil(getPositionsCount(format) / 2) }, (_, i) => {
+            const existingSub = subs[i];
+            return {
+              index: i,
+              playerId: existingSub?.player_id || "",
+            };
+          }),
+        };
+      });
+      setPeriods(mappedPeriods);
+      if (existingSelection.captain) {
+        setCaptain(existingSelection.captain);
+      }
+    }
+  }, [existingSelection, format]);
 
   const handlePositionChange = (periodIndex: number, positionIndex: number, position: string) => {
     setPeriods((currentPeriods) => {
@@ -119,7 +181,7 @@ export const TeamSelectionManager = ({
   const handleDurationChange = (periodIndex: number, duration: number) => {
     setPeriods((currentPeriods) => {
       const newPeriods = [...currentPeriods];
-      newPeriods[periodIndex].duration_minutes = duration;
+      newPeriods[periodIndex].duration = duration;
       return newPeriods;
     });
   };
@@ -128,14 +190,14 @@ export const TeamSelectionManager = ({
     setPeriods((current) => [
       ...current,
       {
-        id: crypto.randomUUID(),
-        start_minute: 0,
-        duration_minutes: 20,
+        duration: 10,
         positions: Array.from({ length: getPositionsCount(format) }, (_, i) => ({ 
+          index: i, 
           position: "", 
           playerId: "" 
         })),
         substitutes: Array.from({ length: Math.ceil(getPositionsCount(format) / 2) }, (_, i) => ({ 
+          index: i, 
           playerId: "" 
         })),
       },
@@ -184,7 +246,7 @@ export const TeamSelectionManager = ({
           .insert({
             fixture_id: fixtureId,
             start_minute: startMinute,
-            duration_minutes: period.duration_minutes,
+            duration_minutes: period.duration,
           })
           .select()
           .single();
@@ -197,7 +259,7 @@ export const TeamSelectionManager = ({
           substitutes: period.substitutes
         });
 
-        startMinute += period.duration_minutes;
+        startMinute += period.duration;
       }
 
       // Now create player positions using the stored period IDs
@@ -252,6 +314,23 @@ export const TeamSelectionManager = ({
     }
   };
 
+  // Fetch fixture data
+  const { data: fixture } = useQuery({
+    queryKey: ["fixture", fixtureId],
+    queryFn: async () => {
+      if (!fixtureId) return null;
+      const { data, error } = await supabase
+        .from("fixtures")
+        .select("*")
+        .eq("id", fixtureId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!fixtureId,
+  });
+
   if (playersError) {
     return (
       <Alert variant="destructive">
@@ -262,7 +341,7 @@ export const TeamSelectionManager = ({
     );
   }
 
-  if (!playersData) return <div>Loading...</div>;
+  if (!positions || !playersData) return <div>Loading...</div>;
 
   if (playersData.length === 0) {
     return (
@@ -274,6 +353,10 @@ export const TeamSelectionManager = ({
     );
   }
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="space-y-4 max-h-[80vh] flex flex-col">
       <TeamSelectionHeader
@@ -283,7 +366,7 @@ export const TeamSelectionManager = ({
         onShowFormationToggle={() => setShowFormation(!showFormation)}
         showFormation={showFormation}
         onAddPeriod={addPeriod}
-        onPrint={() => window.print()}
+        onPrint={handlePrint}
         onSave={saveTeamSelection}
         isSaving={isSaving}
       />
@@ -297,7 +380,7 @@ export const TeamSelectionManager = ({
                 positions={period.positions}
                 players={playersData || []}
                 periodNumber={index + 1}
-                duration={period.duration_minutes}
+                duration={period.duration}
               />
             ))}
           </div>
@@ -319,11 +402,21 @@ export const TeamSelectionManager = ({
           </div>
         </div>
 
-        {playersData && fixtureData && (
+        {playersData && fixture && (
           <PrintTeamSelection
-            fixture={fixtureData}
-            periods={periods}
+            fixture={fixture}
+            periods={periods.map(period => ({
+              duration: period.duration,
+              positions: period.positions.map(pos => ({
+                position: pos.position,
+                playerId: pos.playerId
+              })),
+              substitutes: period.substitutes.map(sub => ({
+                playerId: sub.playerId
+              }))
+            }))}
             players={playersData}
+            captain={captain}
           />
         )}
       </div>

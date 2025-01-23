@@ -5,37 +5,24 @@ import { Button } from "@/components/ui/button";
 import { MinusCircle } from "lucide-react";
 
 interface Position {
-  abbreviation: string;
-  full_name: string;
-}
-
-interface Player {
-  id: string;
-  name: string;
-  squad_number: number;
-}
-
-interface PeriodPosition {
   position: string;
   playerId: string;
 }
 
-interface PeriodSubstitute {
+interface Substitute {
   playerId: string;
 }
 
 interface Period {
-  id: string;
-  start_minute: number;
-  duration_minutes: number;
-  positions: PeriodPosition[];
-  substitutes: PeriodSubstitute[];
+  duration: number;
+  positions: Position[];
+  substitutes: Substitute[];
 }
 
 interface PeriodTableProps {
   periods: Period[];
-  positions: Position[];
-  players: Player[];
+  positions: Array<{ abbreviation: string; full_name: string }>;
+  players: Array<{ id: string; name: string; squad_number: number }>;
   format: string;
   onPositionChange: (periodIndex: number, positionIndex: number, value: string) => void;
   onPlayerChange: (periodIndex: number, positionIndex: number, value: string) => void;
@@ -99,7 +86,7 @@ export const PeriodTable = ({
               <TableCell key={periodIndex} className="p-1">
                 <div className="space-y-1">
                   <Select
-                    value={period.positions?.[positionIndex]?.position || ""}
+                    value={period.positions[positionIndex].position}
                     onValueChange={(value) => onPositionChange(periodIndex, positionIndex, value)}
                   >
                     <SelectTrigger className="h-7">
@@ -114,7 +101,7 @@ export const PeriodTable = ({
                     </SelectContent>
                   </Select>
                   <Select
-                    value={period.positions?.[positionIndex]?.playerId || ""}
+                    value={period.positions[positionIndex].playerId}
                     onValueChange={(value) => onPlayerChange(periodIndex, positionIndex, value)}
                   >
                     <SelectTrigger className="h-7">
@@ -146,7 +133,7 @@ export const PeriodTable = ({
             {periods.map((period, periodIndex) => (
               <TableCell key={periodIndex} className="p-1">
                 <Select
-                  value={period.substitutes?.[subIndex]?.playerId || ""}
+                  value={period.substitutes[subIndex].playerId}
                   onValueChange={(value) => onSubstituteChange(periodIndex, subIndex, value)}
                 >
                   <SelectTrigger className="h-7">
@@ -172,7 +159,7 @@ export const PeriodTable = ({
             <TableCell key={index} className="p-1">
               <Input
                 type="number"
-                value={period.duration_minutes}
+                value={period.duration}
                 onChange={(e) => onDurationChange(index, parseInt(e.target.value))}
                 className="h-7 w-16"
               />

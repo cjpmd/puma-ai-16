@@ -30,7 +30,6 @@ interface FixtureCardProps {
   onEdit: (fixture: FixtureCardProps["fixture"]) => void;
   onDelete: (fixtureId: string) => void;
   onDateChange: (newDate: Date) => void;
-  showTeamSelection?: boolean;
 }
 
 const getOutcomeIcon = (outcome: string | null | undefined) => {
@@ -46,7 +45,7 @@ const getOutcomeIcon = (outcome: string | null | undefined) => {
   }
 };
 
-export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange, showTeamSelection }: FixtureCardProps) => {
+export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: FixtureCardProps) => {
   const [isTeamSelectionOpen, setIsTeamSelectionOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const hasScores = fixture.home_score !== null && fixture.away_score !== null;
@@ -102,7 +101,7 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange, showTeamS
               >
                 <Pencil className="h-4 w-4" />
               </Button>
-              {showTeamSelection && (
+              {fixture.event_type === 'fixture' && (
                 <Button 
                   variant="ghost" 
                   size="sm"
@@ -152,7 +151,7 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange, showTeamS
         </CardContent>
       </Card>
 
-      {showTeamSelection && (
+      {fixture.event_type === 'fixture' && (
         <Dialog open={isTeamSelectionOpen} onOpenChange={setIsTeamSelectionOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>

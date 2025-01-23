@@ -8,42 +8,6 @@ import { CalendarGrid } from "@/components/calendar/CalendarGrid";
 import { EventsList } from "@/components/calendar/EventsList";
 import { EditObjectiveDialog } from "@/components/calendar/EditObjectiveDialog";
 
-type BaseEvent = {
-  id: string;
-  date: string;
-  location?: string | null;
-  category?: string;
-  home_score?: number | null;
-  away_score?: number | null;
-  outcome?: string | null;
-  format?: string | null;
-  time?: string | null;
-  is_friendly?: boolean | null;
-  created_at: string | null;
-  updated_at: string | null;
-};
-
-type Fixture = BaseEvent & {
-  opponent: string;
-  motm_player_id?: string | null;
-  players?: { name: string }[] | null;
-  event_type?: 'fixture';
-};
-
-type Tournament = BaseEvent & {
-  number_of_teams: number;
-  event_type: 'tournament';
-  opponent: string;
-};
-
-type Festival = BaseEvent & {
-  number_of_teams: number;
-  event_type: 'festival';
-  opponent: string;
-};
-
-type CalendarEvent = Fixture | Tournament | Festival;
-
 export const CalendarPage = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
@@ -78,92 +42,58 @@ export const CalendarPage = () => {
       if (error) throw error;
       return data || [];
     },
-    retry: 3,
-    retryDelay: 1000,
   });
 
-  const handleEditFixture = (fixture: any) => {
-    // Only set editingFixture and open dialog if it's a regular fixture
-    if (fixture.event_type === 'fixture') {
-      setEditingFixture(fixture);
-      setIsAddFixtureOpen(true);
-    } else if (fixture.event_type === 'tournament') {
-      setEditingFixture(fixture);
-      setIsAddTournamentOpen(true);
-    } else if (fixture.event_type === 'festival') {
-      setEditingFixture(fixture);
-      setIsAddFestivalOpen(true);
-    }
-  };
-
-  const { data: fixtures = [], refetch: refetchFixtures } = useQuery<CalendarEvent[]>({
+  // Updated query to include all event types
+  const { data: fixtures, refetch: refetchFixtures } = useQuery({
     queryKey: ["fixtures", date],
     queryFn: async () => {
       if (!date) return [];
       
       const dateStr = format(date, "yyyy-MM-dd");
 
-      try {
-        // Fetch fixtures
-        const { data: fixturesData, error: fixturesError } = await supabase
-          .from("fixtures")
-          .select("*, players!fixtures_motm_player_id_fkey(name)")
-          .eq("date", dateStr);
+      // Get regular fixtures
+      const { data: fixturesData, error: fixturesError } = await supabase
+        .from("fixtures")
+        .select("*, players!fixtures_motm_player_id_fkey(name)")
+        .eq("date", dateStr);
 
-        if (fixturesError) throw fixturesError;
+      if (fixturesError) throw fixturesError;
 
-        // Fetch tournaments
-        const { data: tournamentsData, error: tournamentsError } = await supabase
-          .from("tournaments")
-          .select("*")
-          .eq("date", dateStr);
+      // Get tournaments
+      const { data: tournamentsData, error: tournamentsError } = await supabase
+        .from("tournaments")
+        .select("*")
+        .eq("date", dateStr);
 
-        if (tournamentsError) throw tournamentsError;
+      if (tournamentsError) throw tournamentsError;
 
-        // Fetch festivals
-        const { data: festivalsData, error: festivalsError } = await supabase
-          .from("festivals")
-          .select("*")
-          .eq("date", dateStr);
+      // Get festivals
+      const { data: festivalsData, error: festivalsError } = await supabase
+        .from("festivals")
+        .select("*")
+        .eq("date", dateStr);
 
-        if (festivalsError) throw festivalsError;
+      if (festivalsError) throw festivalsError;
 
-        // Transform tournaments
-        const transformedTournaments = (tournamentsData || []).map(t => ({
-          ...t,
-          event_type: 'tournament' as const,
-          opponent: `Tournament at ${t.location || 'TBD'}`,
-          category: 'Tournament'
-        }));
+      // Transform tournaments and festivals to match fixture format
+      const transformedTournaments = (tournamentsData || []).map(t => ({
+        ...t,
+        event_type: 'tournament',
+        opponent: `Tournament at ${t.location}`,
+        category: 'Tournament'
+      }));
 
-        // Transform festivals
-        const transformedFestivals = (festivalsData || []).map(f => ({
-          ...f,
-          event_type: 'festival' as const,
-          opponent: `Festival at ${f.location || 'TBD'}`,
-          category: 'Festival'
-        }));
+      const transformedFestivals = (festivalsData || []).map(f => ({
+        ...f,
+        event_type: 'festival',
+        opponent: `Festival at ${f.location}`,
+        category: 'Festival'
+      }));
 
-        // Transform fixtures
-        const transformedFixtures = (fixturesData || []).map(f => ({
-          ...f,
-          event_type: 'fixture' as const,
-          players: f.players ? [f.players].flat() : []
-        }));
-
-        return [...transformedFixtures, ...transformedTournaments, ...transformedFestivals] as CalendarEvent[];
-      } catch (error) {
-        console.error("Error fetching calendar events:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load calendar events. Please try again.",
-        });
-        return [];
-      }
+      // Combine all events
+      return [...(fixturesData || []), ...transformedTournaments, ...transformedFestivals];
     },
-    retry: 3,
-    retryDelay: 1000,
   });
 
   const handleAddSession = async () => {
@@ -224,117 +154,50 @@ export const CalendarPage = () => {
 
   const handleDeleteFixture = async (fixtureId: string) => {
     try {
-      // Find the event in our local state first
-      const event = (fixtures as CalendarEvent[]).find(f => f.id === fixtureId);
-      
-      if (!event) {
-        throw new Error("Event not found");
-      }
+      const { error } = await supabase
+        .from("fixtures")
+        .delete()
+        .eq("id", fixtureId);
 
-      let deleteError;
-      
-      // Use the event_type from our transformed data to determine which table to delete from
-      switch (event.event_type) {
-        case 'tournament':
-          const { error: tournamentError } = await supabase
-            .from("tournaments")
-            .delete()
-            .eq("id", fixtureId);
-          deleteError = tournamentError;
-          break;
-          
-        case 'festival':
-          const { error: festivalError } = await supabase
-            .from("festivals")
-            .delete()
-            .eq("id", fixtureId);
-          deleteError = festivalError;
-          break;
-          
-        default:
-          // Regular fixture
-          const { error: fixtureError } = await supabase
-            .from("fixtures")
-            .delete()
-            .eq("id", fixtureId);
-          deleteError = fixtureError;
-      }
-
-      if (deleteError) {
-        console.error("Error deleting event:", deleteError);
-        throw deleteError;
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Event deleted successfully",
+        description: "Fixture deleted successfully",
       });
       refetchFixtures();
     } catch (error) {
-      console.error("Error deleting event:", error);
+      console.error("Error deleting fixture:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete event",
+        description: "Failed to delete fixture",
       });
     }
   };
 
   const handleUpdateFixtureDate = async (fixtureId: string, newDate: Date) => {
     try {
-      // Find the event in our local state first
-      const event = (fixtures as CalendarEvent[]).find(f => f.id === fixtureId);
-      
-      if (!event) {
-        throw new Error("Event not found");
-      }
+      const { error } = await supabase
+        .from("fixtures")
+        .update({
+          date: format(newDate, "yyyy-MM-dd"),
+        })
+        .eq("id", fixtureId);
 
-      let updateError;
-      const formattedDate = format(newDate, "yyyy-MM-dd");
-      
-      // Use the event_type from our transformed data to determine which table to update
-      switch (event.event_type) {
-        case 'tournament':
-          const { error: tournamentError } = await supabase
-            .from("tournaments")
-            .update({ date: formattedDate })
-            .eq("id", fixtureId);
-          updateError = tournamentError;
-          break;
-          
-        case 'festival':
-          const { error: festivalError } = await supabase
-            .from("festivals")
-            .update({ date: formattedDate })
-            .eq("id", fixtureId);
-          updateError = festivalError;
-          break;
-          
-        default:
-          // Regular fixture
-          const { error: fixtureError } = await supabase
-            .from("fixtures")
-            .update({ date: formattedDate })
-            .eq("id", fixtureId);
-          updateError = fixtureError;
-      }
-
-      if (updateError) {
-        console.error("Error updating event date:", updateError);
-        throw updateError;
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Event date updated successfully",
+        description: "Fixture date updated successfully",
       });
       refetchFixtures();
     } catch (error) {
-      console.error("Error updating event date:", error);
+      console.error("Error updating fixture date:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update event date",
+        description: "Failed to update fixture date",
       });
     }
   };
@@ -360,16 +223,19 @@ export const CalendarPage = () => {
         <CalendarGrid
           date={date}
           setDate={setDate}
-          sessions={sessions || []}
+          sessions={sessions}
           fixtures={fixtures}
         />
 
         <EventsList
           date={date}
           fixtures={fixtures}
-          sessions={sessions || []}
+          sessions={sessions}
           onDeleteSession={handleDeleteSession}
-          onEditFixture={handleEditFixture}
+          onEditFixture={(fixture) => {
+            setEditingFixture(fixture);
+            setIsAddFixtureOpen(true);
+          }}
           onDeleteFixture={handleDeleteFixture}
           onUpdateFixtureDate={handleUpdateFixtureDate}
         />
@@ -388,5 +254,3 @@ export const CalendarPage = () => {
     </div>
   );
 };
-
-export default CalendarPage;

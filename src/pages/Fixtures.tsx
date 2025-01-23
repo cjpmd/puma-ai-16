@@ -63,10 +63,7 @@ const Fixtures = () => {
 
         const { data: fixturesData, error: fixturesError } = await query;
 
-        if (fixturesError) {
-          console.error("Fixtures query error:", fixturesError);
-          throw fixturesError;
-        }
+        if (fixturesError) throw fixturesError;
 
         // Group fixtures by date
         const groupedFixtures = (fixturesData || []).reduce((acc: any, fixture: any) => {
@@ -88,65 +85,24 @@ const Fixtures = () => {
 
   const handleDelete = async (fixtureId: string) => {
     try {
-      // Find the event in our local state first to determine its type
-      let eventType = null;
-      for (const dateEvents of Object.values(fixtures || {})) {
-        const event = (dateEvents as any[]).find((e) => e.id === fixtureId);
-        if (event) {
-          eventType = event.event_type;
-          break;
-        }
-      }
+      const { error } = await supabase
+        .from("fixtures")
+        .delete()
+        .eq("id", fixtureId);
 
-      if (!eventType) {
-        throw new Error("Event not found");
-      }
-
-      let deleteError;
-      
-      // Use the event_type to determine which table to delete from
-      switch (eventType) {
-        case 'tournament':
-          const { error: tournamentError } = await supabase
-            .from("tournaments")
-            .delete()
-            .eq("id", fixtureId);
-          deleteError = tournamentError;
-          break;
-          
-        case 'festival':
-          const { error: festivalError } = await supabase
-            .from("festivals")
-            .delete()
-            .eq("id", fixtureId);
-          deleteError = festivalError;
-          break;
-          
-        default:
-          // Regular fixture
-          const { error: fixtureError } = await supabase
-            .from("fixtures")
-            .delete()
-            .eq("id", fixtureId);
-          deleteError = fixtureError;
-      }
-
-      if (deleteError) {
-        console.error("Error deleting event:", deleteError);
-        throw deleteError;
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Event deleted successfully",
+        description: "Fixture deleted successfully",
       });
       refetch();
     } catch (error) {
-      console.error("Error deleting event:", error);
+      console.error("Error deleting fixture:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete event",
+        description: "Failed to delete fixture",
       });
     }
   };
@@ -157,16 +113,8 @@ const Fixtures = () => {
   };
 
   const handleTeamSelection = (fixture: any) => {
-    if (fixture.event_type === 'fixture' || (fixture.category && fixture.category !== 'Tournament' && fixture.category !== 'Festival')) {
-      setSelectedFixture(fixture);
-      setShowTeamSelection(true);
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Team Selection Unavailable",
-        description: "Team selection is only available for fixtures or teams with specific categories",
-      });
-    }
+    setSelectedFixture(fixture);
+    setShowTeamSelection(true);
   };
 
   if (error) {

@@ -1,193 +1,145 @@
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { PrintTeamSelection } from "./fixtures/PrintTeamSelection";
-import { PeriodTable } from "./fixtures/team-selection/PeriodTable";
 
-interface Player {
-  id: string;
-  name: string;
-  squad_number: number;
-}
+// Define position types and their options
+const positionOptions = {
+  GK: ["G (D)", "SK (A)", "SK (D)", "SK (S)"],
+  DRL: ["CWB (A)", "CWB (S)", "FB (A)", "FB (D)", "FB (S)", "IFB (D)", "IWB (A)", "IWB (S)", "NFB (D)", "WB (A)", "WB (D)", "WB (S)"],
+  DC: ["BPD (C)", "BPD (D)", "BPD (S)", "CD (C)", "CD (D)", "CD (S)", "L (D)", "L (S)", "NCB (C)", "NCB (D)", "NCB (S)", "WCB (A)", "WCB (D)", "WCB (S)"],
+  WBRL: ["CWB (A)", "CWB (S)", "IWB (A)", "IWB (D)", "IWB (S)", "WB (A)", "WB (D)", "WB (S)"],
+  DM: ["A (D)", "BWM (D)", "BWM (S)", "DLP (D)", "DLP (S)", "DM (D)", "DM (S)", "HB (D)", "RGA (S)", "RPM (S)", "VOL (A)", "VOL (S)"],
+  MRL: ["DW (D)", "DW (S)", "IW (A)", "IW (S)", "W (A)", "W (S)", "WM (A)", "WM (D)", "WM (S)", "WP (A)", "WP (S)"],
+  MC: ["AP (A)", "AP (S)", "BBM (S)", "BWM (D)", "BWM (S)", "CAR (S)", "CM (A)", "CM (D)", "CM (S)", "DLP (D)", "DLP (S)", "MEZ (A)", "MEZ (S)", "RPM (S)"],
+  AMRL: ["AP (A)", "AP (S)", "IF (A)", "IF (S)", "IW (A)", "IW (S)", "RMD (A)", "T (A)", "W (A)", "W (S)", "WTF (A)", "WTF (S)"],
+  AMC: ["AM (A)", "AM (S)", "AP (A)", "AP (S)", "EG (S)", "SS (A)", "T (A)"],
+  ST: ["AF (A)", "CF (A)", "CF (S)", "DLF (A)", "DLF (S)", "FN (S)", "P (A)", "PF (A)", "PF (D)", "PF (S)", "T (A)", "TF (A)", "TF (S)"]
+} as const;
 
-interface FormationSelectorProps {
-  players: Player[];
-  fixtureId: string;
-  format: string;
-}
+type PositionType = keyof typeof positionOptions;
 
-export const FormationSelector = ({ players, fixtureId, format }: FormationSelectorProps) => {
-  const [periods, setPeriods] = useState<any[]>([]);
-  const [fixture, setFixture] = useState<any>(null);
-  const { toast } = useToast();
+const formatPositions = {
+  "4-a-side": ["gk", "dl", "dr", "st"],
+  "5-a-side": ["gk", "dl", "dc", "dr", "st"],
+  "7-a-side": ["gk", "dl", "dc", "dr", "ml", "mr", "st"],
+  "9-a-side": ["gk", "dl", "dcl", "dcr", "dr", "ml", "mc", "mr", "st"],
+  "11-a-side": ["gk", "dl", "dcl", "dc", "dcr", "dr", "ml", "mc", "mr", "amc", "st"]
+} as const;
 
-  const getPositionsForFormat = (format: string) => {
-    const formatPositions: { [key: string]: { abbreviation: string; full_name: string }[] } = {
-      "4-a-side": [
-        { abbreviation: "GK", full_name: "Goalkeeper" },
-        { abbreviation: "D", full_name: "Defender" },
-        { abbreviation: "M", full_name: "Midfielder" },
-        { abbreviation: "ST", full_name: "Striker" }
-      ],
-      "5-a-side": [
-        { abbreviation: "GK", full_name: "Goalkeeper" },
-        { abbreviation: "DL", full_name: "Left Defender" },
-        { abbreviation: "DR", full_name: "Right Defender" },
-        { abbreviation: "M", full_name: "Midfielder" },
-        { abbreviation: "ST", full_name: "Striker" }
-      ],
-      "7-a-side": [
-        { abbreviation: "GK", full_name: "Goalkeeper" },
-        { abbreviation: "DL", full_name: "Left Defender" },
-        { abbreviation: "DCR", full_name: "Central Defender" },
-        { abbreviation: "DR", full_name: "Right Defender" },
-        { abbreviation: "ML", full_name: "Left Midfielder" },
-        { abbreviation: "MR", full_name: "Right Midfielder" },
-        { abbreviation: "ST", full_name: "Striker" }
-      ],
-      "9-a-side": [
-        { abbreviation: "GK", full_name: "Goalkeeper" },
-        { abbreviation: "DL", full_name: "Left Defender" },
-        { abbreviation: "DC", full_name: "Central Defender" },
-        { abbreviation: "DR", full_name: "Right Defender" },
-        { abbreviation: "ML", full_name: "Left Midfielder" },
-        { abbreviation: "MC", full_name: "Central Midfielder" },
-        { abbreviation: "MR", full_name: "Right Midfielder" },
-        { abbreviation: "AMC", full_name: "Attacking Midfielder" },
-        { abbreviation: "ST", full_name: "Striker" }
-      ],
-      "11-a-side": [
-        { abbreviation: "GK", full_name: "Goalkeeper" },
-        { abbreviation: "DL", full_name: "Left Back" },
-        { abbreviation: "DCL", full_name: "Left Center Back" },
-        { abbreviation: "DCR", full_name: "Right Center Back" },
-        { abbreviation: "DR", full_name: "Right Back" },
-        { abbreviation: "ML", full_name: "Left Midfielder" },
-        { abbreviation: "MC", full_name: "Central Midfielder" },
-        { abbreviation: "MR", full_name: "Right Midfielder" },
-        { abbreviation: "AML", full_name: "Left Winger" },
-        { abbreviation: "ST", full_name: "Striker" },
-        { abbreviation: "AMR", full_name: "Right Winger" }
-      ]
-    };
+export const FormationSelector = () => {
+  const [selectedPositions, setSelectedPositions] = useState<Record<string, string>>({});
+  const [teamFormat, setTeamFormat] = useState<keyof typeof formatPositions>("7-a-side");
 
-    return formatPositions[format] || formatPositions["7-a-side"];
+  // Fetch team format from settings
+  const { data: teamSettings } = useQuery({
+    queryKey: ["team-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("team_settings")
+        .select("format")
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (teamSettings?.format) {
+      setTeamFormat(teamSettings.format as keyof typeof formatPositions);
+    }
+  }, [teamSettings]);
+
+  const { data: positionDefinitions } = useQuery({
+    queryKey: ["position-definitions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("position_definitions")
+        .select("abbreviation, full_name")
+        .order("abbreviation");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handlePositionChange = (position: string, value: string) => {
+    setSelectedPositions(prev => ({
+      ...prev,
+      [position]: value
+    }));
   };
 
-  useEffect(() => {
-    const fetchFixture = async () => {
-      const { data, error } = await supabase
-        .from("fixtures")
-        .select("*")
-        .eq("id", fixtureId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Error fetching fixture:", error);
-        return;
-      }
-
-      setFixture(data);
-    };
-
-    fetchFixture();
-  }, [fixtureId]);
-
-  useEffect(() => {
-    const fetchPeriods = async () => {
-      if (!fixtureId) return;
-      
-      // First check if the fixture exists
-      const { data: fixtureExists, error: fixtureError } = await supabase
-        .from("fixtures")
-        .select("id")
-        .eq("id", fixtureId)
-        .maybeSingle();
-
-      if (fixtureError || !fixtureExists) {
-        console.error("Fixture does not exist:", fixtureError);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Unable to load fixture details",
-        });
-        return;
-      }
-
-      const { data: existingPeriods, error } = await supabase
-        .from("fixture_playing_periods")
-        .select("*")
-        .eq("fixture_id", fixtureId)
-        .order("start_minute", { ascending: true });
-
-      if (error) {
-        console.error("Error fetching periods:", error);
-        return;
-      }
-
-      if (existingPeriods.length === 0) {
-        try {
-          // Create default periods if none exist
-          const { data: newPeriod, error: insertError } = await supabase
-            .from("fixture_playing_periods")
-            .insert({
-              fixture_id: fixtureId,
-              start_minute: 0,
-              duration_minutes: 20
-            })
-            .select()
-            .single();
-
-          if (insertError) throw insertError;
-          
-          setPeriods([newPeriod]);
-        } catch (error) {
-          console.error("Error creating period:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to create playing period",
-          });
-        }
-      } else {
-        setPeriods(existingPeriods);
-      }
-    };
-
-    if (fixtureId) {
-      fetchPeriods();
-    }
-  }, [fixtureId, toast]);
-
-  if (!fixture) {
-    return null;
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <PrintTeamSelection
-          fixture={fixture}
-          periods={periods}
-          players={players}
-        />
-      </div>
-
-      {periods.map((period) => (
-        <PeriodTable
-          key={period.id}
-          periods={[period]}
-          positions={getPositionsForFormat(format)}
-          players={players}
-          format={format}
-          onPositionChange={() => {}}
-          onPlayerChange={() => {}}
-          onSubstituteChange={() => {}}
-          onDurationChange={() => {}}
-          onRemovePeriod={() => {}}
-        />
-      ))}
+  const PositionSelect = ({ position, label }: { position: string; label: PositionType }) => (
+    <div className="w-64">
+      <Select
+        value={selectedPositions[position]}
+        onValueChange={(value) => handlePositionChange(position, value)}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={label} />
+        </SelectTrigger>
+        <SelectContent>
+          {positionOptions[label].map((option) => {
+            const [abbrev, role] = option.split(" ");
+            const positionDef = positionDefinitions?.find(
+              def => def.abbreviation === abbrev
+            );
+            const displayText = positionDef 
+              ? `${positionDef.full_name} [${abbrev}] ${role}`
+              : option;
+            
+            return (
+              <SelectItem key={option} value={option}>
+                {displayText}
+              </SelectItem>
+            );
+          })}
+        </SelectContent>
+      </Select>
     </div>
   );
+
+  const currentPositions = formatPositions[teamFormat];
+  const maxSubstitutes = Math.ceil(currentPositions.length / 2);
+
+  return (
+    <Card className="p-6 w-full max-w-4xl mx-auto">
+      <div className="flex flex-col items-center space-y-8">
+        {/* Dynamic position layout based on format */}
+        {currentPositions.map((position, index) => (
+          <div key={index} className="flex justify-center space-x-4">
+            <PositionSelect 
+              position={position} 
+              label={
+                position.includes('gk') ? 'GK' :
+                position.includes('dc') ? 'DC' :
+                position.includes('d') ? 'DRL' :
+                position.includes('mc') ? 'MC' :
+                position.includes('m') ? 'MRL' :
+                position.includes('amc') ? 'AMC' :
+                'ST'
+              } 
+            />
+          </div>
+        ))}
+
+        {/* Substitutes */}
+        <div className="flex justify-center space-x-4">
+          {Array.from({ length: maxSubstitutes }, (_, i) => (
+            <PositionSelect key={`sub${i}`} position={`sub${i + 1}`} label="ST" />
+          ))}
+        </div>
+
+        {/* Position Counter */}
+        <div className="text-sm text-gray-600 mt-4">
+          Positions Selected: {Object.keys(selectedPositions).length}/{currentPositions.length + maxSubstitutes}
+        </div>
+      </div>
+    </Card>
+  );
 };
+
+export default FormationSelector;

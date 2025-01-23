@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TeamSetupForm } from "./TeamSetupForm";
 
 interface AddFestivalDialogProps {
   isOpen: boolean;
@@ -40,70 +39,22 @@ export const AddFestivalDialog = ({
   const [gameFormat, setGameFormat] = useState("7-a-side");
   const [numberOfTeams, setNumberOfTeams] = useState("4");
   const [isSaving, setIsSaving] = useState(false);
-  const [teamCategories, setTeamCategories] = useState<string[]>([]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
-  // Get default team category from team settings
-  const [defaultCategory, setDefaultCategory] = useState<string>("");
-
-  useEffect(() => {
-    const fetchDefaultCategory = async () => {
-      const { data, error } = await supabase
-        .from("team_settings")
-        .select("team_name")
-        .single();
-
-      if (error) {
-        console.error("Error fetching default category:", error);
-        return;
-      }
-
-      if (data?.team_name) {
-        setDefaultCategory(data.team_name);
-      }
-    };
-
-    fetchDefaultCategory();
-  }, []);
-
-  const handleTeamCategoryUpdate = (index: number, category: string) => {
-    const newCategories = [...teamCategories];
-    newCategories[index] = category;
-    setTeamCategories(newCategories);
-  };
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
 
-      // First create the festival
-      const { data: festivalData, error: festivalError } = await supabase
-        .from("festivals")
-        .insert([{
-          date,
-          time: time || null,
-          location,
-          format: gameFormat,
-          number_of_teams: parseInt(numberOfTeams),
-        }])
-        .select()
-        .single();
+      const { error } = await supabase.from("festivals").insert([{
+        date,
+        time: time || null,
+        location,
+        format: gameFormat,
+        number_of_teams: parseInt(numberOfTeams),
+      }]);
 
-      if (festivalError) throw festivalError;
-
-      // Then create the teams with their categories
-      const teamsToCreate = Array.from({ length: parseInt(numberOfTeams) }, (_, i) => ({
-        festival_id: festivalData.id,
-        team_name: `Team ${i + 1}`,
-        category: teamCategories[i] || defaultCategory, // Use default if no category selected
-      }));
-
-      const { error: teamsError } = await supabase
-        .from("festival_teams")
-        .insert(teamsToCreate);
-
-      if (teamsError) throw teamsError;
+      if (error) throw error;
 
       toast({
         title: "Success",
@@ -127,7 +78,7 @@ export const AddFestivalDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Festival</DialogTitle>
         </DialogHeader>
@@ -193,17 +144,6 @@ export const AddFestivalDialog = ({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-4">
-            <Label>Team Setup</Label>
-            {Array.from({ length: parseInt(numberOfTeams) }, (_, i) => (
-              <TeamSetupForm
-                key={i}
-                teamIndex={i}
-                onTeamUpdate={handleTeamCategoryUpdate}
-              />
-            ))}
           </div>
 
           <div className="flex justify-end space-x-2">
