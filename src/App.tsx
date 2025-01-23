@@ -13,7 +13,6 @@ import TeamSettings from "./pages/TeamSettings";
 import { Auth } from "./pages/Auth";
 import { Coaches } from "./pages/Coaches";
 import { NavBar } from "./components/NavBar";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -36,7 +35,6 @@ function App() {
           <Route path="/settings" element={<TeamSettings />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/coaches" element={<Coaches />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         </Routes>
       </Router>
     </QueryClientProvider>

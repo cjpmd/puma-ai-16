@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 import { PlayerHeader } from '@/components/player/PlayerHeader'
 import { PlayerAttributes } from '@/components/player/PlayerAttributes'
 import { GameMetrics } from '@/components/player/GameMetrics'
-import { ParentDetails } from '@/components/player/ParentDetails'
 
 export default async function Page({ params }: { params: { id: string } }) {
   const cookieStore = cookies()
@@ -30,8 +29,7 @@ export default async function Page({ params }: { params: { id: string } }) {
             home_score,
             away_score,
             outcome,
-            category,
-            is_friendly
+            category
           ),
           fixture_playing_periods (
             duration_minutes
@@ -85,9 +83,7 @@ export default async function Page({ params }: { params: { id: string } }) {
         isMotm: curr.fixtures?.motm_player_id === player.id,
         isCaptain: player.fixture_team_selections?.some(
           selection => selection.fixture_id === fixtureId && selection.is_captain
-        ),
-        event_type: 'FIXTURE',
-        is_friendly: curr.fixtures?.is_friendly || false
+        )
       }
     }
     
@@ -119,10 +115,7 @@ export default async function Page({ params }: { params: { id: string } }) {
           category={player.player_category}
         />
         
-        <div className="grid gap-6 md:grid-cols-2">
-          <PlayerAttributes attributes={player.player_attributes} />
-          <ParentDetails playerId={params.id} />
-        </div>
+        <PlayerAttributes attributes={player.player_attributes} />
 
         <GameMetrics 
           stats={stats}
