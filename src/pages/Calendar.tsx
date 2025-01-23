@@ -58,66 +58,41 @@ export const CalendarPage = () => {
 
   const { toast } = useToast();
 
-  // Add retry configuration for React Query
-  const defaultQueryConfig = {
-    retry: 3,
-    retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnWindowFocus: false,
-  };
-
-  const { data: sessions = [], refetch: refetchSessions } = useQuery({
+  const { data: sessions, refetch: refetchSessions } = useQuery({
     queryKey: ["training-sessions", date],
     queryFn: async () => {
       if (!date) return [];
       
-      console.log("Fetching training sessions...");
-      try {
-        const { data, error } = await supabase
-          .from("training_sessions")
-          .select(`
+      const { data, error } = await supabase
+        .from("training_sessions")
+        .select(`
+          *,
+          training_drills (
             *,
-            training_drills (
-              *,
-              training_files (*)
-            )
-          `)
-          .eq("date", format(date, "yyyy-MM-dd"))
-          .order("date", { ascending: true });
+            training_files (*)
+          )
+        `)
+        .eq("date", format(date, "yyyy-MM-dd"))
+        .order("date", { ascending: true });
 
-        if (error) {
-          console.error("Error fetching training sessions:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load training sessions. Please try again.",
-          });
-          throw error;
-        }
-
-        console.log("Training sessions fetched:", data);
-        return data || [];
-      } catch (error) {
-        console.error("Error in training sessions query:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load training sessions. Please try again.",
-        });
-        throw error;
-      }
+      if (error) throw error;
+      return data || [];
     },
-    ...defaultQueryConfig,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const handleEditFixture = (fixture: any) => {
-    setEditingFixture(fixture);
-    if (fixture.event_type === 'tournament') {
+    // Only set editingFixture and open dialog if it's a regular fixture
+    if (fixture.event_type === 'fixture') {
+      setEditingFixture(fixture);
+      setIsAddFixtureOpen(true);
+    } else if (fixture.event_type === 'tournament') {
+      setEditingFixture(fixture);
       setIsAddTournamentOpen(true);
     } else if (fixture.event_type === 'festival') {
+      setEditingFixture(fixture);
       setIsAddFestivalOpen(true);
-    } else {
-      setIsAddFixtureOpen(true);
     }
   };
 
@@ -127,7 +102,6 @@ export const CalendarPage = () => {
       if (!date) return [];
       
       const dateStr = format(date, "yyyy-MM-dd");
-      console.log("Fetching calendar events for date:", dateStr);
 
       try {
         // Fetch fixtures
@@ -136,10 +110,7 @@ export const CalendarPage = () => {
           .select("*, players!fixtures_motm_player_id_fkey(name)")
           .eq("date", dateStr);
 
-        if (fixturesError) {
-          console.error("Fixtures fetch error:", fixturesError);
-          throw fixturesError;
-        }
+        if (fixturesError) throw fixturesError;
 
         // Fetch tournaments
         const { data: tournamentsData, error: tournamentsError } = await supabase
@@ -147,10 +118,7 @@ export const CalendarPage = () => {
           .select("*")
           .eq("date", dateStr);
 
-        if (tournamentsError) {
-          console.error("Tournaments fetch error:", tournamentsError);
-          throw tournamentsError;
-        }
+        if (tournamentsError) throw tournamentsError;
 
         // Fetch festivals
         const { data: festivalsData, error: festivalsError } = await supabase
@@ -158,12 +126,7 @@ export const CalendarPage = () => {
           .select("*")
           .eq("date", dateStr);
 
-        if (festivalsError) {
-          console.error("Festivals fetch error:", festivalsError);
-          throw festivalsError;
-        }
-
-        console.log("Fetched data:", { fixturesData, tournamentsData, festivalsData });
+        if (festivalsError) throw festivalsError;
 
         // Transform tournaments
         const transformedTournaments = (tournamentsData || []).map(t => ({
@@ -196,10 +159,11 @@ export const CalendarPage = () => {
           title: "Error",
           description: "Failed to load calendar events. Please try again.",
         });
-        throw error;
+        return [];
       }
     },
-    ...defaultQueryConfig,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const handleAddSession = async () => {

@@ -1,25 +1,17 @@
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { LayoutGrid, Plus, Printer } from "lucide-react";
 
 interface TeamSelectionHeaderProps {
-  players: any[];
+  players: Array<{ id: string; name: string; squad_number: number }>;
   captain: string;
-  onCaptainChange: (playerId: string) => void;
+  onCaptainChange: (value: string) => void;
   onShowFormationToggle: () => void;
   showFormation: boolean;
   onAddPeriod: () => void;
   onPrint: () => void;
   onSave: () => void;
   isSaving: boolean;
-  playerCategories: string[];
-  selectedCategory: string;
-  onCategoryChange: (category: string) => void;
 }
 
 export const TeamSelectionHeader = ({
@@ -32,64 +24,47 @@ export const TeamSelectionHeader = ({
   onPrint,
   onSave,
   isSaving,
-  playerCategories,
-  selectedCategory,
-  onCategoryChange,
 }: TeamSelectionHeaderProps) => {
   return (
-    <div className="flex flex-wrap gap-4 items-center justify-between">
-      <div className="flex gap-4 items-center">
-        <Select value={selectedCategory} onValueChange={onCategoryChange}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            {playerCategories.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={captain} onValueChange={onCaptainChange}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Select captain" />
-          </SelectTrigger>
-          <SelectContent>
-            {players.map((player) => (
-              <SelectItem key={player.id} value={player.id}>
-                {player.name} (#{player.squad_number})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex gap-2">
-        <Button
+    <div className="sticky top-0 z-10 bg-background pt-4 pb-2 border-b">
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-2 mr-auto">
+          <span className="font-medium">Captain:</span>
+          <Select value={captain} onValueChange={onCaptainChange}>
+            <SelectTrigger className="w-[200px] h-8">
+              <SelectValue placeholder="Select captain" />
+            </SelectTrigger>
+            <SelectContent>
+              {players?.map((player) => (
+                <SelectItem key={player.id} value={player.id}>
+                  {player.name} (#{player.squad_number})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button 
+          onClick={onShowFormationToggle} 
           variant="outline"
-          size="sm"
-          onClick={onShowFormationToggle}
+          className="print:hidden"
         >
-          {showFormation ? "Hide Formation" : "Show Formation"}
+          <LayoutGrid className="h-4 w-4 mr-2" />
+          {showFormation ? "Hide" : "Show"} Formation
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onAddPeriod}
-        >
+        <Button onClick={onAddPeriod} variant="outline">
+          <Plus className="h-4 w-4 mr-2" />
           Add Period
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
+        <Button 
           onClick={onPrint}
+          variant="outline"
+          className="print:hidden"
         >
-          Print
+          <Printer className="h-4 w-4 mr-2" />
+          Print Team Selection
         </Button>
-        <Button
-          onClick={onSave}
+        <Button 
+          onClick={onSave} 
           disabled={isSaving}
         >
           {isSaving ? "Saving..." : "Save"}

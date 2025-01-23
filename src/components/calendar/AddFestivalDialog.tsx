@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format as dateFormat } from "date-fns";
@@ -44,39 +44,28 @@ export const AddFestivalDialog = ({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Get team settings to use as system category
-  const { data: teamSettings } = useQuery({
-    queryKey: ["team-settings"],
-    queryFn: async () => {
+  // Get default team category from team settings
+  const [defaultCategory, setDefaultCategory] = useState<string>("");
+
+  useEffect(() => {
+    const fetchDefaultCategory = async () => {
       const { data, error } = await supabase
         .from("team_settings")
-        .select("*")
+        .select("team_name")
         .single();
 
       if (error) {
-        console.error("Error fetching team settings:", error);
-        throw error;
+        console.error("Error fetching default category:", error);
+        return;
       }
 
-      return data;
-    },
-  });
+      if (data?.team_name) {
+        setDefaultCategory(data.team_name);
+      }
+    };
 
-  // Get available player categories
-  const { data: playerCategories } = useQuery({
-    queryKey: ["player-categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("player_categories")
-        .select("name")
-        .order("name");
-
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  const defaultCategory = teamSettings?.team_name || "";
+    fetchDefaultCategory();
+  }, []);
 
   const handleTeamCategoryUpdate = (index: number, category: string) => {
     const newCategories = [...teamCategories];
@@ -97,7 +86,6 @@ export const AddFestivalDialog = ({
           location,
           format: gameFormat,
           number_of_teams: parseInt(numberOfTeams),
-          system_category: teamSettings?.team_name
         }])
         .select()
         .single();
@@ -108,7 +96,7 @@ export const AddFestivalDialog = ({
       const teamsToCreate = Array.from({ length: parseInt(numberOfTeams) }, (_, i) => ({
         festival_id: festivalData.id,
         team_name: `Team ${i + 1}`,
-        category: teamCategories[i] || defaultCategory,
+        category: teamCategories[i] || defaultCategory, // Use default if no category selected
       }));
 
       const { error: teamsError } = await supabase
@@ -214,8 +202,6 @@ export const AddFestivalDialog = ({
                 key={i}
                 teamIndex={i}
                 onTeamUpdate={handleTeamCategoryUpdate}
-                defaultCategory={defaultCategory}
-                availableCategories={playerCategories?.map(pc => pc.name) || []}
               />
             ))}
           </div>

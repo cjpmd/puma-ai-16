@@ -44,10 +44,11 @@ export const AddTournamentDialog = ({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Get team settings to use as system category
+  // Get default team category from team settings using React Query
   const { data: teamSettings } = useQuery({
     queryKey: ["team-settings"],
     queryFn: async () => {
+      console.log("Fetching team settings...");
       const { data, error } = await supabase
         .from("team_settings")
         .select("*")
@@ -58,21 +59,8 @@ export const AddTournamentDialog = ({
         throw error;
       }
 
+      console.log("Team settings data:", data);
       return data;
-    },
-  });
-
-  // Get available player categories
-  const { data: playerCategories } = useQuery({
-    queryKey: ["player-categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("player_categories")
-        .select("name")
-        .order("name");
-
-      if (error) throw error;
-      return data || [];
     },
   });
 
@@ -97,7 +85,6 @@ export const AddTournamentDialog = ({
           location,
           format: gameFormat,
           number_of_teams: parseInt(numberOfTeams),
-          system_category: teamSettings?.team_name
         }])
         .select()
         .single();
@@ -108,7 +95,7 @@ export const AddTournamentDialog = ({
       const teamsToCreate = Array.from({ length: parseInt(numberOfTeams) }, (_, i) => ({
         tournament_id: tournamentData.id,
         team_name: `Team ${i + 1}`,
-        category: teamCategories[i] || defaultCategory,
+        category: teamCategories[i] || defaultCategory, // Use default if no category selected
       }));
 
       const { error: teamsError } = await supabase
@@ -214,8 +201,6 @@ export const AddTournamentDialog = ({
                 key={i}
                 teamIndex={i}
                 onTeamUpdate={handleTeamCategoryUpdate}
-                defaultCategory={defaultCategory}
-                availableCategories={playerCategories?.map(pc => pc.name) || []}
               />
             ))}
           </div>
