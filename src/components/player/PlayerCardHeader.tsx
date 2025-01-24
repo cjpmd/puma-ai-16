@@ -6,7 +6,6 @@ import { Download, Edit } from "lucide-react";
 interface PlayerCardHeaderProps {
   name: string;
   squadNumber: number;
-  playerCategory: string;
   playerType: string;
   topPositions: [string, number][];
   onEdit?: () => void;
@@ -16,7 +15,6 @@ interface PlayerCardHeaderProps {
 export const PlayerCardHeader = ({
   name,
   squadNumber,
-  playerCategory,
   playerType,
   topPositions,
   onEdit,
@@ -32,7 +30,6 @@ export const PlayerCardHeader = ({
                 {name} - #{squadNumber}
               </h2>
               <div className="flex gap-2 mt-2">
-                <Badge variant="outline">{playerCategory}</Badge>
                 <Badge variant="outline">{playerType}</Badge>
               </div>
             </div>

@@ -358,8 +358,7 @@ const Fixtures = () => {
           </DialogHeader>
           {selectedFixture && (
             <TeamSelectionManager 
-              fixtureId={selectedFixture.id} 
-              category={selectedFixture.category}
+              fixture={selectedFixture} 
             />
           )}
         </DialogContent>

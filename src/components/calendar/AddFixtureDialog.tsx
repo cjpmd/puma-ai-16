@@ -403,8 +403,7 @@ export const AddFixtureDialog = ({
           </Form>
         ) : (
           <TeamSelectionManager 
-            fixtureId={editingFixture?.id || ""} 
-            category={form.getValues("category")}
+            fixture={editingFixture} 
           />
         )}
       </DialogContent>

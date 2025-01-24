@@ -7,12 +7,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Fixture } from "@/types/fixture";
-import { Player } from "@/types/player";
 import { Badge } from "../ui/badge";
 
 interface TeamSelectionManagerProps {
   fixture: Fixture;
-  onSave: (selectedPlayers: string[], captainId: string | null) => void;
+  onSave?: (selectedPlayers: string[], captainId: string | null) => void;
 }
 
 export const TeamSelectionManager = ({ fixture, onSave }: TeamSelectionManagerProps) => {
@@ -43,15 +42,17 @@ export const TeamSelectionManager = ({ fixture, onSave }: TeamSelectionManagerPr
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
-      if (data) {
-        setSelectedPlayers(data.map((selection) => selection.player_id));
-        const captain = data.find((selection) => selection.is_captain);
-        if (captain) {
-          setCaptainId(captain.player_id);
+    meta: {
+      onSettled: (data) => {
+        if (data) {
+          setSelectedPlayers(data.map((selection) => selection.player_id));
+          const captain = data.find((selection) => selection.is_captain);
+          if (captain) {
+            setCaptainId(captain.player_id);
+          }
         }
       }
-    },
+    }
   });
 
   const handlePlayerToggle = (playerId: string) => {
@@ -72,7 +73,9 @@ export const TeamSelectionManager = ({ fixture, onSave }: TeamSelectionManagerPr
   };
 
   const handleSave = () => {
-    onSave(selectedPlayers, captainId);
+    if (onSave) {
+      onSave(selectedPlayers, captainId);
+    }
   };
 
   return (
@@ -83,7 +86,7 @@ export const TeamSelectionManager = ({ fixture, onSave }: TeamSelectionManagerPr
       <CardContent>
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-4">
-            {availablePlayers?.map((player: Player) => (
+            {availablePlayers?.map((player) => (
               <div
                 key={player.id}
                 className="flex items-center justify-between space-x-4 p-2 rounded-lg hover:bg-accent"
@@ -96,10 +99,10 @@ export const TeamSelectionManager = ({ fixture, onSave }: TeamSelectionManagerPr
                   />
                   <div>
                     <Label htmlFor={`player-${player.id}`} className="font-medium">
-                      {player.name} - #{player.squadNumber}
+                      {player.name} - #{player.squad_number}
                     </Label>
                     <div className="flex gap-2 mt-1">
-                      <Badge variant="outline">{player.playerType}</Badge>
+                      <Badge variant="outline">{player.player_type}</Badge>
                     </div>
                   </div>
                 </div>

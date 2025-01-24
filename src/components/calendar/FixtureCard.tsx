@@ -143,8 +143,7 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
             <DialogTitle>Team Selection - {fixture.opponent}</DialogTitle>
           </DialogHeader>
           <TeamSelectionManager 
-            fixtureId={fixture.id} 
-            category={fixture.category}
+            fixture={fixture} 
           />
         </DialogContent>
       </Dialog>
