@@ -14,17 +14,19 @@ interface GameMetricsSectionProps {
     };
     recentGames: Array<{
       id: string;
+      fixture_id: string;
       date: string;
       opponent: string;
       home_score: number | null;
       away_score: number | null;
       outcome: 'WIN' | 'DRAW' | 'LOSS' | null;
       totalMinutes: number;
-      positions: Record<string, number>;
+      positions: Array<{ position: string; minutes: number }>;
       isMotm: boolean;
       isCaptain: boolean;
       category: string;
     }>;
+    motmCount: number;
   };
   positionMappings: Record<string, string>;
   playerCategory: string;

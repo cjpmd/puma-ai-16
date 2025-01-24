@@ -153,7 +153,7 @@ export const AddFixtureDialog = ({
         }
       }
 
-      const fixtureData: Partial<Fixture> = {
+      const fixtureData = {
         opponent: data.opponent,
         location: data.location,
         category: data.category,
@@ -178,7 +178,7 @@ export const AddFixtureDialog = ({
       } else {
         const { data: insertedFixture, error } = await supabase
           .from("fixtures")
-          .insert([fixtureData])
+          .insert(fixtureData)
           .select()
           .single();
           

@@ -4,6 +4,17 @@ export type AttributeCategory = "TECHNICAL" | "MENTAL" | "PHYSICAL" | "GOALKEEPI
 
 export type PlayerCategory = "MESSI" | "RONALDO" | "JAGS";
 
+export interface PlayerObjective {
+  completed: number;
+  improving: number;
+  ongoing: number;
+}
+
+export interface TopPosition {
+  position: string;
+  suitability_score: number;
+}
+
 export interface Attribute {
   id: string;
   name: string;
@@ -18,8 +29,12 @@ export interface Player {
   dateOfBirth: string;
   squadNumber: number;
   playerType: PlayerType;
+  age: number;
+  teamCategory?: string;
   attributes: Attribute[];
   attributeHistory?: Record<string, { date: string; value: number }[]>;
+  objectives?: PlayerObjective;
+  topPositions?: TopPosition[];
   created_at?: string;
   updated_at?: string;
 }
