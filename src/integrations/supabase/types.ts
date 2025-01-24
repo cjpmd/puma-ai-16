@@ -195,6 +195,53 @@ export type Database = {
           },
         ]
       }
+      devices: {
+        Row: {
+          assigned_player_id: string | null
+          device_name: string
+          id: number
+        }
+        Insert: {
+          assigned_player_id?: string | null
+          device_name: string
+          id?: number
+        }
+        Update: {
+          assigned_player_id?: string | null
+          device_name?: string
+          id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devices_assigned_player_id_fkey"
+            columns: ["assigned_player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devices_assigned_player_id_fkey"
+            columns: ["assigned_player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "devices_assigned_player_id_fkey"
+            columns: ["assigned_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devices_assigned_player_id_fkey"
+            columns: ["assigned_player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
       festival_team_players: {
         Row: {
           created_at: string | null
@@ -1176,6 +1223,72 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "role_definitions"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          data: Json | null
+          device_id: number | null
+          end_time: string | null
+          id: number
+          player_id: string | null
+          session_type: string | null
+          start_time: string
+        }
+        Insert: {
+          data?: Json | null
+          device_id?: number | null
+          end_time?: string | null
+          id?: number
+          player_id?: string | null
+          session_type?: string | null
+          start_time: string
+        }
+        Update: {
+          data?: Json | null
+          device_id?: number | null
+          end_time?: string | null
+          id?: number
+          player_id?: string | null
+          session_type?: string | null
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
           },
         ]
       }
