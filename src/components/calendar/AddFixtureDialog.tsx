@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
+import { Fixture } from "@/types/fixture";
 
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
@@ -49,16 +50,7 @@ interface AddFixtureDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date;
   onSuccess: () => void;
-  editingFixture?: {
-    id: string;
-    opponent: string;
-    home_score: number | null;
-    away_score: number | null;
-    category?: string;
-    location?: string;
-    motm_player_id?: string | null;
-    time?: string | null;
-  } | null;
+  editingFixture?: Fixture | null;
   showDateSelector?: boolean;
 }
 
@@ -75,6 +67,7 @@ export const AddFixtureDialog = ({
   const [showTeamSelection, setShowTeamSelection] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialSelectedDate);
+  const [newFixture, setNewFixture] = useState<Fixture | null>(null);
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -160,7 +153,7 @@ export const AddFixtureDialog = ({
         }
       }
 
-      const fixtureData = {
+      const fixtureData: Partial<Fixture> = {
         opponent: data.opponent,
         location: data.location,
         category: data.category,
@@ -172,7 +165,7 @@ export const AddFixtureDialog = ({
         outcome,
       };
 
-      let newFixture;
+      let savedFixture: Fixture;
       
       if (editingFixture) {
         const { error } = await supabase
@@ -181,7 +174,7 @@ export const AddFixtureDialog = ({
           .eq("id", editingFixture.id);
           
         if (error) throw error;
-        newFixture = { ...editingFixture, ...fixtureData };
+        savedFixture = { ...editingFixture, ...fixtureData } as Fixture;
       } else {
         const { data: insertedFixture, error } = await supabase
           .from("fixtures")
@@ -190,7 +183,8 @@ export const AddFixtureDialog = ({
           .single();
           
         if (error) throw error;
-        newFixture = insertedFixture;
+        savedFixture = insertedFixture;
+        setNewFixture(savedFixture);
 
         // Send WhatsApp notification for new fixtures
         try {

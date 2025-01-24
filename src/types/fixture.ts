@@ -4,9 +4,9 @@ export interface Fixture {
   opponent: string;
   home_score: number | null;
   away_score: number | null;
-  category: string;
+  category?: string;
   location?: string;
+  motm_player_id?: string | null;
   time?: string | null;
   outcome?: string | null;
-  motm_player_id?: string | null;
 }
