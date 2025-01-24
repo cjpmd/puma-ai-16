@@ -2,19 +2,19 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, parseISO, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, isSameMonth, parseISO } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
 import { AddFixtureDialog } from "@/components/calendar/AddFixtureDialog";
-import { Plus, Trophy, Handshake, Users } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
 import { SessionCard } from "@/components/training/SessionCard";
 import { EditObjectiveDialog } from "@/components/calendar/EditObjectiveDialog";
 import { Link } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { AddEventMenu } from "@/components/calendar/AddEventMenu";
+import { CalendarView } from "@/components/calendar/CalendarView";
+import { ObjectivesList } from "@/components/calendar/ObjectivesList";
 import { Fixture } from "@/types/fixture";
 
 export const CalendarPage = () => {
@@ -50,7 +50,6 @@ export const CalendarPage = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-
       return data;
     },
   });
@@ -155,12 +154,10 @@ export const CalendarPage = () => {
   };
 
   const handleAddDrill = (sessionId: string) => {
-    // Implementation for adding a drill
     console.log("Adding drill to session:", sessionId);
   };
 
   const handleEditDrill = (sessionId: string, drill: any) => {
-    // Implementation for editing a drill
     console.log("Editing drill:", drill, "in session:", sessionId);
   };
 
@@ -193,68 +190,14 @@ export const CalendarPage = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Calendar</h1>
         <div className="flex items-center gap-4">
-          <div className="relative">
-            <Button
-              size="icon"
-              className={cn(
-                "h-14 w-14 rounded-full bg-primary hover:bg-primary/90 transition-all duration-300",
-                isAddMenuOpen && "rotate-45"
-              )}
-              onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
-            >
-              <Plus className="h-6 w-6" />
-            </Button>
-
-            <div className={cn(
-              "absolute right-0 mt-2 space-y-2 transition-all duration-300",
-              isAddMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
-            )}>
-              <Button
-                variant="outline"
-                className="flex items-center gap-2 w-full justify-start bg-white hover:bg-primary/5"
-                onClick={() => {
-                  setIsAddFixtureOpen(true);
-                  setIsAddMenuOpen(false);
-                }}
-              >
-                <Trophy className="h-4 w-4" />
-                Add Fixture
-              </Button>
-              <Button
-                variant="outline"
-                className="flex items-center gap-2 w-full justify-start bg-white hover:bg-primary/5"
-                onClick={() => {
-                  setIsAddFriendlyOpen(true);
-                  setIsAddMenuOpen(false);
-                }}
-              >
-                <Handshake className="h-4 w-4" />
-                Add Friendly
-              </Button>
-              <Button
-                variant="outline"
-                className="flex items-center gap-2 w-full justify-start bg-white hover:bg-primary/5"
-                onClick={() => {
-                  setIsAddTournamentOpen(true);
-                  setIsAddMenuOpen(false);
-                }}
-              >
-                <Trophy className="h-4 w-4" />
-                Add Tournament
-              </Button>
-              <Button
-                variant="outline"
-                className="flex items-center gap-2 w-full justify-start bg-white hover:bg-primary/5"
-                onClick={() => {
-                  setIsAddFestivalOpen(true);
-                  setIsAddMenuOpen(false);
-                }}
-              >
-                <Users className="h-4 w-4" />
-                Add Festival
-              </Button>
-            </div>
-          </div>
+          <AddEventMenu
+            isOpen={isAddMenuOpen}
+            onOpenChange={setIsAddMenuOpen}
+            onAddFixture={() => setIsAddFixtureOpen(true)}
+            onAddFriendly={() => setIsAddFriendlyOpen(true)}
+            onAddTournament={() => setIsAddTournamentOpen(true)}
+            onAddFestival={() => setIsAddFestivalOpen(true)}
+          />
           <Link to="/fixtures">
             <Button variant="secondary">
               View Fixtures
@@ -264,46 +207,12 @@ export const CalendarPage = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Calendar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-3 h-3 rounded bg-blue-500"></div>
-                <span>Training</span>
-                <div className="w-3 h-3 rounded bg-orange-500 ml-4"></div>
-                <span>Fixture</span>
-              </div>
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={(newDate) => newDate && setDate(newDate)}
-                className="rounded-md border"
-                weekStartsOn={1}
-                modifiers={{
-                  training: (day) => {
-                    const dateStr = format(day, "yyyy-MM-dd");
-                    return sessions?.some(session => session.date === dateStr) || false;
-                  },
-                  fixture: (day) => {
-                    const dateStr = format(day, "yyyy-MM-dd");
-                    return fixtures?.some(fixture => fixture.date === dateStr) || false;
-                  }
-                }}
-                modifiersStyles={{
-                  training: {
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)'
-                  },
-                  fixture: {
-                    backgroundColor: 'rgba(249, 115, 22, 0.1)'
-                  }
-                }}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <CalendarView
+          date={date}
+          onDateSelect={(newDate) => newDate && setDate(newDate)}
+          sessions={sessions}
+          fixtures={fixtures}
+        />
 
         <Card className="md:col-span-2">
           <CardHeader>
@@ -327,7 +236,7 @@ export const CalendarPage = () => {
               ))}
               {sessions?.map((session) => (
                 <SessionCard 
-                  key={session.id} 
+                  key={session.id}
                   session={{
                     id: session.id,
                     title: session.title,
@@ -353,53 +262,14 @@ export const CalendarPage = () => {
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-3">
-          <CardHeader>
-            <CardTitle>Objectives for {date ? format(date, 'MMMM yyyy') : 'Selected Month'}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {objectives?.map((objective) => (
-                <div 
-                  key={objective.id} 
-                  className="p-4 border rounded-lg cursor-pointer hover:border-primary transition-colors"
-                  onClick={() => {
-                    setEditingObjective(objective);
-                    setIsEditObjectiveOpen(true);
-                  }}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium">{objective.title}</h4>
-                      <p className="text-sm text-muted-foreground">{objective.description}</p>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        <span>Player: {objective.players?.name}</span>
-                        <span className="mx-2">•</span>
-                        <span>Coach: {objective.profiles?.name}</span>
-                        <span className="mx-2">•</span>
-                        <span>Review: {format(new Date(objective.review_date), 'MMM d, yyyy')}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded text-sm ${
-                        objective.status === 'COMPLETE' ? 'bg-green-100 text-green-800' :
-                        objective.status === 'IMPROVING' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
-                        {objective.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {objectives?.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No objectives scheduled for review this month
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <ObjectivesList
+          date={date}
+          objectives={objectives || []}
+          onEditObjective={(objective) => {
+            setEditingObjective(objective);
+            setIsEditObjectiveOpen(true);
+          }}
+        />
       </div>
 
       <Dialog open={isAddFixtureOpen} onOpenChange={setIsAddFixtureOpen}>
