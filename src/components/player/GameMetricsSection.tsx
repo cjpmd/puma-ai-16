@@ -5,7 +5,27 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { useNavigate } from "react-router-dom";
 
 interface GameMetricsSectionProps {
-  gameMetrics: any;
+  gameMetrics: {
+    stats: {
+      total_appearances: number;
+      captain_appearances: number;
+      total_minutes_played: number;
+      positions_played: Record<string, number>;
+    };
+    recentGames: Array<{
+      id: string;
+      date: string;
+      opponent: string;
+      home_score: number | null;
+      away_score: number | null;
+      outcome: 'WIN' | 'DRAW' | 'LOSS' | null;
+      totalMinutes: number;
+      positions: Record<string, number>;
+      isMotm: boolean;
+      isCaptain: boolean;
+      category: string;
+    }>;
+  };
   positionMappings: Record<string, string>;
   playerCategory: string;
 }

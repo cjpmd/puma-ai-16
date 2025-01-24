@@ -279,7 +279,7 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
         <GameMetricsSection
           gameMetrics={gameMetrics}
           positionMappings={positionMappings}
-          playerType={player.playerType}
+          playerCategory={player.playerType}
         />
       </Card>
 
