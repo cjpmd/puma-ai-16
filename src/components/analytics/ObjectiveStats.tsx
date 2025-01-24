@@ -15,7 +15,7 @@ export const ObjectiveStats = () => {
           points,
           players (
             name,
-            player_category
+            team_category
           )
         `);
 
