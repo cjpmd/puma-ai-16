@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PlayerDetails } from "@/components/PlayerDetails";
 import { useQuery } from "@tanstack/react-query";
 import { ParentDetailsDialog } from "@/components/parents/ParentDetailsDialog";
-import { Player, PlayerCategory, PlayerType } from "@/types/player";
+import { Player, PlayerType } from "@/types/player";
 
 const PlayerDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -54,7 +54,6 @@ const PlayerDetailsPage = () => {
         age: playerResult.age,
         dateOfBirth: playerResult.date_of_birth,
         squadNumber: playerResult.squad_number,
-        playerCategory: playerResult.player_category as PlayerCategory,
         playerType: playerResult.player_type as PlayerType,
         attributes: playerResult.attributes.map((attr: any) => ({
           id: attr.id,

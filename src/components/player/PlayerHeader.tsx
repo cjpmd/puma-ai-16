@@ -27,7 +27,7 @@ export const PlayerHeader = ({ player, topPositions, showAttributeVisuals }: Pla
     <div className="flex justify-between items-start">
       <div className="flex items-center gap-2">
         <CardTitle>
-          {player.name} - #{player.squadNumber} ({player.playerCategory})
+          {player.name} - #{player.squadNumber}
         </CardTitle>
         <EditPlayerDialog player={player} onPlayerUpdated={() => {
           window.location.reload();

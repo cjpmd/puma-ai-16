@@ -17,8 +17,7 @@ export const AttributeTrends = () => {
           category,
           created_at,
           players (
-            name,
-            player_category
+            name
           )
         `)
         .order('created_at', { ascending: true });
@@ -42,7 +41,6 @@ export const AttributeTrends = () => {
       date,
       value: curr.value,
       player: curr.players.name,
-      category: curr.players.player_category,
     });
     return acc;
   }, {});

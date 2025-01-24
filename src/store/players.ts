@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Player, Attribute, AttributeCategory, PlayerCategory } from "@/types/player";
+import { Player, Attribute, AttributeCategory } from "@/types/player";
 import { GOALKEEPER_ATTRIBUTES, TECHNICAL_ATTRIBUTES, MENTAL_ATTRIBUTES, PHYSICAL_ATTRIBUTES } from "@/constants/attributes";
 
 interface PlayersState {
