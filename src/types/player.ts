@@ -2,6 +2,8 @@ export type PlayerType = "OUTFIELD" | "GOALKEEPER";
 
 export type AttributeCategory = "TECHNICAL" | "MENTAL" | "PHYSICAL" | "GOALKEEPING";
 
+export type PlayerCategory = "Ronaldo" | "Messi" | "Jags";
+
 export interface Attribute {
   id: string;
   name: string;
