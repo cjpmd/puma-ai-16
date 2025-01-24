@@ -7,13 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, parseISO, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
 import { AddFixtureDialog } from "@/components/calendar/AddFixtureDialog";
-import { Plus } from "lucide-react";
+import { Plus, Trophy, HandShake, Users } from "lucide-react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
 import { SessionCard } from "@/components/training/SessionCard";
 import { EditObjectiveDialog } from "@/components/calendar/EditObjectiveDialog";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface DbTrainingSession {
   id: string;
@@ -56,27 +57,11 @@ export const CalendarPage = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
   const [isAddFixtureOpen, setIsAddFixtureOpen] = useState(false);
-  const [sessionTitle, setSessionTitle] = useState("");
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [isAddDrillOpen, setIsAddDrillOpen] = useState(false);
-  const [drillTitle, setDrillTitle] = useState("");
-  const [drillInstructions, setDrillInstructions] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [editingDrill, setEditingDrill] = useState<{
-    id: string;
-    title: string;
-    instructions: string | null;
-  } | null>(null);
-  const [editingFixture, setEditingFixture] = useState<{
-    id: string;
-    opponent: string;
-    home_score: number | null;
-    away_score: number | null;
-    date: string;
-  } | null>(null);
-  const [editingObjective, setEditingObjective] = useState<any>(null);
-  const [isEditObjectiveOpen, setIsEditObjectiveOpen] = useState(false);
-
+  const [isAddFriendlyOpen, setIsAddFriendlyOpen] = useState(false);
+  const [isAddTournamentOpen, setIsAddTournamentOpen] = useState(false);
+  const [isAddFestivalOpen, setIsAddFestivalOpen] = useState(false);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  
   const { toast } = useToast();
 
   const handleAddSession = async () => {
@@ -373,40 +358,70 @@ export const CalendarPage = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Calendar</h1>
         <div className="flex items-center gap-4">
-          <Dialog open={isAddSessionOpen} onOpenChange={setIsAddSessionOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Training
-              </Button>
-            </DialogTrigger>
-            <AddSessionDialog
-              isOpen={isAddSessionOpen}
-              onOpenChange={setIsAddSessionOpen}
-              title={sessionTitle}
-              onTitleChange={setSessionTitle}
-              onAdd={handleAddSession}
-            />
-          </Dialog>
-          <Dialog open={isAddFixtureOpen} onOpenChange={setIsAddFixtureOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
+          <div className="relative">
+            {/* Main Add Button */}
+            <Button
+              size="icon"
+              className={cn(
+                "h-14 w-14 rounded-full bg-primary hover:bg-primary/90 transition-all duration-300",
+                isAddMenuOpen && "rotate-45"
+              )}
+              onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
+            >
+              <Plus className="h-6 w-6" />
+            </Button>
+
+            {/* Expanded Options */}
+            <div className={cn(
+              "absolute right-0 mt-2 space-y-2 transition-all duration-300",
+              isAddMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+            )}>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 w-full justify-start bg-white hover:bg-primary/5"
+                onClick={() => {
+                  setIsAddFixtureOpen(true);
+                  setIsAddMenuOpen(false);
+                }}
+              >
+                <Trophy className="h-4 w-4" />
                 Add Fixture
               </Button>
-            </DialogTrigger>
-            <AddFixtureDialog 
-              isOpen={isAddFixtureOpen}
-              onOpenChange={setIsAddFixtureOpen}
-              selectedDate={date}
-              onSuccess={() => {
-                refetchFixtures();
-                setIsAddFixtureOpen(false);
-                setEditingFixture(null);
-              }}
-              editingFixture={editingFixture}
-            />
-          </Dialog>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 w-full justify-start bg-white hover:bg-primary/5"
+                onClick={() => {
+                  setIsAddFriendlyOpen(true);
+                  setIsAddMenuOpen(false);
+                }}
+              >
+                <HandShake className="h-4 w-4" />
+                Add Friendly
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 w-full justify-start bg-white hover:bg-primary/5"
+                onClick={() => {
+                  setIsAddTournamentOpen(true);
+                  setIsAddMenuOpen(false);
+                }}
+              >
+                <Trophy className="h-4 w-4" />
+                Add Tournament
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 w-full justify-start bg-white hover:bg-primary/5"
+                onClick={() => {
+                  setIsAddFestivalOpen(true);
+                  setIsAddMenuOpen(false);
+                }}
+              >
+                <Users className="h-4 w-4" />
+                Add Festival
+              </Button>
+            </div>
+          </div>
           <Link to="/fixtures">
             <Button variant="secondary">
               View Fixtures
@@ -559,17 +574,32 @@ export const CalendarPage = () => {
         </Card>
       </div>
 
-      {editingObjective && (
-        <EditObjectiveDialog
-          objective={editingObjective}
-          isOpen={isEditObjectiveOpen}
-          onOpenChange={setIsEditObjectiveOpen}
+      <Dialog open={isAddFixtureOpen} onOpenChange={setIsAddFixtureOpen}>
+        <AddFixtureDialog 
+          isOpen={isAddFixtureOpen}
+          onOpenChange={setIsAddFixtureOpen}
+          selectedDate={date}
           onSuccess={() => {
-            setEditingObjective(null);
-            refetchObjectives();
+            refetchFixtures();
+            setIsAddFixtureOpen(false);
+            setEditingFixture(null);
           }}
+          editingFixture={editingFixture}
         />
-      )}
+      </Dialog>
+
+      <Dialog open={isAddFriendlyOpen} onOpenChange={setIsAddFriendlyOpen}>
+        <AddFixtureDialog 
+          isOpen={isAddFriendlyOpen}
+          onOpenChange={setIsAddFriendlyOpen}
+          selectedDate={date}
+          onSuccess={() => {
+            refetchFixtures();
+            setIsAddFriendlyOpen(false);
+          }}
+          isFriendly={true}
+        />
+      </Dialog>
     </div>
   );
 };
