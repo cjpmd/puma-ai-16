@@ -867,69 +867,6 @@ export type Database = {
         }
         Relationships: []
       }
-      player_category_history: {
-        Row: {
-          category: string
-          created_at: string | null
-          effective_from: string
-          id: string
-          player_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          category: string
-          created_at?: string | null
-          effective_from?: string
-          id?: string
-          player_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string
-          created_at?: string | null
-          effective_from?: string
-          id?: string
-          player_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "player_category_history_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "available_players_by_category"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "player_category_history_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "player_category_history_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "player_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "player_category_history_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "player_category_history_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "position_rankings"
-            referencedColumns: ["player_id"]
-          },
-        ]
-      }
       player_objectives: {
         Row: {
           coach_id: string | null
@@ -1085,7 +1022,6 @@ export type Database = {
           date_of_birth: string
           id: string
           name: string
-          player_category: string
           player_type: string
           squad_number: number
           team_category: string | null
@@ -1097,7 +1033,6 @@ export type Database = {
           date_of_birth?: string
           id?: string
           name: string
-          player_category: string
           player_type?: string
           squad_number: number
           team_category?: string | null
@@ -1109,7 +1044,6 @@ export type Database = {
           date_of_birth?: string
           id?: string
           name?: string
-          player_category?: string
           player_type?: string
           squad_number?: number
           team_category?: string | null
@@ -1730,7 +1664,6 @@ export type Database = {
           date_of_birth: string | null
           id: string | null
           name: string | null
-          player_category: string | null
           player_type: string | null
           squad_number: number | null
           system_category: string | null
@@ -1817,7 +1750,6 @@ export type Database = {
       player_fixture_stats: {
         Row: {
           captain_appearances: number | null
-          category: string | null
           fixture_history: Json | null
           motm_appearances: number | null
           player_id: string | null

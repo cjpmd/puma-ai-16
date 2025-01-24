@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { PlayerCategory, PlayerType } from "@/types/player";
+import { PlayerType } from "@/types/player";
 import {
   Dialog,
   DialogContent,
@@ -43,27 +43,14 @@ const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   squadNumber: z.string().min(1, "Squad number is required"),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
-  playerCategory: z.string(),
   playerType: z.string(),
 });
 
 export const AddPlayerDialog = () => {
   const [open, setOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [teamName, setTeamName] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const fetchTeamName = async () => {
-      const { data } = await supabase
-        .from('team_settings')
-        .select('team_name')
-        .single();
-      setTeamName(data?.team_name || null);
-    };
-    fetchTeamName();
-  }, []);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -71,7 +58,6 @@ export const AddPlayerDialog = () => {
       name: "",
       squadNumber: "",
       dateOfBirth: "",
-      playerCategory: "MESSI",
       playerType: "OUTFIELD",
     },
   });
@@ -94,7 +80,6 @@ export const AddPlayerDialog = () => {
             name: values.name,
             squad_number: values.squadNumber,
             date_of_birth: values.dateOfBirth,
-            player_category: values.playerCategory,
             player_type: values.playerType,
             age: differenceInYears(new Date(), new Date(values.dateOfBirth)),
           },
@@ -194,35 +179,6 @@ export const AddPlayerDialog = () => {
                       required
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="playerCategory"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Player Category</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="RONALDO">Ronaldo</SelectItem>
-                      <SelectItem value="MESSI">Messi</SelectItem>
-                      <SelectItem value="JAGS">Jags</SelectItem>
-                      {teamName && (
-                        <SelectItem value={teamName}>{teamName}</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

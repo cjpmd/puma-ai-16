@@ -42,7 +42,6 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
   const form = useForm({
     defaultValues: {
       squadNumber: player.squadNumber,
-      playerCategory: player.playerCategory,
       playerType: player.playerType,
       dateOfBirth: player.dateOfBirth,
     },
@@ -55,7 +54,6 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         .from("players")
         .update({
           squad_number: values.squadNumber,
-          player_category: values.playerCategory,
           player_type: values.playerType,
           date_of_birth: values.dateOfBirth,
         })
@@ -104,32 +102,6 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
                   <FormControl>
                     <Input type="number" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="playerCategory"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Player Category</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="RONALDO">Ronaldo</SelectItem>
-                      <SelectItem value="MESSI">Messi</SelectItem>
-                      <SelectItem value="JAGS">Jags</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

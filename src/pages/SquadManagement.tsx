@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Player, Attribute, PlayerCategory, PlayerType } from "@/types/player";
+import { Player } from "@/types/player";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -16,13 +15,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowUpDown } from "lucide-react";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
 import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
 
 type SortField = "squadNumber" | "technical" | "mental" | "physical" | "goalkeeping";
 type SortOrder = "asc" | "desc";
 
 const SquadManagement = () => {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>("squadNumber");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const navigate = useNavigate();
@@ -58,9 +57,8 @@ const SquadManagement = () => {
         age: player.age,
         dateOfBirth: player.date_of_birth,
         squadNumber: player.squad_number,
-        playerCategory: player.player_category as PlayerCategory,
-        playerType: player.player_type as PlayerType,
-        attributes: player.player_attributes.map((attr: any): Attribute => ({
+        playerType: player.player_type,
+        attributes: player.player_attributes.map((attr: any) => ({
           id: attr.id,
           name: attr.name,
           value: attr.value,
@@ -87,7 +85,7 @@ const SquadManagement = () => {
     },
   });
 
-  const calculateAttributeAverage = (attributes: Attribute[], category: string): number => {
+  const calculateAttributeAverage = (attributes: Player['attributes'], category: string): number => {
     const categoryAttributes = attributes.filter(attr => attr.category === category);
     if (categoryAttributes.length === 0) return 0;
     const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
@@ -137,28 +135,11 @@ const SquadManagement = () => {
     }
   };
 
-  const filteredPlayers = selectedCategory
-    ? players?.filter((player) => player.playerCategory === selectedCategory)
-    : players;
-
-  const sortedPlayers = filteredPlayers ? sortPlayers(filteredPlayers) : [];
+  const sortedPlayers = players ? sortPlayers(players) : [];
 
   const handleRowClick = (playerId: string) => {
     navigate(`/player/${playerId}`);
   };
-
-  // Calculate category counts
-  const getCategoryCounts = () => {
-    if (!players) return { RONALDO: 0, MESSI: 0, JAGS: 0, total: 0 };
-    
-    return players.reduce((acc, player) => {
-      acc[player.playerCategory as keyof typeof acc]++;
-      acc.total++;
-      return acc;
-    }, { RONALDO: 0, MESSI: 0, JAGS: 0, total: 0 });
-  };
-
-  const categoryCounts = getCategoryCounts();
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -187,33 +168,6 @@ const SquadManagement = () => {
           </div>
         </div>
 
-        <div className="flex gap-4 mb-6">
-          <Button
-            variant={selectedCategory === null ? "default" : "outline"}
-            onClick={() => setSelectedCategory(null)}
-          >
-            All Players ({categoryCounts.total})
-          </Button>
-          <Button
-            variant={selectedCategory === "RONALDO" ? "default" : "outline"}
-            onClick={() => setSelectedCategory("RONALDO")}
-          >
-            Ronaldo Category ({categoryCounts.RONALDO})
-          </Button>
-          <Button
-            variant={selectedCategory === "MESSI" ? "default" : "outline"}
-            onClick={() => setSelectedCategory("MESSI")}
-          >
-            Messi Category ({categoryCounts.MESSI})
-          </Button>
-          <Button
-            variant={selectedCategory === "JAGS" ? "default" : "outline"}
-            onClick={() => setSelectedCategory("JAGS")}
-          >
-            Jags Category ({categoryCounts.JAGS})
-          </Button>
-        </div>
-
         {isLoading ? (
           <div className="text-center py-8">Loading squad data...</div>
         ) : (
@@ -225,7 +179,6 @@ const SquadManagement = () => {
                 </TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Age</TableHead>
-                <TableHead>Category</TableHead>
                 <TableHead>Top Positions</TableHead>
                 <TableHead onClick={() => handleSort("technical")} className="text-center cursor-pointer">
                   Technical <ArrowUpDown className="inline h-4 w-4" />
@@ -258,7 +211,6 @@ const SquadManagement = () => {
                     </TableCell>
                     <TableCell>{player.name}</TableCell>
                     <TableCell>{player.age}</TableCell>
-                    <TableCell>{player.playerCategory}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         {player.topPositions?.map((pos, index) => (
