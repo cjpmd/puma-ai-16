@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, parseISO, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
 import { AddFixtureDialog } from "@/components/calendar/AddFixtureDialog";
-import { Plus, Trophy, handshake, Users } from "lucide-react";
+import { Plus, Trophy, Handshake, Users } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
@@ -195,7 +195,7 @@ export const CalendarPage = () => {
                   setIsAddMenuOpen(false);
                 }}
               >
-                <handshake className="h-4 w-4" />
+                <Handshake className="h-4 w-4" />
                 Add Friendly
               </Button>
               <Button
@@ -295,7 +295,16 @@ export const CalendarPage = () => {
               {sessions?.map((session) => (
                 <SessionCard 
                   key={session.id} 
-                  session={session}
+                  session={{
+                    id: session.id,
+                    title: session.title,
+                    drills: session.training_drills.map(drill => ({
+                      id: drill.id,
+                      title: drill.title,
+                      instructions: drill.instructions,
+                      training_files: drill.training_files
+                    }))
+                  }}
                   onDeleteSession={() => {}}
                 />
               ))}
