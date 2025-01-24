@@ -148,7 +148,6 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
       <PlayerCardHeader
         name={player.name}
         squadNumber={player.squadNumber}
-        playerCategory={player.playerCategory}
         playerType={player.playerType}
         topPositions={showAttributes ? topPositions : []}
         onEdit={onClick}

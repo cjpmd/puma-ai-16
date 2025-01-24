@@ -53,7 +53,7 @@ const TopRatedByPosition = () => {
           suitability_score,
           players!inner (
             name,
-            player_category
+            team_category
           ),
           position_definitions!inner (
             abbreviation,
@@ -63,7 +63,7 @@ const TopRatedByPosition = () => {
         .order("position_definitions(abbreviation)", { ascending: true });
 
       if (selectedCategory) {
-        query = query.eq("players.player_category", selectedCategory);
+        query = query.eq("players.team_category", selectedCategory);
       }
 
       const { data, error } = await query;
@@ -75,7 +75,7 @@ const TopRatedByPosition = () => {
         player_name: item.players?.name,
         position: item.position_definitions?.abbreviation,
         suitability_score: Number(item.suitability_score || 0),
-        player_category: item.players?.player_category
+        player_category: item.players?.team_category
       }));
 
       return transformedData.reduce((acc: any, curr) => {

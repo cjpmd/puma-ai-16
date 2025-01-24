@@ -269,7 +269,6 @@ export const PlayerDetails = ({ player }: PlayerDetailsProps) => {
             attributeHistory={attributeHistory || {}}
             onUpdateAttribute={handleUpdateAttribute}
             playerId={player.id}
-            playerCategory={player.playerCategory}
             calculateCategoryAverage={calculateCategoryAverage}
             getRadarData={getRadarData}
           />
