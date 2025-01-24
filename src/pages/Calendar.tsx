@@ -28,7 +28,8 @@ export const CalendarPage = () => {
   const [editingFixture, setEditingFixture] = useState<Fixture | null>(null);
   const [isEditObjectiveOpen, setIsEditObjectiveOpen] = useState(false);
   const [editingObjective, setEditingObjective] = useState(null);
-  
+  const [fileUrls, setFileUrls] = useState<Record<string, string>>({});
+
   const { toast } = useToast();
 
   const { data: sessions, refetch: refetchSessions } = useQuery({
@@ -153,13 +154,46 @@ export const CalendarPage = () => {
     }
   };
 
+  const handleAddDrill = (sessionId: string) => {
+    // Implementation for adding a drill
+    console.log("Adding drill to session:", sessionId);
+  };
+
+  const handleEditDrill = (sessionId: string, drill: any) => {
+    // Implementation for editing a drill
+    console.log("Editing drill:", drill, "in session:", sessionId);
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+      const { error } = await supabase
+        .from("training_sessions")
+        .delete()
+        .eq("id", sessionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Session deleted successfully",
+      });
+      refetchSessions();
+    } catch (error) {
+      console.error("Error deleting session:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete session",
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Calendar</h1>
         <div className="flex items-center gap-4">
           <div className="relative">
-            {/* Main Add Button */}
             <Button
               size="icon"
               className={cn(
@@ -171,7 +205,6 @@ export const CalendarPage = () => {
               <Plus className="h-6 w-6" />
             </Button>
 
-            {/* Expanded Options */}
             <div className={cn(
               "absolute right-0 mt-2 space-y-2 transition-all duration-300",
               isAddMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
@@ -305,7 +338,10 @@ export const CalendarPage = () => {
                       training_files: drill.training_files
                     }))
                   }}
-                  onDeleteSession={() => {}}
+                  fileUrls={fileUrls}
+                  onAddDrillClick={handleAddDrill}
+                  onEditDrillClick={handleEditDrill}
+                  onDeleteSession={handleDeleteSession}
                 />
               ))}
               {(!sessions?.length && !fixtures?.length) && (
@@ -317,7 +353,6 @@ export const CalendarPage = () => {
           </CardContent>
         </Card>
 
-        {/* Objectives Section */}
         <Card className="md:col-span-3">
           <CardHeader>
             <CardTitle>Objectives for {date ? format(date, 'MMMM yyyy') : 'Selected Month'}</CardTitle>
