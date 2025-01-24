@@ -7,51 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, parseISO, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 import { AddSessionDialog } from "@/components/training/AddSessionDialog";
 import { AddFixtureDialog } from "@/components/calendar/AddFixtureDialog";
-import { Plus, Trophy, HandShake, Users } from "lucide-react";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Plus, Trophy, handshake, Users } from "lucide-react";
+import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
 import { SessionCard } from "@/components/training/SessionCard";
 import { EditObjectiveDialog } from "@/components/calendar/EditObjectiveDialog";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
-
-interface DbTrainingSession {
-  id: string;
-  title: string;
-  date: string;
-  created_at: string;
-  updated_at: string;
-  training_drills: {
-    id: string;
-    title: string;
-    instructions: string;
-    session_id: string;
-    created_at: string;
-    updated_at: string;
-    training_files: Array<{
-      id: string;
-      file_name: string;
-      file_path: string;
-    }>;
-  }[];
-}
-
-interface TrainingSession {
-  id: string;
-  title: string;
-  date: string;
-  drills: {
-    id: string;
-    title: string;
-    instructions: string;
-    training_files: Array<{
-      id: string;
-      file_name: string;
-      file_path: string;
-    }>;
-  }[];
-}
+import { Fixture } from "@/types/fixture";
 
 export const CalendarPage = () => {
   const [date, setDate] = useState<Date>(new Date());
@@ -61,215 +25,11 @@ export const CalendarPage = () => {
   const [isAddTournamentOpen, setIsAddTournamentOpen] = useState(false);
   const [isAddFestivalOpen, setIsAddFestivalOpen] = useState(false);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  const [editingFixture, setEditingFixture] = useState<Fixture | null>(null);
+  const [isEditObjectiveOpen, setIsEditObjectiveOpen] = useState(false);
+  const [editingObjective, setEditingObjective] = useState(null);
   
   const { toast } = useToast();
-
-  const handleAddSession = async () => {
-    try {
-      if (!date) return;
-      
-      const { error } = await supabase
-        .from("training_sessions")
-        .insert([
-          {
-            title: sessionTitle,
-            date: format(date, "yyyy-MM-dd"),
-          },
-        ]);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Training session added successfully",
-      });
-      setIsAddSessionOpen(false);
-      setSessionTitle("");
-      refetchSessions();
-    } catch (error) {
-      console.error("Error adding training session:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to add training session",
-      });
-    }
-  };
-
-  const handleDeleteSession = async (sessionId: string) => {
-    try {
-      const { error } = await supabase
-        .from("training_sessions")
-        .delete()
-        .eq("id", sessionId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Training session deleted successfully",
-      });
-      refetchSessions();
-    } catch (error) {
-      console.error("Error deleting training session:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete training session",
-      });
-    }
-  };
-
-  const handleAddDrill = async () => {
-    try {
-      if (!selectedSessionId) return;
-
-      const { data: drill, error: drillError } = await supabase
-        .from("training_drills")
-        .insert([
-          {
-            session_id: selectedSessionId,
-            title: drillTitle,
-            instructions: drillInstructions,
-          },
-        ])
-        .select()
-        .single();
-
-      if (drillError) throw drillError;
-
-      if (selectedFile && drill) {
-        const fileExt = selectedFile.name.split('.').pop();
-        const filePath = `${drill.id}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('training_files')
-          .upload(filePath, selectedFile);
-
-        if (uploadError) throw uploadError;
-
-        const { error: fileError } = await supabase
-          .from('training_files')
-          .insert([
-            {
-              drill_id: drill.id,
-              file_name: selectedFile.name,
-              file_path: filePath,
-              content_type: selectedFile.type,
-            },
-          ]);
-
-        if (fileError) throw fileError;
-      }
-
-      toast({
-        title: "Success",
-        description: "Drill added successfully",
-      });
-      setIsAddDrillOpen(false);
-      setDrillTitle("");
-      setDrillInstructions("");
-      setSelectedFile(null);
-      refetchSessions();
-    } catch (error) {
-      console.error("Error adding drill:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to add drill",
-      });
-    }
-  };
-
-  const handleEditDrill = async () => {
-    try {
-      if (!editingDrill) return;
-
-      const { error } = await supabase
-        .from("training_drills")
-        .update({
-          title: drillTitle,
-          instructions: drillInstructions,
-        })
-        .eq("id", editingDrill.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Drill updated successfully",
-      });
-      setIsAddDrillOpen(false);
-      setDrillTitle("");
-      setDrillInstructions("");
-      setEditingDrill(null);
-      refetchSessions();
-    } catch (error) {
-      console.error("Error updating drill:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update drill",
-      });
-    }
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
-
-  const handleDeleteFixture = async (fixtureId: string) => {
-    try {
-      const { error } = await supabase
-        .from("fixtures")
-        .delete()
-        .eq("id", fixtureId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Fixture deleted successfully",
-      });
-      refetchFixtures();
-    } catch (error) {
-      console.error("Error deleting fixture:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete fixture",
-      });
-    }
-  };
-
-  const handleUpdateFixtureDate = async (fixtureId: string, newDate: Date) => {
-    try {
-      const { error } = await supabase
-        .from("fixtures")
-        .update({
-          date: format(newDate, "yyyy-MM-dd"),
-        })
-        .eq("id", fixtureId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Fixture date updated successfully",
-      });
-      refetchFixtures();
-    } catch (error) {
-      console.error("Error updating fixture date:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update fixture date",
-      });
-    }
-  };
 
   const { data: sessions, refetch: refetchSessions } = useQuery({
     queryKey: ["training-sessions", date],
@@ -290,17 +50,7 @@ export const CalendarPage = () => {
 
       if (error) throw error;
 
-      return (data as DbTrainingSession[]).map(session => ({
-        id: session.id,
-        title: session.title,
-        date: session.date,
-        drills: session.training_drills.map(drill => ({
-          id: drill.id,
-          title: drill.title,
-          instructions: drill.instructions,
-          training_files: drill.training_files
-        }))
-      })) as TrainingSession[];
+      return data;
     },
   });
 
@@ -353,6 +103,56 @@ export const CalendarPage = () => {
     enabled: !!date,
   });
 
+  const handleDeleteFixture = async (fixtureId: string) => {
+    try {
+      const { error } = await supabase
+        .from("fixtures")
+        .delete()
+        .eq("id", fixtureId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Fixture deleted successfully",
+      });
+      refetchFixtures();
+    } catch (error) {
+      console.error("Error deleting fixture:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete fixture",
+      });
+    }
+  };
+
+  const handleUpdateFixtureDate = async (fixtureId: string, newDate: Date) => {
+    try {
+      const { error } = await supabase
+        .from("fixtures")
+        .update({
+          date: format(newDate, "yyyy-MM-dd"),
+        })
+        .eq("id", fixtureId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Fixture date updated successfully",
+      });
+      refetchFixtures();
+    } catch (error) {
+      console.error("Error updating fixture date:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update fixture date",
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-8">
       <div className="flex justify-between items-center">
@@ -395,7 +195,7 @@ export const CalendarPage = () => {
                   setIsAddMenuOpen(false);
                 }}
               >
-                <HandShake className="h-4 w-4" />
+                <handshake className="h-4 w-4" />
                 Add Friendly
               </Button>
               <Button
@@ -495,24 +295,8 @@ export const CalendarPage = () => {
               {sessions?.map((session) => (
                 <SessionCard 
                   key={session.id} 
-                  session={{
-                    id: session.id,
-                    title: session.title,
-                    drills: session.drills
-                  }}
-                  fileUrls={{}}
-                  onAddDrillClick={(sessionId) => {
-                    setSelectedSessionId(sessionId);
-                    setIsAddDrillOpen(true);
-                  }}
-                  onEditDrillClick={(sessionId, drill) => {
-                    setSelectedSessionId(sessionId);
-                    setEditingDrill(drill);
-                    setDrillTitle(drill.title);
-                    setDrillInstructions(drill.instructions || "");
-                    setIsAddDrillOpen(true);
-                  }}
-                  onDeleteSession={handleDeleteSession}
+                  session={session}
+                  onDeleteSession={() => {}}
                 />
               ))}
               {(!sessions?.length && !fixtures?.length) && (
@@ -597,7 +381,7 @@ export const CalendarPage = () => {
             refetchFixtures();
             setIsAddFriendlyOpen(false);
           }}
-          isFriendly={true}
+          showDateSelector
         />
       </Dialog>
     </div>
