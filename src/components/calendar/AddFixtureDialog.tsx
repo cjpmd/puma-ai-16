@@ -31,7 +31,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
-import { Trophy, Minus, XCircle } from "lucide-react";
 
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
@@ -98,7 +97,7 @@ export const AddFixtureDialog = ({
       const { data, error } = await supabase
         .from("players")
         .select("id, name, squad_number")
-        .eq("player_category", category)
+        .eq("team_category", category)
         .order('name');
       
       if (error) {
@@ -403,7 +402,7 @@ export const AddFixtureDialog = ({
           </Form>
         ) : (
           <TeamSelectionManager 
-            fixture={editingFixture} 
+            fixture={editingFixture || newFixture} 
           />
         )}
       </DialogContent>
