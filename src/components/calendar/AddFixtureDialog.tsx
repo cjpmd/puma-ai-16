@@ -2,11 +2,7 @@ import { useState, useEffect } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
@@ -14,36 +10,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
+import { FixtureForm } from "@/components/fixtures/FixtureForm";
+import { sendFixtureNotification } from "@/components/fixtures/FixtureNotification";
 import { Fixture } from "@/types/fixture";
-
-const formSchema = z.object({
-  opponent: z.string().min(1, "Opponent name is required"),
-  location: z.string().optional(),
-  category: z.enum(["Ronaldo", "Messi", "Jags"]),
-  home_score: z.string().optional(),
-  away_score: z.string().optional(),
-  motm_player_id: z.string().optional(),
-  time: z.string().optional(),
-});
-
-type FormData = z.infer<typeof formSchema>;
 
 interface AddFixtureDialogProps {
   isOpen: boolean;
@@ -68,66 +38,24 @@ export const AddFixtureDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialSelectedDate);
   const [newFixture, setNewFixture] = useState<Fixture | null>(null);
-  
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      opponent: editingFixture?.opponent || "",
-      location: editingFixture?.location || "",
-      category: (editingFixture?.category || "Ronaldo") as "Ronaldo" | "Messi" | "Jags",
-      home_score: editingFixture?.home_score?.toString() || "",
-      away_score: editingFixture?.away_score?.toString() || "",
-      motm_player_id: editingFixture?.motm_player_id || undefined,
-      time: editingFixture?.time || "",
-    },
-  });
 
   const { data: players } = useQuery({
-    queryKey: ["players", form.getValues("category")],
+    queryKey: ["players", editingFixture?.category || "Ronaldo"],
     queryFn: async () => {
-      const category = form.getValues("category").toUpperCase();
-      console.log("Fetching players for category:", category);
+      const category = editingFixture?.category || "Ronaldo";
       const { data, error } = await supabase
         .from("players")
         .select("id, name, squad_number")
-        .eq("team_category", category)
+        .eq("team_category", category.toUpperCase())
         .order('name');
       
-      if (error) {
-        console.error("Error fetching players:", error);
-        throw error;
-      }
-      console.log("Players fetched:", data);
+      if (error) throw error;
       return data || [];
     },
     enabled: isOpen,
   });
 
-  useEffect(() => {
-    if (editingFixture) {
-      form.reset({
-        opponent: editingFixture.opponent,
-        location: editingFixture.location || "",
-        category: (editingFixture.category || "Ronaldo") as "Ronaldo" | "Messi" | "Jags",
-        home_score: editingFixture.home_score?.toString() || "",
-        away_score: editingFixture.away_score?.toString() || "",
-        motm_player_id: editingFixture.motm_player_id || undefined,
-        time: editingFixture.time || "",
-      });
-    }
-  }, [editingFixture, form]);
-
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === "category") {
-        form.setValue("motm_player_id", undefined);
-        queryClient.invalidateQueries({ queryKey: ["players", value.category] });
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form, queryClient]);
-
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
       
@@ -188,33 +116,26 @@ export const AddFixtureDialog = ({
 
         // Send WhatsApp notification for new fixtures
         try {
-          const { error: notificationError } = await supabase.functions.invoke('send-whatsapp-notification', {
-            body: {
-              type: 'FIXTURE',
-              date: format(selectedDate, "dd/MM/yyyy"),
-              time: data.time,
-              opponent: data.opponent,
-              location: data.location,
-              category: data.category
-            }
+          await sendFixtureNotification({
+            type: 'FIXTURE',
+            date: format(selectedDate, "dd/MM/yyyy"),
+            time: data.time,
+            opponent: data.opponent,
+            location: data.location,
+            category: data.category
           });
-
-          if (notificationError) {
-            console.error('Error sending WhatsApp notification:', notificationError);
-            toast({
-              title: "Warning",
-              description: "Fixture created but there was an error sending notifications",
-              variant: "destructive",
-            });
-          }
         } catch (notificationError) {
-          console.error('Error invoking WhatsApp notification function:', notificationError);
+          console.error('Error sending WhatsApp notification:', notificationError);
+          toast({
+            title: "Warning",
+            description: "Fixture created but there was an error sending notifications",
+            variant: "destructive",
+          });
         }
       }
 
       onSuccess();
       if (!showTeamSelection) {
-        form.reset();
         onOpenChange(false);
       }
       toast({
@@ -246,154 +167,14 @@ export const AddFixtureDialog = ({
         </DialogHeader>
         
         {!showTeamSelection ? (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {showDateSelector && (
-                <div className="space-y-2">
-                  <FormLabel>Date *</FormLabel>
-                  <Input 
-                    type="date" 
-                    value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''} 
-                    onChange={(e) => {
-                      const date = e.target.value ? new Date(e.target.value) : undefined;
-                      setSelectedDate(date);
-                    }}
-                  />
-                </div>
-              )}
-              
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Team *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select team" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Ronaldo">Ronaldo</SelectItem>
-                        <SelectItem value="Messi">Messi</SelectItem>
-                        <SelectItem value="Jags">Jags</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="opponent"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Opponent *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location (optional)</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="time"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time (optional)</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="home_score"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Puma Score</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="away_score"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Opponent Score</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="motm_player_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Man of the Match</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select player" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {players?.map((player) => (
-                          <SelectItem key={player.id} value={player.id}>
-                            {player.name} (#{player.squad_number})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <Button 
-                type="submit" 
-                className="w-full"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Saving..." : editingFixture ? "Save Changes" : "Add Fixture"}
-              </Button>
-            </form>
-          </Form>
+          <FixtureForm
+            onSubmit={onSubmit}
+            selectedDate={selectedDate}
+            editingFixture={editingFixture}
+            players={players}
+            isSubmitting={isSubmitting}
+            showDateSelector={showDateSelector}
+          />
         ) : (
           <TeamSelectionManager 
             fixture={editingFixture || newFixture} 
