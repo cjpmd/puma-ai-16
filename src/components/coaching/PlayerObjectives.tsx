@@ -44,6 +44,30 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
     }
   };
 
+  const handleStatusChange = async (objective: any) => {
+    try {
+      const { error } = await supabase
+        .from('player_objectives')
+        .update({ status: objective.status })
+        .eq('id', objective.id);
+
+      if (error) throw error;
+
+      refetch();
+      toast({
+        title: "Success",
+        description: "Objective status updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating objective status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update objective status.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -61,9 +85,7 @@ export const PlayerObjectives = ({ playerId }: PlayerObjectivesProps) => {
             objectives={objectives || []}
             onEdit={() => refetch()}
             onDelete={(id) => setDeleteObjectiveId(id)}
-            onStatusChange={(objective) => {
-              setEditingObjective(objective);
-            }}
+            onStatusChange={handleStatusChange}
           />
         </div>
       </CardContent>
