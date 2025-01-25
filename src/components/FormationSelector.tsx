@@ -28,29 +28,14 @@ const formatPositions = {
   "11-a-side": ["gk", "dl", "dcl", "dc", "dcr", "dr", "ml", "mc", "mr", "amc", "st"]
 } as const;
 
-export const FormationSelector = () => {
+interface FormationSelectorProps {
+  format?: keyof typeof formatPositions;
+  teamCategory?: string;
+  onSelectionChange?: (selections: Record<string, string>) => void;
+}
+
+export const FormationSelector = ({ format = "7-a-side", teamCategory, onSelectionChange }: FormationSelectorProps) => {
   const [selectedPositions, setSelectedPositions] = useState<Record<string, string>>({});
-  const [teamFormat, setTeamFormat] = useState<keyof typeof formatPositions>("7-a-side");
-
-  // Fetch team format from settings
-  const { data: teamSettings } = useQuery({
-    queryKey: ["team-settings"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("team_settings")
-        .select("format")
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  useEffect(() => {
-    if (teamSettings?.format) {
-      setTeamFormat(teamSettings.format as keyof typeof formatPositions);
-    }
-  }, [teamSettings]);
 
   const { data: positionDefinitions } = useQuery({
     queryKey: ["position-definitions"],
@@ -65,11 +50,27 @@ export const FormationSelector = () => {
     },
   });
 
+  const { data: availablePlayers } = useQuery({
+    queryKey: ["available-players", teamCategory],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("*")
+        .eq("team_category", teamCategory);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!teamCategory,
+  });
+
   const handlePositionChange = (position: string, value: string) => {
-    setSelectedPositions(prev => ({
-      ...prev,
+    const newSelections = {
+      ...selectedPositions,
       [position]: value
-    }));
+    };
+    setSelectedPositions(newSelections);
+    onSelectionChange?.(newSelections);
   };
 
   const PositionSelect = ({ position, label }: { position: string; label: PositionType }) => (
@@ -102,7 +103,7 @@ export const FormationSelector = () => {
     </div>
   );
 
-  const currentPositions = formatPositions[teamFormat];
+  const currentPositions = formatPositions[format];
   const maxSubstitutes = Math.ceil(currentPositions.length / 2);
 
   return (
