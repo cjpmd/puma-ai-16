@@ -89,7 +89,7 @@ export const AddFestivalDialog = ({
         time: data.time || null,
         location: data.location || null,
         format: data.format,
-        number_of_teams: data.numberOfTeams,
+        number_of_teams: Number(data.numberOfTeams), // Explicitly convert to number
         system_category: "FESTIVAL",
       };
 
@@ -102,7 +102,7 @@ export const AddFestivalDialog = ({
       if (error) throw error;
 
       // Create empty teams
-      const teamPromises = Array.from({ length: data.numberOfTeams }, (_, i) => 
+      const teamPromises = Array.from({ length: Number(data.numberOfTeams) }, (_, i) => 
         supabase
           .from("festival_teams")
           .insert({
