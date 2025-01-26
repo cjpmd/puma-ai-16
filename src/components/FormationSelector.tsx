@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 type PositionType = "gk" | "dl" | "dcl" | "dc" | "dcr" | "dr" | "ml" | "mc" | "mr" | "amc" | "st";
 
@@ -31,6 +32,8 @@ export const FormationSelector = ({
   onSelectionChange 
 }: FormationSelectorProps) => {
   const [selections, setSelections] = useState<Record<string, Selection>>({});
+  const [captain, setCaptain] = useState<string>("unassigned");
+  const [duration, setDuration] = useState<string>("20");
 
   const { data: positionDefinitions } = useQuery({
     queryKey: ["position-definitions"],
@@ -122,6 +125,37 @@ export const FormationSelector = ({
 
   return (
     <div className="space-y-6 max-h-[60vh] overflow-y-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <Select
+            value={captain}
+            onValueChange={setCaptain}
+          >
+            <SelectTrigger className="text-left">
+              <SelectValue placeholder="Select captain" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unassigned">None</SelectItem>
+              {availablePlayers?.map(player => (
+                <SelectItem key={player.id} value={player.id}>
+                  {player.name} ({player.squad_number})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Input
+            type="number"
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            min="1"
+            placeholder="Duration (minutes)"
+            className="w-full"
+          />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {currentPositions.map((pos, index) => (
           <PositionSelect
@@ -136,11 +170,23 @@ export const FormationSelector = ({
         <h3 className="font-semibold mb-4">Substitutes ({maxSubstitutes} max)</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: maxSubstitutes }).map((_, index) => (
-            <PositionSelect
+            <Select
               key={`sub-${index}`}
-              slotId={`sub-${index}`}
-              defaultPosition={"sub" as PositionType}
-            />
+              value={selections[`sub-${index}`]?.playerId || "unassigned"}
+              onValueChange={(value) => handleSelectionChange(`sub-${index}`, value, "sub")}
+            >
+              <SelectTrigger className="text-left">
+                <SelectValue placeholder="Select substitute" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">None</SelectItem>
+                {availablePlayers?.map(player => (
+                  <SelectItem key={player.id} value={player.id}>
+                    {player.name} ({player.squad_number})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ))}
         </div>
       </div>
