@@ -241,4 +241,5 @@ export const AddFestivalDialog = ({
         )}
       </DialogContent>
     </Dialog>
-  </form>
+  );
+};
