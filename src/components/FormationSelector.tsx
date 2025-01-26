@@ -69,14 +69,14 @@ export const FormationSelector = ({
         {positionDefinitions?.find(p => p.abbreviation.toLowerCase() === label)?.full_name || label.toUpperCase()}
       </Label>
       <Select
-        value={selectedPositions[position] || ""}
+        value={selectedPositions[position] || "unassigned"}
         onValueChange={(value) => handlePositionChange(position, value)}
       >
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Select player" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">None</SelectItem>
+          <SelectItem value="unassigned">None</SelectItem>
           {availablePlayers?.map(player => (
             <SelectItem key={player.id} value={player.id}>
               {player.name} ({player.squad_number})
