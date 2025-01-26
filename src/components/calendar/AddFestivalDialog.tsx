@@ -31,12 +31,15 @@ import { TeamSelectionManager } from "../TeamSelectionManager";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { Database } from "@/integrations/supabase/types";
+
+type Festival = Database["public"]["Tables"]["festivals"]["Insert"];
 
 const formSchema = z.object({
   location: z.string().optional(),
   time: z.string().optional(),
   format: z.enum(["4-a-side", "5-a-side", "7-a-side", "9-a-side", "11-a-side"]),
-  numberOfTeams: z.string().transform(Number).min(2, "At least 2 teams required"),
+  numberOfTeams: z.string().transform(Number).pipe(z.number().min(2, "At least 2 teams required")),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -81,16 +84,18 @@ export const AddFestivalDialog = ({
         return;
       }
 
+      const festivalData: Festival = {
+        date: format(selectedDate, "yyyy-MM-dd"),
+        time: data.time || null,
+        location: data.location || null,
+        format: data.format,
+        number_of_teams: data.numberOfTeams,
+        system_category: "FESTIVAL",
+      };
+
       const { data: festival, error } = await supabase
         .from("festivals")
-        .insert({
-          date: format(selectedDate, "yyyy-MM-dd"),
-          time: data.time || null,
-          location: data.location || null,
-          format: data.format,
-          number_of_teams: data.numberOfTeams,
-          system_category: "FESTIVAL",
-        })
+        .insert(festivalData)
         .select()
         .single();
 
@@ -110,7 +115,7 @@ export const AddFestivalDialog = ({
       const teamResults = await Promise.all(teamPromises);
       const createdTeams = teamResults
         .map(result => result.data?.[0])
-        .filter(team => team)
+        .filter((team): team is NonNullable<typeof team> => team !== null)
         .map(team => ({
           id: team.id,
           name: team.team_name,

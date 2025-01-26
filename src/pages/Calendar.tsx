@@ -12,6 +12,7 @@ import { DailyEvents } from "@/components/calendar/DailyEvents";
 import { useCalendarData } from "@/hooks/useCalendarData";
 import { useCalendarEventHandlers } from "@/components/calendar/CalendarEventHandlers";
 import { Fixture } from "@/types/fixture";
+import { AddFestivalDialog } from "@/components/calendar/AddFestivalDialog";
 
 export const CalendarPage = () => {
   const [date, setDate] = useState<Date>(new Date());
