@@ -10,39 +10,15 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { TeamSelectionManager } from "../TeamSelectionManager";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { FestivalFormFields, formSchema, FormData } from "./FestivalFormFields";
 import type { Database } from "@/integrations/supabase/types";
 
 type Festival = Database["public"]["Tables"]["festivals"]["Insert"];
-
-const formSchema = z.object({
-  location: z.string().optional(),
-  time: z.string().optional(),
-  format: z.enum(["4-a-side", "5-a-side", "7-a-side", "9-a-side", "11-a-side"]),
-  numberOfTeams: z.coerce.number().min(2, "At least 2 teams required"),
-});
-
-type FormData = z.infer<typeof formSchema>;
 
 interface AddFestivalDialogProps {
   isOpen: boolean;
@@ -101,7 +77,6 @@ export const AddFestivalDialog = ({
 
       if (error) throw error;
 
-      // Create empty teams
       const teamPromises = Array.from({ length: data.numberOfTeams }, (_, i) => 
         supabase
           .from("festival_teams")
@@ -158,78 +133,7 @@ export const AddFestivalDialog = ({
         {!showTeamSelection ? (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="format"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Format *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select format" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="4-a-side">4-a-side</SelectItem>
-                        <SelectItem value="5-a-side">5-a-side</SelectItem>
-                        <SelectItem value="7-a-side">7-a-side</SelectItem>
-                        <SelectItem value="9-a-side">9-a-side</SelectItem>
-                        <SelectItem value="11-a-side">11-a-side</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="numberOfTeams"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Number of Teams *</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="2" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location (optional)</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="time"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time (optional)</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
+              <FestivalFormFields form={form} />
               <Button type="submit" className="w-full">
                 Continue to Team Selection
               </Button>
