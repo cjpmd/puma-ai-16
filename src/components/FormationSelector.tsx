@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 
 type PositionType = "gk" | "dl" | "dcl" | "dc" | "dcr" | "dr" | "ml" | "mc" | "mr" | "amc" | "st";
 
@@ -69,7 +68,6 @@ export const FormationSelector = ({
     };
     setSelections(newSelections);
     
-    // Convert to the expected format for the parent component
     const formattedSelections = Object.entries(newSelections).reduce((acc, [key, value]) => {
       acc[key] = value.playerId;
       return acc;
@@ -82,43 +80,39 @@ export const FormationSelector = ({
     const currentSelection = selections[slotId] || { playerId: "unassigned", position: defaultPosition };
 
     return (
-      <div className="space-y-2">
-        <Label>
-          {positionDefinitions?.find(p => p.abbreviation.toLowerCase() === defaultPosition)?.full_name || defaultPosition.toUpperCase()}
-        </Label>
-        <div className="grid grid-cols-2 gap-2">
-          <Select
-            value={currentSelection.position}
-            onValueChange={(value) => handleSelectionChange(slotId, currentSelection.playerId, value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select position" />
-            </SelectTrigger>
-            <SelectContent>
-              {positionDefinitions?.map(pos => (
-                <SelectItem key={pos.id} value={pos.abbreviation.toLowerCase()}>
-                  {pos.full_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={currentSelection.playerId}
-            onValueChange={(value) => handleSelectionChange(slotId, value, currentSelection.position)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select player" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unassigned">None</SelectItem>
-              {availablePlayers?.map(player => (
-                <SelectItem key={player.id} value={player.id}>
-                  {player.name} ({player.squad_number})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Select
+          value={currentSelection.position}
+          onValueChange={(value) => handleSelectionChange(slotId, currentSelection.playerId, value)}
+        >
+          <SelectTrigger className="text-left">
+            <SelectValue placeholder="Select position" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="unassigned">None</SelectItem>
+            {positionDefinitions?.map(pos => (
+              <SelectItem key={pos.id} value={pos.abbreviation.toLowerCase()}>
+                {pos.full_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={currentSelection.playerId}
+          onValueChange={(value) => handleSelectionChange(slotId, value, currentSelection.position)}
+        >
+          <SelectTrigger className="text-left">
+            <SelectValue placeholder="Select player" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="unassigned">None</SelectItem>
+            {availablePlayers?.map(player => (
+              <SelectItem key={player.id} value={player.id}>
+                {player.name} ({player.squad_number})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     );
   };
@@ -127,7 +121,7 @@ export const FormationSelector = ({
   const maxSubstitutes = Math.ceil(currentPositions.length / 2);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-h-[60vh] overflow-y-auto">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {currentPositions.map((pos, index) => (
           <PositionSelect
