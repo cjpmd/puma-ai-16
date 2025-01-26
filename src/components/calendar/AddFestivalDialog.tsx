@@ -39,7 +39,7 @@ const formSchema = z.object({
   location: z.string().optional(),
   time: z.string().optional(),
   format: z.enum(["4-a-side", "5-a-side", "7-a-side", "9-a-side", "11-a-side"]),
-  numberOfTeams: z.string().transform(Number).pipe(z.number().min(2, "At least 2 teams required")),
+  numberOfTeams: z.string().transform(val => parseInt(val, 10)).pipe(z.number().min(2, "At least 2 teams required")),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -89,7 +89,7 @@ export const AddFestivalDialog = ({
         time: data.time || null,
         location: data.location || null,
         format: data.format,
-        number_of_teams: Number(data.numberOfTeams), // Explicitly convert to number
+        number_of_teams: data.numberOfTeams, // Now this is guaranteed to be a number due to the schema transformation
         system_category: "FESTIVAL",
       };
 
@@ -102,7 +102,7 @@ export const AddFestivalDialog = ({
       if (error) throw error;
 
       // Create empty teams
-      const teamPromises = Array.from({ length: Number(data.numberOfTeams) }, (_, i) => 
+      const teamPromises = Array.from({ length: data.numberOfTeams }, (_, i) => 
         supabase
           .from("festival_teams")
           .insert({
