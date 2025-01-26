@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FormationSelector } from "./FormationSelector";
 
 interface TeamSelectionManagerProps {
@@ -30,30 +29,21 @@ export const TeamSelectionManager = ({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Team Selection</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue={teams[0]?.id}>
-          <TabsList className="w-full">
-            {teams.map(team => (
-              <TabsTrigger key={team.id} value={team.id} className="flex-1">
-                {team.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          {teams.map(team => (
-            <TabsContent key={team.id} value={team.id}>
-              <FormationSelector
-                format={format as any}
-                teamCategory={team.category}
-                onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
-              />
-            </TabsContent>
-          ))}
-        </Tabs>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      {teams.map(team => (
+        <Card key={team.id}>
+          <CardHeader>
+            <CardTitle>{team.name}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FormationSelector
+              format={format as any}
+              teamCategory={team.category}
+              onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
+            />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 };

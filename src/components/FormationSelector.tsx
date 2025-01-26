@@ -21,12 +21,17 @@ interface FormationSelectorProps {
   onSelectionChange?: (selections: Record<string, string>) => void;
 }
 
+interface Selection {
+  playerId: string;
+  position: string;
+}
+
 export const FormationSelector = ({ 
   format = "7-a-side", 
   teamCategory, 
   onSelectionChange 
 }: FormationSelectorProps) => {
-  const [selectedPositions, setSelectedPositions] = useState<Record<string, string>>({});
+  const [selections, setSelections] = useState<Record<string, Selection>>({});
 
   const { data: positionDefinitions } = useQuery({
     queryKey: ["position-definitions"],
@@ -54,38 +59,69 @@ export const FormationSelector = ({
     enabled: !!teamCategory,
   });
 
-  const handlePositionChange = (position: string, value: string) => {
+  const handleSelectionChange = (slotId: string, playerId: string, position: string) => {
     const newSelections = {
-      ...selectedPositions,
-      [position]: value
+      ...selections,
+      [slotId]: {
+        playerId,
+        position
+      }
     };
-    setSelectedPositions(newSelections);
-    onSelectionChange?.(newSelections);
+    setSelections(newSelections);
+    
+    // Convert to the expected format for the parent component
+    const formattedSelections = Object.entries(newSelections).reduce((acc, [key, value]) => {
+      acc[key] = value.playerId;
+      return acc;
+    }, {} as Record<string, string>);
+    
+    onSelectionChange?.(formattedSelections);
   };
 
-  const PositionSelect = ({ position, label }: { position: string; label: PositionType }) => (
-    <div className="space-y-2">
-      <Label>
-        {positionDefinitions?.find(p => p.abbreviation.toLowerCase() === label)?.full_name || label.toUpperCase()}
-      </Label>
-      <Select
-        value={selectedPositions[position] || "unassigned"}
-        onValueChange={(value) => handlePositionChange(position, value)}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select player" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="unassigned">None</SelectItem>
-          {availablePlayers?.map(player => (
-            <SelectItem key={player.id} value={player.id}>
-              {player.name} ({player.squad_number})
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
+  const PositionSelect = ({ slotId, defaultPosition }: { slotId: string; defaultPosition: PositionType }) => {
+    const currentSelection = selections[slotId] || { playerId: "unassigned", position: defaultPosition };
+
+    return (
+      <div className="space-y-2">
+        <Label>
+          {positionDefinitions?.find(p => p.abbreviation.toLowerCase() === defaultPosition)?.full_name || defaultPosition.toUpperCase()}
+        </Label>
+        <div className="grid grid-cols-2 gap-2">
+          <Select
+            value={currentSelection.position}
+            onValueChange={(value) => handleSelectionChange(slotId, currentSelection.playerId, value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select position" />
+            </SelectTrigger>
+            <SelectContent>
+              {positionDefinitions?.map(pos => (
+                <SelectItem key={pos.id} value={pos.abbreviation.toLowerCase()}>
+                  {pos.full_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={currentSelection.playerId}
+            onValueChange={(value) => handleSelectionChange(slotId, value, currentSelection.position)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select player" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unassigned">None</SelectItem>
+              {availablePlayers?.map(player => (
+                <SelectItem key={player.id} value={player.id}>
+                  {player.name} ({player.squad_number})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    );
+  };
 
   const currentPositions = formatPositions[format];
   const maxSubstitutes = Math.ceil(currentPositions.length / 2);
@@ -96,8 +132,8 @@ export const FormationSelector = ({
         {currentPositions.map((pos, index) => (
           <PositionSelect
             key={`${pos}-${index}`}
-            position={`${pos}-${index}`}
-            label={pos as PositionType}
+            slotId={`${pos}-${index}`}
+            defaultPosition={pos as PositionType}
           />
         ))}
       </div>
@@ -108,8 +144,8 @@ export const FormationSelector = ({
           {Array.from({ length: maxSubstitutes }).map((_, index) => (
             <PositionSelect
               key={`sub-${index}`}
-              position={`sub-${index}`}
-              label={"sub" as PositionType}
+              slotId={`sub-${index}`}
+              defaultPosition={"sub" as PositionType}
             />
           ))}
         </div>
