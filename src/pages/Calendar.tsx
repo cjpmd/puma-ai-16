@@ -127,6 +127,18 @@ export const CalendarPage = () => {
         />
       </Dialog>
 
+      <Dialog open={isAddFestivalOpen} onOpenChange={setIsAddFestivalOpen}>
+        <AddFestivalDialog
+          isOpen={isAddFestivalOpen}
+          onOpenChange={setIsAddFestivalOpen}
+          selectedDate={date}
+          onSuccess={() => {
+            refetchFixtures();
+            setIsAddFestivalOpen(false);
+          }}
+        />
+      </Dialog>
+
       <Dialog open={isAddFriendlyOpen} onOpenChange={setIsAddFriendlyOpen}>
         <AddFixtureDialog 
           isOpen={isAddFriendlyOpen}
