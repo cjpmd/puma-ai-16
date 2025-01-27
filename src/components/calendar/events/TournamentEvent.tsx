@@ -1,8 +1,7 @@
 import { format } from "date-fns";
-import { MapPin, Pencil, Users, Trash2, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { MapPin } from "lucide-react";
+import { DateChangeButton } from "./components/DateChangeButton";
+import { EventActionButtons } from "./components/EventActionButtons";
 
 interface TournamentEventProps {
   tournament: {
@@ -44,46 +43,15 @@ export const TournamentEvent = ({
           <p className="text-sm">Teams: {tournament.number_of_teams}</p>
         </div>
         <div className="flex gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <Calendar className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <CalendarComponent
-                mode="single"
-                selected={new Date(tournament.date)}
-                onSelect={(date) => {
-                  if (date && onDateChange) {
-                    onDateChange(tournament.id, date);
-                  }
-                }}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onEdit?.(tournament)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onTeamSelection?.(tournament)}
-          >
-            <Users className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onDelete?.(tournament.id)}
-          >
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
+          <DateChangeButton
+            date={tournament.date}
+            onDateChange={(date) => onDateChange?.(tournament.id, date)}
+          />
+          <EventActionButtons
+            onEdit={() => onEdit?.(tournament)}
+            onTeamSelection={() => onTeamSelection?.(tournament)}
+            onDelete={() => onDelete?.(tournament.id)}
+          />
         </div>
       </div>
     </div>

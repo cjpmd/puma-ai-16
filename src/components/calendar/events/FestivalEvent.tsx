@@ -1,8 +1,7 @@
 import { format } from "date-fns";
-import { MapPin, Pencil, Users, Trash2, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { MapPin } from "lucide-react";
+import { DateChangeButton } from "./components/DateChangeButton";
+import { EventActionButtons } from "./components/EventActionButtons";
 
 interface FestivalEventProps {
   festival: {
@@ -44,46 +43,15 @@ export const FestivalEvent = ({
           <p className="text-sm">Teams: {festival.number_of_teams}</p>
         </div>
         <div className="flex gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <Calendar className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <CalendarComponent
-                mode="single"
-                selected={new Date(festival.date)}
-                onSelect={(date) => {
-                  if (date) {
-                    onEdit({ ...festival, date: format(date, 'yyyy-MM-dd') });
-                  }
-                }}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onEdit(festival)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onTeamSelection(festival)}
-          >
-            <Users className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onDelete(festival.id)}
-          >
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
+          <DateChangeButton
+            date={festival.date}
+            onDateChange={(date) => onEdit({ ...festival, date: format(date, 'yyyy-MM-dd') })}
+          />
+          <EventActionButtons
+            onEdit={() => onEdit(festival)}
+            onTeamSelection={() => onTeamSelection(festival)}
+            onDelete={() => onDelete(festival.id)}
+          />
         </div>
       </div>
     </div>
