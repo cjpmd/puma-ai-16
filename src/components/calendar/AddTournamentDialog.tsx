@@ -5,8 +5,12 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
+// Define specific types for team selections
+type Position = string;
+type PlayerId = string;
+
 interface TeamSelection {
-  [position: string]: string;
+  [position: Position]: PlayerId;
 }
 
 interface TeamSelections {
@@ -95,19 +99,23 @@ export const AddTournamentDialog = ({
         .eq("tournament_id", editingTournament.id);
 
       // Then insert new selections
-      for (const [teamId, playerSelections] of Object.entries(selections)) {
-        for (const [position, playerId] of Object.entries(playerSelections)) {
-          if (playerId === "unassigned") continue;
+      const insertPromises = Object.entries(selections).flatMap(([teamId, playerSelections]) =>
+        Object.entries(playerSelections)
+          .filter(([_, playerId]) => playerId !== "unassigned")
+          .map(([position, playerId]) => ({
+            tournament_team_id: teamId,
+            player_id: playerId,
+            position: position.split('-')[0],
+            is_substitute: position.startsWith('sub-')
+          }))
+      );
 
-          await supabase
-            .from("tournament_team_players")
-            .insert({
-              tournament_team_id: teamId,
-              player_id: playerId,
-              position: position.split('-')[0],
-              is_substitute: position.startsWith('sub-')
-            });
-        }
+      if (insertPromises.length > 0) {
+        const { error: insertError } = await supabase
+          .from("tournament_team_players")
+          .insert(insertPromises);
+
+        if (insertError) throw insertError;
       }
 
       toast({
