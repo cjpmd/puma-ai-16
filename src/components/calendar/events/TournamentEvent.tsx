@@ -1,8 +1,8 @@
 import { format } from "date-fns";
-import { MapPin, Pencil, Users, Trash2 } from "lucide-react";
+import { MapPin, Pencil, Users, Trash2, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 interface TournamentEventProps {
   tournament: {
@@ -51,7 +51,7 @@ export const TournamentEvent = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
+              <CalendarComponent
                 mode="single"
                 selected={new Date(tournament.date)}
                 onSelect={(date) => {
