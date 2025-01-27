@@ -5,18 +5,13 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
-type FormatType = "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
-
 interface Team {
   id: string;
   name: string;
   category: string;
 }
 
-interface TeamSelection {
-  playerId: string;
-  position: string;
-}
+type FormatType = "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -85,7 +80,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, Record<string, TeamSelection>>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, Record<string, { playerId: string; position: string }>>) => {
     if (!editingTournament?.id) return;
 
     try {
