@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { CalendarPage } from "@/pages/Calendar";
@@ -39,8 +39,8 @@ export const App = () => {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route element={<Layout />}>
-            <Route element={<ProtectedRoute />}>
+          <Route element={<Layout><Outlet /></Layout>}>
+            <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/players" element={<PlayersPage />} />
