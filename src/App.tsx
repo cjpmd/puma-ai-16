@@ -1,44 +1,55 @@
+import { useEffect } from 'react';
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Index from "./pages/Index";
-import Squad from "./pages/SquadManagement";
-import { CalendarPage } from "./pages/Calendar";
-import Fixtures from "./pages/Fixtures";
-import { Analytics } from "./pages/Analytics";
-import PlayerDetails from "./pages/PlayerDetailsPage";
-import FormationSelector from "./pages/FormationSelector";
-import RoleSuitability from "./pages/RoleSuitabilityPage";
-import TopRatedByPosition from "./pages/TopRatedByPosition";
-import TeamSettings from "./pages/TeamSettings";
-import { Auth } from "./pages/Auth";
-import { Coaches } from "./pages/Coaches";
-import { NavBar } from "./components/NavBar";
+import { Toaster } from "@/components/ui/toaster";
+import { CalendarPage } from "@/pages/Calendar";
+import { LoginPage } from "@/pages/Login";
+import { RegisterPage } from "@/pages/Register";
+import { DashboardPage } from "@/pages/Dashboard";
+import { PlayersPage } from "@/pages/Players";
+import { SettingsPage } from "@/pages/Settings";
+import { Layout } from "@/components/Layout";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
-function App() {
+export const App = () => {
+  const { toast } = useToast();
+
+  useEffect(() => {
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully');
+      } else if (event === 'SIGNED_OUT') {
+        toast({
+          title: "Session Expired",
+          description: "Please sign in again",
+          variant: "destructive"
+        });
+        window.location.href = '/login';
+      }
+    });
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <NavBar />
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/home" element={<Index />} />
-          <Route path="/squad" element={<Squad />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/fixtures" element={<Fixtures />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/player/:id" element={<PlayerDetails />} />
-          <Route path="/formation" element={<FormationSelector />} />
-          <Route path="/role-suitability" element={<RoleSuitability />} />
-          <Route path="/top-rated" element={<TopRatedByPosition />} />
-          <Route path="/settings" element={<TeamSettings />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/coaches" element={<Coaches />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route element={<Layout />}>
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/players" element={<PlayersPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
+          </Route>
         </Routes>
       </Router>
+      <Toaster />
     </QueryClientProvider>
   );
-}
-
-export default App;
+};

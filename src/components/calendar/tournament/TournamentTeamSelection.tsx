@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useTeamSelection } from "@/hooks/useTeamSelection";
 import { FormationSelector } from "@/components/FormationSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,7 +42,7 @@ export const TournamentTeamSelection = ({
     clearSelectedPlayers();
   }, [teams]);
 
-  const handleSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string }>) => {
+  const handleSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
     const formattedSelections = Object.entries(selections).map(([positionKey, value]) => ({
       playerId: value.playerId,
       position: value.position.split('-')[0],
@@ -70,7 +70,7 @@ export const TournamentTeamSelection = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-4 max-w-[1400px] mx-auto">
       {teams.map(team => (
         <Card key={team.id} className="w-full">
           <CardHeader>
