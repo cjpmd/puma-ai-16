@@ -41,6 +41,7 @@ export const CalendarContent = ({
     handleDeleteFixture,
     handleUpdateFixtureDate,
     handleDeleteSession,
+    handleUpdateFestivalDate,
   } = useCalendarEventHandlers();
 
   const handleAddDrill = (sessionId: string) => {
@@ -89,6 +90,10 @@ export const CalendarContent = ({
           onRefetchFestivals();
         }}
         onTeamSelectionFestival={onTeamSelectionFestival}
+        onUpdateFestivalDate={async (festivalId, newDate) => {
+          const success = await handleUpdateFestivalDate(festivalId, newDate);
+          if (success) onRefetchFestivals();
+        }}
       />
 
       <ObjectivesList
