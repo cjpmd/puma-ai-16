@@ -25,6 +25,7 @@ interface AddFestivalDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date;
   onSuccess: () => void;
+  editingFestival?: any;
 }
 
 export const AddFestivalDialog = ({
@@ -32,6 +33,7 @@ export const AddFestivalDialog = ({
   onOpenChange,
   selectedDate,
   onSuccess,
+  editingFestival,
 }: AddFestivalDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -42,12 +44,12 @@ export const AddFestivalDialog = ({
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: selectedDate || new Date(),
-      format: "7-a-side",
-      numberOfTeams: 2,
-      location: "",
-      startTime: "",
-      endTime: "",
+      date: editingFestival?.date ? new Date(editingFestival.date) : selectedDate || new Date(),
+      format: editingFestival?.format || "7-a-side",
+      numberOfTeams: editingFestival?.number_of_teams || 2,
+      location: editingFestival?.location || "",
+      startTime: editingFestival?.start_time || "",
+      endTime: editingFestival?.end_time || "",
     },
   });
 
@@ -63,35 +65,65 @@ export const AddFestivalDialog = ({
         system_category: "FESTIVAL",
       };
 
-      const { data: festival, error } = await supabase
-        .from("festivals")
-        .insert(festivalData)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const teamPromises = Array.from({ length: data.numberOfTeams }, (_, i) => 
-        supabase
-          .from("festival_teams")
-          .insert({
-            festival_id: festival.id,
-            team_name: `Team ${i + 1}`,
-          })
+      let festival;
+      if (editingFestival) {
+        const { data: updatedFestival, error } = await supabase
+          .from("festivals")
+          .update(festivalData)
+          .eq("id", editingFestival.id)
           .select()
-      );
+          .single();
 
-      const teamResults = await Promise.all(teamPromises);
-      const createdTeams = teamResults
-        .map(result => result.data?.[0])
-        .filter((team): team is NonNullable<typeof team> => team !== null)
-        .map(team => ({
+        if (error) throw error;
+        festival = updatedFestival;
+      } else {
+        const { data: newFestival, error } = await supabase
+          .from("festivals")
+          .insert(festivalData)
+          .select()
+          .single();
+
+        if (error) throw error;
+        festival = newFestival;
+      }
+
+      // Fetch existing teams for the festival
+      const { data: existingTeams } = await supabase
+        .from("festival_teams")
+        .select("*")
+        .eq("festival_id", festival.id);
+
+      // Create new teams if needed
+      if (!existingTeams || existingTeams.length === 0) {
+        const teamPromises = Array.from({ length: data.numberOfTeams }, (_, i) => 
+          supabase
+            .from("festival_teams")
+            .insert({
+              festival_id: festival.id,
+              team_name: `Team ${i + 1}`,
+            })
+            .select()
+        );
+
+        const teamResults = await Promise.all(teamPromises);
+        const createdTeams = teamResults
+          .map(result => result.data?.[0])
+          .filter((team): team is NonNullable<typeof team> => team !== null)
+          .map(team => ({
+            id: team.id,
+            name: team.team_name,
+            category: team.category || "",
+          }));
+
+        setTeams(createdTeams);
+      } else {
+        setTeams(existingTeams.map(team => ({
           id: team.id,
           name: team.team_name,
           category: team.category || "",
-        }));
+        })));
+      }
 
-      setTeams(createdTeams);
       setFestivalId(festival.id);
       setShowTeamSelection(true);
 
@@ -101,7 +133,7 @@ export const AddFestivalDialog = ({
 
       toast({
         title: "Success",
-        description: "Festival created successfully",
+        description: `Festival ${editingFestival ? 'updated' : 'created'} successfully`,
       });
     } catch (error) {
       console.error("Error saving festival:", error);
@@ -117,7 +149,7 @@ export const AddFestivalDialog = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Festival</DialogTitle>
+          <DialogTitle>{editingFestival ? 'Edit' : 'Add New'} Festival</DialogTitle>
           <DialogDescription>
             Fill in the festival details below. All fields marked with * are required.
           </DialogDescription>

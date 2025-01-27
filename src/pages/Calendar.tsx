@@ -13,6 +13,8 @@ import { useCalendarData } from "@/hooks/useCalendarData";
 import { useCalendarEventHandlers } from "@/components/calendar/CalendarEventHandlers";
 import { Fixture } from "@/types/fixture";
 import { AddFestivalDialog } from "@/components/calendar/AddFestivalDialog";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const CalendarPage = () => {
   const [date, setDate] = useState<Date>(new Date());
@@ -23,9 +25,11 @@ export const CalendarPage = () => {
   const [isAddFestivalOpen, setIsAddFestivalOpen] = useState(false);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [editingFixture, setEditingFixture] = useState<Fixture | null>(null);
+  const [editingFestival, setEditingFestival] = useState(null);
   const [isEditObjectiveOpen, setIsEditObjectiveOpen] = useState(false);
   const [editingObjective, setEditingObjective] = useState(null);
   const [fileUrls, setFileUrls] = useState<Record<string, string>>({});
+  const { toast } = useToast();
 
   const { 
     sessions, 
@@ -52,6 +56,30 @@ export const CalendarPage = () => {
 
   const handleEditDrill = (sessionId: string, drill: any) => {
     console.log("Editing drill:", drill, "in session:", sessionId);
+  };
+
+  const handleDeleteFestival = async (festivalId: string) => {
+    try {
+      const { error } = await supabase
+        .from("festivals")
+        .delete()
+        .eq("id", festivalId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Festival deleted successfully",
+      });
+      refetchFestivals();
+    } catch (error) {
+      console.error("Error deleting festival:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete festival",
+      });
+    }
   };
 
   return (
@@ -110,6 +138,15 @@ export const CalendarPage = () => {
             const success = await handleDeleteSession(sessionId);
             if (success) refetchSessions();
           }}
+          onEditFestival={(festival) => {
+            setEditingFestival(festival);
+            setIsAddFestivalOpen(true);
+          }}
+          onDeleteFestival={handleDeleteFestival}
+          onTeamSelectionFestival={(festival) => {
+            setEditingFestival(festival);
+            // Handle team selection for festival
+          }}
         />
 
         <ObjectivesList
@@ -145,6 +182,7 @@ export const CalendarPage = () => {
             refetchFestivals();
             setIsAddFestivalOpen(false);
           }}
+          editingFestival={editingFestival}
         />
       </Dialog>
 
