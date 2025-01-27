@@ -5,18 +5,14 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
-// Define simple interfaces with no nesting
 interface Team {
   id: string;
   name: string;
   category: string;
 }
 
-type TeamSelections = {
-  [teamId: string]: {
-    [position: string]: string;
-  };
-};
+type PlayerSelections = { [position: string]: string };
+type TeamSelections = { [teamId: string]: PlayerSelections };
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
