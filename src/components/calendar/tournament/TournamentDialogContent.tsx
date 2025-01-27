@@ -11,7 +11,7 @@ interface TournamentDialogContentProps {
   onSubmit: (data: any) => Promise<void>;
   teams: Array<{ id: string; name: string; category: string }>;
   format: FormatType;
-  onTeamSelectionsChange: (selections: Record<string, Record<string, string>>) => void;
+  onTeamSelectionsChange: (selections: Record<string, Record<string, { playerId: string; position: string }>>) => void;
 }
 
 export const TournamentDialogContent = ({

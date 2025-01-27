@@ -6,7 +6,7 @@ import { SubstitutesList } from "./formation/SubstitutesList";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface FormationSelectorProps {
+export interface FormationSelectorProps {
   format: "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
   teamCategory?: string;
   onSelectionChange: (selections: Record<string, { playerId: string; position: string }>) => void;
