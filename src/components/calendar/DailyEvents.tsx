@@ -5,6 +5,8 @@ import { SessionCard } from "@/components/training/SessionCard";
 import { Button } from "@/components/ui/button";
 import { Pencil, Users, Trash2, MapPin } from "lucide-react";
 import { Fixture } from "@/types/fixture";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DailyEventsProps {
   date: Date;
@@ -41,6 +43,33 @@ export const DailyEvents = ({
   onDeleteFestival,
   onTeamSelectionFestival,
 }: DailyEventsProps) => {
+  const { toast } = useToast();
+
+  const handleDeleteFestival = async (festivalId: string) => {
+    try {
+      const { error } = await supabase
+        .from("festivals")
+        .delete()
+        .eq("id", festivalId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Festival deleted successfully",
+      });
+      
+      onDeleteFestival?.(festivalId);
+    } catch (error) {
+      console.error("Error deleting festival:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete festival",
+      });
+    }
+  };
+
   return (
     <Card className="md:col-span-2">
       <CardHeader>
@@ -86,7 +115,7 @@ export const DailyEvents = ({
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => onDeleteFestival?.(festival.id)}
+                    onClick={() => handleDeleteFestival(festival.id)}
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
@@ -101,7 +130,12 @@ export const DailyEvents = ({
               <p className="text-sm text-muted-foreground mt-1">
                 {tournament.time && format(new Date(`2000-01-01T${tournament.time}`), 'h:mm a')}
               </p>
-              <p className="text-sm">{tournament.location}</p>
+              {tournament.location && (
+                <div className="flex items-center gap-1 text-sm mt-1">
+                  <MapPin className="h-4 w-4" />
+                  <span>{tournament.location}</span>
+                </div>
+              )}
               <p className="text-sm mt-1">Format: {tournament.format}</p>
               <p className="text-sm">Teams: {tournament.number_of_teams}</p>
             </div>
