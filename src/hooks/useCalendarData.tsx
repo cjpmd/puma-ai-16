@@ -41,6 +41,38 @@ export const useCalendarData = (date: Date) => {
     },
   });
 
+  const { data: festivals, refetch: refetchFestivals } = useQuery({
+    queryKey: ["festivals", date],
+    queryFn: async () => {
+      if (!date) return [];
+      
+      const { data, error } = await supabase
+        .from("festivals")
+        .select("*")
+        .eq("date", format(date, "yyyy-MM-dd"))
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: tournaments, refetch: refetchTournaments } = useQuery({
+    queryKey: ["tournaments", date],
+    queryFn: async () => {
+      if (!date) return [];
+      
+      const { data, error } = await supabase
+        .from("tournaments")
+        .select("*")
+        .eq("date", format(date, "yyyy-MM-dd"))
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: objectives, refetch: refetchObjectives } = useQuery({
     queryKey: ["objectives", date],
     queryFn: async () => {
@@ -77,9 +109,13 @@ export const useCalendarData = (date: Date) => {
   return {
     sessions,
     fixtures,
+    festivals,
+    tournaments,
     objectives,
     refetchSessions,
     refetchFixtures,
+    refetchFestivals,
+    refetchTournaments,
     refetchObjectives
   };
 };

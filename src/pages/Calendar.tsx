@@ -30,9 +30,13 @@ export const CalendarPage = () => {
   const { 
     sessions, 
     fixtures, 
+    festivals,
+    tournaments,
     objectives,
     refetchSessions,
     refetchFixtures,
+    refetchFestivals,
+    refetchTournaments,
     refetchObjectives 
   } = useCalendarData(date);
 
@@ -77,12 +81,16 @@ export const CalendarPage = () => {
           onDateSelect={(newDate) => newDate && setDate(newDate)}
           sessions={sessions}
           fixtures={fixtures}
+          festivals={festivals}
+          tournaments={tournaments}
         />
 
         <DailyEvents
           date={date}
           fixtures={fixtures || []}
           sessions={sessions || []}
+          festivals={festivals || []}
+          tournaments={tournaments || []}
           fileUrls={fileUrls}
           onEditFixture={(fixture) => {
             setEditingFixture(fixture);
@@ -134,7 +142,7 @@ export const CalendarPage = () => {
           onOpenChange={setIsAddFestivalOpen}
           selectedDate={date}
           onSuccess={() => {
-            refetchFixtures();
+            refetchFestivals();
             setIsAddFestivalOpen(false);
           }}
         />
