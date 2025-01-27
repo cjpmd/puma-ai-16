@@ -1,55 +1,47 @@
-import { useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Layout } from "./components/Layout";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { CalendarPage } from "@/pages/Calendar";
-import { LoginPage } from "@/pages/Login";
-import { RegisterPage } from "@/pages/Register";
-import { DashboardPage } from "@/pages/Dashboard";
-import { PlayersPage } from "@/pages/Players";
-import { SettingsPage } from "@/pages/Settings";
-import { Layout } from "@/components/Layout";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { Auth } from "./components/Auth";
+import { Coaches } from "./pages/Coaches";
+import SquadManagement from "./pages/SquadManagement";
+import { Analytics } from "./pages/Analytics";
+import { Calendar } from "./pages/Calendar";
+import { Settings } from "./pages/Settings";
+import { Dashboard } from "./pages/Dashboard";
 
 const queryClient = new QueryClient();
 
-export const App = () => {
-  const { toast } = useToast();
-
-  useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'TOKEN_REFRESHED') {
-        console.log('Token refreshed successfully');
-      } else if (event === 'SIGNED_OUT') {
-        toast({
-          title: "Session Expired",
-          description: "Please sign in again",
-          variant: "destructive"
-        });
-        window.location.href = '/login';
-      }
-    });
-  }, []);
-
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route element={<Layout><Outlet /></Layout>}>
-            <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/players" element={<PlayersPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Route>
-          </Route>
+          <Route path="/login" element={<Auth />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/home" replace />} />
+                    <Route path="/home" element={<Dashboard />} />
+                    <Route path="/squad" element={<SquadManagement />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/coaches" element={<Coaches />} />
+                    <Route path="/calendar" element={<Calendar />} />
+                    <Route path="/settings" element={<Settings />} />
+                  </Routes>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </Router>
       <Toaster />
     </QueryClientProvider>
   );
-};
+}
+
+export default App;
