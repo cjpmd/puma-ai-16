@@ -26,7 +26,13 @@ export const FestivalEvent = ({
     <div className="p-4 border rounded-lg bg-green-50">
       <div className="flex justify-between items-start">
         <div>
-          <h3 className="font-medium">Festival</h3>
+          <h3 className="font-medium">
+            Festival {festival.location && (
+              <span className="text-muted-foreground">
+                @ {festival.location}
+              </span>
+            )}
+          </h3>
           <p className="text-sm text-muted-foreground mt-1">
             {festival.start_time && `${format(new Date(`2000-01-01T${festival.start_time}`), 'h:mm a')} - `}
             {festival.end_time && format(new Date(`2000-01-01T${festival.end_time}`), 'h:mm a')}

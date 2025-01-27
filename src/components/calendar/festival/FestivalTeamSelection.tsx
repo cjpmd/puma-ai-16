@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeamSelection } from "@/hooks/useTeamSelection";
-import { TeamPositionSelect } from "./TeamPositionSelect";
+import { FormationSelector } from "@/components/FormationSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface FestivalTeamSelectionProps {
@@ -16,7 +16,7 @@ export const FestivalTeamSelection = ({
   format, 
   onTeamSelectionsChange 
 }: FestivalTeamSelectionProps) => {
-  const { selectedPlayers, addSelectedPlayer, removeSelectedPlayer, clearSelectedPlayers } = useTeamSelection();
+  const { selectedPlayers, clearSelectedPlayers } = useTeamSelection();
 
   const { data: players } = useQuery({
     queryKey: ["players", teams[0]?.category],
@@ -37,35 +37,25 @@ export const FestivalTeamSelection = ({
     clearSelectedPlayers();
   }, [teams]);
 
-  const handlePlayerSelection = (teamId: string, playerId: string) => {
-    if (playerId === "unassigned") {
-      // Handle unassigned case
-      onTeamSelectionsChange({
-        [teamId]: {}
-      });
-    } else {
-      addSelectedPlayer(playerId);
-      // Update parent component with new selections
-      onTeamSelectionsChange({
-        [teamId]: { playerId }
-      });
-    }
+  const handleSelectionChange = (teamId: string, selections: Record<string, string>) => {
+    onTeamSelectionsChange({
+      [teamId]: selections
+    });
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 mt-4">
       {teams.map(team => (
         <Card key={team.id}>
           <CardHeader>
             <CardTitle className="text-lg">{team.name}</CardTitle>
           </CardHeader>
           <CardContent>
-            <TeamPositionSelect
-              position="player"
-              playerId=""
-              availablePlayers={players}
-              onSelectionChange={(playerId) => handlePlayerSelection(team.id, playerId)}
-              selectedPlayers={selectedPlayers}
+            <FormationSelector
+              format={format as any}
+              teamCategory={team.category}
+              onSelectionChange={(selections) => handleSelectionChange(team.id, selections)}
+              performanceCategory={team.category}
             />
           </CardContent>
         </Card>
