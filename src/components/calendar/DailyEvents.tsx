@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
 import { SessionCard } from "@/components/training/SessionCard";
 import { Button } from "@/components/ui/button";
-import { Pencil, Users, Trash2 } from "lucide-react";
+import { Pencil, Users, Trash2, MapPin } from "lucide-react";
 import { Fixture } from "@/types/fixture";
 
 interface DailyEventsProps {
@@ -59,7 +59,12 @@ export const DailyEvents = ({
                     {festival.start_time && `${format(new Date(`2000-01-01T${festival.start_time}`), 'h:mm a')} - `}
                     {festival.end_time && format(new Date(`2000-01-01T${festival.end_time}`), 'h:mm a')}
                   </p>
-                  <p className="text-sm">{festival.location}</p>
+                  {festival.location && (
+                    <div className="flex items-center gap-1 text-sm mt-1">
+                      <MapPin className="h-4 w-4" />
+                      <span>{festival.location}</span>
+                    </div>
+                  )}
                   <p className="text-sm mt-1">Format: {festival.format}</p>
                   <p className="text-sm">Teams: {festival.number_of_teams}</p>
                 </div>
