@@ -1,11 +1,14 @@
-import { Outlet } from "react-router-dom";
+import { NavBar } from "./NavBar";
 
-export const Layout = () => {
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+export const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
-      <main>
-        <Outlet />
-      </main>
+      <NavBar />
+      <main className="pt-16">{children}</main>
     </div>
   );
 };
