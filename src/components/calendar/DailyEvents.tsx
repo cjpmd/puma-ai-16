@@ -2,11 +2,11 @@ import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
 import { SessionCard } from "@/components/training/SessionCard";
-import { Button } from "@/components/ui/button";
-import { Pencil, Users, Trash2, MapPin } from "lucide-react";
-import { Fixture } from "@/types/fixture";
+import { FestivalEvent } from "./events/FestivalEvent";
+import { TournamentEvent } from "./events/TournamentEvent";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import type { Fixture } from "@/types/fixture";
 
 interface DailyEventsProps {
   date: Date;
@@ -80,65 +80,20 @@ export const DailyEvents = ({
       <CardContent>
         <div className="space-y-6">
           {festivals?.map((festival) => (
-            <div key={festival.id} className="p-4 border rounded-lg bg-green-50">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium">Festival</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {festival.start_time && `${format(new Date(`2000-01-01T${festival.start_time}`), 'h:mm a')} - `}
-                    {festival.end_time && format(new Date(`2000-01-01T${festival.end_time}`), 'h:mm a')}
-                  </p>
-                  {festival.location && (
-                    <div className="flex items-center gap-1 text-sm mt-1">
-                      <MapPin className="h-4 w-4" />
-                      <span>{festival.location}</span>
-                    </div>
-                  )}
-                  <p className="text-sm mt-1">Format: {festival.format}</p>
-                  <p className="text-sm">Teams: {festival.number_of_teams}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => onEditFestival?.(festival)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => onTeamSelectionFestival?.(festival)}
-                  >
-                    <Users className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => handleDeleteFestival(festival.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <FestivalEvent
+              key={festival.id}
+              festival={festival}
+              onEdit={onEditFestival}
+              onTeamSelection={onTeamSelectionFestival}
+              onDelete={handleDeleteFestival}
+            />
           ))}
           
           {tournaments?.map((tournament) => (
-            <div key={tournament.id} className="p-4 border rounded-lg bg-purple-50">
-              <h3 className="font-medium">Tournament</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {tournament.time && format(new Date(`2000-01-01T${tournament.time}`), 'h:mm a')}
-              </p>
-              {tournament.location && (
-                <div className="flex items-center gap-1 text-sm mt-1">
-                  <MapPin className="h-4 w-4" />
-                  <span>{tournament.location}</span>
-                </div>
-              )}
-              <p className="text-sm mt-1">Format: {tournament.format}</p>
-              <p className="text-sm">Teams: {tournament.number_of_teams}</p>
-            </div>
+            <TournamentEvent
+              key={tournament.id}
+              tournament={tournament}
+            />
           ))}
 
           {fixtures?.map((fixture) => (
