@@ -1,11 +1,6 @@
-import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FixtureCard } from "@/components/calendar/FixtureCard";
-import { SessionCard } from "@/components/training/SessionCard";
-import { FestivalEvent } from "./events/FestivalEvent";
-import { TournamentEvent } from "./events/TournamentEvent";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { EventsList } from "./events/EventsList";
 import type { Fixture } from "@/types/fixture";
 
 interface DailyEventsProps {
@@ -104,72 +99,26 @@ export const DailyEvents = ({
   };
 
   return (
-    <Card className="md:col-span-2">
-      <CardHeader>
-        <CardTitle>
-          {date ? format(date, "EEEE, MMMM do, yyyy") : "Select a date"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {festivals?.map((festival) => (
-            <FestivalEvent
-              key={festival.id}
-              festival={festival}
-              onEdit={onEditFestival}
-              onTeamSelection={onTeamSelectionFestival}
-              onDelete={handleDeleteFestival}
-            />
-          ))}
-          
-          {tournaments?.map((tournament) => (
-            <TournamentEvent
-              key={tournament.id}
-              tournament={tournament}
-              onEdit={onEditTournament}
-              onTeamSelection={onTeamSelectionTournament}
-              onDelete={handleDeleteTournament}
-              onDateChange={onUpdateTournamentDate}
-            />
-          ))}
-
-          {fixtures?.map((fixture) => (
-            <FixtureCard 
-              key={fixture.id} 
-              fixture={fixture}
-              onEdit={() => onEditFixture(fixture)}
-              onDelete={onDeleteFixture}
-              onDateChange={(newDate) => onUpdateFixtureDate(fixture.id, newDate)}
-            />
-          ))}
-          
-          {sessions?.map((session) => (
-            <SessionCard 
-              key={session.id}
-              session={{
-                id: session.id,
-                title: session.title,
-                drills: session.training_drills.map((drill: any) => ({
-                  id: drill.id,
-                  title: drill.title,
-                  instructions: drill.instructions,
-                  training_files: drill.training_files
-                }))
-              }}
-              fileUrls={fileUrls}
-              onAddDrillClick={onAddDrill}
-              onEditDrillClick={onEditDrill}
-              onDeleteSession={onDeleteSession}
-            />
-          ))}
-          
-          {(!sessions?.length && !fixtures?.length && !festivals?.length && !tournaments?.length) && (
-            <div className="text-center py-8 text-muted-foreground">
-              No events scheduled for this date
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <EventsList
+      date={date}
+      festivals={festivals}
+      tournaments={tournaments}
+      fixtures={fixtures}
+      sessions={sessions}
+      fileUrls={fileUrls}
+      onEditFixture={onEditFixture}
+      onDeleteFixture={onDeleteFixture}
+      onUpdateFixtureDate={onUpdateFixtureDate}
+      onAddDrill={onAddDrill}
+      onEditDrill={onEditDrill}
+      onDeleteSession={onDeleteSession}
+      onEditFestival={onEditFestival}
+      onDeleteFestival={handleDeleteFestival}
+      onTeamSelectionFestival={onTeamSelectionFestival}
+      onEditTournament={onEditTournament}
+      onDeleteTournament={handleDeleteTournament}
+      onTeamSelectionTournament={onTeamSelectionTournament}
+      onUpdateTournamentDate={onUpdateTournamentDate}
+    />
   );
 };
