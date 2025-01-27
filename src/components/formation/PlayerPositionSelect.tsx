@@ -1,5 +1,6 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface PlayerPositionSelectProps {
   slotId: string;
@@ -8,6 +9,7 @@ interface PlayerPositionSelectProps {
   positionDefinitions?: any[];
   availablePlayers?: any[];
   onSelectionChange: (slotId: string, playerId: string, position: string) => void;
+  selectedPlayers?: Set<string>;
 }
 
 export const PlayerPositionSelect = ({
@@ -17,6 +19,7 @@ export const PlayerPositionSelect = ({
   positionDefinitions,
   availablePlayers,
   onSelectionChange,
+  selectedPlayers = new Set(),
 }: PlayerPositionSelectProps) => {
   return (
     <div className="space-y-2">
@@ -52,7 +55,13 @@ export const PlayerPositionSelect = ({
             <SelectContent>
               <SelectItem value="unassigned">None</SelectItem>
               {availablePlayers?.map(player => (
-                <SelectItem key={player.id} value={player.id}>
+                <SelectItem 
+                  key={player.id} 
+                  value={player.id}
+                  className={cn(
+                    selectedPlayers.has(player.id) && player.id !== playerId && "opacity-50"
+                  )}
+                >
                   {player.name} ({player.squad_number})
                 </SelectItem>
               ))}

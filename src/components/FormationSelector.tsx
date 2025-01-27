@@ -84,6 +84,13 @@ export const FormationSelector = ({
     onSelectionChange?.(formattedSelections);
   };
 
+  // Get all selected player IDs
+  const selectedPlayers = new Set(
+    Object.values(selections)
+      .map(selection => selection.playerId)
+      .filter(id => id !== "unassigned")
+  );
+
   const currentPositions = formatPositions[format];
   const maxSubstitutes = Math.ceil(currentPositions.length / 2);
 
@@ -109,6 +116,7 @@ export const FormationSelector = ({
             positionDefinitions={positionDefinitions}
             availablePlayers={availablePlayers}
             onSelectionChange={handleSelectionChange}
+            selectedPlayers={selectedPlayers}
           />
         ))}
       </div>
@@ -118,6 +126,7 @@ export const FormationSelector = ({
         selections={selections}
         availablePlayers={availablePlayers}
         onSelectionChange={handleSelectionChange}
+        selectedPlayers={selectedPlayers}
       />
     </div>
   );
