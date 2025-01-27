@@ -11,8 +11,10 @@ interface Team {
   category: string;
 }
 
-// Simplified type definitions to prevent infinite recursion
-type SimpleSelections = Record<string, string>;
+// Explicitly define the shape of selections to prevent deep type instantiation
+interface TeamPlayerSelections {
+  [key: string]: string; // position -> playerId mapping
+}
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -79,7 +81,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, SimpleSelections>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, TeamPlayerSelections>) => {
     if (!editingTournament?.id) return;
 
     try {
