@@ -24,6 +24,7 @@ export const TeamSelectionManager = ({
   const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, string>>>({});
   const [showFormations, setShowFormations] = useState(false);
   const [teamCategories, setTeamCategories] = useState<Record<string, string>>({});
+  const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
 
   const { data: players } = useQuery({
     queryKey: ["all-players"],
@@ -42,6 +43,18 @@ export const TeamSelectionManager = ({
       [teamId]: selections
     };
     setTeamSelections(newSelections);
+
+    // Update selected players set
+    const allSelectedPlayers = new Set<string>();
+    Object.values(newSelections).forEach(teamSelections => {
+      Object.entries(teamSelections).forEach(([position, playerId]) => {
+        if (playerId !== "unassigned") {
+          allSelectedPlayers.add(playerId);
+        }
+      });
+    });
+    setSelectedPlayers(allSelectedPlayers);
+    
     onTeamSelectionsChange?.(newSelections);
   };
 
@@ -90,6 +103,7 @@ export const TeamSelectionManager = ({
               onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
               onCategoryChange={(category) => handleCategoryChange(team.id, category)}
               performanceCategory={teamCategories[team.id]}
+              selectedPlayers={selectedPlayers}
             />
           </CardContent>
         </Card>
