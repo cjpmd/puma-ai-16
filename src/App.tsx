@@ -5,15 +5,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Auth } from "./components/Auth";
 import { Coaches } from "./pages/Coaches";
-import SquadManagement from "./pages/SquadManagement";
+import { SquadManagement } from "./pages/SquadManagement";
 import { Analytics } from "./pages/Analytics";
-import { Calendar } from "./pages/Calendar";
-import { Settings } from "./pages/Settings";
-import { Dashboard } from "./pages/Dashboard";
+import { CalendarPage } from "./pages/Calendar";
+import { SettingsPage } from "./pages/Settings";
+import { DashboardPage } from "./pages/Dashboard";
 
 const queryClient = new QueryClient();
 
-function App() {
+export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
@@ -26,12 +26,12 @@ function App() {
                 <Layout>
                   <Routes>
                     <Route path="/" element={<Navigate to="/home" replace />} />
-                    <Route path="/home" element={<Dashboard />} />
+                    <Route path="/home" element={<DashboardPage />} />
                     <Route path="/squad" element={<SquadManagement />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/coaches" element={<Coaches />} />
-                    <Route path="/calendar" element={<Calendar />} />
-                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/calendar" element={<CalendarPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
                   </Routes>
                 </Layout>
               </ProtectedRoute>
@@ -43,5 +43,3 @@ function App() {
     </QueryClientProvider>
   );
 }
-
-export default App;
