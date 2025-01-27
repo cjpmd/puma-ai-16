@@ -1,8 +1,6 @@
 import { DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { TournamentForm } from "./TournamentForm";
-import { TeamSelectionManager } from "@/components/TeamSelectionManager";
-
-type FormatType = "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
+import { TournamentTeamSelection } from "./TournamentTeamSelection";
 
 interface TournamentDialogContentProps {
   showTeamSelection: boolean;
@@ -10,8 +8,8 @@ interface TournamentDialogContentProps {
   selectedDate?: Date;
   onSubmit: (data: any) => Promise<void>;
   teams: Array<{ id: string; name: string; category: string }>;
-  format: FormatType;
-  onTeamSelectionsChange: (selections: Record<string, Record<string, { playerId: string; position: string }>>) => void;
+  format: string;
+  onTeamSelectionsChange: (selections: Record<string, { playerId: string; position: string }[]>) => void;
 }
 
 export const TournamentDialogContent = ({
@@ -43,7 +41,7 @@ export const TournamentDialogContent = ({
           selectedDate={selectedDate}
         />
       ) : (
-        <TeamSelectionManager
+        <TournamentTeamSelection
           teams={teams}
           format={format}
           onTeamSelectionsChange={onTeamSelectionsChange}

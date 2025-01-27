@@ -80,7 +80,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, Record<string, { playerId: string; position: string }>>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, { playerId: string; position: string }[]>) => {
     if (!editingTournament?.id) return;
 
     try {
@@ -91,11 +91,11 @@ export const AddTournamentDialog = ({
         .eq("tournament_id", editingTournament.id);
 
       // Format new selections
-      const playerSelections = Object.entries(selections).flatMap(([teamId, positions]) =>
-        Object.entries(positions).map(([position, { playerId, position: positionName }]) => ({
+      const playerSelections = Object.entries(selections).flatMap(([teamId, players]) =>
+        players.map(({ playerId, position }) => ({
           tournament_team_id: teamId,
           player_id: playerId,
-          position: positionName.split('-')[0],
+          position: position.split('-')[0],
           is_substitute: position.startsWith('sub-')
         }))
       ).filter(selection => selection.player_id !== "unassigned");
