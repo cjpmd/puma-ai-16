@@ -16,13 +16,15 @@ interface FestivalEventProps {
   onEdit: (festival: any) => void;
   onTeamSelection: (festival: any) => void;
   onDelete: (festivalId: string) => void;
+  onDateChange?: (festivalId: string, newDate: Date) => void;
 }
 
 export const FestivalEvent = ({ 
   festival,
   onEdit,
   onTeamSelection,
-  onDelete 
+  onDelete,
+  onDateChange
 }: FestivalEventProps) => {
   return (
     <div className="p-4 border rounded-lg bg-green-50">
@@ -45,7 +47,7 @@ export const FestivalEvent = ({
         <div className="flex gap-2">
           <DateChangeButton
             date={festival.date}
-            onDateChange={(date) => onEdit({ ...festival, date: format(date, 'yyyy-MM-dd') })}
+            onDateChange={(date) => onDateChange?.(festival.id, date)}
           />
           <EventActionButtons
             onEdit={() => onEdit(festival)}

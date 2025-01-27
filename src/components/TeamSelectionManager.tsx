@@ -85,7 +85,7 @@ export const TeamSelectionManager = ({
               />
             )}
             <FormationSelector
-              format={format as any}
+              format={format}
               teamCategory={team.category}
               onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
               onCategoryChange={(category) => handleCategoryChange(team.id, category)}

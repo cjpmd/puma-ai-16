@@ -11,12 +11,6 @@ interface Team {
   category: string;
 }
 
-interface PlayerSelection {
-  playerId: string;
-  position: string;
-  isSubstitute: boolean;
-}
-
 interface AddTournamentDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -86,39 +80,26 @@ export const AddTournamentDialog = ({
     if (!editingTournament?.id) return;
 
     try {
-      // First delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      // Prepare new selections for insertion
-      const playerSelections: PlayerSelection[] = [];
-      
-      Object.entries(selections).forEach(([teamId, positions]) => {
-        Object.entries(positions).forEach(([position, playerId]) => {
-          if (playerId !== "unassigned") {
-            playerSelections.push({
-              playerId,
-              position: position.split('-')[0],
-              isSubstitute: position.startsWith('sub-')
-            });
-          }
-        });
-      });
+      const playerSelections = Object.entries(selections).flatMap(([teamId, positions]) =>
+        Object.entries(positions)
+          .filter(([_, playerId]) => playerId !== "unassigned")
+          .map(([position, playerId]) => ({
+            tournament_team_id: teamId,
+            player_id: playerId,
+            position: position.split('-')[0],
+            is_substitute: position.startsWith('sub-')
+          }))
+      );
 
-      // Insert new selections if there are any
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
           .from("tournament_team_players")
-          .insert(
-            playerSelections.map(selection => ({
-              tournament_team_id: editingTournament.id,
-              player_id: selection.playerId,
-              position: selection.position,
-              is_substitute: selection.isSubstitute
-            }))
-          );
+          .insert(playerSelections);
 
         if (insertError) throw insertError;
       }
