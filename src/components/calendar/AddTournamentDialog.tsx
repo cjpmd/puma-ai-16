@@ -5,6 +5,20 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
+interface TeamSelection {
+  [position: string]: string;
+}
+
+interface TeamSelections {
+  [teamId: string]: TeamSelection;
+}
+
+interface Team {
+  id: string;
+  name: string;
+  category: string;
+}
+
 interface AddTournamentDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -24,7 +38,7 @@ export const AddTournamentDialog = ({
 }: AddTournamentDialogProps) => {
   const { toast } = useToast();
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
-  const [teams, setTeams] = useState<Array<{ id: string; name: string; category: string }>>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [format, setFormat] = useState(editingTournament?.format || "7-a-side");
 
   const { handleSubmit } = useTournamentForm(
@@ -70,7 +84,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, Record<string, string>>) => {
+  const handleTeamSelectionsChange = async (selections: TeamSelections) => {
     if (!editingTournament?.id) return;
 
     try {
