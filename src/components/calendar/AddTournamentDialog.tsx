@@ -5,13 +5,11 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
-interface Team {
-  id: string;
-  name: string;
-  category: string;
+interface TeamSelection {
+  playerId: string;
+  position: string;
+  is_substitute: boolean;
 }
-
-type FormatType = "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -32,10 +30,8 @@ export const AddTournamentDialog = ({
 }: AddTournamentDialogProps) => {
   const { toast } = useToast();
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [format, setFormat] = useState<FormatType>(
-    (editingTournament?.format as FormatType) || "7-a-side"
-  );
+  const [teams, setTeams] = useState<Array<{ id: string; name: string; category: string }>>([]);
+  const [format, setFormat] = useState<string>(editingTournament?.format || "7-a-side");
 
   const { handleSubmit } = useTournamentForm(
     () => {
@@ -80,27 +76,24 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, { playerId: string; position: string }[]>) => {
+  const handleTeamSelectionsChange = async (teamSelections: Record<string, TeamSelection[]>) => {
     if (!editingTournament?.id) return;
 
     try {
-      // Delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      // Format new selections
-      const playerSelections = Object.entries(selections).flatMap(([teamId, players]) =>
-        players.map(({ playerId, position }) => ({
+      const playerSelections = Object.entries(teamSelections).flatMap(([teamId, selections]) =>
+        selections.map(selection => ({
           tournament_team_id: teamId,
-          player_id: playerId,
-          position: position.split('-')[0],
-          is_substitute: position.startsWith('sub-')
+          player_id: selection.playerId,
+          position: selection.position,
+          is_substitute: selection.is_substitute
         }))
       ).filter(selection => selection.player_id !== "unassigned");
 
-      // Insert new selections if any exist
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
           .from("tournament_team_players")

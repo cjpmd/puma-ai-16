@@ -3,10 +3,16 @@ import { useTeamSelection } from "@/hooks/useTeamSelection";
 import { FormationSelector } from "@/components/FormationSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+interface TeamSelection {
+  playerId: string;
+  position: string;
+  is_substitute: boolean;
+}
+
 interface TournamentTeamSelectionProps {
   teams: Array<{ id: string; name: string; category: string }>;
   format: string;
-  onTeamSelectionsChange: (selections: Record<string, { playerId: string; position: string }[]>) => void;
+  onTeamSelectionsChange: (selections: Record<string, TeamSelection[]>) => void;
 }
 
 export const TournamentTeamSelection = ({ 
@@ -21,7 +27,12 @@ export const TournamentTeamSelection = ({
   }, [teams]);
 
   const handleSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string }>) => {
-    const formattedSelections = Object.entries(selections).map(([_, value]) => value);
+    const formattedSelections = Object.entries(selections).map(([positionKey, value]) => ({
+      playerId: value.playerId,
+      position: value.position.split('-')[0],
+      is_substitute: positionKey.startsWith('sub-')
+    }));
+
     onTeamSelectionsChange({
       [teamId]: formattedSelections
     });

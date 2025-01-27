@@ -2,6 +2,12 @@ import { DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/c
 import { TournamentForm } from "./TournamentForm";
 import { TournamentTeamSelection } from "./TournamentTeamSelection";
 
+interface TeamSelection {
+  playerId: string;
+  position: string;
+  is_substitute: boolean;
+}
+
 interface TournamentDialogContentProps {
   showTeamSelection: boolean;
   editingTournament?: any;
@@ -9,7 +15,7 @@ interface TournamentDialogContentProps {
   onSubmit: (data: any) => Promise<void>;
   teams: Array<{ id: string; name: string; category: string }>;
   format: string;
-  onTeamSelectionsChange: (selections: Record<string, { playerId: string; position: string }[]>) => void;
+  onTeamSelectionsChange: (selections: Record<string, TeamSelection[]>) => void;
 }
 
 export const TournamentDialogContent = ({
