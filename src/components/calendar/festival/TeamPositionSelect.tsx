@@ -20,12 +20,12 @@ export const TeamPositionSelect = ({
   return (
     <div className="space-y-2">
       <Label className="text-xs text-muted-foreground">Player</Label>
-      <Select value={playerId} onValueChange={onSelectionChange}>
+      <Select value={playerId || "unassigned"} onValueChange={onSelectionChange}>
         <SelectTrigger className="text-left h-9">
           <SelectValue placeholder="Select player" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">None</SelectItem>
+          <SelectItem value="unassigned">None</SelectItem>
           {availablePlayers.map(player => (
             <SelectItem 
               key={player.id} 

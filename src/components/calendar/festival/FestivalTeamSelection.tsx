@@ -38,13 +38,18 @@ export const FestivalTeamSelection = ({
   }, [teams]);
 
   const handlePlayerSelection = (teamId: string, playerId: string) => {
-    if (playerId) {
+    if (playerId === "unassigned") {
+      // Handle unassigned case
+      onTeamSelectionsChange({
+        [teamId]: {}
+      });
+    } else {
       addSelectedPlayer(playerId);
+      // Update parent component with new selections
+      onTeamSelectionsChange({
+        [teamId]: { playerId }
+      });
     }
-    // Update parent component with new selections
-    onTeamSelectionsChange({
-      [teamId]: { playerId }
-    });
   };
 
   return (
