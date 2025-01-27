@@ -12,6 +12,12 @@ interface TeamPlayerSelection {
   is_substitute: boolean;
 }
 
+interface PlayerSelection {
+  playerId: string;
+  position: string;
+  is_substitute: boolean;
+}
+
 interface AddTournamentDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -77,7 +83,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, Array<{ playerId: string; position: string; is_substitute: boolean }>>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, PlayerSelection[]>) => {
     if (!editingTournament?.id) return;
 
     try {
