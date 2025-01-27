@@ -29,6 +29,7 @@ export const CalendarPage = () => {
   const [isEditObjectiveOpen, setIsEditObjectiveOpen] = useState(false);
   const [editingObjective, setEditingObjective] = useState(null);
   const [fileUrls, setFileUrls] = useState<Record<string, string>>({});
+  const [isTeamSelectionOpen, setIsTeamSelectionOpen] = useState(false);
   const { toast } = useToast();
 
   const { 
@@ -80,6 +81,16 @@ export const CalendarPage = () => {
         description: "Failed to delete festival",
       });
     }
+  };
+
+  const handleEditFestival = (festival: any) => {
+    setEditingFestival(festival);
+    setIsAddFestivalOpen(true);
+  };
+
+  const handleTeamSelectionFestival = (festival: any) => {
+    setEditingFestival(festival);
+    setIsTeamSelectionOpen(true);
   };
 
   return (
@@ -138,15 +149,9 @@ export const CalendarPage = () => {
             const success = await handleDeleteSession(sessionId);
             if (success) refetchSessions();
           }}
-          onEditFestival={(festival) => {
-            setEditingFestival(festival);
-            setIsAddFestivalOpen(true);
-          }}
+          onEditFestival={handleEditFestival}
           onDeleteFestival={handleDeleteFestival}
-          onTeamSelectionFestival={(festival) => {
-            setEditingFestival(festival);
-            // Handle team selection for festival
-          }}
+          onTeamSelectionFestival={handleTeamSelectionFestival}
         />
 
         <ObjectivesList
@@ -173,16 +178,34 @@ export const CalendarPage = () => {
         />
       </Dialog>
 
-      <Dialog open={isAddFestivalOpen} onOpenChange={setIsAddFestivalOpen}>
+      <Dialog 
+        open={isAddFestivalOpen || isTeamSelectionOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsAddFestivalOpen(false);
+            setIsTeamSelectionOpen(false);
+            setEditingFestival(null);
+          }
+        }}
+      >
         <AddFestivalDialog
-          isOpen={isAddFestivalOpen}
-          onOpenChange={setIsAddFestivalOpen}
+          isOpen={isAddFestivalOpen || isTeamSelectionOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setIsAddFestivalOpen(false);
+              setIsTeamSelectionOpen(false);
+              setEditingFestival(null);
+            }
+          }}
           selectedDate={date}
           onSuccess={() => {
             refetchFestivals();
             setIsAddFestivalOpen(false);
+            setIsTeamSelectionOpen(false);
+            setEditingFestival(null);
           }}
           editingFestival={editingFestival}
+          showTeamSelection={isTeamSelectionOpen}
         />
       </Dialog>
 
