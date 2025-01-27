@@ -3,6 +3,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const AddTournamentDialog = ({
   editingTournament,
   showTeamSelection = false,
 }: AddTournamentDialogProps) => {
+  const { toast } = useToast();
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
   const [teams, setTeams] = useState<Array<{ id: string; name: string; category: string }>>([]);
   const [format, setFormat] = useState(editingTournament?.format || "7-a-side");
@@ -31,6 +33,7 @@ export const AddTournamentDialog = ({
         setShowTeamSelectionState(true);
       } else {
         onSuccess();
+        onOpenChange(false);
       }
     },
     editingTournament
@@ -44,10 +47,19 @@ export const AddTournamentDialog = ({
   }, [showTeamSelection, editingTournament]);
 
   const loadExistingTeams = async (tournamentId: string) => {
-    const { data: existingTeams } = await supabase
+    const { data: existingTeams, error } = await supabase
       .from("tournament_teams")
       .select("*")
       .eq("tournament_id", tournamentId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load existing teams",
+      });
+      return;
+    }
 
     if (existingTeams) {
       setTeams(existingTeams.map(team => ({
@@ -55,6 +67,45 @@ export const AddTournamentDialog = ({
         name: team.team_name,
         category: team.category || "",
       })));
+    }
+  };
+
+  const handleTeamSelectionsChange = async (selections: Record<string, Record<string, string>>) => {
+    if (!editingTournament?.id) return;
+
+    try {
+      // First, delete existing team selections
+      await supabase
+        .from("tournament_team_players")
+        .delete()
+        .eq("tournament_id", editingTournament.id);
+
+      // Then insert new selections
+      for (const [teamId, playerSelections] of Object.entries(selections)) {
+        for (const [position, playerId] of Object.entries(playerSelections)) {
+          if (playerId === "unassigned") continue;
+
+          await supabase
+            .from("tournament_team_players")
+            .insert({
+              tournament_team_id: teamId,
+              player_id: playerId,
+              position: position.split('-')[0],
+              is_substitute: position.startsWith('sub-')
+            });
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: "Team selections updated successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update team selections",
+      });
     }
   };
 
@@ -67,9 +118,7 @@ export const AddTournamentDialog = ({
         onSubmit={handleSubmit}
         teams={teams}
         format={format}
-        onTeamSelectionsChange={(selections) => {
-          console.log("Team selections:", selections);
-        }}
+        onTeamSelectionsChange={handleTeamSelectionsChange}
       />
     </Dialog>
   );
