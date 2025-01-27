@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { TeamSettingsHeader } from "./formation/TeamSettingsHeader";
+import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
+import { SubstitutesList } from "./formation/SubstitutesList";
 
 type PositionType = "gk" | "dl" | "dcl" | "dc" | "dcr" | "dr" | "ml" | "mc" | "mr" | "amc" | "st";
 
@@ -66,19 +66,6 @@ export const FormationSelector = ({
     enabled: !!teamCategory,
   });
 
-  const { data: categories } = useQuery({
-    queryKey: ["player-categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("player_categories")
-        .select("*")
-        .order("name");
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
   const handleSelectionChange = (slotId: string, playerId: string, position: string) => {
     const newSelections = {
       ...selections,
@@ -97,146 +84,41 @@ export const FormationSelector = ({
     onSelectionChange?.(formattedSelections);
   };
 
-  const PositionSelect = ({ slotId, defaultPosition }: { slotId: string; defaultPosition: PositionType }) => {
-    const currentSelection = selections[slotId] || { playerId: "unassigned", position: defaultPosition };
-
-    return (
-      <div className="space-y-2">
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label className="text-xs text-muted-foreground">Position</Label>
-            <Select
-              value={currentSelection.position}
-              onValueChange={(value) => handleSelectionChange(slotId, currentSelection.playerId, value)}
-            >
-              <SelectTrigger className="text-left h-9">
-                <SelectValue placeholder="Select position" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">None</SelectItem>
-                {positionDefinitions?.map(pos => (
-                  <SelectItem key={pos.id} value={pos.abbreviation.toLowerCase()}>
-                    {pos.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground">Player</Label>
-            <Select
-              value={currentSelection.playerId}
-              onValueChange={(value) => handleSelectionChange(slotId, value, currentSelection.position)}
-            >
-              <SelectTrigger className="text-left h-9">
-                <SelectValue placeholder="Select player" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">None</SelectItem>
-                {availablePlayers?.map(player => (
-                  <SelectItem key={player.id} value={player.id}>
-                    {player.name} ({player.squad_number})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const currentPositions = formatPositions[format];
   const maxSubstitutes = Math.ceil(currentPositions.length / 2);
 
   return (
     <div className="space-y-6 max-h-[60vh] overflow-y-auto p-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div>
-          <Label className="text-sm font-medium">Captain</Label>
-          <Select
-            value={captain}
-            onValueChange={setCaptain}
-          >
-            <SelectTrigger className="text-left h-9">
-              <SelectValue placeholder="Select captain" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unassigned">None</SelectItem>
-              {availablePlayers?.map(player => (
-                <SelectItem key={player.id} value={player.id}>
-                  {player.name} ({player.squad_number})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label className="text-sm font-medium">Duration (minutes)</Label>
-          <Input
-            type="number"
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            min="1"
-            className="h-9"
-          />
-        </div>
-        <div>
-          <Label className="text-sm font-medium">Performance Category</Label>
-          <Select
-            value={performanceCategory}
-            onValueChange={(value) => onCategoryChange?.(value)}
-          >
-            <SelectTrigger className="text-left h-9">
-              <SelectValue placeholder="Select performance category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories?.map(category => (
-                <SelectItem key={category.id} value={category.name}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <TeamSettingsHeader
+        captain={captain}
+        duration={duration}
+        performanceCategory={performanceCategory}
+        availablePlayers={availablePlayers}
+        onCaptainChange={setCaptain}
+        onDurationChange={setDuration}
+        onCategoryChange={onCategoryChange}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6">
         {currentPositions.map((pos, index) => (
-          <PositionSelect
+          <PlayerPositionSelect
             key={`${pos}-${index}`}
             slotId={`${pos}-${index}`}
-            defaultPosition={pos as PositionType}
+            position={selections[`${pos}-${index}`]?.position || pos}
+            playerId={selections[`${pos}-${index}`]?.playerId || "unassigned"}
+            positionDefinitions={positionDefinitions}
+            availablePlayers={availablePlayers}
+            onSelectionChange={handleSelectionChange}
           />
         ))}
       </div>
       
-      <div className="border-t pt-6">
-        <Label className="text-sm font-medium mb-4">Substitutes ({maxSubstitutes} max)</Label>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4">
-          {Array.from({ length: maxSubstitutes }).map((_, index) => (
-            <div key={`sub-${index}`}>
-              <Label className="text-xs text-muted-foreground">Substitute {index + 1}</Label>
-              <Select
-                value={selections[`sub-${index}`]?.playerId || "unassigned"}
-                onValueChange={(value) => handleSelectionChange(`sub-${index}`, value, "sub")}
-              >
-                <SelectTrigger className="text-left h-9">
-                  <SelectValue placeholder="Select substitute" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">None</SelectItem>
-                  {availablePlayers?.map(player => (
-                    <SelectItem key={player.id} value={player.id}>
-                      {player.name} ({player.squad_number})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ))}
-        </div>
-      </div>
+      <SubstitutesList
+        maxSubstitutes={maxSubstitutes}
+        selections={selections}
+        availablePlayers={availablePlayers}
+        onSelectionChange={handleSelectionChange}
+      />
     </div>
   );
 };
