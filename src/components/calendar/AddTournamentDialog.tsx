@@ -16,7 +16,11 @@ interface Tournament {
   id: string;
   format: string;
   date: Date;
-  // Add other tournament properties as needed
+  time?: string;
+  end_time?: string;
+  location?: string;
+  number_of_teams: number;
+  system_category: string;
 }
 
 interface AddTournamentDialogProps {

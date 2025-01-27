@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTeamSelection } from "@/hooks/useTeamSelection";
 import { FormationSelector } from "@/components/FormationSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +6,16 @@ import { FormationView } from "@/components/fixtures/FormationView";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+interface TeamSelection {
+  playerId: string;
+  position: string;
+  performanceCategory?: string;
+}
+
 interface FestivalTeamSelectionProps {
   teams: Array<{ id: string; name: string; category: string }>;
   format: string;
-  onTeamSelectionsChange: (selections: Record<string, Record<string, { playerId: string; position: string }>>) => void;
+  onTeamSelectionsChange: (selections: Record<string, Record<string, TeamSelection>>) => void;
 }
 
 export const FestivalTeamSelection = ({ 
@@ -18,7 +24,7 @@ export const FestivalTeamSelection = ({
   onTeamSelectionsChange,
 }: FestivalTeamSelectionProps) => {
   const { selectedPlayers, clearSelectedPlayers } = useTeamSelection();
-  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string }>>>({});
+  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, TeamSelection>>>({});
 
   const { data: players } = useQuery({
     queryKey: ["all-players"],
@@ -35,7 +41,7 @@ export const FestivalTeamSelection = ({
     clearSelectedPlayers();
   }, [teams]);
 
-  const handleSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string }>) => {
+  const handleSelectionChange = (teamId: string, selections: Record<string, TeamSelection>) => {
     const newSelections = {
       ...teamSelections,
       [teamId]: selections
@@ -44,7 +50,7 @@ export const FestivalTeamSelection = ({
     onTeamSelectionsChange(newSelections);
   };
 
-  const formatSelectionsForFormation = (selections: Record<string, { playerId: string; position: string }>) => {
+  const formatSelectionsForFormation = (selections: Record<string, TeamSelection>) => {
     return Object.entries(selections)
       .filter(([key]) => !key.startsWith('sub-'))
       .map(([_, { playerId, position }]) => ({
@@ -76,7 +82,6 @@ export const FestivalTeamSelection = ({
               performanceCategory={team.category}
               selectedPlayers={selectedPlayers}
               onCategoryChange={(category) => {
-                // Handle performance category change
                 const currentSelections = teamSelections[team.id] || {};
                 const updatedSelections = Object.entries(currentSelections).reduce((acc, [key, value]) => ({
                   ...acc,

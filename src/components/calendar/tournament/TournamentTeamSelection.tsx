@@ -25,7 +25,7 @@ export const TournamentTeamSelection = ({
   onTeamSelectionsChange,
 }: TournamentTeamSelectionProps) => {
   const { selectedPlayers, clearSelectedPlayers } = useTeamSelection();
-  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
+  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, TeamSelection>>>({});
 
   const { data: players } = useQuery({
     queryKey: ["all-players"],
@@ -42,11 +42,11 @@ export const TournamentTeamSelection = ({
     clearSelectedPlayers();
   }, [teams]);
 
-  const handleSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string }>) => {
-    const formattedSelections = Object.entries(selections).map(([positionKey, value]) => ({
+  const handleSelectionChange = (teamId: string, selections: Record<string, TeamSelection>) => {
+    const formattedSelections = Object.entries(selections).map(([_, value]) => ({
       playerId: value.playerId,
       position: value.position.split('-')[0],
-      is_substitute: positionKey.startsWith('sub-'),
+      is_substitute: value.position.startsWith('sub-'),
       performanceCategory: value.performanceCategory || 'MESSI'
     }));
 
@@ -60,7 +60,7 @@ export const TournamentTeamSelection = ({
     }));
   };
 
-  const formatSelectionsForFormation = (selections: Record<string, { playerId: string; position: string }>) => {
+  const formatSelectionsForFormation = (selections: Record<string, TeamSelection>) => {
     return Object.entries(selections)
       .filter(([key]) => !key.startsWith('sub-'))
       .map(([_, { playerId, position }]) => ({
