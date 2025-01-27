@@ -5,6 +5,8 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
+type FormatType = "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
+
 interface Team {
   id: string;
   name: string;
@@ -38,8 +40,8 @@ export const AddTournamentDialog = ({
   const { toast } = useToast();
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [format, setFormat] = useState<"4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side">(
-    (editingTournament?.format as "7-a-side") || "7-a-side"
+  const [format, setFormat] = useState<FormatType>(
+    (editingTournament?.format as FormatType) || "7-a-side"
   );
 
   const { handleSubmit } = useTournamentForm(
@@ -89,11 +91,13 @@ export const AddTournamentDialog = ({
     if (!editingTournament?.id) return;
 
     try {
+      // Delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
+      // Format new selections
       const playerSelections = Object.entries(selections).flatMap(([teamId, positions]) =>
         Object.entries(positions)
           .filter(([_, playerId]) => playerId !== "unassigned")
@@ -105,6 +109,7 @@ export const AddTournamentDialog = ({
           }))
       );
 
+      // Insert new selections if any exist
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
           .from("tournament_team_players")
