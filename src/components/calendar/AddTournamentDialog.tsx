@@ -11,13 +11,8 @@ interface Team {
   category: string;
 }
 
-// Flatten the type structure to prevent deep instantiation
-type PlayerSelection = {
-  tournament_team_id: string;
-  player_id: string;
-  position: string;
-  is_substitute: boolean;
-}
+// Simple type for team selections
+type TeamSelections = Record<string, string>;
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -84,7 +79,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, Record<string, string>>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, TeamSelections>) => {
     if (!editingTournament?.id) return;
 
     try {
@@ -93,7 +88,7 @@ export const AddTournamentDialog = ({
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      const insertData: PlayerSelection[] = Object.entries(selections).flatMap(([teamId, playerSelections]) =>
+      const insertData = Object.entries(selections).flatMap(([teamId, playerSelections]) =>
         Object.entries(playerSelections)
           .filter(([_, playerId]) => playerId !== "unassigned")
           .map(([position, playerId]) => ({
