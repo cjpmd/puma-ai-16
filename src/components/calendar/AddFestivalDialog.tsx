@@ -3,6 +3,15 @@ import { Dialog } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { FestivalDialogContent } from "./festival/FestivalDialogContent";
 import { useFestivalForm } from "@/hooks/useFestivalForm";
+import { useToast } from "@/hooks/use-toast";
+
+interface TeamPlayerSelection {
+  festival_team_id: string;
+  player_id: string;
+  position: string;
+  is_substitute: boolean;
+  performance_category?: string;
+}
 
 interface AddFestivalDialogProps {
   isOpen: boolean;
@@ -21,6 +30,7 @@ export const AddFestivalDialog = ({
   editingFestival,
   showTeamSelection = false,
 }: AddFestivalDialogProps) => {
+  const { toast } = useToast();
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
   const [teams, setTeams] = useState<Array<{ id: string; name: string; category: string }>>([]);
   const [format, setFormat] = useState(editingFestival?.format || "7-a-side");
@@ -44,10 +54,19 @@ export const AddFestivalDialog = ({
   }, [showTeamSelection, editingFestival]);
 
   const loadExistingTeams = async (festivalId: string) => {
-    const { data: existingTeams } = await supabase
+    const { data: existingTeams, error } = await supabase
       .from("festival_teams")
       .select("*")
       .eq("festival_id", festivalId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load existing teams",
+      });
+      return;
+    }
 
     if (existingTeams) {
       setTeams(existingTeams.map(team => ({
@@ -55,6 +74,55 @@ export const AddFestivalDialog = ({
         name: team.team_name,
         category: team.category || "",
       })));
+    }
+  };
+
+  const handleTeamSelectionsChange = async (selections: Record<string, Array<{ playerId: string; position: string; is_substitute: boolean; performanceCategory?: string }>>) => {
+    if (!editingFestival?.id) return;
+
+    try {
+      // Delete existing selections
+      await supabase
+        .from("festival_team_players")
+        .delete()
+        .eq("festival_id", editingFestival.id);
+
+      // Format selections for database
+      const playerSelections: TeamPlayerSelection[] = [];
+      
+      Object.entries(selections).forEach(([teamId, teamSelections]) => {
+        teamSelections.forEach(selection => {
+          if (selection.playerId !== "unassigned") {
+            playerSelections.push({
+              festival_team_id: teamId,
+              player_id: selection.playerId,
+              position: selection.position,
+              is_substitute: selection.is_substitute,
+              performance_category: selection.performanceCategory
+            });
+          }
+        });
+      });
+
+      // Insert new selections
+      if (playerSelections.length > 0) {
+        const { error: insertError } = await supabase
+          .from("festival_team_players")
+          .insert(playerSelections);
+
+        if (insertError) throw insertError;
+      }
+
+      toast({
+        title: "Success",
+        description: "Team selections updated successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update team selections",
+      });
     }
   };
 
@@ -67,9 +135,7 @@ export const AddFestivalDialog = ({
         onSubmit={handleSubmit}
         teams={teams}
         format={format}
-        onTeamSelectionsChange={(selections) => {
-          console.log("Team selections:", selections);
-        }}
+        onTeamSelectionsChange={handleTeamSelectionsChange}
       />
     </Dialog>
   );
