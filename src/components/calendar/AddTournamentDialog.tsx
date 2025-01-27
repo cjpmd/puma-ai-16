@@ -5,18 +5,18 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
-// Define simple interfaces to avoid deep type recursion
+// Define simple interfaces with no nesting
 interface Team {
   id: string;
   name: string;
   category: string;
 }
 
-interface PlayerSelection {
-  position: string;
-  playerId: string;
-  isSubstitute: boolean;
-}
+type TeamSelections = {
+  [teamId: string]: {
+    [position: string]: string;
+  };
+};
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -83,17 +83,15 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, Record<string, string>>) => {
+  const handleTeamSelectionsChange = async (selections: TeamSelections) => {
     if (!editingTournament?.id) return;
 
     try {
-      // First, delete existing team selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      // Then insert new selections
       const insertData = Object.entries(selections).flatMap(([teamId, playerSelections]) =>
         Object.entries(playerSelections)
           .filter(([_, playerId]) => playerId !== "unassigned")
