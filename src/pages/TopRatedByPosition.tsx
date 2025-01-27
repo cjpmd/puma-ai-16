@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { PlayerCategory } from "@/types/player";
+import { PerformanceCategory } from "@/types/player";
 
 const positionTitles: Record<string, string> = {
   "GK": "Goalkeeper",
@@ -41,7 +41,7 @@ const positionTitles: Record<string, string> = {
 };
 
 const TopRatedByPosition = () => {
-  const [selectedCategory, setSelectedCategory] = useState<PlayerCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<PerformanceCategory | null>(null);
   
   const { data: rankings, isLoading } = useQuery({
     queryKey: ["position-rankings", selectedCategory],
