@@ -23,7 +23,6 @@ interface DailyEventsProps {
   onDeleteTournament?: (tournamentId: string) => void;
   onTeamSelectionTournament?: (tournament: any) => void;
   onUpdateTournamentDate?: (tournamentId: string, newDate: Date) => void;
-  onUpdateFestivalDate?: (festivalId: string, newDate: Date) => void;
 }
 
 export const DailyEvents = ({
@@ -46,7 +45,6 @@ export const DailyEvents = ({
   onDeleteTournament,
   onTeamSelectionTournament,
   onUpdateTournamentDate,
-  onUpdateFestivalDate,
 }: DailyEventsProps) => {
   const { toast } = useToast();
 
@@ -121,7 +119,6 @@ export const DailyEvents = ({
       onDeleteTournament={handleDeleteTournament}
       onTeamSelectionTournament={onTeamSelectionTournament}
       onUpdateTournamentDate={onUpdateTournamentDate}
-      onUpdateFestivalDate={onUpdateFestivalDate}
     />
   );
 };

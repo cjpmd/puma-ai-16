@@ -21,7 +21,7 @@ import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } f
 type SortField = "squadNumber" | "technical" | "mental" | "physical" | "goalkeeping";
 type SortOrder = "asc" | "desc";
 
-export const SquadManagement = () => {
+const SquadManagement = () => {
   const [sortField, setSortField] = useState<SortField>("squadNumber");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const navigate = useNavigate();
@@ -262,3 +262,5 @@ export const SquadManagement = () => {
     </div>
   );
 };
+
+export default SquadManagement;

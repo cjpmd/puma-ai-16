@@ -1,45 +1,44 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { Layout } from "./components/Layout";
-import { ProtectedRoute } from "./components/ProtectedRoute";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { Auth } from "./components/Auth";
-import { Coaches } from "./pages/Coaches";
-import { SquadManagement } from "./pages/SquadManagement";
-import { Analytics } from "./pages/Analytics";
+import Index from "./pages/Index";
+import Squad from "./pages/SquadManagement";
 import { CalendarPage } from "./pages/Calendar";
-import { SettingsPage } from "./pages/Settings";
-import { DashboardPage } from "./pages/Dashboard";
+import Fixtures from "./pages/Fixtures";
+import { Analytics } from "./pages/Analytics";
+import PlayerDetails from "./pages/PlayerDetailsPage";
+import FormationSelector from "./pages/FormationSelector";
+import RoleSuitability from "./pages/RoleSuitabilityPage";
+import TopRatedByPosition from "./pages/TopRatedByPosition";
+import TeamSettings from "./pages/TeamSettings";
+import { Auth } from "./pages/Auth";
+import { Coaches } from "./pages/Coaches";
+import { NavBar } from "./components/NavBar";
 
 const queryClient = new QueryClient();
 
-export function App() {
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
+        <NavBar />
         <Routes>
-          <Route path="/login" element={<Auth />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<Navigate to="/home" replace />} />
-                    <Route path="/home" element={<DashboardPage />} />
-                    <Route path="/squad" element={<SquadManagement />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/coaches" element={<Coaches />} />
-                    <Route path="/calendar" element={<CalendarPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                  </Routes>
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/" element={<Index />} />
+          <Route path="/home" element={<Index />} />
+          <Route path="/squad" element={<Squad />} />
+          <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/fixtures" element={<Fixtures />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/player/:id" element={<PlayerDetails />} />
+          <Route path="/formation" element={<FormationSelector />} />
+          <Route path="/role-suitability" element={<RoleSuitability />} />
+          <Route path="/top-rated" element={<TopRatedByPosition />} />
+          <Route path="/settings" element={<TeamSettings />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/coaches" element={<Coaches />} />
         </Routes>
       </Router>
-      <Toaster />
     </QueryClientProvider>
   );
 }
+
+export default App;

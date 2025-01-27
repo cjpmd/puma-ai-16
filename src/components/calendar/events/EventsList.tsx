@@ -26,7 +26,6 @@ interface EventsListProps {
   onDeleteTournament?: (tournamentId: string) => void;
   onTeamSelectionTournament?: (tournament: any) => void;
   onUpdateTournamentDate?: (tournamentId: string, newDate: Date) => void;
-  onUpdateFestivalDate?: (festivalId: string, newDate: Date) => void;
 }
 
 export const EventsList = ({
@@ -49,7 +48,6 @@ export const EventsList = ({
   onDeleteTournament,
   onTeamSelectionTournament,
   onUpdateTournamentDate,
-  onUpdateFestivalDate,
 }: EventsListProps) => {
   const hasEvents = festivals?.length || tournaments?.length || fixtures?.length || sessions?.length;
 
@@ -69,7 +67,6 @@ export const EventsList = ({
               onEdit={onEditFestival}
               onTeamSelection={onTeamSelectionFestival}
               onDelete={onDeleteFestival}
-              onDateChange={onUpdateFestivalDate}
             />
           ))}
           

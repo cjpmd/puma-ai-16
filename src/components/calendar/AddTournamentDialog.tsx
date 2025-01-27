@@ -5,29 +5,19 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
-interface TeamPlayerSelection {
+type TeamPlayerSelection = {
   tournament_team_id: string;
   player_id: string;
   position: string;
   is_substitute: boolean;
-}
-
-type PlayerSelection = {
-  playerId: string;
-  position: string;
-  is_substitute: boolean;
-}
+};
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date;
   onSuccess: () => void;
-  editingTournament?: {
-    id: string;
-    format?: string;
-    [key: string]: any;
-  };
+  editingTournament?: any;
   showTeamSelection?: boolean;
 }
 
@@ -87,7 +77,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, PlayerSelection[]>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, Array<{ playerId: string; position: string; is_substitute: boolean }>>) => {
     if (!editingTournament?.id) return;
 
     try {
