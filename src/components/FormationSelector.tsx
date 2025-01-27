@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface FormationSelectorProps {
   format: "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
   teamCategory?: string;
-  onSelectionChange: (selections: Record<string, string>) => void;
+  onSelectionChange: (selections: Record<string, { playerId: string; position: string }>) => void;
   onCategoryChange?: (category: string) => void;
   performanceCategory?: string;
   selectedPlayers?: Set<string>;
@@ -23,7 +23,7 @@ export const FormationSelector = ({
   performanceCategory,
   selectedPlayers = new Set()
 }: FormationSelectorProps) => {
-  const [selections, setSelections] = useState<Record<string, string>>({});
+  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string }>>({});
 
   const { data: players } = useQuery({
     queryKey: ["players", teamCategory],
@@ -53,7 +53,7 @@ export const FormationSelector = ({
   const handlePositionChange = (slotId: string, playerId: string, position: string) => {
     const newSelections = {
       ...selections,
-      [slotId]: playerId
+      [slotId]: { playerId, position }
     };
     setSelections(newSelections);
     onSelectionChange(newSelections);
@@ -94,11 +94,11 @@ export const FormationSelector = ({
           <PlayerPositionSelect
             key={`pos-${index}`}
             slotId={`pos-${index}`}
-            position={selections[`pos-${index}`] || ""}
-            playerId={selections[`pos-${index}`] || "unassigned"}
+            position={selections[`pos-${index}`]?.position || ""}
+            playerId={selections[`pos-${index}`]?.playerId || "unassigned"}
             positionDefinitions={positions}
             availablePlayers={players}
-            onSelectionChange={handlePositionChange}
+            onSelectionChange={(playerId) => handlePositionChange(`pos-${index}`, playerId, `pos-${index}`)}
             selectedPlayers={selectedPlayers}
           />
         ))}
@@ -108,7 +108,7 @@ export const FormationSelector = ({
         maxSubstitutes={getMaxSubstitutes()}
         selections={selections}
         availablePlayers={players}
-        onSelectionChange={handlePositionChange}
+        onSelectionChange={(slotId, playerId) => handlePositionChange(slotId, playerId, slotId)}
         selectedPlayers={selectedPlayers}
       />
     </div>

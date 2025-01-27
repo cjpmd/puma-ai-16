@@ -13,7 +13,7 @@ interface TeamSelectionManagerProps {
     category: string;
   }>;
   format: "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
-  onTeamSelectionsChange?: (selections: Record<string, Record<string, string>>) => void;
+  onTeamSelectionsChange?: (selections: Record<string, Record<string, { playerId: string; position: string }>>) => void;
 }
 
 export const TeamSelectionManager = ({ 
@@ -21,7 +21,7 @@ export const TeamSelectionManager = ({
   format, 
   onTeamSelectionsChange 
 }: TeamSelectionManagerProps) => {
-  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, string>>>({});
+  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string }>>>({});
   const [showFormations, setShowFormations] = useState(false);
   const [teamCategories, setTeamCategories] = useState<Record<string, string>>({});
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
@@ -37,7 +37,7 @@ export const TeamSelectionManager = ({
     },
   });
 
-  const handleTeamSelectionChange = (teamId: string, selections: Record<string, string>) => {
+  const handleTeamSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string }>) => {
     const newSelections = {
       ...teamSelections,
       [teamId]: selections
@@ -47,7 +47,7 @@ export const TeamSelectionManager = ({
     // Update selected players set
     const allSelectedPlayers = new Set<string>();
     Object.values(newSelections).forEach(teamSelections => {
-      Object.entries(teamSelections).forEach(([position, playerId]) => {
+      Object.values(teamSelections).forEach(({ playerId }) => {
         if (playerId !== "unassigned") {
           allSelectedPlayers.add(playerId);
         }
@@ -65,11 +65,11 @@ export const TeamSelectionManager = ({
     }));
   };
 
-  const formatSelectionsForFormation = (selections: Record<string, string>) => {
+  const formatSelectionsForFormation = (selections: Record<string, { playerId: string; position: string }>) => {
     return Object.entries(selections)
       .filter(([key]) => !key.startsWith('sub-'))
-      .map(([key, playerId]) => ({
-        position: key.split('-')[0].toUpperCase(),
+      .map(([_, { playerId, position }]) => ({
+        position: position.split('-')[0].toUpperCase(),
         playerId
       }));
   };
