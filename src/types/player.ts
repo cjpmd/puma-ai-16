@@ -2,7 +2,7 @@ export type PlayerType = "OUTFIELD" | "GOALKEEPER";
 
 export type AttributeCategory = "TECHNICAL" | "MENTAL" | "PHYSICAL" | "GOALKEEPING";
 
-export type PlayerCategory = "MESSI" | "RONALDO" | "JAGS";
+export type PerformanceCategory = "MESSI" | "RONALDO" | "JAGS";
 
 export interface PlayerObjective {
   completed: number;

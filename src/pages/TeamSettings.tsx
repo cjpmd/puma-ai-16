@@ -285,7 +285,7 @@ const TeamSettings = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Player Categories
+              Performance Categories
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -304,7 +304,7 @@ const TeamSettings = () => {
                 <Input
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
-                  placeholder="New category name"
+                  placeholder="New performance category name"
                   className="max-w-sm"
                 />
                 <Input
