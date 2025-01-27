@@ -1,109 +1,68 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, isSameMonth, parseISO } from "date-fns";
+import { format } from "date-fns";
 
 export const useCalendarData = (date: Date) => {
+  const formattedDate = format(date, "yyyy-MM-dd");
+
   const { data: sessions, refetch: refetchSessions } = useQuery({
-    queryKey: ["training-sessions", date],
+    queryKey: ["training-sessions", formattedDate],
     queryFn: async () => {
-      if (!date) return [];
-      
       const { data, error } = await supabase
         .from("training_sessions")
-        .select(`
-          *,
-          training_drills (
-            *,
-            training_files (*)
-          )
-        `)
-        .eq("date", format(date, "yyyy-MM-dd"))
-        .order("created_at", { ascending: false });
-
+        .select("*")
+        .eq("date", formattedDate);
       if (error) throw error;
       return data;
     },
   });
 
   const { data: fixtures, refetch: refetchFixtures } = useQuery({
-    queryKey: ["fixtures", date],
+    queryKey: ["fixtures", formattedDate],
     queryFn: async () => {
-      if (!date) return [];
-      
       const { data, error } = await supabase
         .from("fixtures")
         .select("*")
-        .eq("date", format(date, "yyyy-MM-dd"))
-        .order("created_at", { ascending: false });
-
+        .eq("date", formattedDate);
       if (error) throw error;
       return data;
     },
   });
 
   const { data: festivals, refetch: refetchFestivals } = useQuery({
-    queryKey: ["festivals", date],
+    queryKey: ["festivals", formattedDate],
     queryFn: async () => {
-      if (!date) return [];
-      
       const { data, error } = await supabase
         .from("festivals")
         .select("*")
-        .eq("date", format(date, "yyyy-MM-dd"))
-        .order("created_at", { ascending: false });
-
+        .eq("date", formattedDate);
       if (error) throw error;
       return data;
     },
   });
 
   const { data: tournaments, refetch: refetchTournaments } = useQuery({
-    queryKey: ["tournaments", date],
+    queryKey: ["tournaments", formattedDate],
     queryFn: async () => {
-      if (!date) return [];
-      
       const { data, error } = await supabase
         .from("tournaments")
         .select("*")
-        .eq("date", format(date, "yyyy-MM-dd"))
-        .order("created_at", { ascending: false });
-
+        .eq("date", formattedDate);
       if (error) throw error;
       return data;
     },
   });
 
   const { data: objectives, refetch: refetchObjectives } = useQuery({
-    queryKey: ["objectives", date],
+    queryKey: ["objectives", formattedDate],
     queryFn: async () => {
-      if (!date) return [];
-      
-      const startDate = startOfMonth(date);
-      const endDate = endOfMonth(date);
-      
       const { data, error } = await supabase
-        .from('player_objectives')
-        .select(`
-          *,
-          players (
-            name
-          ),
-          profiles:coach_id (
-            name
-          )
-        `)
-        .gte('review_date', format(startDate, 'yyyy-MM-dd'))
-        .lte('review_date', format(endDate, 'yyyy-MM-dd'))
-        .order('review_date', { ascending: true });
-
+        .from("player_objectives")
+        .select("*")
+        .eq("review_date", formattedDate);
       if (error) throw error;
-      
-      return data.filter(objective => 
-        objective.review_date && 
-        isSameMonth(parseISO(objective.review_date), date)
-      );
+      return data;
     },
-    enabled: !!date,
   });
 
   return {
@@ -116,6 +75,6 @@ export const useCalendarData = (date: Date) => {
     refetchFixtures,
     refetchFestivals,
     refetchTournaments,
-    refetchObjectives
+    refetchObjectives,
   };
 };
