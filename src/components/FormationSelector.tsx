@@ -70,7 +70,7 @@ export const FormationSelector = ({
     const newSelections = {
       ...selections,
       [slotId]: {
-        playerId,
+        playerId: playerId || "unassigned",
         position
       }
     };

@@ -46,7 +46,7 @@ export const PlayerPositionSelect = ({
         <div>
           <Label className="text-xs text-muted-foreground">Player</Label>
           <Select
-            value={playerId}
+            value={playerId || "unassigned"}
             onValueChange={(value) => onSelectionChange(slotId, value, position)}
           >
             <SelectTrigger className="text-left h-9">
