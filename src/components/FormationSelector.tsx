@@ -19,6 +19,8 @@ interface FormationSelectorProps {
   format?: keyof typeof formatPositions;
   teamCategory?: string;
   onSelectionChange?: (selections: Record<string, string>) => void;
+  onCategoryChange?: (category: string) => void;
+  performanceCategory?: string;
 }
 
 interface Selection {
@@ -29,7 +31,9 @@ interface Selection {
 export const FormationSelector = ({ 
   format = "7-a-side", 
   teamCategory, 
-  onSelectionChange 
+  onSelectionChange,
+  onCategoryChange,
+  performanceCategory = "Ronaldo"
 }: FormationSelectorProps) => {
   const [selections, setSelections] = useState<Record<string, Selection>>({});
   const [captain, setCaptain] = useState<string>("unassigned");
@@ -59,6 +63,19 @@ export const FormationSelector = ({
       return data;
     },
     enabled: !!teamCategory,
+  });
+
+  const { data: categories } = useQuery({
+    queryKey: ["player-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_categories")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      return data;
+    },
   });
 
   const handleSelectionChange = (slotId: string, playerId: string, position: string) => {
@@ -125,7 +142,7 @@ export const FormationSelector = ({
 
   return (
     <div className="space-y-6 max-h-[60vh] overflow-y-auto">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div>
           <Select
             value={captain}
@@ -153,6 +170,23 @@ export const FormationSelector = ({
             placeholder="Duration (minutes)"
             className="w-full"
           />
+        </div>
+        <div>
+          <Select
+            value={performanceCategory}
+            onValueChange={(value) => onCategoryChange?.(value)}
+          >
+            <SelectTrigger className="text-left">
+              <SelectValue placeholder="Select performance category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories?.map(category => (
+                <SelectItem key={category.id} value={category.name}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

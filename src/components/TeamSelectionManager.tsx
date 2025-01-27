@@ -23,6 +23,7 @@ export const TeamSelectionManager = ({
 }: TeamSelectionManagerProps) => {
   const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, string>>>({});
   const [showFormations, setShowFormations] = useState(false);
+  const [teamCategories, setTeamCategories] = useState<Record<string, string>>({});
 
   const { data: players } = useQuery({
     queryKey: ["all-players"],
@@ -42,6 +43,13 @@ export const TeamSelectionManager = ({
     };
     setTeamSelections(newSelections);
     onTeamSelectionsChange?.(newSelections);
+  };
+
+  const handleCategoryChange = (teamId: string, category: string) => {
+    setTeamCategories(prev => ({
+      ...prev,
+      [teamId]: category
+    }));
   };
 
   const formatSelectionsForFormation = (selections: Record<string, string>) => {
@@ -80,6 +88,8 @@ export const TeamSelectionManager = ({
               format={format as any}
               teamCategory={team.category}
               onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
+              onCategoryChange={(category) => handleCategoryChange(team.id, category)}
+              performanceCategory={teamCategories[team.id]}
             />
           </CardContent>
         </Card>
