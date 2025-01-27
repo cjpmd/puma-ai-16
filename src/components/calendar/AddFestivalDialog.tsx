@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +26,7 @@ interface AddFestivalDialogProps {
   selectedDate?: Date;
   onSuccess: () => void;
   editingFestival?: any;
+  showTeamSelection?: boolean;
 }
 
 export const AddFestivalDialog = ({
@@ -38,6 +39,7 @@ export const AddFestivalDialog = ({
 }: AddFestivalDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
   const [festivalId, setFestivalId] = useState<string | null>(null);
   const [teams, setTeams] = useState<Array<{ id: string; name: string; category: string }>>([]);
