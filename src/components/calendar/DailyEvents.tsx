@@ -24,6 +24,10 @@ interface DailyEventsProps {
   onEditFestival?: (festival: any) => void;
   onDeleteFestival?: (festivalId: string) => void;
   onTeamSelectionFestival?: (festival: any) => void;
+  onEditTournament?: (tournament: any) => void;
+  onDeleteTournament?: (tournamentId: string) => void;
+  onTeamSelectionTournament?: (tournament: any) => void;
+  onUpdateTournamentDate?: (tournamentId: string, newDate: Date) => void;
 }
 
 export const DailyEvents = ({
@@ -42,6 +46,10 @@ export const DailyEvents = ({
   onEditFestival,
   onDeleteFestival,
   onTeamSelectionFestival,
+  onEditTournament,
+  onDeleteTournament,
+  onTeamSelectionTournament,
+  onUpdateTournamentDate,
 }: DailyEventsProps) => {
   const { toast } = useToast();
 
@@ -70,6 +78,31 @@ export const DailyEvents = ({
     }
   };
 
+  const handleDeleteTournament = async (tournamentId: string) => {
+    try {
+      const { error } = await supabase
+        .from("tournaments")
+        .delete()
+        .eq("id", tournamentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Tournament deleted successfully",
+      });
+      
+      onDeleteTournament?.(tournamentId);
+    } catch (error) {
+      console.error("Error deleting tournament:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete tournament",
+      });
+    }
+  };
+
   return (
     <Card className="md:col-span-2">
       <CardHeader>
@@ -93,6 +126,10 @@ export const DailyEvents = ({
             <TournamentEvent
               key={tournament.id}
               tournament={tournament}
+              onEdit={onEditTournament}
+              onTeamSelection={onTeamSelectionTournament}
+              onDelete={handleDeleteTournament}
+              onDateChange={onUpdateTournamentDate}
             />
           ))}
 
