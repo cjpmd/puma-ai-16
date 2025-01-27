@@ -13,7 +13,7 @@ interface Team {
   category: string;
 }
 
-interface TournamentTeamPlayer {
+interface TeamSelection {
   tournament_team_id: string;
   player_id: string;
   position: string;
@@ -98,10 +98,10 @@ export const AddTournamentDialog = ({
         .eq("tournament_id", editingTournament.id);
 
       // Format new selections
-      const playerSelections = Object.entries(selections).flatMap(([teamId, positions]) =>
+      const playerSelections: TeamSelection[] = Object.entries(selections).flatMap(([teamId, positions]) =>
         Object.entries(positions)
           .filter(([_, playerId]) => playerId !== "unassigned")
-          .map(([position, playerId]) => ({
+          .map(([position, playerId]): TeamSelection => ({
             tournament_team_id: teamId,
             player_id: playerId,
             position: position.split('-')[0],
