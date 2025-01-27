@@ -12,7 +12,7 @@ interface TeamSelectionManagerProps {
     name: string;
     category: string;
   }>;
-  format: string;
+  format: "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
   onTeamSelectionsChange?: (selections: Record<string, Record<string, string>>) => void;
 }
 

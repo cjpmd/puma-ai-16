@@ -11,6 +11,13 @@ interface Team {
   category: string;
 }
 
+interface TournamentTeamPlayer {
+  tournament_team_id: string;
+  player_id: string;
+  position: string;
+  is_substitute: boolean;
+}
+
 interface AddTournamentDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -31,7 +38,9 @@ export const AddTournamentDialog = ({
   const { toast } = useToast();
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [format, setFormat] = useState(editingTournament?.format || "7-a-side");
+  const [format, setFormat] = useState<"4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side">(
+    (editingTournament?.format as "7-a-side") || "7-a-side"
+  );
 
   const { handleSubmit } = useTournamentForm(
     () => {
