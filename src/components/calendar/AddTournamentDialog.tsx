@@ -5,17 +5,8 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
-// Define specific types for team selections with literal types
-type PositionType = string;
-type PlayerIdType = string;
-
-interface TeamSelectionRecord {
-  [key: string]: PlayerIdType;
-}
-
-interface TeamSelectionsMap {
-  [teamId: string]: TeamSelectionRecord;
-}
+// Define simple flat types to avoid deep nesting
+type TeamSelections = Record<string, Record<string, string>>;
 
 interface Team {
   id: string;
@@ -88,7 +79,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: TeamSelectionsMap) => {
+  const handleTeamSelectionsChange = async (selections: TeamSelections) => {
     if (!editingTournament?.id) return;
 
     try {
@@ -99,7 +90,7 @@ export const AddTournamentDialog = ({
         .eq("tournament_id", editingTournament.id);
 
       // Then insert new selections
-      const insertPromises = Object.entries(selections).flatMap(([teamId, playerSelections]) =>
+      const insertData = Object.entries(selections).flatMap(([teamId, playerSelections]) =>
         Object.entries(playerSelections)
           .filter(([_, playerId]) => playerId !== "unassigned")
           .map(([position, playerId]) => ({
@@ -110,10 +101,10 @@ export const AddTournamentDialog = ({
           }))
       );
 
-      if (insertPromises.length > 0) {
+      if (insertData.length > 0) {
         const { error: insertError } = await supabase
           .from("tournament_team_players")
-          .insert(insertPromises);
+          .insert(insertData);
 
         if (insertError) throw insertError;
       }
