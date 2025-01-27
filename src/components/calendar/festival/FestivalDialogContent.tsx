@@ -45,6 +45,7 @@ export const FestivalDialogContent = ({
           teams={teams}
           format={format}
           onTeamSelectionsChange={onTeamSelectionsChange}
+          editingFestival={editingFestival}
         />
       )}
     </DialogContent>

@@ -9,12 +9,14 @@ interface FestivalTeamSelectionProps {
   teams: Array<{ id: string; name: string; category: string }>;
   format: string;
   onTeamSelectionsChange: (selections: Record<string, Record<string, string>>) => void;
+  editingFestival?: any;
 }
 
 export const FestivalTeamSelection = ({ 
   teams, 
   format, 
-  onTeamSelectionsChange 
+  onTeamSelectionsChange,
+  editingFestival
 }: FestivalTeamSelectionProps) => {
   const { selectedPlayers, clearSelectedPlayers } = useTeamSelection();
 
@@ -44,9 +46,9 @@ export const FestivalTeamSelection = ({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 mt-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
       {teams.map(team => (
-        <Card key={team.id}>
+        <Card key={team.id} className="w-full">
           <CardHeader>
             <CardTitle className="text-lg">{team.name}</CardTitle>
           </CardHeader>
@@ -56,6 +58,7 @@ export const FestivalTeamSelection = ({
               teamCategory={team.category}
               onSelectionChange={(selections) => handleSelectionChange(team.id, selections)}
               performanceCategory={team.category}
+              editingFestival={editingFestival}
             />
           </CardContent>
         </Card>

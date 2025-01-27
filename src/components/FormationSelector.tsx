@@ -22,6 +22,7 @@ interface FormationSelectorProps {
   onSelectionChange?: (selections: Record<string, string>) => void;
   onCategoryChange?: (category: string) => void;
   performanceCategory?: string;
+  editingFestival?: any;
 }
 
 export const FormationSelector = ({ 
@@ -29,11 +30,14 @@ export const FormationSelector = ({
   teamCategory, 
   onSelectionChange,
   onCategoryChange,
-  performanceCategory = "Ronaldo"
+  performanceCategory = "Ronaldo",
+  editingFestival
 }: FormationSelectorProps) => {
-  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string }>>({});
-  const [captain, setCaptain] = useState<string>("unassigned");
-  const [duration, setDuration] = useState<string>("20");
+  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string }>>(
+    editingFestival?.selections || {}
+  );
+  const [captain, setCaptain] = useState<string>(editingFestival?.captain || "unassigned");
+  const [duration, setDuration] = useState<string>(editingFestival?.duration || "20");
 
   const { data: positionDefinitions } = useQuery({
     queryKey: ["position-definitions"],
@@ -62,8 +66,9 @@ export const FormationSelector = ({
   });
 
   const handleSelectionChange = (slotId: string, playerId: string, position: string) => {
-    // Remove player from previous position if they were selected somewhere else
     const newSelections = { ...selections };
+    
+    // Remove player from previous position if they were selected somewhere else
     Object.entries(selections).forEach(([key, value]) => {
       if (value.playerId === playerId && key !== slotId) {
         delete newSelections[key];
@@ -112,7 +117,7 @@ export const FormationSelector = ({
         onCategoryChange={onCategoryChange}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {currentPositions.map((pos, index) => (
           <PlayerPositionSelect
             key={`${pos}-${index}`}
