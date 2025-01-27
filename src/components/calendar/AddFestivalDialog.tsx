@@ -81,11 +81,13 @@ export const AddFestivalDialog = ({
     if (!editingFestival?.id) return;
 
     try {
-      // Delete existing selections
-      await supabase
-        .from("festival_team_players")
-        .delete()
-        .eq("festival_id", editingFestival.id);
+      // Delete existing selections by festival_team_id
+      for (const teamId of Object.keys(selections)) {
+        await supabase
+          .from("festival_team_players")
+          .delete()
+          .eq("festival_team_id", teamId);
+      }
 
       // Format selections for database
       const playerSelections: TeamPlayerSelection[] = [];
