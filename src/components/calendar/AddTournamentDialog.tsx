@@ -10,6 +10,7 @@ interface TeamPlayerSelection {
   player_id: string;
   position: string;
   is_substitute: boolean;
+  performance_category?: string;
 }
 
 interface Tournament {
@@ -88,15 +89,17 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, Array<{ playerId: string; position: string; is_substitute: boolean }>>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, Array<{ playerId: string; position: string; is_substitute: boolean; performanceCategory?: string }>>) => {
     if (!editingTournament?.id) return;
 
     try {
+      // Delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
+      // Format selections for database
       const playerSelections: TeamPlayerSelection[] = [];
       
       Object.entries(selections).forEach(([teamId, teamSelections]) => {
@@ -106,12 +109,14 @@ export const AddTournamentDialog = ({
               tournament_team_id: teamId,
               player_id: selection.playerId,
               position: selection.position,
-              is_substitute: selection.is_substitute
+              is_substitute: selection.is_substitute,
+              performance_category: selection.performanceCategory
             });
           }
         });
       });
 
+      // Insert new selections
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
           .from("tournament_team_players")
