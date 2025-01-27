@@ -9,7 +9,7 @@ interface FestivalDialogContentProps {
   onSubmit: (data: any) => Promise<void>;
   teams: Array<{ id: string; name: string; category: string }>;
   format: string;
-  onTeamSelectionsChange: (selections: any) => void;
+  onTeamSelectionsChange: (selections: Record<string, Record<string, { playerId: string; position: string }>>) => void;
 }
 
 export const FestivalDialogContent = ({
@@ -45,7 +45,6 @@ export const FestivalDialogContent = ({
           teams={teams}
           format={format}
           onTeamSelectionsChange={onTeamSelectionsChange}
-          editingFestival={editingFestival}
         />
       )}
     </DialogContent>
