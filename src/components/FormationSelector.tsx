@@ -67,15 +67,26 @@ export const FormationSelector = ({
   });
 
   const handleSelectionChange = (slotId: string, playerId: string, position: string) => {
-    const newSelections = {
-      ...selections,
-      [slotId]: {
-        playerId: playerId || "unassigned",
-        position
+    // Remove player from previous position if they were selected somewhere else
+    const newSelections = { ...selections };
+    Object.entries(selections).forEach(([key, value]) => {
+      if (value.playerId === playerId && key !== slotId) {
+        newSelections[key] = {
+          playerId: "unassigned",
+          position: value.position
+        };
       }
+    });
+
+    // Add player to new position
+    newSelections[slotId] = {
+      playerId: playerId || "unassigned",
+      position
     };
+    
     setSelections(newSelections);
     
+    // Format selections for parent component
     const formattedSelections = Object.entries(newSelections).reduce((acc, [key, value]) => {
       acc[key] = value.playerId;
       return acc;

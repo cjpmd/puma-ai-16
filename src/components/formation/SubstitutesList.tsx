@@ -45,7 +45,7 @@ export const SubstitutesList = ({
                         selectedPlayers.has(player.id) && player.id !== currentPlayerId && "opacity-50"
                       )}
                     >
-                      {player.name} ({player.squad_number})
+                      {player.name} {player.squad_number ? `(${player.squad_number})` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>

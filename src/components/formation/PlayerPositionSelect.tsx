@@ -62,7 +62,7 @@ export const PlayerPositionSelect = ({
                     selectedPlayers.has(player.id) && player.id !== playerId && "opacity-50"
                   )}
                 >
-                  {player.name} ({player.squad_number})
+                  {player.name} {player.squad_number ? `(${player.squad_number})` : ''}
                 </SelectItem>
               ))}
             </SelectContent>
