@@ -42,7 +42,7 @@ export const TournamentTeamSelection = ({
     clearSelectedPlayers();
   }, [teams]);
 
-  const handleSelectionChange = (teamId: string, selections: Record<string, TeamSelection>) => {
+  const handleSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
     const formattedSelections = Object.entries(selections).map(([_, value]) => ({
       playerId: value.playerId,
       position: value.position.split('-')[0],
