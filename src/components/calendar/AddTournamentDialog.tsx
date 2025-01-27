@@ -11,18 +11,11 @@ interface Team {
   category: string;
 }
 
-// Define explicit interface for tournament team player data
-interface TournamentTeamPlayer {
-  tournament_team_id: string;
-  player_id: string;
+interface PlayerSelection {
+  playerId: string;
   position: string;
-  is_substitute: boolean;
+  isSubstitute: boolean;
 }
-
-// Simple type for position-to-player mapping
-type PositionMapping = {
-  [position: string]: string;
-};
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -89,30 +82,43 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, PositionMapping>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, Record<string, string>>) => {
     if (!editingTournament?.id) return;
 
     try {
+      // First delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      const insertData: TournamentTeamPlayer[] = Object.entries(selections).flatMap(([teamId, playerSelections]) =>
-        Object.entries(playerSelections)
-          .filter(([_, playerId]) => playerId !== "unassigned")
-          .map(([position, playerId]) => ({
-            tournament_team_id: teamId,
-            player_id: playerId,
-            position: position.split('-')[0],
-            is_substitute: position.startsWith('sub-')
-          }))
-      );
+      // Prepare new selections for insertion
+      const playerSelections: PlayerSelection[] = [];
+      
+      Object.entries(selections).forEach(([teamId, positions]) => {
+        Object.entries(positions).forEach(([position, playerId]) => {
+          if (playerId !== "unassigned") {
+            playerSelections.push({
+              playerId,
+              position: position.split('-')[0],
+              isSubstitute: position.startsWith('sub-')
+            });
+          }
+        });
+      });
 
-      if (insertData.length > 0) {
+      // Insert new selections if there are any
+      if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
           .from("tournament_team_players")
-          .insert(insertData);
+          .insert(
+            playerSelections.map(selection => ({
+              tournament_team_id: editingTournament.id,
+              player_id: selection.playerId,
+              position: selection.position,
+              is_substitute: selection.isSubstitute
+            }))
+          );
 
         if (insertError) throw insertError;
       }
