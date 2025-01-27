@@ -95,15 +95,14 @@ export const AddFestivalDialog = ({
       setFestivalId(festival.id);
       setShowTeamSelection(true);
 
+      // Invalidate and refetch calendar data
+      queryClient.invalidateQueries({ queryKey: ["festivals"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-data"] });
+
       toast({
         title: "Success",
         description: "Festival created successfully",
       });
-
-      if (!showTeamSelection) {
-        onSuccess();
-        onOpenChange(false);
-      }
     } catch (error) {
       console.error("Error saving festival:", error);
       toast({
