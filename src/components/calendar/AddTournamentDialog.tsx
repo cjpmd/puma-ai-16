@@ -12,7 +12,7 @@ interface TeamPlayerSelection {
   is_substitute: boolean;
 }
 
-interface PlayerSelection {
+type PlayerSelection = {
   playerId: string;
   position: string;
   is_substitute: boolean;
@@ -87,11 +87,13 @@ export const AddTournamentDialog = ({
     if (!editingTournament?.id) return;
 
     try {
+      // Delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
+      // Prepare new selections
       const playerSelections: TeamPlayerSelection[] = [];
       
       Object.entries(selections).forEach(([teamId, teamSelections]) => {
@@ -107,6 +109,7 @@ export const AddTournamentDialog = ({
         });
       });
 
+      // Insert new selections if any exist
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
           .from("tournament_team_players")
