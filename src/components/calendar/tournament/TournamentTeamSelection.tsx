@@ -56,7 +56,15 @@ export const TournamentTeamSelection = ({
 
     setTeamSelections(prev => ({
       ...prev,
-      [teamId]: selections
+      [teamId]: Object.entries(selections).reduce((acc, [key, value]) => ({
+        ...acc,
+        [key]: {
+          playerId: value.playerId,
+          position: value.position,
+          is_substitute: value.position.startsWith('sub-'),
+          performanceCategory: value.performanceCategory || 'MESSI'
+        }
+      }), {} as Record<string, TeamSelection>)
     }));
   };
 
