@@ -10,13 +10,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
-import { TeamSelectionManager } from "../TeamSelectionManager";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { FestivalFormFields, formSchema, FormData } from "./FestivalFormFields";
+import { FestivalForm } from "./festival/FestivalForm";
+import { FestivalTeamSelection } from "./festival/FestivalTeamSelection";
 import type { Database } from "@/integrations/supabase/types";
+import type { FormData } from "./FestivalFormFields";
 
 type Festival = Database["public"]["Tables"]["festivals"]["Insert"];
 
@@ -39,25 +36,11 @@ export const AddFestivalDialog = ({
 }: AddFestivalDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
   const [festivalId, setFestivalId] = useState<string | null>(null);
   const [teams, setTeams] = useState<Array<{ id: string; name: string; category: string }>>([]);
+  const [format, setFormat] = useState(editingFestival?.format || "7-a-side");
 
-  // Initialize form with editing festival data if available
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      date: editingFestival?.date ? new Date(editingFestival.date) : selectedDate || new Date(),
-      format: editingFestival?.format || "7-a-side",
-      numberOfTeams: editingFestival?.number_of_teams || 2,
-      location: editingFestival?.location || "",
-      startTime: editingFestival?.start_time || "",
-      endTime: editingFestival?.end_time || "",
-    },
-  });
-
-  // Effect to handle showing team selection when prop changes
   useEffect(() => {
     setShowTeamSelectionState(showTeamSelection);
     if (showTeamSelection && editingFestival) {
@@ -81,7 +64,7 @@ export const AddFestivalDialog = ({
     }
   };
 
-  const onSubmit = async (data: FormData) => {
+  const handleSubmit = async (data: FormData) => {
     try {
       const festivalData: Festival = {
         date: format(data.date, "yyyy-MM-dd"),
@@ -92,6 +75,8 @@ export const AddFestivalDialog = ({
         number_of_teams: data.numberOfTeams,
         system_category: "FESTIVAL",
       };
+
+      setFormat(data.format);
 
       let festival;
       if (editingFestival) {
@@ -117,7 +102,6 @@ export const AddFestivalDialog = ({
         setFestivalId(festival.id);
       }
 
-      // Only create teams if we're not in team selection mode
       if (!showTeamSelectionState) {
         const { data: existingTeams } = await supabase
           .from("festival_teams")
@@ -155,7 +139,6 @@ export const AddFestivalDialog = ({
         }
       }
 
-      // Invalidate and refetch calendar data
       queryClient.invalidateQueries({ queryKey: ["festivals"] });
       queryClient.invalidateQueries({ queryKey: ["calendar-data"] });
 
@@ -164,7 +147,6 @@ export const AddFestivalDialog = ({
         description: `Festival ${editingFestival ? 'updated' : 'created'} successfully`,
       });
 
-      // Only show team selection if we're not already in team selection mode
       if (!showTeamSelectionState) {
         setShowTeamSelectionState(true);
       } else {
@@ -195,18 +177,15 @@ export const AddFestivalDialog = ({
         </DialogHeader>
 
         {!showTeamSelectionState ? (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FestivalFormFields form={form} />
-              <Button type="submit" className="w-full">
-                {editingFestival ? 'Update Festival' : 'Save and Continue to Team Selection'}
-              </Button>
-            </form>
-          </Form>
+          <FestivalForm
+            onSubmit={handleSubmit}
+            editingFestival={editingFestival}
+            selectedDate={selectedDate}
+          />
         ) : (
-          <TeamSelectionManager
+          <FestivalTeamSelection
             teams={teams}
-            format={form.getValues("format")}
+            format={format}
             onTeamSelectionsChange={(selections) => {
               console.log("Team selections:", selections);
             }}
