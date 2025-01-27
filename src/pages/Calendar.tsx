@@ -66,14 +66,19 @@ export const CalendarPage = () => {
         setIsAddFriendlyOpen={calendarState.setIsAddFriendlyOpen}
         isAddFestivalOpen={calendarState.isAddFestivalOpen}
         setIsAddFestivalOpen={calendarState.setIsAddFestivalOpen}
+        isAddTournamentOpen={calendarState.isAddTournamentOpen}
+        setIsAddTournamentOpen={calendarState.setIsAddTournamentOpen}
         isTeamSelectionOpen={calendarState.isTeamSelectionOpen}
         setIsTeamSelectionOpen={calendarState.setIsTeamSelectionOpen}
         editingFixture={calendarState.editingFixture}
         setEditingFixture={calendarState.setEditingFixture}
         editingFestival={calendarState.editingFestival}
         setEditingFestival={calendarState.setEditingFestival}
+        editingTournament={calendarState.editingTournament}
+        setEditingTournament={calendarState.setEditingTournament}
         onRefetchFixtures={refetchFixtures}
         onRefetchFestivals={refetchFestivals}
+        onRefetchTournaments={refetchTournaments}
       />
     </div>
   );
