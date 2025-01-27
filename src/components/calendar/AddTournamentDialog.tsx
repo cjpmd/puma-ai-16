@@ -13,6 +13,11 @@ interface Team {
   category: string;
 }
 
+interface TeamSelection {
+  playerId: string;
+  position: string;
+}
+
 interface AddTournamentDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -80,7 +85,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, Record<string, { playerId: string; position: string }>>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, Record<string, TeamSelection>>) => {
     if (!editingTournament?.id) return;
 
     try {
