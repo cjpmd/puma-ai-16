@@ -5,11 +5,12 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
-interface TeamSelection {
-  playerId: string;
+type TeamPlayerSelection = {
+  tournament_team_id: string;
+  player_id: string;
   position: string;
   is_substitute: boolean;
-}
+};
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ export const AddTournamentDialog = ({
   const { toast } = useToast();
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
   const [teams, setTeams] = useState<Array<{ id: string; name: string; category: string }>>([]);
-  const [format, setFormat] = useState<string>(editingTournament?.format || "7-a-side");
+  const [format, setFormat] = useState(editingTournament?.format || "7-a-side");
 
   const { handleSubmit } = useTournamentForm(
     () => {
@@ -76,7 +77,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (teamSelections: Record<string, TeamSelection[]>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, Array<{ playerId: string; position: string; is_substitute: boolean }>>) => {
     if (!editingTournament?.id) return;
 
     try {
@@ -85,14 +86,20 @@ export const AddTournamentDialog = ({
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      const playerSelections = Object.entries(teamSelections).flatMap(([teamId, selections]) =>
-        selections.map(selection => ({
-          tournament_team_id: teamId,
-          player_id: selection.playerId,
-          position: selection.position,
-          is_substitute: selection.is_substitute
-        }))
-      ).filter(selection => selection.player_id !== "unassigned");
+      const playerSelections: TeamPlayerSelection[] = [];
+      
+      Object.entries(selections).forEach(([teamId, teamSelections]) => {
+        teamSelections.forEach(selection => {
+          if (selection.playerId !== "unassigned") {
+            playerSelections.push({
+              tournament_team_id: teamId,
+              player_id: selection.playerId,
+              position: selection.position,
+              is_substitute: selection.is_substitute
+            });
+          }
+        });
+      });
 
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
