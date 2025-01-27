@@ -24,11 +24,6 @@ interface FormationSelectorProps {
   performanceCategory?: string;
 }
 
-interface Selection {
-  playerId: string;
-  position: string;
-}
-
 export const FormationSelector = ({ 
   format = "7-a-side", 
   teamCategory, 
@@ -36,7 +31,7 @@ export const FormationSelector = ({
   onCategoryChange,
   performanceCategory = "Ronaldo"
 }: FormationSelectorProps) => {
-  const [selections, setSelections] = useState<Record<string, Selection>>({});
+  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string }>>({});
   const [captain, setCaptain] = useState<string>("unassigned");
   const [duration, setDuration] = useState<string>("20");
 
@@ -71,18 +66,18 @@ export const FormationSelector = ({
     const newSelections = { ...selections };
     Object.entries(selections).forEach(([key, value]) => {
       if (value.playerId === playerId && key !== slotId) {
-        newSelections[key] = {
-          playerId: "unassigned",
-          position: value.position
-        };
+        delete newSelections[key];
       }
     });
 
-    // Add player to new position
-    newSelections[slotId] = {
-      playerId: playerId || "unassigned",
-      position
-    };
+    if (playerId === "unassigned") {
+      delete newSelections[slotId];
+    } else {
+      newSelections[slotId] = {
+        playerId,
+        position
+      };
+    }
     
     setSelections(newSelections);
     
@@ -122,11 +117,11 @@ export const FormationSelector = ({
           <PlayerPositionSelect
             key={`${pos}-${index}`}
             slotId={`${pos}-${index}`}
-            position={selections[`${pos}-${index}`]?.position || pos}
+            position={pos}
             playerId={selections[`${pos}-${index}`]?.playerId || "unassigned"}
             positionDefinitions={positionDefinitions}
             availablePlayers={availablePlayers}
-            onSelectionChange={handleSelectionChange}
+            onSelectionChange={(playerId) => handleSelectionChange(`${pos}-${index}`, playerId, pos)}
             selectedPlayers={selectedPlayers}
           />
         ))}
