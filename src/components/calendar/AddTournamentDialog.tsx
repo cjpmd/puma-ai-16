@@ -5,13 +5,17 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
-// Define simple flat types to avoid deep nesting
-type TeamSelections = Record<string, Record<string, string>>;
-
+// Define simple interfaces to avoid deep type recursion
 interface Team {
   id: string;
   name: string;
   category: string;
+}
+
+interface PlayerSelection {
+  position: string;
+  playerId: string;
+  isSubstitute: boolean;
 }
 
 interface AddTournamentDialogProps {
@@ -79,7 +83,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: TeamSelections) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, Record<string, string>>) => {
     if (!editingTournament?.id) return;
 
     try {
