@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type PositionType = "gk" | "dl" | "dcl" | "dc" | "dcr" | "dr" | "ml" | "mc" | "mr" | "amc" | "st";
 
@@ -100,39 +101,47 @@ export const FormationSelector = ({
     const currentSelection = selections[slotId] || { playerId: "unassigned", position: defaultPosition };
 
     return (
-      <div className="grid grid-cols-2 gap-2">
-        <Select
-          value={currentSelection.position}
-          onValueChange={(value) => handleSelectionChange(slotId, currentSelection.playerId, value)}
-        >
-          <SelectTrigger className="text-left">
-            <SelectValue placeholder="Select position" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="unassigned">None</SelectItem>
-            {positionDefinitions?.map(pos => (
-              <SelectItem key={pos.id} value={pos.abbreviation.toLowerCase()}>
-                {pos.full_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={currentSelection.playerId}
-          onValueChange={(value) => handleSelectionChange(slotId, value, currentSelection.position)}
-        >
-          <SelectTrigger className="text-left">
-            <SelectValue placeholder="Select player" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="unassigned">None</SelectItem>
-            {availablePlayers?.map(player => (
-              <SelectItem key={player.id} value={player.id}>
-                {player.name} ({player.squad_number})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label className="text-xs text-muted-foreground">Position</Label>
+            <Select
+              value={currentSelection.position}
+              onValueChange={(value) => handleSelectionChange(slotId, currentSelection.playerId, value)}
+            >
+              <SelectTrigger className="text-left h-9">
+                <SelectValue placeholder="Select position" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">None</SelectItem>
+                {positionDefinitions?.map(pos => (
+                  <SelectItem key={pos.id} value={pos.abbreviation.toLowerCase()}>
+                    {pos.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Player</Label>
+            <Select
+              value={currentSelection.playerId}
+              onValueChange={(value) => handleSelectionChange(slotId, value, currentSelection.position)}
+            >
+              <SelectTrigger className="text-left h-9">
+                <SelectValue placeholder="Select player" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">None</SelectItem>
+                {availablePlayers?.map(player => (
+                  <SelectItem key={player.id} value={player.id}>
+                    {player.name} ({player.squad_number})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
     );
   };
@@ -141,14 +150,15 @@ export const FormationSelector = ({
   const maxSubstitutes = Math.ceil(currentPositions.length / 2);
 
   return (
-    <div className="space-y-6 max-h-[60vh] overflow-y-auto">
+    <div className="space-y-6 max-h-[60vh] overflow-y-auto p-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div>
+          <Label className="text-sm font-medium">Captain</Label>
           <Select
             value={captain}
             onValueChange={setCaptain}
           >
-            <SelectTrigger className="text-left">
+            <SelectTrigger className="text-left h-9">
               <SelectValue placeholder="Select captain" />
             </SelectTrigger>
             <SelectContent>
@@ -162,21 +172,22 @@ export const FormationSelector = ({
           </Select>
         </div>
         <div>
+          <Label className="text-sm font-medium">Duration (minutes)</Label>
           <Input
             type="number"
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
             min="1"
-            placeholder="Duration (minutes)"
-            className="w-full"
+            className="h-9"
           />
         </div>
         <div>
+          <Label className="text-sm font-medium">Performance Category</Label>
           <Select
             value={performanceCategory}
             onValueChange={(value) => onCategoryChange?.(value)}
           >
-            <SelectTrigger className="text-left">
+            <SelectTrigger className="text-left h-9">
               <SelectValue placeholder="Select performance category" />
             </SelectTrigger>
             <SelectContent>
@@ -190,7 +201,7 @@ export const FormationSelector = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6">
         {currentPositions.map((pos, index) => (
           <PositionSelect
             key={`${pos}-${index}`}
@@ -201,26 +212,28 @@ export const FormationSelector = ({
       </div>
       
       <div className="border-t pt-6">
-        <h3 className="font-semibold mb-4">Substitutes ({maxSubstitutes} max)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Label className="text-sm font-medium mb-4">Substitutes ({maxSubstitutes} max)</Label>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4">
           {Array.from({ length: maxSubstitutes }).map((_, index) => (
-            <Select
-              key={`sub-${index}`}
-              value={selections[`sub-${index}`]?.playerId || "unassigned"}
-              onValueChange={(value) => handleSelectionChange(`sub-${index}`, value, "sub")}
-            >
-              <SelectTrigger className="text-left">
-                <SelectValue placeholder="Select substitute" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">None</SelectItem>
-                {availablePlayers?.map(player => (
-                  <SelectItem key={player.id} value={player.id}>
-                    {player.name} ({player.squad_number})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div key={`sub-${index}`}>
+              <Label className="text-xs text-muted-foreground">Substitute {index + 1}</Label>
+              <Select
+                value={selections[`sub-${index}`]?.playerId || "unassigned"}
+                onValueChange={(value) => handleSelectionChange(`sub-${index}`, value, "sub")}
+              >
+                <SelectTrigger className="text-left h-9">
+                  <SelectValue placeholder="Select substitute" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">None</SelectItem>
+                  {availablePlayers?.map(player => (
+                    <SelectItem key={player.id} value={player.id}>
+                      {player.name} ({player.squad_number})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           ))}
         </div>
       </div>
