@@ -5,12 +5,12 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
-type TeamPlayerSelection = {
+interface TeamPlayerSelection {
   tournament_team_id: string;
   player_id: string;
   position: string;
   is_substitute: boolean;
-};
+}
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
