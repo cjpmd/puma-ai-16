@@ -262,6 +262,7 @@ export type Database = {
           festival_team_id: string | null
           id: string
           is_substitute: boolean | null
+          performance_category: string | null
           player_id: string | null
           position: string
           updated_at: string | null
@@ -271,6 +272,7 @@ export type Database = {
           festival_team_id?: string | null
           id?: string
           is_substitute?: boolean | null
+          performance_category?: string | null
           player_id?: string | null
           position: string
           updated_at?: string | null
@@ -280,6 +282,7 @@ export type Database = {
           festival_team_id?: string | null
           id?: string
           is_substitute?: boolean | null
+          performance_category?: string | null
           player_id?: string | null
           position?: string
           updated_at?: string | null
@@ -409,6 +412,7 @@ export type Database = {
           fixture_id: string | null
           id: string
           is_substitute: boolean | null
+          performance_category: string | null
           period_id: string | null
           player_id: string | null
           position: string
@@ -419,6 +423,7 @@ export type Database = {
           fixture_id?: string | null
           id?: string
           is_substitute?: boolean | null
+          performance_category?: string | null
           period_id?: string | null
           player_id?: string | null
           position: string
@@ -429,19 +434,13 @@ export type Database = {
           fixture_id?: string | null
           id?: string
           is_substitute?: boolean | null
+          performance_category?: string | null
           period_id?: string | null
           player_id?: string | null
           position?: string
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "fixture_player_positions_fixture_id_fkey"
-            columns: ["fixture_id"]
-            isOneToOne: false
-            referencedRelation: "combined_game_metrics"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "fixture_player_positions_fixture_id_fkey"
             columns: ["fixture_id"]
@@ -523,13 +522,6 @@ export type Database = {
             foreignKeyName: "fixture_playing_periods_fixture_id_fkey"
             columns: ["fixture_id"]
             isOneToOne: false
-            referencedRelation: "combined_game_metrics"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fixture_playing_periods_fixture_id_fkey"
-            columns: ["fixture_id"]
-            isOneToOne: false
             referencedRelation: "fixtures"
             referencedColumns: ["id"]
           },
@@ -561,13 +553,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "fixture_team_selections_fixture_id_fkey"
-            columns: ["fixture_id"]
-            isOneToOne: false
-            referencedRelation: "combined_game_metrics"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "fixture_team_selections_fixture_id_fkey"
             columns: ["fixture_id"]
@@ -1380,6 +1365,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_substitute: boolean | null
+          performance_category: string | null
           player_id: string | null
           position: string
           tournament_team_id: string | null
@@ -1389,6 +1375,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_substitute?: boolean | null
+          performance_category?: string | null
           player_id?: string | null
           position: string
           tournament_team_id?: string | null
@@ -1398,6 +1385,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_substitute?: boolean | null
+          performance_category?: string | null
           player_id?: string | null
           position?: string
           tournament_team_id?: string | null
@@ -1688,67 +1676,7 @@ export type Database = {
           opponent: string | null
           outcome: string | null
         }
-        Insert: {
-          away_score?: number | null
-          category?: string | null
-          date?: string | null
-          event_type?: never
-          home_score?: number | null
-          id?: string | null
-          is_friendly?: boolean | null
-          motm_player_id?: string | null
-          opponent?: string | null
-          outcome?: string | null
-        }
-        Update: {
-          away_score?: number | null
-          category?: string | null
-          date?: string | null
-          event_type?: never
-          home_score?: number | null
-          id?: string | null
-          is_friendly?: boolean | null
-          motm_player_id?: string | null
-          opponent?: string | null
-          outcome?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fixtures_motm_player_id_fkey"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "available_players_by_category"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fixtures_motm_player_id_fkey"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "fixtures_motm_player_id_fkey"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "player_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "fixtures_motm_player_id_fkey"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fixtures_motm_player_id_fkey"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "position_rankings"
-            referencedColumns: ["player_id"]
-          },
-        ]
+        Relationships: []
       }
       player_fixture_stats: {
         Row: {

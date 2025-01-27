@@ -11,6 +11,7 @@ export const useCalendarState = () => {
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [editingFixture, setEditingFixture] = useState<Fixture | null>(null);
   const [editingFestival, setEditingFestival] = useState(null);
+  const [editingTournament, setEditingTournament] = useState(null);
   const [isEditObjectiveOpen, setIsEditObjectiveOpen] = useState(false);
   const [editingObjective, setEditingObjective] = useState(null);
   const [fileUrls, setFileUrls] = useState<Record<string, string>>({});
@@ -35,6 +36,8 @@ export const useCalendarState = () => {
     setEditingFixture,
     editingFestival,
     setEditingFestival,
+    editingTournament,
+    setEditingTournament,
     isEditObjectiveOpen,
     setIsEditObjectiveOpen,
     editingObjective,

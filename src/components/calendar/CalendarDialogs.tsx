@@ -1,7 +1,7 @@
 import { Dialog } from "@/components/ui/dialog";
 import { AddFixtureDialog } from "./AddFixtureDialog";
 import { AddFestivalDialog } from "./AddFestivalDialog";
-import { EditObjectiveDialog } from "./EditObjectiveDialog";
+import { AddTournamentDialog } from "./AddTournamentDialog";
 import type { Fixture } from "@/types/fixture";
 
 interface CalendarDialogsProps {
@@ -12,14 +12,19 @@ interface CalendarDialogsProps {
   setIsAddFriendlyOpen: (open: boolean) => void;
   isAddFestivalOpen: boolean;
   setIsAddFestivalOpen: (open: boolean) => void;
+  isAddTournamentOpen: boolean;
+  setIsAddTournamentOpen: (open: boolean) => void;
   isTeamSelectionOpen: boolean;
   setIsTeamSelectionOpen: (open: boolean) => void;
   editingFixture: Fixture | null;
   setEditingFixture: (fixture: Fixture | null) => void;
   editingFestival: any;
   setEditingFestival: (festival: any) => void;
+  editingTournament: any;
+  setEditingTournament: (tournament: any) => void;
   onRefetchFixtures: () => void;
   onRefetchFestivals: () => void;
+  onRefetchTournaments: () => void;
 }
 
 export const CalendarDialogs = ({
@@ -30,14 +35,19 @@ export const CalendarDialogs = ({
   setIsAddFriendlyOpen,
   isAddFestivalOpen,
   setIsAddFestivalOpen,
+  isAddTournamentOpen,
+  setIsAddTournamentOpen,
   isTeamSelectionOpen,
   setIsTeamSelectionOpen,
   editingFixture,
   setEditingFixture,
   editingFestival,
   setEditingFestival,
+  editingTournament,
+  setEditingTournament,
   onRefetchFixtures,
   onRefetchFestivals,
+  onRefetchTournaments,
 }: CalendarDialogsProps) => {
   return (
     <>
@@ -83,6 +93,33 @@ export const CalendarDialogs = ({
           }}
           editingFestival={editingFestival}
           showTeamSelection={isTeamSelectionOpen}
+        />
+      </Dialog>
+
+      <Dialog
+        open={isAddTournamentOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsAddTournamentOpen(false);
+            setEditingTournament(null);
+          }
+        }}
+      >
+        <AddTournamentDialog
+          isOpen={isAddTournamentOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setIsAddTournamentOpen(false);
+              setEditingTournament(null);
+            }
+          }}
+          selectedDate={date}
+          onSuccess={() => {
+            onRefetchTournaments();
+            setIsAddTournamentOpen(false);
+            setEditingTournament(null);
+          }}
+          editingTournament={editingTournament}
         />
       </Dialog>
 
