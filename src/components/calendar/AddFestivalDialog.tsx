@@ -42,27 +42,21 @@ export const AddFestivalDialog = ({
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      date: selectedDate || new Date(),
       format: "7-a-side",
       numberOfTeams: 2,
       location: "",
-      time: "",
+      startTime: "",
+      endTime: "",
     },
   });
 
   const onSubmit = async (data: FormData) => {
     try {
-      if (!selectedDate) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Please select a date",
-        });
-        return;
-      }
-
       const festivalData: Festival = {
-        date: format(selectedDate, "yyyy-MM-dd"),
-        time: data.time || null,
+        date: format(data.date, "yyyy-MM-dd"),
+        start_time: data.startTime || null,
+        end_time: data.endTime || null,
         location: data.location || null,
         format: data.format,
         number_of_teams: data.numberOfTeams,
@@ -135,7 +129,7 @@ export const AddFestivalDialog = ({
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FestivalFormFields form={form} />
               <Button type="submit" className="w-full">
-                Continue to Team Selection
+                Save and Continue to Team Selection
               </Button>
             </form>
           </Form>

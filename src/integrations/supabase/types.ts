@@ -368,34 +368,37 @@ export type Database = {
         Row: {
           created_at: string | null
           date: string
+          end_time: string | null
           format: string | null
           id: string
           location: string | null
           number_of_teams: number
+          start_time: string | null
           system_category: string
-          time: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           date: string
+          end_time?: string | null
           format?: string | null
           id?: string
           location?: string | null
           number_of_teams: number
+          start_time?: string | null
           system_category: string
-          time?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           date?: string
+          end_time?: string | null
           format?: string | null
           id?: string
           location?: string | null
           number_of_teams?: number
+          start_time?: string | null
           system_category?: string
-          time?: string | null
           updated_at?: string | null
         }
         Relationships: []
