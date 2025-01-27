@@ -5,16 +5,16 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
-// Define specific types for team selections
-type Position = string;
-type PlayerId = string;
+// Define specific types for team selections with literal types
+type PositionType = string;
+type PlayerIdType = string;
 
-interface TeamSelection {
-  [position: Position]: PlayerId;
+interface TeamSelectionRecord {
+  [key: string]: PlayerIdType;
 }
 
-interface TeamSelections {
-  [teamId: string]: TeamSelection;
+interface TeamSelectionsMap {
+  [teamId: string]: TeamSelectionRecord;
 }
 
 interface Team {
@@ -88,7 +88,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: TeamSelections) => {
+  const handleTeamSelectionsChange = async (selections: TeamSelectionsMap) => {
     if (!editingTournament?.id) return;
 
     try {
