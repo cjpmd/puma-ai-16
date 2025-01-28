@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
 
-// Define base types
+// Simplified type definitions
 interface TeamSelection {
   playerId: string;
   position: string;
@@ -21,6 +21,10 @@ interface Team {
   id: string;
   name: string;
   category: string;
+}
+
+interface TeamSelections {
+  [key: string]: TeamSelection[];
 }
 
 interface AddTournamentDialogProps {
@@ -108,7 +112,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, TeamSelection[]>) => {
+  const handleTeamSelectionsChange = async (selections: TeamSelections) => {
     if (!editingTournament?.id) return;
 
     try {
@@ -117,15 +121,19 @@ export const AddTournamentDialog = ({
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      const playerSelections = Object.entries(selections).flatMap(([teamId, teamSelections]) =>
-        teamSelections.map((selection) => ({
-          tournament_team_id: teamId,
-          player_id: selection.playerId,
-          position: selection.position,
-          is_substitute: selection.is_substitute,
-          performance_category: selection.performanceCategory || "MESSI",
-        }))
-      );
+      const playerSelections = [];
+      
+      for (const [teamId, teamSelections] of Object.entries(selections)) {
+        for (const selection of teamSelections) {
+          playerSelections.push({
+            tournament_team_id: teamId,
+            player_id: selection.playerId,
+            position: selection.position,
+            is_substitute: selection.is_substitute,
+            performance_category: selection.performanceCategory || "MESSI",
+          });
+        }
+      }
 
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
