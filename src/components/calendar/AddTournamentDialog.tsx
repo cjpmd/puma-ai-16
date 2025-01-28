@@ -5,14 +5,15 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
+import { useNavigate } from "react-router-dom";
 
-// Define base types first
-type TeamSelection = {
+// Define base types
+interface TeamSelection {
   playerId: string;
   position: string;
   is_substitute: boolean;
   performanceCategory?: string;
-};
+}
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 
@@ -40,6 +41,7 @@ export const AddTournamentDialog = ({
   showTeamSelection = false,
 }: AddTournamentDialogProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
   const [teams, setTeams] = useState<Team[]>([]);
   const [format, setFormat] = useState<string>(editingTournament?.format || "7-a-side");
@@ -55,6 +57,23 @@ export const AddTournamentDialog = ({
     },
     editingTournament
   );
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          variant: "destructive",
+          title: "Authentication required",
+          description: "Please log in to manage tournaments",
+        });
+        navigate("/auth");
+        return;
+      }
+    };
+
+    checkAuth();
+  }, [navigate, toast]);
 
   useEffect(() => {
     setShowTeamSelectionState(showTeamSelection);
@@ -93,15 +112,13 @@ export const AddTournamentDialog = ({
     if (!editingTournament?.id) return;
 
     try {
-      // Delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      // Transform selections into database records
       const playerSelections = Object.entries(selections).flatMap(([teamId, teamSelections]) =>
-        teamSelections.map(selection => ({
+        teamSelections.map((selection) => ({
           tournament_team_id: teamId,
           player_id: selection.playerId,
           position: selection.position,
@@ -123,6 +140,7 @@ export const AddTournamentDialog = ({
         description: "Team selections updated successfully",
       });
     } catch (error) {
+      console.error("Error updating team selections:", error);
       toast({
         variant: "destructive",
         title: "Error",
