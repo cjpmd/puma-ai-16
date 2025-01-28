@@ -7,7 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
 
-// Simplified type definitions
+// Explicitly define the base types
+type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
+
 interface TeamSelection {
   playerId: string;
   position: string;
@@ -15,17 +17,21 @@ interface TeamSelection {
   performanceCategory?: string;
 }
 
-type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
-
 interface Team {
   id: string;
   name: string;
   category: string;
 }
 
-interface TeamSelections {
-  [key: string]: TeamSelection[];
-}
+// Define a simple type for team selections
+type TeamSelections = {
+  [teamId: string]: Array<{
+    playerId: string;
+    position: string;
+    is_substitute: boolean;
+    performanceCategory?: string;
+  }>;
+};
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -122,8 +128,9 @@ export const AddTournamentDialog = ({
         .eq("tournament_id", editingTournament.id);
 
       const playerSelections = [];
-      
-      for (const [teamId, teamSelections] of Object.entries(selections)) {
+
+      for (const teamId in selections) {
+        const teamSelections = selections[teamId];
         for (const selection of teamSelections) {
           playerSelections.push({
             tournament_team_id: teamId,
