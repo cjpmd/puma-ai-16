@@ -12,11 +12,7 @@ type TeamSelection = {
   performanceCategory?: string;
 };
 
-type TeamSelections = {
-  [key: string]: TeamSelection[];
-};
-
-interface Tournament {
+type Tournament = {
   id: string;
   format: string;
   date: Date;
@@ -25,13 +21,13 @@ interface Tournament {
   location?: string;
   number_of_teams: number;
   system_category: string;
-}
+};
 
-interface Team {
+type Team = {
   id: string;
   name: string;
   category: string;
-}
+};
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -98,7 +94,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: TeamSelections) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, TeamSelection[]>) => {
     if (!editingTournament?.id) return;
 
     try {
@@ -115,7 +111,7 @@ export const AddTournamentDialog = ({
           player_id: selection.playerId,
           position: selection.position,
           is_substitute: selection.is_substitute,
-          performance_category: selection.performanceCategory
+          performance_category: selection.performanceCategory || 'MESSI'
         }))
       );
 

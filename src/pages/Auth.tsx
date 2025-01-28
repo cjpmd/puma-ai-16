@@ -11,6 +11,19 @@ export const Auth = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
+    // Check for existing session on mount
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/home");
+      }
+      if (error) {
+        setErrorMessage(getErrorMessage(error));
+      }
+    };
+    
+    checkSession();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN") {
         navigate("/home");
