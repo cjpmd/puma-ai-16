@@ -16,7 +16,11 @@ type TeamSelection = {
 type TeamSelections = Record<string, TeamSelection[]>;
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
-type Team = Database["public"]["Tables"]["tournament_teams"]["Row"];
+type Team = {
+  id: string;
+  name: string;
+  category: string;
+};
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -75,7 +79,11 @@ export const AddTournamentDialog = ({
     }
 
     if (existingTeams) {
-      setTeams(existingTeams);
+      setTeams(existingTeams.map(team => ({
+        id: team.id,
+        name: team.team_name,
+        category: team.category || "",
+      })));
     }
   };
 

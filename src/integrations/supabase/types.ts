@@ -1560,7 +1560,7 @@ export type Database = {
           drill_id?: string | null
           file_name: string
           file_path: string
-          id: string
+          id?: string
         }
         Update: {
           content_type?: string | null

@@ -59,7 +59,7 @@ export const useCalendarData = (date: Date) => {
       try {
         const { data, error } = await supabase
           .from("tournaments")
-          .select("*")
+          .select()
           .eq("date", formattedDate);
         
         if (error) {
@@ -72,7 +72,7 @@ export const useCalendarData = (date: Date) => {
         return [];
       }
     },
-    initialData: [], // Provide empty array as initial data
+    initialData: [],
   });
 
   const { data: objectives, refetch: refetchObjectives } = useQuery({

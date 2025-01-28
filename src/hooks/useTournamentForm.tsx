@@ -4,10 +4,13 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import type { FormData } from "@/components/calendar/FestivalFormFields";
+import { Database } from "@/integrations/supabase/types";
+
+type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 
 export const useTournamentForm = (
   onSuccess: () => void,
-  editingTournament?: any
+  editingTournament?: Tournament | null
 ) => {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
