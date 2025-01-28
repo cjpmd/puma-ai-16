@@ -5,6 +5,7 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
+// Simplified type definitions to prevent recursion
 type TeamSelection = {
   playerId: string;
   position: string;
@@ -98,13 +99,11 @@ export const AddTournamentDialog = ({
     if (!editingTournament?.id) return;
 
     try {
-      // Delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      // Format selections for database
       const playerSelections = Object.entries(selections).flatMap(([teamId, teamSelections]) =>
         teamSelections.map(selection => ({
           tournament_team_id: teamId,
@@ -115,7 +114,6 @@ export const AddTournamentDialog = ({
         }))
       );
 
-      // Insert new selections
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
           .from("tournament_team_players")
