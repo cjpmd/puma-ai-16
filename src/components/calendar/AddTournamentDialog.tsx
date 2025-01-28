@@ -5,12 +5,11 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
-interface TeamPlayerSelection {
-  tournament_team_id: string;
-  player_id: string;
+interface TeamSelection {
+  playerId: string;
   position: string;
   is_substitute: boolean;
-  performance_category?: string;
+  performanceCategory?: string;
 }
 
 interface Tournament {
@@ -89,7 +88,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, Array<{ playerId: string; position: string; is_substitute: boolean; performanceCategory?: string }>>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, TeamSelection[]>) => {
     if (!editingTournament?.id) return;
 
     try {
@@ -100,21 +99,15 @@ export const AddTournamentDialog = ({
         .eq("tournament_id", editingTournament.id);
 
       // Format selections for database
-      const playerSelections: TeamPlayerSelection[] = [];
-      
-      Object.entries(selections).forEach(([teamId, teamSelections]) => {
-        teamSelections.forEach(selection => {
-          if (selection.playerId !== "unassigned") {
-            playerSelections.push({
-              tournament_team_id: teamId,
-              player_id: selection.playerId,
-              position: selection.position,
-              is_substitute: selection.is_substitute,
-              performance_category: selection.performanceCategory
-            });
-          }
-        });
-      });
+      const playerSelections = Object.entries(selections).flatMap(([teamId, teamSelections]) =>
+        teamSelections.map(selection => ({
+          tournament_team_id: teamId,
+          player_id: selection.playerId,
+          position: selection.position,
+          is_substitute: selection.is_substitute,
+          performance_category: selection.performanceCategory
+        }))
+      );
 
       // Insert new selections
       if (playerSelections.length > 0) {

@@ -2,6 +2,13 @@ import { DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/c
 import { FestivalForm } from "./FestivalForm";
 import { FestivalTeamSelection } from "./FestivalTeamSelection";
 
+interface TeamSelection {
+  playerId: string;
+  position: string;
+  is_substitute: boolean;
+  performanceCategory?: string;
+}
+
 interface FestivalDialogContentProps {
   showTeamSelection: boolean;
   editingFestival?: any;
@@ -9,7 +16,7 @@ interface FestivalDialogContentProps {
   onSubmit: (data: any) => Promise<void>;
   teams: Array<{ id: string; name: string; category: string }>;
   format: string;
-  onTeamSelectionsChange: (selections: Record<string, Record<string, { playerId: string; position: string }>>) => void;
+  onTeamSelectionsChange: (selections: Record<string, TeamSelection[]>) => void;
 }
 
 export const FestivalDialogContent = ({

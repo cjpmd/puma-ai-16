@@ -5,12 +5,11 @@ import { FestivalDialogContent } from "./festival/FestivalDialogContent";
 import { useFestivalForm } from "@/hooks/useFestivalForm";
 import { useToast } from "@/hooks/use-toast";
 
-interface TeamPlayerSelection {
-  festival_team_id: string;
-  player_id: string;
+interface TeamSelection {
+  playerId: string;
   position: string;
   is_substitute: boolean;
-  performance_category?: string;
+  performanceCategory?: string;
 }
 
 interface AddFestivalDialogProps {
@@ -77,7 +76,7 @@ export const AddFestivalDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, Array<{ playerId: string; position: string; is_substitute: boolean; performanceCategory?: string }>>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, TeamSelection[]>) => {
     if (!editingFestival?.id) return;
 
     try {
@@ -90,21 +89,15 @@ export const AddFestivalDialog = ({
       }
 
       // Format selections for database
-      const playerSelections: TeamPlayerSelection[] = [];
-      
-      Object.entries(selections).forEach(([teamId, teamSelections]) => {
-        teamSelections.forEach(selection => {
-          if (selection.playerId !== "unassigned") {
-            playerSelections.push({
-              festival_team_id: teamId,
-              player_id: selection.playerId,
-              position: selection.position,
-              is_substitute: selection.is_substitute,
-              performance_category: selection.performanceCategory
-            });
-          }
-        });
-      });
+      const playerSelections = Object.entries(selections).flatMap(([teamId, teamSelections]) =>
+        teamSelections.map(selection => ({
+          festival_team_id: teamId,
+          player_id: selection.playerId,
+          position: selection.position,
+          is_substitute: selection.is_substitute,
+          performance_category: selection.performanceCategory
+        }))
+      );
 
       // Insert new selections
       if (playerSelections.length > 0) {
