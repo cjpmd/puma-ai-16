@@ -13,9 +13,7 @@ interface TeamSelection {
   performanceCategory?: string;
 }
 
-interface TeamSelections {
-  [teamId: string]: Array<TeamSelection>;
-}
+type TeamSelections = Record<string, TeamSelection[]>;
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 
