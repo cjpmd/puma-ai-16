@@ -16,11 +16,13 @@ type TeamSelection = {
 type TeamSelections = Record<string, TeamSelection[]>;
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
-type Team = {
+type TournamentTeam = Database["public"]["Tables"]["tournament_teams"]["Row"];
+
+interface Team {
   id: string;
   name: string;
   category: string;
-};
+}
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -79,11 +81,13 @@ export const AddTournamentDialog = ({
     }
 
     if (existingTeams) {
-      setTeams(existingTeams.map(team => ({
-        id: team.id,
-        name: team.team_name,
-        category: team.category || "",
-      })));
+      setTeams(
+        existingTeams.map((team) => ({
+          id: team.id,
+          name: team.team_name,
+          category: team.category || "",
+        }))
+      );
     }
   };
 
@@ -91,21 +95,24 @@ export const AddTournamentDialog = ({
     if (!editingTournament?.id) return;
 
     try {
+      // Delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
+      // Format new selections
       const playerSelections = Object.entries(selections).flatMap(([teamId, teamSelections]) =>
-        teamSelections.map(selection => ({
+        teamSelections.map((selection) => ({
           tournament_team_id: teamId,
           player_id: selection.playerId,
           position: selection.position,
           is_substitute: selection.is_substitute,
-          performance_category: selection.performanceCategory || 'MESSI'
+          performance_category: selection.performanceCategory || "MESSI",
         }))
       );
 
+      // Insert new selections if there are any
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
           .from("tournament_team_players")
