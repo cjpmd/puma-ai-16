@@ -5,7 +5,7 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
-// Simplified type definitions to prevent recursion
+// Flat type definitions to prevent recursion
 type TeamSelection = {
   playerId: string;
   position: string;
@@ -13,7 +13,9 @@ type TeamSelection = {
   performanceCategory?: string;
 };
 
-type Tournament = {
+type TeamSelections = Record<string, TeamSelection[]>;
+
+interface Tournament {
   id: string;
   format: string;
   date: Date;
@@ -22,13 +24,13 @@ type Tournament = {
   location?: string;
   number_of_teams: number;
   system_category: string;
-};
+}
 
-type Team = {
+interface Team {
   id: string;
   name: string;
   category: string;
-};
+}
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -95,7 +97,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, TeamSelection[]>) => {
+  const handleTeamSelectionsChange = async (selections: TeamSelections) => {
     if (!editingTournament?.id) return;
 
     try {
