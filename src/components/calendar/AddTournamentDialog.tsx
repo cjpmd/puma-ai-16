@@ -14,9 +14,6 @@ type TeamSelection = {
   performanceCategory?: string;
 };
 
-// Simple flat type for the selections map
-type SelectionsMap = Record<string, TeamSelection[]>;
-
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 
 interface Team {
@@ -92,38 +89,26 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: SelectionsMap) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, TeamSelection[]>) => {
     if (!editingTournament?.id) return;
 
     try {
+      // Delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      // Create a type for the database record
-      type TournamentPlayerRecord = {
-        tournament_team_id: string;
-        player_id: string;
-        position: string;
-        is_substitute: boolean;
-        performance_category: string;
-      };
-
       // Transform selections into database records
-      const playerSelections: TournamentPlayerRecord[] = [];
-      
-      for (const [teamId, teamSelections] of Object.entries(selections)) {
-        for (const selection of teamSelections) {
-          playerSelections.push({
-            tournament_team_id: teamId,
-            player_id: selection.playerId,
-            position: selection.position,
-            is_substitute: selection.is_substitute,
-            performance_category: selection.performanceCategory || "MESSI",
-          });
-        }
-      }
+      const playerSelections = Object.entries(selections).flatMap(([teamId, teamSelections]) =>
+        teamSelections.map(selection => ({
+          tournament_team_id: teamId,
+          player_id: selection.playerId,
+          position: selection.position,
+          is_substitute: selection.is_substitute,
+          performance_category: selection.performanceCategory || "MESSI",
+        }))
+      );
 
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
