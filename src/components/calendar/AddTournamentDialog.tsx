@@ -5,16 +5,16 @@ import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 
-interface PlayerSelection {
+type TeamSelection = {
   playerId: string;
   position: string;
   is_substitute: boolean;
   performanceCategory?: string;
-}
+};
 
-interface TeamSelections {
-  [teamId: string]: PlayerSelection[];
-}
+type TeamSelections = {
+  [key: string]: TeamSelection[];
+};
 
 interface Tournament {
   id: string;
