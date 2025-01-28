@@ -10,9 +10,13 @@ export const useCalendarData = (date: Date) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("training_sessions")
-        .select("*")
+        .select("*, training_drills(*, training_files(*))")
         .eq("date", formattedDate);
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Error fetching sessions:", error);
+        throw error;
+      }
       return data;
     },
   });
@@ -24,7 +28,11 @@ export const useCalendarData = (date: Date) => {
         .from("fixtures")
         .select("*")
         .eq("date", formattedDate);
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Error fetching fixtures:", error);
+        throw error;
+      }
       return data;
     },
   });
@@ -36,7 +44,11 @@ export const useCalendarData = (date: Date) => {
         .from("festivals")
         .select("*")
         .eq("date", formattedDate);
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Error fetching festivals:", error);
+        throw error;
+      }
       return data;
     },
   });
@@ -48,7 +60,11 @@ export const useCalendarData = (date: Date) => {
         .from("tournaments")
         .select("*")
         .eq("date", formattedDate);
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Error fetching tournaments:", error);
+        throw error;
+      }
       return data;
     },
   });
@@ -60,7 +76,11 @@ export const useCalendarData = (date: Date) => {
         .from("player_objectives")
         .select("*")
         .eq("review_date", formattedDate);
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Error fetching objectives:", error);
+        throw error;
+      }
       return data;
     },
   });
