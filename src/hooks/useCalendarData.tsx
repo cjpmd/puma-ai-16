@@ -56,17 +56,23 @@ export const useCalendarData = (date: Date) => {
   const { data: tournaments, refetch: refetchTournaments } = useQuery({
     queryKey: ["tournaments", formattedDate],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tournaments")
-        .select("*")
-        .eq("date", formattedDate);
-      
-      if (error) {
-        console.error("Error fetching tournaments:", error);
-        throw error;
+      try {
+        const { data, error } = await supabase
+          .from("tournaments")
+          .select("*")
+          .eq("date", formattedDate);
+        
+        if (error) {
+          console.error("Error fetching tournaments:", error);
+          throw error;
+        }
+        return data || [];
+      } catch (error) {
+        console.error("Tournament fetch error:", error);
+        return [];
       }
-      return data;
     },
+    initialData: [], // Provide empty array as initial data
   });
 
   const { data: objectives, refetch: refetchObjectives } = useQuery({
