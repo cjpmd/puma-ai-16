@@ -13,9 +13,9 @@ interface TeamSelection {
   performanceCategory?: string;
 }
 
-type TeamSelections = {
-  [key: string]: TeamSelection[];
-};
+interface TeamSelections {
+  [teamId: string]: TeamSelection[];
+}
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 
@@ -101,7 +101,7 @@ export const AddTournamentDialog = ({
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      const playerSelections = Object.entries(selections).map(([teamId, teamSelections]) =>
+      const playerSelections = Object.entries(selections).map(([teamId, teamSelections]) => 
         teamSelections.map((selection) => ({
           tournament_team_id: teamId,
           player_id: selection.playerId,
