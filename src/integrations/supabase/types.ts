@@ -1360,6 +1360,156 @@ export type Database = {
         }
         Relationships: []
       }
+      tournament_team_players: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_substitute: boolean | null
+          performance_category: string | null
+          player_id: string | null
+          position: string
+          tournament_team_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_substitute?: boolean | null
+          performance_category?: string | null
+          player_id?: string | null
+          position: string
+          tournament_team_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_substitute?: boolean | null
+          performance_category?: string | null
+          player_id?: string | null
+          position?: string
+          tournament_team_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_team_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_team_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "tournament_team_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "tournament_team_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_team_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "tournament_team_players_tournament_team_id_fkey"
+            columns: ["tournament_team_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_teams: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          team_name: string
+          tournament_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          team_name: string
+          tournament_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          team_name?: string
+          tournament_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_teams_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournaments: {
+        Row: {
+          created_at: string | null
+          date: string
+          end_time: string | null
+          format: string | null
+          id: string
+          location: string | null
+          number_of_teams: number
+          system_category: string
+          time: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          end_time?: string | null
+          format?: string | null
+          id?: string
+          location?: string | null
+          number_of_teams: number
+          system_category: string
+          time?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          end_time?: string | null
+          format?: string | null
+          id?: string
+          location?: string | null
+          number_of_teams?: number
+          system_category?: string
+          time?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       training_drills: {
         Row: {
           created_at: string | null
@@ -1410,7 +1560,7 @@ export type Database = {
           drill_id?: string | null
           file_name: string
           file_path: string
-          id?: string
+          id: string
         }
         Update: {
           content_type?: string | null

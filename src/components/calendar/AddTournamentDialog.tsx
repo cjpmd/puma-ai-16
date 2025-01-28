@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { TournamentDialogContent } from "./tournament/TournamentDialogContent";
 import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
+import { Database } from "@/integrations/supabase/types";
 
-// Flat type definitions to prevent recursion
 type TeamSelection = {
   playerId: string;
   position: string;
@@ -15,22 +15,8 @@ type TeamSelection = {
 
 type TeamSelections = Record<string, TeamSelection[]>;
 
-interface Tournament {
-  id: string;
-  format: string;
-  date: Date;
-  time?: string;
-  end_time?: string;
-  location?: string;
-  number_of_teams: number;
-  system_category: string;
-}
-
-interface Team {
-  id: string;
-  name: string;
-  category: string;
-}
+type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
+type Team = Database["public"]["Tables"]["tournament_teams"]["Row"];
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -89,11 +75,7 @@ export const AddTournamentDialog = ({
     }
 
     if (existingTeams) {
-      setTeams(existingTeams.map(team => ({
-        id: team.id,
-        name: team.team_name,
-        category: team.category || "",
-      })));
+      setTeams(existingTeams);
     }
   };
 
