@@ -6,17 +6,18 @@ import { useTournamentForm } from "@/hooks/useTournamentForm";
 import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
 
-type TeamSelection = {
+interface TeamSelection {
   playerId: string;
   position: string;
   is_substitute: boolean;
   performanceCategory?: string;
+}
+
+type TeamSelections = {
+  [key: string]: TeamSelection[];
 };
 
-type TeamSelections = Record<string, TeamSelection[]>;
-
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
-type TournamentTeam = Database["public"]["Tables"]["tournament_teams"]["Row"];
 
 interface Team {
   id: string;
@@ -95,14 +96,12 @@ export const AddTournamentDialog = ({
     if (!editingTournament?.id) return;
 
     try {
-      // Delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      // Format new selections
-      const playerSelections = Object.entries(selections).flatMap(([teamId, teamSelections]) =>
+      const playerSelections = Object.entries(selections).map(([teamId, teamSelections]) =>
         teamSelections.map((selection) => ({
           tournament_team_id: teamId,
           player_id: selection.playerId,
@@ -110,9 +109,8 @@ export const AddTournamentDialog = ({
           is_substitute: selection.is_substitute,
           performance_category: selection.performanceCategory || "MESSI",
         }))
-      );
+      ).flat();
 
-      // Insert new selections if there are any
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
           .from("tournament_team_players")
