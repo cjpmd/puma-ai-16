@@ -14,7 +14,7 @@ interface TeamSelection {
 }
 
 interface TeamSelections {
-  [teamId: string]: TeamSelection[];
+  [teamId: string]: Array<TeamSelection>;
 }
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
