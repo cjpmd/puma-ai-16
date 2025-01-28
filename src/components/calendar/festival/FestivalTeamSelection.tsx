@@ -9,13 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 interface TeamSelection {
   playerId: string;
   position: string;
+  is_substitute: boolean;
   performanceCategory?: string;
 }
 
 interface FestivalTeamSelectionProps {
   teams: Array<{ id: string; name: string; category: string }>;
   format: string;
-  onTeamSelectionsChange: (selections: Record<string, Record<string, TeamSelection>>) => void;
+  onTeamSelectionsChange: (selections: Record<string, TeamSelection[]>) => void;
 }
 
 export const FestivalTeamSelection = ({ 
@@ -24,7 +25,7 @@ export const FestivalTeamSelection = ({
   onTeamSelectionsChange,
 }: FestivalTeamSelectionProps) => {
   const { selectedPlayers, clearSelectedPlayers } = useTeamSelection();
-  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, TeamSelection>>>({});
+  const [teamSelections, setTeamSelections] = useState<Record<string, TeamSelection[]>>({});
 
   const { data: players } = useQuery({
     queryKey: ["all-players"],
@@ -41,19 +42,26 @@ export const FestivalTeamSelection = ({
     clearSelectedPlayers();
   }, [teams]);
 
-  const handleSelectionChange = (teamId: string, selections: Record<string, TeamSelection>) => {
+  const handleSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
+    const formattedSelections = Object.entries(selections).map(([_, value]) => ({
+      playerId: value.playerId,
+      position: value.position,
+      is_substitute: value.position.startsWith('sub-'),
+      performanceCategory: value.performanceCategory || 'MESSI'
+    }));
+
     const newSelections = {
       ...teamSelections,
-      [teamId]: selections
+      [teamId]: formattedSelections
     };
     setTeamSelections(newSelections);
     onTeamSelectionsChange(newSelections);
   };
 
-  const formatSelectionsForFormation = (selections: Record<string, TeamSelection>) => {
-    return Object.entries(selections)
-      .filter(([key]) => !key.startsWith('sub-'))
-      .map(([_, { playerId, position }]) => ({
+  const formatSelectionsForFormation = (selections: TeamSelection[]) => {
+    return selections
+      .filter(selection => !selection.position.startsWith('sub-'))
+      .map(({ playerId, position }) => ({
         position: position.split('-')[0].toUpperCase(),
         playerId
       }));
@@ -82,12 +90,18 @@ export const FestivalTeamSelection = ({
               performanceCategory={team.category}
               selectedPlayers={selectedPlayers}
               onCategoryChange={(category) => {
-                const currentSelections = teamSelections[team.id] || {};
-                const updatedSelections = Object.entries(currentSelections).reduce((acc, [key, value]) => ({
-                  ...acc,
-                  [key]: { ...value, performanceCategory: category }
-                }), {});
-                handleSelectionChange(team.id, updatedSelections);
+                if (teamSelections[team.id]) {
+                  const updatedSelections = teamSelections[team.id].map(selection => ({
+                    ...selection,
+                    performanceCategory: category
+                  }));
+                  const newSelections = {
+                    ...teamSelections,
+                    [team.id]: updatedSelections
+                  };
+                  setTeamSelections(newSelections);
+                  onTeamSelectionsChange(newSelections);
+                }
               }}
             />
           </CardContent>
