@@ -13,10 +13,15 @@ interface TeamSelection {
   performanceCategory?: string;
 }
 
-// Explicitly define the shape of team selections
-interface TeamSelections {
-  [teamId: string]: TeamSelection[];
-}
+// Define a simpler type for team selections
+type TeamSelections = {
+  [key: string]: Array<{
+    playerId: string;
+    position: string;
+    is_substitute: boolean;
+    performanceCategory?: string;
+  }>;
+};
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 
@@ -102,15 +107,24 @@ export const AddTournamentDialog = ({
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      const playerSelections = Object.entries(selections).flatMap(([teamId, teamSelections]) => 
-        teamSelections.map((selection) => ({
-          tournament_team_id: teamId,
-          player_id: selection.playerId,
-          position: selection.position,
-          is_substitute: selection.is_substitute,
-          performance_category: selection.performanceCategory || "MESSI",
-        }))
-      );
+      // Transform selections into a flat array of player selections
+      const playerSelections = Object.entries(selections).reduce<Array<{
+        tournament_team_id: string;
+        player_id: string;
+        position: string;
+        is_substitute: boolean;
+        performance_category: string;
+      }>>((acc, [teamId, teamSelections]) => {
+        return acc.concat(
+          teamSelections.map((selection) => ({
+            tournament_team_id: teamId,
+            player_id: selection.playerId,
+            position: selection.position,
+            is_substitute: selection.is_substitute,
+            performance_category: selection.performanceCategory || "MESSI",
+          }))
+        );
+      }, []);
 
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
