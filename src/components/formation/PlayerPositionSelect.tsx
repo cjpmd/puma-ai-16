@@ -7,28 +7,28 @@ interface PlayerPositionSelectProps {
   position: string;
   playerId: string;
   positionDefinitions?: any[];
-  availablePlayers?: any[];
-  onSelectionChange: (slotId: string, playerId: string, position: string) => void;
-  selectedPlayers?: Set<string>;
+  availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
+  onSelectionChange: (playerId: string, position: string) => void;
+  selectedPlayers: Set<string>;
 }
 
 export const PlayerPositionSelect = ({
   slotId,
   position,
   playerId,
-  positionDefinitions,
-  availablePlayers,
+  positionDefinitions = [],
+  availablePlayers = [],
   onSelectionChange,
-  selectedPlayers = new Set(),
+  selectedPlayers,
 }: PlayerPositionSelectProps) => {
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-xs text-muted-foreground">Position</Label>
-          <Select
-            value={position}
-            onValueChange={(value) => onSelectionChange(slotId, playerId, value)}
+          <Select 
+            value={position || "unassigned"} 
+            onValueChange={(value) => onSelectionChange(playerId, value)}
           >
             <SelectTrigger className="text-left h-9">
               <SelectValue placeholder="Select position" />
@@ -45,9 +45,9 @@ export const PlayerPositionSelect = ({
         </div>
         <div>
           <Label className="text-xs text-muted-foreground">Player</Label>
-          <Select
-            value={playerId || "unassigned"}
-            onValueChange={(value) => onSelectionChange(slotId, value, position)}
+          <Select 
+            value={playerId} 
+            onValueChange={(value) => onSelectionChange(value, position)}
           >
             <SelectTrigger className="text-left h-9">
               <SelectValue placeholder="Select player" />

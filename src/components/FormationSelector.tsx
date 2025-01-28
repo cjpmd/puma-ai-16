@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export interface FormationSelectorProps {
   format: "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
   teamCategory?: string;
-  onSelectionChange: (selections: Record<string, { playerId: string; position: string }>) => void;
+  onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => void;
   onCategoryChange?: (category: string) => void;
   performanceCategory?: string;
   selectedPlayers?: Set<string>;
@@ -20,10 +20,10 @@ export const FormationSelector = ({
   teamCategory,
   onSelectionChange,
   onCategoryChange,
-  performanceCategory,
+  performanceCategory = 'MESSI',
   selectedPlayers = new Set()
 }: FormationSelectorProps) => {
-  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string }>>({});
+  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
 
   const { data: players } = useQuery({
     queryKey: ["players", teamCategory],
@@ -53,10 +53,27 @@ export const FormationSelector = ({
   const handlePositionChange = (slotId: string, playerId: string, position: string) => {
     const newSelections = {
       ...selections,
-      [slotId]: { playerId, position }
+      [slotId]: { 
+        playerId, 
+        position,
+        performanceCategory 
+      }
     };
     setSelections(newSelections);
     onSelectionChange(newSelections);
+  };
+
+  const handleCategoryChange = (category: string) => {
+    if (onCategoryChange) {
+      onCategoryChange(category);
+      // Update all existing selections with the new category
+      const updatedSelections = Object.entries(selections).reduce((acc, [key, value]) => ({
+        ...acc,
+        [key]: { ...value, performanceCategory: category }
+      }), {});
+      setSelections(updatedSelections);
+      onSelectionChange(updatedSelections);
+    }
   };
 
   const getMaxSubstitutes = () => {
@@ -76,7 +93,7 @@ export const FormationSelector = ({
       {performanceCategory && (
         <div>
           <Label>Performance Category</Label>
-          <Select value={performanceCategory} onValueChange={onCategoryChange}>
+          <Select value={performanceCategory} onValueChange={handleCategoryChange}>
             <SelectTrigger>
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
@@ -98,7 +115,7 @@ export const FormationSelector = ({
             playerId={selections[`pos-${index}`]?.playerId || "unassigned"}
             positionDefinitions={positions}
             availablePlayers={players}
-            onSelectionChange={(playerId) => handlePositionChange(`pos-${index}`, playerId, `pos-${index}`)}
+            onSelectionChange={(playerId, position) => handlePositionChange(`pos-${index}`, playerId, position)}
             selectedPlayers={selectedPlayers}
           />
         ))}
