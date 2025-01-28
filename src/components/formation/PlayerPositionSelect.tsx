@@ -6,14 +6,13 @@ interface PlayerPositionSelectProps {
   slotId: string;
   position: string;
   playerId: string;
-  positionDefinitions?: any[];
+  positionDefinitions?: Array<{ id: string; abbreviation: string; full_name: string }>;
   availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
   onSelectionChange: (playerId: string, position: string) => void;
   selectedPlayers: Set<string>;
 }
 
 export const PlayerPositionSelect = ({
-  slotId,
   position,
   playerId,
   positionDefinitions = [],
