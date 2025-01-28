@@ -13,7 +13,10 @@ interface TeamSelection {
   performanceCategory?: string;
 }
 
-type TeamSelections = Record<string, TeamSelection[]>;
+// Explicitly define the shape of team selections
+interface TeamSelections {
+  [teamId: string]: TeamSelection[];
+}
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 
@@ -43,7 +46,7 @@ export const AddTournamentDialog = ({
   const { toast } = useToast();
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [format, setFormat] = useState(editingTournament?.format || "7-a-side");
+  const [format, setFormat] = useState<string>(editingTournament?.format || "7-a-side");
 
   const { handleSubmit } = useTournamentForm(
     () => {
@@ -99,7 +102,7 @@ export const AddTournamentDialog = ({
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      const playerSelections = Object.entries(selections).map(([teamId, teamSelections]) => 
+      const playerSelections = Object.entries(selections).flatMap(([teamId, teamSelections]) => 
         teamSelections.map((selection) => ({
           tournament_team_id: teamId,
           player_id: selection.playerId,
@@ -107,7 +110,7 @@ export const AddTournamentDialog = ({
           is_substitute: selection.is_substitute,
           performance_category: selection.performanceCategory || "MESSI",
         }))
-      ).flat();
+      );
 
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
