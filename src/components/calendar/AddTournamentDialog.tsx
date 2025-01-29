@@ -9,14 +9,12 @@ import { useNavigate } from "react-router-dom";
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 
-type TeamSelections = {
-  [teamId: string]: Array<{
-    playerId: string;
-    position: string;
-    is_substitute: boolean;
-    performanceCategory?: string;
-  }>;
-};
+type TeamSelections = Record<string, Array<{
+  playerId: string;
+  position: string;
+  is_substitute: boolean;
+  performanceCategory?: string;
+}>>;
 
 interface Team {
   id: string;
@@ -113,11 +111,13 @@ export const AddTournamentDialog = ({
     if (!editingTournament?.id) return;
 
     try {
+      // First delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
+      // Prepare player selections for insertion
       const playerSelections = Object.entries(selections).flatMap(([teamId, players]) =>
         players.map((player) => ({
           tournament_team_id: teamId,
