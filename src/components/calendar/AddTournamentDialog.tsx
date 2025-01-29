@@ -9,13 +9,6 @@ import { useNavigate } from "react-router-dom";
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 
-type TeamSelections = Record<string, Array<{
-  playerId: string;
-  position: string;
-  is_substitute: boolean;
-  performanceCategory?: string;
-}>>;
-
 interface Team {
   id: string;
   name: string;
@@ -107,17 +100,20 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: TeamSelections) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, Array<{
+    playerId: string;
+    position: string;
+    is_substitute: boolean;
+    performanceCategory?: string;
+  }>>) => {
     if (!editingTournament?.id) return;
 
     try {
-      // First delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      // Prepare player selections for insertion
       const playerSelections = Object.entries(selections).flatMap(([teamId, players]) =>
         players.map((player) => ({
           tournament_team_id: teamId,
