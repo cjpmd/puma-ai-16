@@ -7,31 +7,24 @@ import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
 
-// Explicitly define the base types
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 
-interface TeamSelection {
+// Simplified type definitions
+type PlayerSelection = {
   playerId: string;
   position: string;
   is_substitute: boolean;
   performanceCategory?: string;
-}
+};
 
-interface Team {
+type Team = {
   id: string;
   name: string;
   category: string;
-}
-
-// Define a simple type for team selections
-type TeamSelections = {
-  [teamId: string]: Array<{
-    playerId: string;
-    position: string;
-    is_substitute: boolean;
-    performanceCategory?: string;
-  }>;
 };
+
+// Flatten the team selections type
+type TeamSelections = Record<string, PlayerSelection[]>;
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -122,26 +115,24 @@ export const AddTournamentDialog = ({
     if (!editingTournament?.id) return;
 
     try {
+      // Delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      const playerSelections = [];
+      // Prepare new selections
+      const playerSelections = Object.entries(selections).flatMap(([teamId, players]) =>
+        players.map(player => ({
+          tournament_team_id: teamId,
+          player_id: player.playerId,
+          position: player.position,
+          is_substitute: player.is_substitute,
+          performance_category: player.performanceCategory || "MESSI",
+        }))
+      );
 
-      for (const teamId in selections) {
-        const teamSelections = selections[teamId];
-        for (const selection of teamSelections) {
-          playerSelections.push({
-            tournament_team_id: teamId,
-            player_id: selection.playerId,
-            position: selection.position,
-            is_substitute: selection.is_substitute,
-            performance_category: selection.performanceCategory || "MESSI",
-          });
-        }
-      }
-
+      // Insert new selections if any exist
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
           .from("tournament_team_players")
