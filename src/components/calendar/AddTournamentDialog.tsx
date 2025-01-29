@@ -9,10 +9,11 @@ import { useNavigate } from "react-router-dom";
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 
-interface Team {
-  id: string;
-  name: string;
-  category: string;
+interface TeamSelection {
+  playerId: string;
+  position: string;
+  is_substitute: boolean;
+  performanceCategory?: string;
 }
 
 interface AddTournamentDialogProps {
@@ -35,7 +36,7 @@ export const AddTournamentDialog = ({
   const { toast } = useToast();
   const navigate = useNavigate();
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [teams, setTeams] = useState<Array<{ id: string; name: string; category: string }>>([]);
   const [format, setFormat] = useState<string>(editingTournament?.format || "7-a-side");
 
   const { handleSubmit } = useTournamentForm(
@@ -52,8 +53,8 @@ export const AddTournamentDialog = ({
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (!session || error) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         toast({
           variant: "destructive",
           title: "Authentication required",
@@ -100,33 +101,35 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }[]>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, TeamSelection[]>) => {
     if (!editingTournament?.id) return;
 
     try {
       // Delete existing selections
-      await supabase
-        .from("tournament_team_players")
-        .delete()
-        .eq("tournament_team_id", editingTournament.id);
+      for (const teamId of Object.keys(selections)) {
+        await supabase
+          .from("tournament_team_players")
+          .delete()
+          .eq("tournament_team_id", teamId);
+      }
 
-      // Format selections for database
-      const playerSelections = Object.entries(selections).flatMap(([teamId, players]) =>
-        players.map((player) => ({
+      // Format and insert new selections
+      for (const [teamId, players] of Object.entries(selections)) {
+        const playerSelections = players.map(player => ({
           tournament_team_id: teamId,
           player_id: player.playerId,
           position: player.position,
-          is_substitute: player.position.startsWith('sub-'),
-          performance_category: player.performanceCategory || "MESSI",
-        }))
-      );
+          is_substitute: player.is_substitute,
+          performance_category: player.performanceCategory || "MESSI"
+        }));
 
-      if (playerSelections.length > 0) {
-        const { error: insertError } = await supabase
-          .from("tournament_team_players")
-          .insert(playerSelections);
+        if (playerSelections.length > 0) {
+          const { error: insertError } = await supabase
+            .from("tournament_team_players")
+            .insert(playerSelections);
 
-        if (insertError) throw insertError;
+          if (insertError) throw insertError;
+        }
       }
 
       toast({

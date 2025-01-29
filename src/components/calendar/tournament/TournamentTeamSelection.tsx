@@ -25,7 +25,7 @@ export const TournamentTeamSelection = ({
   onTeamSelectionsChange,
 }: TournamentTeamSelectionProps) => {
   const { selectedPlayers, clearSelectedPlayers } = useTeamSelection();
-  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, TeamSelection>>>({});
+  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
 
   const { data: players } = useQuery({
     queryKey: ["all-players"],
@@ -43,47 +43,32 @@ export const TournamentTeamSelection = ({
   }, [teams]);
 
   const handleSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
-    // First, update the parent component with the formatted selections
+    // Update local state
+    setTeamSelections(prev => ({
+      ...prev,
+      [teamId]: selections
+    }));
+
+    // Format selections for parent component
     const formattedSelections = Object.entries(selections).map(([_, value]) => ({
       playerId: value.playerId,
-      position: value.position.split('-')[0],
+      position: value.position,
       is_substitute: value.position.startsWith('sub-'),
       performanceCategory: value.performanceCategory || 'MESSI'
     }));
 
+    // Update parent component
     onTeamSelectionsChange({
       [teamId]: formattedSelections
     });
-
-    // Then, update local state with the full selection data
-    setTeamSelections(prev => ({
-      ...prev,
-      [teamId]: Object.entries(selections).reduce((acc, [key, value]) => ({
-        ...acc,
-        [key]: {
-          playerId: value.playerId,
-          position: value.position,
-          is_substitute: value.position.startsWith('sub-'),
-          performanceCategory: value.performanceCategory || 'MESSI'
-        }
-      }), {} as Record<string, TeamSelection>)
-    }));
-
-    // Update the selected players set
-    const selectedPlayerIds = new Set<string>();
-    Object.values(selections).forEach(selection => {
-      if (selection.playerId !== "unassigned") {
-        selectedPlayerIds.add(selection.playerId);
-      }
-    });
   };
 
-  const formatSelectionsForFormation = (selections: Record<string, TeamSelection>) => {
+  const formatSelectionsForFormation = (selections: Record<string, { playerId: string; position: string }>) => {
     return Object.entries(selections)
-      .filter(([key]) => !key.startsWith('sub-'))
-      .map(([_, { playerId, position }]) => ({
-        position: position.split('-')[0].toUpperCase(),
-        playerId
+      .filter(([_, value]) => !value.position.startsWith('sub-'))
+      .map(([_, value]) => ({
+        position: value.position.split('-')[0].toUpperCase(),
+        playerId: value.playerId
       }));
   };
 
@@ -107,7 +92,7 @@ export const TournamentTeamSelection = ({
               format={format as any}
               teamCategory={team.category}
               onSelectionChange={(selections) => handleSelectionChange(team.id, selections)}
-              performanceCategory={team.category}
+              performanceCategory="MESSI"
               selectedPlayers={selectedPlayers}
               onCategoryChange={(category) => {
                 const currentSelections = teamSelections[team.id] || {};
