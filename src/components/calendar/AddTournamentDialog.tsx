@@ -100,28 +100,23 @@ export const AddTournamentDialog = ({
     }
   };
 
-  interface PlayerSelection {
-    playerId: string;
-    position: string;
-    is_substitute: boolean;
-    performanceCategory?: string;
-  }
-
-  const handleTeamSelectionsChange = async (selections: Record<string, PlayerSelection[]>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }[]>) => {
     if (!editingTournament?.id) return;
 
     try {
+      // Delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
-        .eq("tournament_id", editingTournament.id);
+        .eq("tournament_team_id", editingTournament.id);
 
+      // Format selections for database
       const playerSelections = Object.entries(selections).flatMap(([teamId, players]) =>
         players.map((player) => ({
           tournament_team_id: teamId,
           player_id: player.playerId,
           position: player.position,
-          is_substitute: player.is_substitute,
+          is_substitute: player.position.startsWith('sub-'),
           performance_category: player.performanceCategory || "MESSI",
         }))
       );
