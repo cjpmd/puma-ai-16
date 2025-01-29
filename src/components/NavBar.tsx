@@ -13,12 +13,37 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useEffect } from "react";
 
 export const NavBar = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { data: profile, error: profileError } = useQuery({
+  // Check authentication status on mount and setup listener
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log("No active session found");
+        navigate("/auth");
+      }
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event);
+      if (event === 'SIGNED_OUT' || !session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
+
+  const { data: profile, error: profileError, refetch: refetchProfile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
       console.log("Fetching profile...");
@@ -50,6 +75,8 @@ export const NavBar = () => {
 
       return profile;
     },
+    retry: 1,
+    refetchOnWindowFocus: true,
   });
 
   // Show error toast if profile fetch fails
