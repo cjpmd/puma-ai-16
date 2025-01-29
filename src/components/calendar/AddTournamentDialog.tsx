@@ -9,12 +9,14 @@ import { useNavigate } from "react-router-dom";
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 
-interface PlayerSelection {
-  playerId: string;
-  position: string;
-  is_substitute: boolean;
-  performanceCategory?: string;
-}
+type TeamSelections = {
+  [teamId: string]: Array<{
+    playerId: string;
+    position: string;
+    is_substitute: boolean;
+    performanceCategory?: string;
+  }>;
+};
 
 interface Team {
   id: string;
@@ -107,7 +109,7 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: { [key: string]: PlayerSelection[] }) => {
+  const handleTeamSelectionsChange = async (selections: TeamSelections) => {
     if (!editingTournament?.id) return;
 
     try {
