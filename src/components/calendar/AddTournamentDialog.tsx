@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 
-// Simplified type definitions
+// Define base types without circular references
 type PlayerSelection = {
   playerId: string;
   position: string;
@@ -22,9 +22,6 @@ type Team = {
   name: string;
   category: string;
 };
-
-// Flatten the team selections type
-type TeamSelections = Record<string, PlayerSelection[]>;
 
 interface AddTournamentDialogProps {
   isOpen: boolean;
@@ -111,28 +108,25 @@ export const AddTournamentDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: TeamSelections) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, PlayerSelection[]>) => {
     if (!editingTournament?.id) return;
 
     try {
-      // Delete existing selections
       await supabase
         .from("tournament_team_players")
         .delete()
         .eq("tournament_id", editingTournament.id);
 
-      // Prepare new selections
-      const playerSelections = Object.entries(selections).flatMap(([teamId, players]) =>
-        players.map(player => ({
+      const playerSelections = Object.entries(selections).map(([teamId, players]) =>
+        players.map((player) => ({
           tournament_team_id: teamId,
           player_id: player.playerId,
           position: player.position,
           is_substitute: player.is_substitute,
           performance_category: player.performanceCategory || "MESSI",
         }))
-      );
+      ).flat();
 
-      // Insert new selections if any exist
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
           .from("tournament_team_players")
