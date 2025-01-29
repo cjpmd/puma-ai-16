@@ -53,7 +53,7 @@ export const AddTournamentDialog = ({
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
-      if (!session) {
+      if (!session || error) {
         toast({
           variant: "destructive",
           title: "Authentication required",
@@ -100,12 +100,12 @@ export const AddTournamentDialog = ({
     }
   };
 
-  type PlayerSelection = {
+  interface PlayerSelection {
     playerId: string;
     position: string;
     is_substitute: boolean;
     performanceCategory?: string;
-  };
+  }
 
   const handleTeamSelectionsChange = async (selections: Record<string, PlayerSelection[]>) => {
     if (!editingTournament?.id) return;
