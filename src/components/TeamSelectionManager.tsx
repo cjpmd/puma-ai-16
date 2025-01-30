@@ -13,7 +13,7 @@ interface TeamSelectionManagerProps {
     category: string;
   }>;
   format: "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
-  onTeamSelectionsChange?: (selections: Record<string, Record<string, { playerId: string; position: string }>>) => void;
+  onTeamSelectionsChange?: (selections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>) => void;
 }
 
 export const TeamSelectionManager = ({ 
@@ -21,7 +21,7 @@ export const TeamSelectionManager = ({
   format, 
   onTeamSelectionsChange 
 }: TeamSelectionManagerProps) => {
-  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string }>>>({});
+  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
   const [showFormations, setShowFormations] = useState(false);
   const [teamCategories, setTeamCategories] = useState<Record<string, string>>({});
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
@@ -37,7 +37,7 @@ export const TeamSelectionManager = ({
     },
   });
 
-  const handleTeamSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string }>) => {
+  const handleTeamSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
     const newSelections = {
       ...teamSelections,
       [teamId]: selections

@@ -6,7 +6,7 @@ interface TeamSelection {
   playerId: string;
   position: string;
   is_substitute: boolean;
-  performanceCategory?: string;
+  performanceCategory: string;
 }
 
 interface FestivalDialogContentProps {
