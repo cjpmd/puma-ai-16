@@ -1,6 +1,6 @@
 import { DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { FestivalForm } from "./FestivalForm";
-import { FestivalTeamSelection } from "./FestivalTeamSelection";
+import { TeamSelectionManager } from "@/components/TeamSelectionManager";
 
 interface TeamSelection {
   playerId: string;
@@ -48,10 +48,23 @@ export const FestivalDialogContent = ({
           selectedDate={selectedDate}
         />
       ) : (
-        <FestivalTeamSelection
+        <TeamSelectionManager
           teams={teams}
-          format={format}
-          onTeamSelectionsChange={onTeamSelectionsChange}
+          format={format as "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side"}
+          onTeamSelectionsChange={(selections) => {
+            // Convert selections to the expected format
+            const formattedSelections = Object.entries(selections).reduce((acc, [teamId, teamSelections]) => {
+              acc[teamId] = Object.entries(teamSelections).map(([_, selection]) => ({
+                playerId: selection.playerId,
+                position: selection.position,
+                is_substitute: selection.position.startsWith('sub-'),
+                performanceCategory: selection.performanceCategory
+              }));
+              return acc;
+            }, {} as Record<string, TeamSelection[]>);
+            
+            onTeamSelectionsChange(formattedSelections);
+          }}
         />
       )}
     </DialogContent>

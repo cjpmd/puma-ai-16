@@ -29,12 +29,13 @@ export const FestivalTeamSelection = ({
   const { selectedPlayers, clearSelectedPlayers } = useTeamSelection();
   const [teamSelections, setTeamSelections] = useState<Record<string, TeamSelection[]>>({});
 
-  const { data: players } = useQuery({
+  const { data: players, isLoading } = useQuery({
     queryKey: ["all-players"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("*");
+        .select("*")
+        .order('name');
       if (error) {
         toast({
           variant: "destructive",
@@ -76,7 +77,7 @@ export const FestivalTeamSelection = ({
       }));
   };
 
-  if (!players) {
+  if (isLoading || !players) {
     return <div>Loading...</div>;
   }
 
@@ -102,20 +103,6 @@ export const FestivalTeamSelection = ({
               onSelectionChange={(selections) => handleSelectionChange(team.id, selections)}
               performanceCategory={team.category}
               selectedPlayers={selectedPlayers}
-              onCategoryChange={(category) => {
-                if (teamSelections[team.id]) {
-                  const updatedSelections = teamSelections[team.id].map(selection => ({
-                    ...selection,
-                    performanceCategory: category
-                  }));
-                  const newSelections = {
-                    ...teamSelections,
-                    [team.id]: updatedSelections
-                  };
-                  setTeamSelections(newSelections);
-                  onTeamSelectionsChange(newSelections);
-                }
-              }}
             />
           </CardContent>
         </Card>
