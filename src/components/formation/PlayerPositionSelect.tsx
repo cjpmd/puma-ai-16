@@ -34,8 +34,11 @@ export const PlayerPositionSelect = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="unassigned">None</SelectItem>
-              {positionDefinitions?.map(pos => (
-                <SelectItem key={pos.id} value={pos.abbreviation.toLowerCase()}>
+              {positionDefinitions.map(pos => (
+                <SelectItem 
+                  key={pos.id} 
+                  value={pos.abbreviation.toLowerCase()}
+                >
                   {pos.full_name}
                 </SelectItem>
               ))}
@@ -53,10 +56,11 @@ export const PlayerPositionSelect = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="unassigned">None</SelectItem>
-              {availablePlayers?.map(player => (
+              {availablePlayers.map(player => (
                 <SelectItem 
                   key={player.id} 
                   value={player.id}
+                  disabled={selectedPlayers.has(player.id) && player.id !== playerId}
                   className={cn(
                     selectedPlayers.has(player.id) && player.id !== playerId && "opacity-50"
                   )}
