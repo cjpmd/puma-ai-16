@@ -81,7 +81,7 @@ export const AddFestivalDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, TeamSelection[]>) => {
     if (!editingFestival?.id) return;
 
     try {
@@ -93,9 +93,9 @@ export const AddFestivalDialog = ({
           .eq("festival_team_id", teamId);
       }
 
-      // Format and insert new selections, filtering out unassigned players
+      // Format and insert new selections
       for (const [teamId, teamSelections] of Object.entries(selections)) {
-        const validSelections = Object.values(teamSelections)
+        const validSelections = teamSelections
           .filter(selection => selection.playerId !== "unassigned")
           .map(selection => ({
             festival_team_id: teamId,
