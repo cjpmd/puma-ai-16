@@ -5,6 +5,7 @@ import { FormationSelector } from "./FormationSelector";
 import { FormationView } from "./fixtures/FormationView";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Separator } from "./ui/separator";
 
 interface TeamSelectionManagerProps {
   teams: Array<{
@@ -23,15 +24,15 @@ export const TeamSelectionManager = ({
 }: TeamSelectionManagerProps) => {
   const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
   const [showFormations, setShowFormations] = useState(false);
-  const [teamCategories, setTeamCategories] = useState<Record<string, string>>({});
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
 
-  const { data: players } = useQuery({
+  const { data: players, isLoading: isLoadingPlayers } = useQuery({
     queryKey: ["all-players"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("*");
+        .select("*")
+        .order('name');
       if (error) throw error;
       return data;
     },
@@ -58,13 +59,6 @@ export const TeamSelectionManager = ({
     onTeamSelectionsChange?.(newSelections);
   };
 
-  const handleCategoryChange = (teamId: string, category: string) => {
-    setTeamCategories(prev => ({
-      ...prev,
-      [teamId]: category
-    }));
-  };
-
   const formatSelectionsForFormation = (selections: Record<string, { playerId: string; position: string }>) => {
     return Object.entries(selections)
       .filter(([key]) => !key.startsWith('sub-'))
@@ -73,6 +67,10 @@ export const TeamSelectionManager = ({
         playerId
       }));
   };
+
+  if (isLoadingPlayers) {
+    return <div>Loading players...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -84,26 +82,28 @@ export const TeamSelectionManager = ({
       </Button>
 
       {teams.map(team => (
-        <Card key={team.id}>
+        <Card key={team.id} className="mb-6">
           <CardHeader>
             <CardTitle>{team.name}</CardTitle>
           </CardHeader>
           <CardContent>
             {showFormations && teamSelections[team.id] && (
-              <FormationView
-                positions={formatSelectionsForFormation(teamSelections[team.id])}
-                players={players || []}
-                periodNumber={1}
-                duration={20}
-              />
+              <>
+                <FormationView
+                  positions={formatSelectionsForFormation(teamSelections[team.id])}
+                  players={players || []}
+                  periodNumber={1}
+                  duration={20}
+                />
+                <Separator className="my-4" />
+              </>
             )}
             <FormationSelector
               format={format}
               teamCategory={team.category}
               onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
-              onCategoryChange={(category) => handleCategoryChange(team.id, category)}
-              performanceCategory={teamCategories[team.id]}
               selectedPlayers={selectedPlayers}
+              availablePlayers={players || []}
             />
           </CardContent>
         </Card>

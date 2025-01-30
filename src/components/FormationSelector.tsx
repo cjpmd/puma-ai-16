@@ -1,43 +1,28 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
 import { SubstitutesList } from "./formation/SubstitutesList";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface FormationSelectorProps {
   format: "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
   teamCategory?: string;
   onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => void;
-  onCategoryChange?: (category: string) => void;
-  performanceCategory?: string;
   selectedPlayers?: Set<string>;
+  availablePlayers: Array<{ id: string; name: string; squad_number?: number }>;
 }
 
 export const FormationSelector = ({
   format,
   teamCategory,
   onSelectionChange,
-  onCategoryChange,
-  performanceCategory = 'MESSI',
-  selectedPlayers = new Set()
+  selectedPlayers = new Set(),
+  availablePlayers
 }: FormationSelectorProps) => {
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
-
-  const { data: players } = useQuery({
-    queryKey: ["players", teamCategory],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("players")
-        .select("*")
-        .eq("team_category", teamCategory || "")
-        .order('name');
-      if (error) throw error;
-      return data;
-    },
-    enabled: Boolean(teamCategory),
-  });
+  const [performanceCategory, setPerformanceCategory] = useState('MESSI');
 
   const { data: positions } = useQuery({
     queryKey: ["positions"],
@@ -64,16 +49,14 @@ export const FormationSelector = ({
   };
 
   const handleCategoryChange = (category: string) => {
-    if (onCategoryChange) {
-      onCategoryChange(category);
-      // Update all existing selections with the new category
-      const updatedSelections = Object.entries(selections).reduce((acc, [key, value]) => ({
-        ...acc,
-        [key]: { ...value, performanceCategory: category }
-      }), {});
-      setSelections(updatedSelections);
-      onSelectionChange(updatedSelections);
-    }
+    setPerformanceCategory(category);
+    // Update all existing selections with the new category
+    const updatedSelections = Object.entries(selections).reduce((acc, [key, value]) => ({
+      ...acc,
+      [key]: { ...value, performanceCategory: category }
+    }), {});
+    setSelections(updatedSelections);
+    onSelectionChange(updatedSelections);
   };
 
   const getMaxSubstitutes = () => {
@@ -112,7 +95,7 @@ export const FormationSelector = ({
             position={selections[`pos-${index}`]?.position || ""}
             playerId={selections[`pos-${index}`]?.playerId || "unassigned"}
             positionDefinitions={positions}
-            availablePlayers={players}
+            availablePlayers={availablePlayers}
             onSelectionChange={(playerId, position) => handlePositionChange(`pos-${index}`, playerId, position)}
             selectedPlayers={selectedPlayers}
           />
@@ -122,7 +105,7 @@ export const FormationSelector = ({
       <SubstitutesList
         maxSubstitutes={getMaxSubstitutes()}
         selections={selections}
-        availablePlayers={players}
+        availablePlayers={availablePlayers}
         onSelectionChange={(slotId, playerId) => handlePositionChange(slotId, playerId, slotId)}
         selectedPlayers={selectedPlayers}
       />
