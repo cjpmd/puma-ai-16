@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { FestivalDialogContent } from "./festival/FestivalDialogContent";
 import { useFestivalForm } from "@/hooks/useFestivalForm";
 import { useToast } from "@/hooks/use-toast";
+import { Database } from "@/integrations/supabase/types";
+import { useNavigate } from "react-router-dom";
 
-interface TeamSelection {
+type TeamSelection = {
   playerId: string;
   position: string;
   is_substitute: boolean;
@@ -30,6 +32,7 @@ export const AddFestivalDialog = ({
   showTeamSelection = false,
 }: AddFestivalDialogProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
   const [teams, setTeams] = useState<Array<{ id: string; name: string; category: string }>>([]);
   const [format, setFormat] = useState(editingFestival?.format || "7-a-side");
@@ -78,11 +81,11 @@ export const AddFestivalDialog = ({
     }
   };
 
-  const handleTeamSelectionsChange = async (selections: Record<string, TeamSelection[]>) => {
+  const handleTeamSelectionsChange = async (selections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>) => {
     if (!editingFestival?.id) return;
 
     try {
-      // Delete existing selections
+      // Delete existing selections for each team
       for (const teamId of Object.keys(selections)) {
         await supabase
           .from("festival_team_players")
@@ -90,23 +93,25 @@ export const AddFestivalDialog = ({
           .eq("festival_team_id", teamId);
       }
 
-      // Format and insert new selections
-      const playerSelections = Object.entries(selections).flatMap(([teamId, teamSelections]) =>
-        teamSelections.map(selection => ({
-          festival_team_id: teamId,
-          player_id: selection.playerId,
-          position: selection.position,
-          is_substitute: selection.is_substitute,
-          performance_category: selection.performanceCategory || 'MESSI'
-        }))
-      );
+      // Format and insert new selections, filtering out unassigned players
+      for (const [teamId, teamSelections] of Object.entries(selections)) {
+        const validSelections = Object.values(teamSelections)
+          .filter(selection => selection.playerId !== "unassigned")
+          .map(selection => ({
+            festival_team_id: teamId,
+            player_id: selection.playerId,
+            position: selection.position,
+            is_substitute: selection.position.startsWith('sub-'),
+            performance_category: selection.performanceCategory || 'MESSI'
+          }));
 
-      if (playerSelections.length > 0) {
-        const { error: insertError } = await supabase
-          .from("festival_team_players")
-          .insert(playerSelections);
+        if (validSelections.length > 0) {
+          const { error: insertError } = await supabase
+            .from("festival_team_players")
+            .insert(validSelections);
 
-        if (insertError) throw insertError;
+          if (insertError) throw insertError;
+        }
       }
 
       toast({
