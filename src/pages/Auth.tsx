@@ -11,48 +11,75 @@ export const Auth = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    // Check for existing session on mount
-    const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/home");
-      }
+    // Clear any existing session data on mount
+    const clearInvalidSession = async () => {
+      const { error } = await supabase.auth.signOut();
       if (error) {
-        setErrorMessage(getErrorMessage(error));
+        console.error("Error clearing session:", error);
+      }
+    };
+
+    // Check for existing valid session
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          if (error.message.includes("refresh_token_not_found")) {
+            await clearInvalidSession();
+            setErrorMessage("Your session has expired. Please sign in again.");
+          } else {
+            setErrorMessage(getErrorMessage(error));
+          }
+          return;
+        }
+
+        if (session?.user) {
+          navigate("/home");
+        }
+      } catch (err) {
+        console.error("Session check error:", err);
+        setErrorMessage("An error occurred while checking your session.");
       }
     };
     
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN") {
+      console.log("Auth state changed:", event, session);
+      
+      if (event === "SIGNED_IN" && session) {
         navigate("/home");
-      }
-      if (event === "USER_UPDATED") {
-        const { error } = await supabase.auth.getSession();
-        if (error) {
-          setErrorMessage(getErrorMessage(error));
-        }
-      }
-      if (event === "SIGNED_OUT") {
+      } else if (event === "TOKEN_REFRESHED" && session) {
+        navigate("/home");
+      } else if (event === "SIGNED_OUT") {
         setErrorMessage("");
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const getErrorMessage = (error: AuthError) => {
     if (error instanceof AuthApiError) {
-      switch (error.code) {
-        case "invalid_credentials":
-          return "Invalid email or password. Please check your credentials and try again.";
-        case "email_not_confirmed":
-          return "Please verify your email address before signing in.";
-        case "user_not_found":
-          return "No user found with these credentials.";
-        case "invalid_grant":
-          return "Invalid login credentials.";
+      switch (error.status) {
+        case 400:
+          if (error.message.includes("refresh_token_not_found")) {
+            return "Your session has expired. Please sign in again.";
+          }
+          return "Invalid credentials. Please check your email and password.";
+        case 401:
+          return "You are not authorized. Please sign in again.";
+        case 403:
+          return "Access forbidden. Please check your credentials.";
+        case 404:
+          return "User not found. Please check your credentials.";
+        case 422:
+          return "Invalid input. Please check your credentials.";
+        case 429:
+          return "Too many requests. Please try again later.";
         default:
           return error.message;
       }
