@@ -52,7 +52,6 @@ export const FestivalDialogContent = ({
           teams={teams}
           format={format as "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side"}
           onTeamSelectionsChange={(selections) => {
-            // Convert selections to the expected format with proper typing
             const formattedSelections = Object.entries(selections).reduce<Record<string, TeamSelection[]>>((acc, [teamId, teamSelections]) => {
               acc[teamId] = Object.entries(teamSelections).map(([_, selection]) => ({
                 playerId: selection.playerId,
