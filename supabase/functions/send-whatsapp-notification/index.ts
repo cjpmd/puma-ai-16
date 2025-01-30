@@ -42,23 +42,26 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Fetch all players and their parents
+    // Fetch all players and their parents - Fixed column name from player_category to team_category
     const { data: players, error: playersError } = await supabase
       .from('players')
       .select(`
         id,
         name,
-        player_category,
+        team_category,
         player_parents (
           phone
         )
       `)
-      .eq('player_category', notificationData.category)
+      .eq('team_category', notificationData.category)
       .not('player_parents', 'is', null)
 
     if (playersError) {
-      throw playersError
+      console.error('Error fetching players:', playersError);
+      throw playersError;
     }
+
+    console.log('Found players:', players);
 
     // Construct message based on event type
     let message = ''
@@ -78,7 +81,7 @@ serve(async (req) => {
       message += `\nPlease reply with:\n1️⃣ for YES - Player will attend\n2️⃣ for NO - Player cannot attend`
     }
 
-    console.log('Sending WhatsApp notifications for:', notificationData)
+    console.log('Sending WhatsApp message:', message);
 
     // For now, just send to test number in development
     const response = await fetch(
