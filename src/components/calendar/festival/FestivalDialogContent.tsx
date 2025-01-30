@@ -58,7 +58,7 @@ export const FestivalDialogContent = ({
                 playerId: selection.playerId,
                 position: selection.position,
                 is_substitute: selection.position.startsWith('sub-'),
-                performanceCategory: selection.performanceCategory
+                performanceCategory: selection.performanceCategory || 'MESSI'
               }));
               return acc;
             }, {} as Record<string, TeamSelection[]>);
