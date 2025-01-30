@@ -40,39 +40,41 @@ export const AddFestivalDialog = ({
         setShowTeamSelectionState(true);
       } else {
         onSuccess();
+        onOpenChange(false);
       }
     },
     editingFestival
   );
 
   useEffect(() => {
-    setShowTeamSelectionState(showTeamSelection);
-    if (showTeamSelection && editingFestival) {
+    if (showTeamSelection && editingFestival?.id) {
       loadExistingTeams(editingFestival.id);
     }
   }, [showTeamSelection, editingFestival]);
 
   const loadExistingTeams = async (festivalId: string) => {
-    const { data: existingTeams, error } = await supabase
-      .from("festival_teams")
-      .select("*")
-      .eq("festival_id", festivalId);
+    try {
+      const { data: existingTeams, error } = await supabase
+        .from("festival_teams")
+        .select("*")
+        .eq("festival_id", festivalId);
 
-    if (error) {
+      if (error) throw error;
+
+      if (existingTeams) {
+        setTeams(existingTeams.map(team => ({
+          id: team.id,
+          name: team.team_name,
+          category: team.category || "",
+        })));
+      }
+    } catch (error) {
+      console.error("Error loading teams:", error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to load existing teams",
       });
-      return;
-    }
-
-    if (existingTeams) {
-      setTeams(existingTeams.map(team => ({
-        id: team.id,
-        name: team.team_name,
-        category: team.category || "",
-      })));
     }
   };
 
@@ -80,7 +82,7 @@ export const AddFestivalDialog = ({
     if (!editingFestival?.id) return;
 
     try {
-      // Delete existing selections by festival_team_id
+      // Delete existing selections
       for (const teamId of Object.keys(selections)) {
         await supabase
           .from("festival_team_players")
@@ -88,18 +90,17 @@ export const AddFestivalDialog = ({
           .eq("festival_team_id", teamId);
       }
 
-      // Format selections for database
+      // Format and insert new selections
       const playerSelections = Object.entries(selections).flatMap(([teamId, teamSelections]) =>
         teamSelections.map(selection => ({
           festival_team_id: teamId,
           player_id: selection.playerId,
           position: selection.position,
           is_substitute: selection.is_substitute,
-          performance_category: selection.performanceCategory
+          performance_category: selection.performanceCategory || 'MESSI'
         }))
       );
 
-      // Insert new selections
       if (playerSelections.length > 0) {
         const { error: insertError } = await supabase
           .from("festival_team_players")
@@ -113,6 +114,7 @@ export const AddFestivalDialog = ({
         description: "Team selections updated successfully",
       });
     } catch (error) {
+      console.error("Error updating team selections:", error);
       toast({
         variant: "destructive",
         title: "Error",
