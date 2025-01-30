@@ -101,8 +101,8 @@ export const FestivalTeamSelection = ({
               format={format as any}
               teamCategory={team.category}
               onSelectionChange={(selections) => handleSelectionChange(team.id, selections)}
-              performanceCategory={team.category}
               selectedPlayers={selectedPlayers}
+              availablePlayers={players}
             />
           </CardContent>
         </Card>

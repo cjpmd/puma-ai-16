@@ -92,16 +92,8 @@ export const TournamentTeamSelection = ({
               format={format as any}
               teamCategory={team.category}
               onSelectionChange={(selections) => handleSelectionChange(team.id, selections)}
-              performanceCategory="MESSI"
               selectedPlayers={selectedPlayers}
-              onCategoryChange={(category) => {
-                const currentSelections = teamSelections[team.id] || {};
-                const updatedSelections = Object.entries(currentSelections).reduce((acc, [key, value]) => ({
-                  ...acc,
-                  [key]: { ...value, performanceCategory: category }
-                }), {});
-                handleSelectionChange(team.id, updatedSelections);
-              }}
+              availablePlayers={players || []}
             />
           </CardContent>
         </Card>
