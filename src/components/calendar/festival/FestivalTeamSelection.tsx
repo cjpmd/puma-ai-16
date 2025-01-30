@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationView } from "@/components/fixtures/FormationView";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 interface TeamSelection {
   playerId: string;
@@ -25,25 +24,16 @@ export const FestivalTeamSelection = ({
   format, 
   onTeamSelectionsChange,
 }: FestivalTeamSelectionProps) => {
-  const { toast } = useToast();
   const { selectedPlayers, clearSelectedPlayers } = useTeamSelection();
-  const [teamSelections, setTeamSelections] = useState<Record<string, TeamSelection[]>>({});
+  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
 
-  const { data: players, isLoading } = useQuery({
+  const { data: players } = useQuery({
     queryKey: ["all-players"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("*")
-        .order('name');
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load players",
-        });
-        throw error;
-      }
+        .select("*");
+      if (error) throw error;
       return data;
     },
   });
@@ -53,6 +43,13 @@ export const FestivalTeamSelection = ({
   }, [teams]);
 
   const handleSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
+    // Update local state
+    setTeamSelections(prev => ({
+      ...prev,
+      [teamId]: selections
+    }));
+
+    // Format selections for parent component
     const formattedSelections = Object.entries(selections).map(([_, value]) => ({
       playerId: value.playerId,
       position: value.position,
@@ -60,26 +57,20 @@ export const FestivalTeamSelection = ({
       performanceCategory: value.performanceCategory || 'MESSI'
     }));
 
-    const newSelections = {
-      ...teamSelections,
+    // Update parent component
+    onTeamSelectionsChange({
       [teamId]: formattedSelections
-    };
-    setTeamSelections(newSelections);
-    onTeamSelectionsChange(newSelections);
+    });
   };
 
-  const formatSelectionsForFormation = (selections: TeamSelection[]) => {
-    return selections
-      .filter(selection => !selection.position.startsWith('sub-'))
-      .map(({ playerId, position }) => ({
-        position: position.split('-')[0].toUpperCase(),
-        playerId
+  const formatSelectionsForFormation = (selections: Record<string, { playerId: string; position: string }>) => {
+    return Object.entries(selections)
+      .filter(([_, value]) => !value.position.startsWith('sub-'))
+      .map(([_, value]) => ({
+        position: value.position.split('-')[0].toUpperCase(),
+        playerId: value.playerId
       }));
   };
-
-  if (isLoading || !players) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
@@ -92,7 +83,7 @@ export const FestivalTeamSelection = ({
             {teamSelections[team.id] && (
               <FormationView
                 positions={formatSelectionsForFormation(teamSelections[team.id])}
-                players={players}
+                players={players || []}
                 periodNumber={1}
                 duration={20}
               />
@@ -102,7 +93,7 @@ export const FestivalTeamSelection = ({
               teamCategory={team.category}
               onSelectionChange={(selections) => handleSelectionChange(team.id, selections)}
               selectedPlayers={selectedPlayers}
-              availablePlayers={players}
+              availablePlayers={players || []}
             />
           </CardContent>
         </Card>
