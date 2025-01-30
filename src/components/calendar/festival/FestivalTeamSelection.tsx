@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationView } from "@/components/fixtures/FormationView";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface TeamSelection {
   playerId: string;
@@ -24,6 +25,7 @@ export const FestivalTeamSelection = ({
   format, 
   onTeamSelectionsChange,
 }: FestivalTeamSelectionProps) => {
+  const { toast } = useToast();
   const { selectedPlayers, clearSelectedPlayers } = useTeamSelection();
   const [teamSelections, setTeamSelections] = useState<Record<string, TeamSelection[]>>({});
 
@@ -33,7 +35,14 @@ export const FestivalTeamSelection = ({
       const { data, error } = await supabase
         .from("players")
         .select("*");
-      if (error) throw error;
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load players",
+        });
+        throw error;
+      }
       return data;
     },
   });
@@ -67,6 +76,10 @@ export const FestivalTeamSelection = ({
       }));
   };
 
+  if (!players) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
       {teams.map(team => (
@@ -78,7 +91,7 @@ export const FestivalTeamSelection = ({
             {teamSelections[team.id] && (
               <FormationView
                 positions={formatSelectionsForFormation(teamSelections[team.id])}
-                players={players || []}
+                players={players}
                 periodNumber={1}
                 duration={20}
               />

@@ -90,21 +90,19 @@ export const FormationSelector = ({
 
   return (
     <div className="space-y-6">
-      {performanceCategory && (
-        <div>
-          <Label>Performance Category</Label>
-          <Select value={performanceCategory} onValueChange={handleCategoryChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="MESSI">Messi</SelectItem>
-              <SelectItem value="RONALDO">Ronaldo</SelectItem>
-              <SelectItem value="NEYMAR">Neymar</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <div>
+        <Label>Performance Category</Label>
+        <Select value={performanceCategory} onValueChange={handleCategoryChange}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="MESSI">Messi</SelectItem>
+            <SelectItem value="RONALDO">Ronaldo</SelectItem>
+            <SelectItem value="NEYMAR">Neymar</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: Number(format.split('-')[0]) }).map((_, index) => (
