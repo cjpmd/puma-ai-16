@@ -24,18 +24,21 @@ export const FormationSelector = ({
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
   const [performanceCategory, setPerformanceCategory] = useState('MESSI');
 
-  const { data: positions } = useQuery({
+  const { data: positions, isError } = useQuery({
     queryKey: ["positions"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("position_definitions")
         .select("*");
       if (error) throw error;
-      return data;
+      return data || [];
     },
+    initialData: [],
   });
 
   const handlePositionChange = (slotId: string, playerId: string, position: string) => {
+    if (!playerId || !position) return;
+    
     const newSelections = {
       ...selections,
       [slotId]: { 
@@ -71,6 +74,8 @@ export const FormationSelector = ({
     return formatMap[format] || 3;
   };
 
+  const numPlayers = Number(format.split('-')[0]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -88,7 +93,7 @@ export const FormationSelector = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {Array.from({ length: Number(format.split('-')[0]) }).map((_, index) => (
+        {Array.from({ length: numPlayers }).map((_, index) => (
           <PlayerPositionSelect
             key={`pos-${index}`}
             slotId={`pos-${index}`}
