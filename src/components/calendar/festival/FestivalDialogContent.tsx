@@ -6,7 +6,7 @@ interface TeamSelection {
   playerId: string;
   position: string;
   is_substitute: boolean;
-  performanceCategory: string;
+  performanceCategory?: string;
 }
 
 interface FestivalDialogContentProps {
@@ -51,7 +51,18 @@ export const FestivalDialogContent = ({
         <TeamSelectionManager
           teams={teams}
           format={format as "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side"}
-          onTeamSelectionsChange={onTeamSelectionsChange}
+          onTeamSelectionsChange={(selections) => {
+            const formattedSelections = Object.entries(selections).reduce<Record<string, TeamSelection[]>>((acc, [teamId, teamSelections]) => {
+              acc[teamId] = Object.entries(teamSelections).map(([_, selection]) => ({
+                playerId: selection.playerId,
+                position: selection.position,
+                is_substitute: selection.position.startsWith('sub-'),
+                performanceCategory: selection.performanceCategory || 'MESSI'
+              }));
+              return acc;
+            }, {});
+            onTeamSelectionsChange(formattedSelections);
+          }}
         />
       )}
     </DialogContent>
