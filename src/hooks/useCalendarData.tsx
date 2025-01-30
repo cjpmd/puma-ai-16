@@ -16,23 +16,21 @@ export const useCalendarData = (date: Date) => {
           .select("*, training_drills(*, training_files(*))")
           .eq("date", formattedDate);
         
-        if (error) {
-          console.error("Error fetching sessions:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load training sessions. Please try again.",
-          });
-          throw error;
-        }
+        if (error) throw error;
         return data;
       } catch (error) {
-        console.error("Session fetch error:", error);
-        throw error;
+        console.error("Error fetching sessions:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load training sessions. Please try again.",
+        });
+        return [];
       }
     },
     retry: 3,
     retryDelay: 1000,
+    initialData: [],
   });
 
   const { data: fixtures, refetch: refetchFixtures } = useQuery({
@@ -44,23 +42,21 @@ export const useCalendarData = (date: Date) => {
           .select("*")
           .eq("date", formattedDate);
         
-        if (error) {
-          console.error("Error fetching fixtures:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load fixtures. Please try again.",
-          });
-          throw error;
-        }
+        if (error) throw error;
         return data;
       } catch (error) {
-        console.error("Fixture fetch error:", error);
-        throw error;
+        console.error("Error fetching fixtures:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load fixtures. Please try again.",
+        });
+        return [];
       }
     },
     retry: 3,
     retryDelay: 1000,
+    initialData: [],
   });
 
   const { data: festivals, refetch: refetchFestivals } = useQuery({
@@ -72,23 +68,21 @@ export const useCalendarData = (date: Date) => {
           .select("*")
           .eq("date", formattedDate);
         
-        if (error) {
-          console.error("Error fetching festivals:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load festivals. Please try again.",
-          });
-          throw error;
-        }
+        if (error) throw error;
         return data;
       } catch (error) {
-        console.error("Festival fetch error:", error);
-        throw error;
+        console.error("Error fetching festivals:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load festivals. Please try again.",
+        });
+        return [];
       }
     },
     retry: 3,
     retryDelay: 1000,
+    initialData: [],
   });
 
   const { data: tournaments, refetch: refetchTournaments } = useQuery({
@@ -100,18 +94,15 @@ export const useCalendarData = (date: Date) => {
           .select("*")
           .eq("date", formattedDate);
         
-        if (error) {
-          console.error("Error fetching tournaments:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load tournaments. Please try again.",
-          });
-          throw error;
-        }
-        return data || [];
+        if (error) throw error;
+        return data;
       } catch (error) {
-        console.error("Tournament fetch error:", error);
+        console.error("Error fetching tournaments:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load tournaments. Please try again.",
+        });
         return [];
       }
     },
@@ -129,23 +120,21 @@ export const useCalendarData = (date: Date) => {
           .select("*")
           .eq("review_date", formattedDate);
         
-        if (error) {
-          console.error("Error fetching objectives:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load objectives. Please try again.",
-          });
-          throw error;
-        }
+        if (error) throw error;
         return data;
       } catch (error) {
-        console.error("Objectives fetch error:", error);
-        throw error;
+        console.error("Error fetching objectives:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load objectives. Please try again.",
+        });
+        return [];
       }
     },
     retry: 3,
     retryDelay: 1000,
+    initialData: [],
   });
 
   return {
