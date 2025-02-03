@@ -26,7 +26,7 @@ export const TeamSelectionManager = ({
   const [showFormations, setShowFormations] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
 
-  const { data: players, isLoading: isLoadingPlayers } = useQuery({
+  const { data: players } = useQuery({
     queryKey: ["all-players"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -68,7 +68,7 @@ export const TeamSelectionManager = ({
       }));
   };
 
-  if (isLoadingPlayers) {
+  if (!players) {
     return <div>Loading players...</div>;
   }
 

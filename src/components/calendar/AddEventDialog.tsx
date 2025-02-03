@@ -43,7 +43,8 @@ export const AddEventDialog = ({
         ...(eventType === 'fixture' || eventType === 'friendly' ? {
           opponent: data.opponent,
           is_home: data.isHome,
-          is_friendly: eventType === 'friendly'
+          is_friendly: eventType === 'friendly',
+          category: data.teamName // Use teamName as category
         } : {})
       };
 

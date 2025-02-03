@@ -24,7 +24,7 @@ export const FormationSelector = ({
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
   const [performanceCategory, setPerformanceCategory] = useState('MESSI');
 
-  const { data: positions, isError } = useQuery({
+  const { data: positions } = useQuery({
     queryKey: ["positions"],
     queryFn: async () => {
       const { data, error } = await supabase
