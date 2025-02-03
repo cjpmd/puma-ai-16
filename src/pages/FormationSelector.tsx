@@ -22,6 +22,7 @@ export default function FormationSelectorPage() {
         format="7-a-side"
         teamName="Default Team"
         onSelectionChange={() => {}}
+        selectedPlayers={new Set()}
         availablePlayers={players || []}
       />
     </div>

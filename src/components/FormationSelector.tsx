@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { TeamPositionSelect } from "./formation/PlayerPositionSelect";
+import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
 import { SubstitutesList } from "./formation/SubstitutesList";
 import { TeamSettingsHeader } from "./formation/TeamSettingsHeader";
 
@@ -24,7 +24,6 @@ export const FormationSelector = ({
 }: FormationSelectorProps) => {
   const [positions, setPositions] = useState<string[]>([]);
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
-  const [substitutes, setSubstitutes] = useState<string[]>([]);
 
   useEffect(() => {
     // Initialize positions based on the format
@@ -58,31 +57,35 @@ export const FormationSelector = ({
     onSelectionChange(newSelections);
   };
 
-  const handleSubstituteChange = (substitutes: string[]) => {
-    setSubstitutes(substitutes);
-  };
-
   return (
     <div className="space-y-6">
-      <TeamSettingsHeader format={format} teamName={teamName} />
+      <TeamSettingsHeader 
+        captain=""
+        duration="90"
+        onCaptainChange={() => {}}
+        onDurationChange={() => {}}
+        availablePlayers={availablePlayers}
+      />
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {positions.map((position) => (
-          <TeamPositionSelect
+          <PlayerPositionSelect
             key={position}
+            slotId={position}
             position={position}
             playerId={selections[position]?.playerId || "unassigned"}
             availablePlayers={availablePlayers}
-            onSelectionChange={(playerId) => handlePlayerSelection(position, playerId)}
+            onSelectionChange={(playerId, pos) => handlePlayerSelection(position, playerId)}
             selectedPlayers={selectedPlayers}
           />
         ))}
       </div>
 
       <SubstitutesList
-        substitutes={substitutes}
+        maxSubstitutes={5}
+        selections={{}}
         availablePlayers={availablePlayers}
-        onSubstituteChange={handleSubstituteChange}
+        onSelectionChange={() => {}}
         selectedPlayers={selectedPlayers}
       />
     </div>
