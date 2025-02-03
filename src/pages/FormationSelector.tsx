@@ -20,6 +20,7 @@ export default function FormationSelectorPage() {
       <h1 className="text-2xl font-bold mb-6">Formation Selector</h1>
       <FormationSelector 
         format="7-a-side"
+        teamName="Default Team"
         onSelectionChange={() => {}}
         availablePlayers={players || []}
       />

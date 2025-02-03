@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, parseISO } from "date-fns";
 import { useState } from "react";
+import type { Fixture } from "@/types/fixture";
 
 interface FixtureCardProps {
   fixture: {
@@ -25,6 +26,7 @@ interface FixtureCardProps {
     time?: string | null;
     date: string;
     outcome?: string | null;
+    team_name: string; // Added team_name here
   };
   onEdit: (fixture: FixtureCardProps["fixture"]) => void;
   onDelete: (fixtureId: string) => void;
