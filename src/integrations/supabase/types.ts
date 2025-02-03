@@ -569,6 +569,7 @@ export type Database = {
           fixture_id: string | null
           id: string
           is_captain: boolean | null
+          performance_category: string | null
           player_id: string | null
           updated_at: string | null
         }
@@ -577,6 +578,7 @@ export type Database = {
           fixture_id?: string | null
           id?: string
           is_captain?: boolean | null
+          performance_category?: string | null
           player_id?: string | null
           updated_at?: string | null
         }
@@ -585,6 +587,7 @@ export type Database = {
           fixture_id?: string | null
           id?: string
           is_captain?: boolean | null
+          performance_category?: string | null
           player_id?: string | null
           updated_at?: string | null
         }
@@ -636,7 +639,7 @@ export type Database = {
       fixtures: {
         Row: {
           away_score: number | null
-          category: string
+          category: string | null
           created_at: string | null
           date: string
           end_time: string | null
@@ -652,13 +655,13 @@ export type Database = {
           opponent: string
           outcome: string | null
           start_time: string | null
-          team_name: string | null
+          team_name: string
           time: string | null
           updated_at: string | null
         }
         Insert: {
           away_score?: number | null
-          category?: string
+          category?: string | null
           created_at?: string | null
           date: string
           end_time?: string | null
@@ -674,13 +677,13 @@ export type Database = {
           opponent: string
           outcome?: string | null
           start_time?: string | null
-          team_name?: string | null
+          team_name: string
           time?: string | null
           updated_at?: string | null
         }
         Update: {
           away_score?: number | null
-          category?: string
+          category?: string | null
           created_at?: string | null
           date?: string
           end_time?: string | null
@@ -696,7 +699,7 @@ export type Database = {
           opponent?: string
           outcome?: string | null
           start_time?: string | null
-          team_name?: string | null
+          team_name?: string
           time?: string | null
           updated_at?: string | null
         }

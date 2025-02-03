@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface FormationSelectorProps {
   format: "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
-  teamCategory?: string;
+  teamName?: string;
   onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => void;
   selectedPlayers?: Set<string>;
   availablePlayers: Array<{ id: string; name: string; squad_number?: number }>;
@@ -16,7 +16,7 @@ export interface FormationSelectorProps {
 
 export const FormationSelector = ({
   format,
-  teamCategory,
+  teamName,
   onSelectionChange,
   selectedPlayers = new Set(),
   availablePlayers

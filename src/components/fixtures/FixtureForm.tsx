@@ -24,7 +24,7 @@ import { Fixture } from "@/types/fixture";
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
   location: z.string().optional(),
-  category: z.enum(["Ronaldo", "Messi", "Jags"]),
+  team_name: z.string().min(1, "Team name is required"),
   home_score: z.string().optional(),
   away_score: z.string().optional(),
   motm_player_id: z.string().optional(),
@@ -55,7 +55,7 @@ export const FixtureForm = ({
     defaultValues: {
       opponent: editingFixture?.opponent || "",
       location: editingFixture?.location || "",
-      category: (editingFixture?.category || "Ronaldo") as "Ronaldo" | "Messi" | "Jags",
+      team_name: editingFixture?.team_name || "Ronaldo",
       home_score: editingFixture?.home_score?.toString() || "",
       away_score: editingFixture?.away_score?.toString() || "",
       motm_player_id: editingFixture?.motm_player_id || undefined,
@@ -82,7 +82,7 @@ export const FixtureForm = ({
         
         <FormField
           control={form.control}
-          name="category"
+          name="team_name"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Team *</FormLabel>
