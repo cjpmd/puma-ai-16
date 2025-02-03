@@ -39,6 +39,7 @@ export const AddEventDialog = ({
         format: data.format,
         number_of_teams: data.numberOfTeams,
         team_name: data.teamName,
+        system_category: eventType.toUpperCase(),
         ...(eventType === 'fixture' || eventType === 'friendly' ? {
           opponent: data.opponent,
           is_home: data.isHome,
