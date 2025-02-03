@@ -3,9 +3,9 @@ import { Player } from "@/types/player";
 export type PerformanceStatus = "improving" | "needs-improvement" | "maintaining" | "neutral";
 
 export const calculatePlayerPerformance = (player: Player): PerformanceStatus => {
-  const allAttributes = player.attributes;
-  if (allAttributes.length === 0) return "neutral";
+  if (!player?.attributes || player.attributes.length === 0) return "neutral";
 
+  const allAttributes = player.attributes;
   const sortedByDate = [...allAttributes].sort((a, b) => 
     new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime()
   );
