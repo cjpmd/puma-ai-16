@@ -684,6 +684,203 @@ export type Database = {
           },
         ]
       }
+      ml_models: {
+        Row: {
+          accuracy: number
+          created_at: string | null
+          id: string
+          model_file_path: string | null
+          parameters: Json | null
+          training_date: string | null
+          updated_at: string | null
+          version: string
+        }
+        Insert: {
+          accuracy: number
+          created_at?: string | null
+          id?: string
+          model_file_path?: string | null
+          parameters?: Json | null
+          training_date?: string | null
+          updated_at?: string | null
+          version: string
+        }
+        Update: {
+          accuracy?: number
+          created_at?: string | null
+          id?: string
+          model_file_path?: string | null
+          parameters?: Json | null
+          training_date?: string | null
+          updated_at?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
+      ml_training_sessions: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          device_id: number | null
+          duration: number | null
+          end_time: string | null
+          id: string
+          player_id: string | null
+          start_time: string
+          updated_at: string | null
+          video_timestamp: number | null
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          device_id?: number | null
+          duration?: number | null
+          end_time?: string | null
+          id?: string
+          player_id?: string | null
+          start_time?: string
+          updated_at?: string | null
+          video_timestamp?: number | null
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          device_id?: number | null
+          duration?: number | null
+          end_time?: string | null
+          id?: string
+          player_id?: string | null
+          start_time?: string
+          updated_at?: string | null
+          video_timestamp?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ml_training_sessions_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ml_training_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ml_training_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "ml_training_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "ml_training_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ml_training_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
+      pass_analysis: {
+        Row: {
+          created_at: string | null
+          end_x: number
+          end_y: number
+          id: string
+          is_successful: boolean | null
+          player_id: string | null
+          start_x: number
+          start_y: number
+          timestamp: number
+          video_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_x: number
+          end_y: number
+          id?: string
+          is_successful?: boolean | null
+          player_id?: string | null
+          start_x: number
+          start_y: number
+          timestamp: number
+          video_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_x?: number
+          end_y?: number
+          id?: string
+          is_successful?: boolean | null
+          player_id?: string | null
+          start_x?: number
+          start_y?: number
+          timestamp?: number
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pass_analysis_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pass_analysis_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "pass_analysis_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "pass_analysis_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pass_analysis_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "pass_analysis_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "video_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_attributes: {
         Row: {
           abbreviation: string | null
@@ -1260,6 +1457,47 @@ export type Database = {
           },
         ]
       }
+      sensor_recordings: {
+        Row: {
+          created_at: string | null
+          id: string
+          sensor_type: string
+          timestamp: number
+          training_session_id: string | null
+          x: number | null
+          y: number | null
+          z: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          sensor_type: string
+          timestamp: number
+          training_session_id?: string | null
+          x?: number | null
+          y?: number | null
+          z?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          sensor_type?: string
+          timestamp?: number
+          training_session_id?: string | null
+          x?: number | null
+          y?: number | null
+          z?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sensor_recordings_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "ml_training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions: {
         Row: {
           data: Json | null
@@ -1330,6 +1568,85 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "position_rankings"
             referencedColumns: ["player_id"]
+          },
+        ]
+      }
+      shot_analysis: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_goal: boolean | null
+          location_x: number
+          location_y: number
+          player_id: string | null
+          shot_type: string | null
+          timestamp: number
+          video_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_goal?: boolean | null
+          location_x: number
+          location_y: number
+          player_id?: string | null
+          shot_type?: string | null
+          timestamp: number
+          video_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_goal?: boolean | null
+          location_x?: number
+          location_y?: number
+          player_id?: string | null
+          shot_type?: string | null
+          timestamp?: number
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shot_analysis_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shot_analysis_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "shot_analysis_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "shot_analysis_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shot_analysis_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "shot_analysis_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "video_analysis"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1603,6 +1920,77 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      video_analysis: {
+        Row: {
+          analysis_data: Json | null
+          created_at: string | null
+          date: string
+          duration: number | null
+          id: string
+          title: string
+          updated_at: string | null
+          video_path: string
+        }
+        Insert: {
+          analysis_data?: Json | null
+          created_at?: string | null
+          date?: string
+          duration?: number | null
+          id?: string
+          title: string
+          updated_at?: string | null
+          video_path: string
+        }
+        Update: {
+          analysis_data?: Json | null
+          created_at?: string | null
+          date?: string
+          duration?: number | null
+          id?: string
+          title?: string
+          updated_at?: string | null
+          video_path?: string
+        }
+        Relationships: []
+      }
+      video_annotations: {
+        Row: {
+          annotation_type: string
+          created_at: string | null
+          data: Json
+          id: string
+          timestamp: number
+          updated_at: string | null
+          video_id: string | null
+        }
+        Insert: {
+          annotation_type: string
+          created_at?: string | null
+          data: Json
+          id?: string
+          timestamp: number
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Update: {
+          annotation_type?: string
+          created_at?: string | null
+          data?: Json
+          id?: string
+          timestamp?: number
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_annotations_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "video_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
