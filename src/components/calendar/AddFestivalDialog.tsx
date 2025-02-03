@@ -5,7 +5,6 @@ import { FestivalDialogContent } from "./festival/FestivalDialogContent";
 import { useFestivalForm } from "@/hooks/useFestivalForm";
 import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
-import { useNavigate } from "react-router-dom";
 
 type TeamSelection = {
   playerId: string;
@@ -32,18 +31,26 @@ export const AddFestivalDialog = ({
   showTeamSelection = false,
 }: AddFestivalDialogProps) => {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [showTeamSelectionState, setShowTeamSelectionState] = useState(showTeamSelection);
   const [teams, setTeams] = useState<Array<{ id: string; name: string; category: string }>>([]);
   const [format, setFormat] = useState(editingFestival?.format || "7-a-side");
 
   const { handleSubmit } = useFestivalForm(
-    () => {
-      if (!showTeamSelectionState) {
-        setShowTeamSelectionState(true);
-      } else {
-        onSuccess();
-        onOpenChange(false);
+    async () => {
+      try {
+        if (!showTeamSelectionState) {
+          setShowTeamSelectionState(true);
+        } else {
+          await onSuccess();
+          onOpenChange(false);
+        }
+      } catch (error) {
+        console.error("Error in festival submission:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to save festival details",
+        });
       }
     },
     editingFestival
@@ -101,7 +108,7 @@ export const AddFestivalDialog = ({
             festival_team_id: teamId,
             player_id: selection.playerId,
             position: selection.position,
-            is_substitute: selection.position.startsWith('sub-'),
+            is_substitute: selection.is_substitute,
             performance_category: selection.performanceCategory || 'MESSI'
           }));
 
