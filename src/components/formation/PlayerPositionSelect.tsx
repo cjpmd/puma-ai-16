@@ -8,14 +8,13 @@ interface PlayerPositionSelectProps {
   playerId: string;
   positionDefinitions?: Array<{ id: string; abbreviation: string; full_name: string }>;
   availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
-  onSelectionChange: (playerId: string, position: string) => void;
+  onSelectionChange: (playerId: string) => void;
   selectedPlayers: Set<string>;
 }
 
 export const PlayerPositionSelect = ({
   position,
   playerId,
-  positionDefinitions = [],
   availablePlayers = [],
   onSelectionChange,
   selectedPlayers,
@@ -25,32 +24,18 @@ export const PlayerPositionSelect = ({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-xs text-muted-foreground">Position</Label>
-          <Select 
-            value={position || "unassigned"} 
-            onValueChange={(value) => onSelectionChange(playerId, value)}
-          >
+          <Select disabled value={position}>
             <SelectTrigger className="text-left h-9">
-              <SelectValue placeholder="Select position" />
+              <SelectValue>{position}</SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="unassigned">None</SelectItem>
-              {positionDefinitions.map(pos => (
-                <SelectItem 
-                  key={pos.id} 
-                  value={pos.abbreviation.toLowerCase()}
-                >
-                  {pos.full_name}
-                </SelectItem>
-              ))}
+              <SelectItem value={position}>{position}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div>
           <Label className="text-xs text-muted-foreground">Player</Label>
-          <Select 
-            value={playerId} 
-            onValueChange={(value) => onSelectionChange(value, position)}
-          >
+          <Select value={playerId} onValueChange={onSelectionChange}>
             <SelectTrigger className="text-left h-9">
               <SelectValue placeholder="Select player" />
             </SelectTrigger>

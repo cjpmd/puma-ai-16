@@ -22,36 +22,77 @@ export const FormationSelector = ({
   selectedPlayers,
   availablePlayers,
 }: FormationSelectorProps) => {
-  const [positions, setPositions] = useState<string[]>([]);
+  const [positions, setPositions] = useState<Array<{ id: string; position: string }>>([]);
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
 
   useEffect(() => {
-    // Initialize positions based on the format
-    switch (format) {
-      case "4-a-side":
-        setPositions(["GK", "DEF", "MID", "FWD"]);
-        break;
-      case "5-a-side":
-        setPositions(["GK", "DEF", "DEF", "MID", "FWD"]);
-        break;
-      case "7-a-side":
-        setPositions(["GK", "DEF", "DEF", "MID", "MID", "FWD", "FWD"]);
-        break;
-      case "9-a-side":
-        setPositions(["GK", "DEF", "DEF", "MID", "MID", "MID", "FWD", "FWD", "FWD"]);
-        break;
-      case "11-a-side":
-        setPositions(["GK", "DEF", "DEF", "DEF", "MID", "MID", "MID", "FWD", "FWD", "FWD", "FWD"]);
-        break;
-      default:
-        setPositions([]);
-    }
+    // Initialize positions based on the format with unique IDs
+    const getPositionsForFormat = (format: string) => {
+      switch (format) {
+        case "4-a-side":
+          return [
+            { id: "pos-1", position: "GK" },
+            { id: "pos-2", position: "DEF" },
+            { id: "pos-3", position: "MID" },
+            { id: "pos-4", position: "FWD" }
+          ];
+        case "5-a-side":
+          return [
+            { id: "pos-1", position: "GK" },
+            { id: "pos-2", position: "DEF" },
+            { id: "pos-3", position: "DEF" },
+            { id: "pos-4", position: "MID" },
+            { id: "pos-5", position: "FWD" }
+          ];
+        case "7-a-side":
+          return [
+            { id: "pos-1", position: "GK" },
+            { id: "pos-2", position: "DEF" },
+            { id: "pos-3", position: "DEF" },
+            { id: "pos-4", position: "MID" },
+            { id: "pos-5", position: "MID" },
+            { id: "pos-6", position: "FWD" },
+            { id: "pos-7", position: "FWD" }
+          ];
+        case "9-a-side":
+          return [
+            { id: "pos-1", position: "GK" },
+            { id: "pos-2", position: "DEF" },
+            { id: "pos-3", position: "DEF" },
+            { id: "pos-4", position: "MID" },
+            { id: "pos-5", position: "MID" },
+            { id: "pos-6", position: "MID" },
+            { id: "pos-7", position: "FWD" },
+            { id: "pos-8", position: "FWD" },
+            { id: "pos-9", position: "FWD" }
+          ];
+        case "11-a-side":
+          return [
+            { id: "pos-1", position: "GK" },
+            { id: "pos-2", position: "DEF" },
+            { id: "pos-3", position: "DEF" },
+            { id: "pos-4", position: "DEF" },
+            { id: "pos-5", position: "MID" },
+            { id: "pos-6", position: "MID" },
+            { id: "pos-7", position: "MID" },
+            { id: "pos-8", position: "FWD" },
+            { id: "pos-9", position: "FWD" },
+            { id: "pos-10", position: "FWD" },
+            { id: "pos-11", position: "FWD" }
+          ];
+        default:
+          return [];
+      }
+    };
+
+    setPositions(getPositionsForFormat(format));
   }, [format]);
 
-  const handlePlayerSelection = (position: string, playerId: string) => {
+  const handlePlayerSelection = (positionId: string, playerId: string) => {
+    const position = positions.find(p => p.id === positionId)?.position || "";
     const newSelections = {
       ...selections,
-      [position]: { playerId, position, performanceCategory: "MESSI" },
+      [positionId]: { playerId, position, performanceCategory: "MESSI" },
     };
     setSelections(newSelections);
     onSelectionChange(newSelections);
@@ -68,14 +109,14 @@ export const FormationSelector = ({
       />
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {positions.map((position) => (
+        {positions.map(({ id, position }) => (
           <PlayerPositionSelect
-            key={position}
-            slotId={position}
+            key={id}
+            slotId={id}
             position={position}
-            playerId={selections[position]?.playerId || "unassigned"}
+            playerId={selections[id]?.playerId || "unassigned"}
             availablePlayers={availablePlayers}
-            onSelectionChange={(playerId, pos) => handlePlayerSelection(position, playerId)}
+            onSelectionChange={(playerId) => handlePlayerSelection(id, playerId)}
             selectedPlayers={selectedPlayers}
           />
         ))}
@@ -83,9 +124,9 @@ export const FormationSelector = ({
 
       <SubstitutesList
         maxSubstitutes={5}
-        selections={{}}
+        selections={selections}
         availablePlayers={availablePlayers}
-        onSelectionChange={() => {}}
+        onSelectionChange={(slotId, playerId) => handlePlayerSelection(slotId, playerId)}
         selectedPlayers={selectedPlayers}
       />
     </div>
