@@ -47,9 +47,16 @@ export const AddEventDialog = ({
       };
 
       let savedEvent;
-      const tableName = eventType === 'fixture' || eventType === 'friendly' 
-        ? 'fixtures'
-        : `${eventType}s`;
+      let tableName: "fixtures" | "tournaments" | "festivals";
+
+      // Determine the correct table name based on event type
+      if (eventType === 'fixture' || eventType === 'friendly') {
+        tableName = "fixtures";
+      } else if (eventType === 'tournament') {
+        tableName = "tournaments";
+      } else {
+        tableName = "festivals";
+      }
 
       if (editingEvent) {
         const { error } = await supabase
