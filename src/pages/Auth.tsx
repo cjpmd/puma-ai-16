@@ -11,22 +11,13 @@ export const Auth = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    // Clear any existing session data on mount
-    const clearInvalidSession = async () => {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("Error clearing session:", error);
-      }
-    };
-
-    // Check for existing valid session
-    const checkSession = async () => {
+    const initializeAuth = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          if (error.message.includes("refresh_token_not_found")) {
-            await clearInvalidSession();
+          if (error.message.includes("session_not_found")) {
+            await supabase.auth.signOut();
             setErrorMessage("Your session has expired. Please sign in again.");
           } else {
             setErrorMessage(getErrorMessage(error));
@@ -38,20 +29,33 @@ export const Auth = () => {
           navigate("/home");
         }
       } catch (err) {
-        console.error("Session check error:", err);
+        console.error("Session initialization error:", err);
         setErrorMessage("An error occurred while checking your session.");
       }
     };
     
-    checkSession();
+    initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session);
       
       if (event === "SIGNED_IN" && session) {
-        navigate("/home");
-      } else if (event === "TOKEN_REFRESHED" && session) {
-        navigate("/home");
+        // Ensure profile exists before redirecting
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Profile fetch error:", profileError);
+          setErrorMessage("Error fetching user profile");
+          return;
+        }
+
+        if (profile) {
+          navigate("/home");
+        }
       } else if (event === "SIGNED_OUT") {
         setErrorMessage("");
       }
