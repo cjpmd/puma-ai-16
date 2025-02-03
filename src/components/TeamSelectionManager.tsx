@@ -11,48 +11,50 @@ interface TeamSelectionManagerProps {
     name: string;
     category: string;
   }>;
-  format: "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
+  format: string;
   onTeamSelectionsChange?: (selections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>) => void;
 }
 
-export const TeamSelectionManager = ({ 
-  teams, 
-  format, 
+export const TeamSelectionManager = ({
+  teams,
+  format,
   onTeamSelectionsChange 
 }: TeamSelectionManagerProps) => {
   const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
 
   const { data: players } = useQuery({
-    queryKey: ["all-players"],
+    queryKey: ["players"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
         .select("*")
         .order('name');
+      
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
   const handleTeamSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
     const newSelections = {
       ...teamSelections,
-      [teamId]: selections
+      [teamId]: selections,
     };
+
     setTeamSelections(newSelections);
 
-    // Update selected players set
-    const allSelectedPlayers = new Set<string>();
-    Object.values(newSelections).forEach(teamSelections => {
-      Object.values(teamSelections).forEach(({ playerId }) => {
-        if (playerId !== "unassigned") {
-          allSelectedPlayers.add(playerId);
+    // Update selected players
+    const newSelectedPlayers = new Set<string>();
+    Object.values(newSelections).forEach(teamSelection => {
+      Object.values(teamSelection).forEach(selection => {
+        if (selection.playerId !== "unassigned") {
+          newSelectedPlayers.add(selection.playerId);
         }
       });
     });
-    setSelectedPlayers(allSelectedPlayers);
-    
+    setSelectedPlayers(newSelectedPlayers);
+
     onTeamSelectionsChange?.(newSelections);
   };
 
@@ -69,7 +71,7 @@ export const TeamSelectionManager = ({
           </CardHeader>
           <CardContent>
             <FormationSelector
-              format={format}
+              format={format as "4-a-side" | "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side"}
               teamName={team.name}
               onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
               selectedPlayers={selectedPlayers}

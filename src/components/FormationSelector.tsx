@@ -1,117 +1,88 @@
-import { useState } from "react";
-import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
+import { useState, useEffect } from "react";
+import { TeamPositionSelect } from "./formation/PlayerPositionSelect";
 import { SubstitutesList } from "./formation/SubstitutesList";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { TeamSettingsHeader } from "./formation/TeamSettingsHeader";
 
-export interface FormationSelectorProps {
-  format: "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
+interface FormationSelectorProps {
+  format: "4-a-side" | "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
   teamName: string;
   onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => void;
-  selectedPlayers?: Set<string>;
-  availablePlayers: Array<{ id: string; name: string; squad_number?: number }>;
+  selectedPlayers: Set<string>;
+  availablePlayers: Array<{
+    id: string;
+    name: string;
+    squad_number?: number;
+  }>;
 }
 
 export const FormationSelector = ({
   format,
   teamName,
   onSelectionChange,
-  selectedPlayers = new Set(),
-  availablePlayers
+  selectedPlayers,
+  availablePlayers,
 }: FormationSelectorProps) => {
+  const [positions, setPositions] = useState<string[]>([]);
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
-  const [performanceCategory, setPerformanceCategory] = useState('MESSI');
+  const [substitutes, setSubstitutes] = useState<string[]>([]);
 
-  const { data: positions } = useQuery({
-    queryKey: ["positions"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("position_definitions")
-        .select("*");
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: [],
-  });
+  useEffect(() => {
+    // Initialize positions based on the format
+    switch (format) {
+      case "4-a-side":
+        setPositions(["GK", "DEF", "MID", "FWD"]);
+        break;
+      case "5-a-side":
+        setPositions(["GK", "DEF", "DEF", "MID", "FWD"]);
+        break;
+      case "7-a-side":
+        setPositions(["GK", "DEF", "DEF", "MID", "MID", "FWD", "FWD"]);
+        break;
+      case "9-a-side":
+        setPositions(["GK", "DEF", "DEF", "MID", "MID", "MID", "FWD", "FWD", "FWD"]);
+        break;
+      case "11-a-side":
+        setPositions(["GK", "DEF", "DEF", "DEF", "MID", "MID", "MID", "FWD", "FWD", "FWD", "FWD"]);
+        break;
+      default:
+        setPositions([]);
+    }
+  }, [format]);
 
-  const handlePositionChange = (slotId: string, playerId: string, position: string) => {
-    if (!playerId || !position) return;
-    
+  const handlePlayerSelection = (position: string, playerId: string) => {
     const newSelections = {
       ...selections,
-      [slotId]: { 
-        playerId, 
-        position,
-        performanceCategory 
-      }
+      [position]: { playerId, position, performanceCategory: "MESSI" },
     };
     setSelections(newSelections);
     onSelectionChange(newSelections);
   };
 
-  const handleCategoryChange = (category: string) => {
-    setPerformanceCategory(category);
-    // Update all existing selections with the new category
-    const updatedSelections = Object.entries(selections).reduce((acc, [key, value]) => ({
-      ...acc,
-      [key]: { ...value, performanceCategory: category }
-    }), {});
-    setSelections(updatedSelections);
-    onSelectionChange(updatedSelections);
+  const handleSubstituteChange = (substitutes: string[]) => {
+    setSubstitutes(substitutes);
   };
-
-  const getMaxSubstitutes = () => {
-    const formatMap: Record<string, number> = {
-      "4-a-side": 2,
-      "5-a-side": 3,
-      "6-a-side": 3,
-      "7-a-side": 4,
-      "9-a-side": 5,
-      "11-a-side": 5
-    };
-    return formatMap[format] || 3;
-  };
-
-  const numPlayers = Number(format.split('-')[0]);
 
   return (
     <div className="space-y-6">
-      <div>
-        <Label>Performance Category</Label>
-        <Select value={performanceCategory} onValueChange={handleCategoryChange}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="MESSI">Messi</SelectItem>
-            <SelectItem value="RONALDO">Ronaldo</SelectItem>
-            <SelectItem value="NEYMAR">Neymar</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
+      <TeamSettingsHeader format={format} teamName={teamName} />
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {Array.from({ length: numPlayers }).map((_, index) => (
-          <PlayerPositionSelect
-            key={`pos-${index}`}
-            slotId={`pos-${index}`}
-            position={selections[`pos-${index}`]?.position || ""}
-            playerId={selections[`pos-${index}`]?.playerId || "unassigned"}
-            positionDefinitions={positions}
+        {positions.map((position) => (
+          <TeamPositionSelect
+            key={position}
+            position={position}
+            playerId={selections[position]?.playerId || "unassigned"}
             availablePlayers={availablePlayers}
-            onSelectionChange={(playerId, position) => handlePositionChange(`pos-${index}`, playerId, position)}
+            onSelectionChange={(playerId) => handlePlayerSelection(position, playerId)}
             selectedPlayers={selectedPlayers}
           />
         ))}
       </div>
 
       <SubstitutesList
-        maxSubstitutes={getMaxSubstitutes()}
-        selections={selections}
+        substitutes={substitutes}
         availablePlayers={availablePlayers}
-        onSelectionChange={(slotId, playerId) => handlePositionChange(slotId, playerId, slotId)}
+        onSubstituteChange={handleSubstituteChange}
         selectedPlayers={selectedPlayers}
       />
     </div>
