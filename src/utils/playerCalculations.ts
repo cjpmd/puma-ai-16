@@ -2,7 +2,7 @@ import { Player } from "@/types/player";
 
 export type PerformanceStatus = "improving" | "needs-improvement" | "maintaining" | "neutral";
 
-export const calculatePlayerPerformance = (player: Player): PerformanceStatus => {
+export const calculatePlayerPerformance = (player?: Player): PerformanceStatus => {
   if (!player?.attributes || player.attributes.length === 0) return "neutral";
 
   const allAttributes = player.attributes;
@@ -10,30 +10,34 @@ export const calculatePlayerPerformance = (player: Player): PerformanceStatus =>
     new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime()
   );
 
-  const recentValues = sortedByDate.slice(0, Math.ceil(sortedByDate.length / 2));
-  const olderValues = sortedByDate.slice(Math.ceil(sortedByDate.length / 2));
+  // Get the most recent attribute values
+  const recentValues = sortedByDate.slice(0, Math.min(5, sortedByDate.length));
+  const averageRecent = recentValues.reduce((sum, attr) => sum + attr.value, 0) / recentValues.length;
 
-  const recentAvg = recentValues.reduce((sum, attr) => sum + attr.value, 0) / recentValues.length;
-  const olderAvg = olderValues.length > 0 
-    ? olderValues.reduce((sum, attr) => sum + attr.value, 0) / olderValues.length 
-    : recentAvg;
+  // Get the older attribute values
+  const olderValues = sortedByDate.slice(Math.min(5, sortedByDate.length));
+  if (olderValues.length === 0) return "neutral";
 
-  const difference = recentAvg - olderAvg;
-  if (difference > 0.5) return "improving";
-  if (difference < -0.5) return "needs-improvement";
+  const averageOlder = olderValues.reduce((sum, attr) => sum + attr.value, 0) / olderValues.length;
+
+  // Calculate the percentage change
+  const percentageChange = ((averageRecent - averageOlder) / averageOlder) * 100;
+
+  if (percentageChange > 5) return "improving";
+  if (percentageChange < -5) return "needs-improvement";
   return "maintaining";
 };
 
 export const getPerformanceColor = (status: PerformanceStatus): string => {
   switch (status) {
     case "improving":
-      return "text-green-500";
+      return "text-green-600";
     case "needs-improvement":
-      return "text-amber-500";
-    case "neutral":
-      return "text-gray-500";
+      return "text-red-600";
+    case "maintaining":
+      return "text-blue-600";
     default:
-      return "text-blue-500";
+      return "text-gray-600";
   }
 };
 
@@ -43,9 +47,9 @@ export const getPerformanceText = (status: PerformanceStatus): string => {
       return "Improving";
     case "needs-improvement":
       return "Needs Improvement";
-    case "neutral":
-      return "No Data";
-    default:
+    case "maintaining":
       return "Maintaining";
+    default:
+      return "Neutral";
   }
 };

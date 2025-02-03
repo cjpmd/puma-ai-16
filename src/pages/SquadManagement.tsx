@@ -58,14 +58,14 @@ const SquadManagement = () => {
         dateOfBirth: player.date_of_birth,
         squadNumber: player.squad_number,
         playerType: player.player_type,
-        attributes: player.player_attributes.map((attr: any) => ({
+        attributes: player.player_attributes?.map((attr: any) => ({
           id: attr.id,
           name: attr.name,
           value: attr.value,
           category: attr.category,
           player_id: attr.player_id,
           created_at: attr.created_at,
-        })),
+        })) || [],
         attributeHistory: {},
         objectives: statsData?.find((stat: any) => stat.player_id === player.id) ? {
           completed: statsData.find((stat: any) => stat.player_id === player.id).completed_objectives,
@@ -85,14 +85,15 @@ const SquadManagement = () => {
     },
   });
 
-  const calculateAttributeAverage = (attributes: Player['attributes'], category: string): number => {
+  const calculateAttributeAverage = (attributes: Player['attributes'] = [], category: string): number => {
+    if (!attributes || attributes.length === 0) return 0;
     const categoryAttributes = attributes.filter(attr => attr.category === category);
     if (categoryAttributes.length === 0) return 0;
     const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
     return Number((sum / categoryAttributes.length).toFixed(1));
   };
 
-  const sortPlayers = (playersToSort: Player[]) => {
+  const sortPlayers = (playersToSort: Player[] = []) => {
     return [...playersToSort].sort((a, b) => {
       let valueA: number;
       let valueB: number;
