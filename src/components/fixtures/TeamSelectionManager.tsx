@@ -93,7 +93,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       </CardHeader>
       <CardContent>
         <FormationSelector
-          format={fixture.format || "7-a-side"}
+          format={fixture.format as "7-a-side"}
           teamName={fixture.team_name}
           onSelectionChange={handleSelectionChange}
           selectedPlayers={selectedPlayers}

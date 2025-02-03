@@ -85,6 +85,7 @@ export const AddFixtureDialog = ({
         opponent: data.opponent,
         location: data.location,
         category: data.category,
+        team_name: data.team_name,
         date: format(selectedDate, "yyyy-MM-dd"),
         home_score: data.home_score ? parseInt(data.home_score) : null,
         away_score: data.away_score ? parseInt(data.away_score) : null,

@@ -90,7 +90,7 @@ export const FestivalTeamSelection = ({
             )}
             <FormationSelector
               format={format as any}
-              teamCategory={team.category}
+              teamName={team.category}
               onSelectionChange={(selections) => handleSelectionChange(team.id, selections)}
               selectedPlayers={selectedPlayers}
               availablePlayers={players || []}
