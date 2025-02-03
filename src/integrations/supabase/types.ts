@@ -256,6 +256,36 @@ export type Database = {
           },
         ]
       }
+      event_periods: {
+        Row: {
+          created_at: string | null
+          duration_minutes: number
+          event_id: string
+          event_type: string
+          id: string
+          period_number: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration_minutes: number
+          event_id: string
+          event_type: string
+          id?: string
+          period_number: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          duration_minutes?: number
+          event_id?: string
+          event_type?: string
+          id?: string
+          period_number?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       festival_team_players: {
         Row: {
           created_at: string | null
@@ -375,9 +405,10 @@ export type Database = {
           format: string | null
           id: string
           location: string | null
+          meeting_time: string | null
           number_of_teams: number
           start_time: string | null
-          system_category: string
+          team_name: string | null
           updated_at: string | null
         }
         Insert: {
@@ -387,9 +418,10 @@ export type Database = {
           format?: string | null
           id?: string
           location?: string | null
+          meeting_time?: string | null
           number_of_teams: number
           start_time?: string | null
-          system_category: string
+          team_name?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -399,9 +431,10 @@ export type Database = {
           format?: string | null
           id?: string
           location?: string | null
+          meeting_time?: string | null
           number_of_teams?: number
           start_time?: string | null
-          system_category?: string
+          team_name?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -603,14 +636,20 @@ export type Database = {
           category: string
           created_at: string | null
           date: string
+          end_time: string | null
           format: string | null
           home_score: number | null
           id: string
           is_friendly: boolean | null
+          is_home: boolean | null
           location: string | null
+          meeting_time: string | null
           motm_player_id: string | null
+          number_of_teams: number | null
           opponent: string
           outcome: string | null
+          start_time: string | null
+          team_name: string | null
           time: string | null
           updated_at: string | null
         }
@@ -619,14 +658,20 @@ export type Database = {
           category?: string
           created_at?: string | null
           date: string
+          end_time?: string | null
           format?: string | null
           home_score?: number | null
           id?: string
           is_friendly?: boolean | null
+          is_home?: boolean | null
           location?: string | null
+          meeting_time?: string | null
           motm_player_id?: string | null
+          number_of_teams?: number | null
           opponent: string
           outcome?: string | null
+          start_time?: string | null
+          team_name?: string | null
           time?: string | null
           updated_at?: string | null
         }
@@ -635,14 +680,20 @@ export type Database = {
           category?: string
           created_at?: string | null
           date?: string
+          end_time?: string | null
           format?: string | null
           home_score?: number | null
           id?: string
           is_friendly?: boolean | null
+          is_home?: boolean | null
           location?: string | null
+          meeting_time?: string | null
           motm_player_id?: string | null
+          number_of_teams?: number | null
           opponent?: string
           outcome?: string | null
+          start_time?: string | null
+          team_name?: string | null
           time?: string | null
           updated_at?: string | null
         }
@@ -1650,6 +1701,94 @@ export type Database = {
           },
         ]
       }
+      team_selections: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          event_type: string
+          id: string
+          is_captain: boolean | null
+          is_substitute: boolean | null
+          performance_category: string | null
+          period_id: string | null
+          player_id: string
+          position: string
+          team_number: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          event_type: string
+          id?: string
+          is_captain?: boolean | null
+          is_substitute?: boolean | null
+          performance_category?: string | null
+          period_id?: string | null
+          player_id: string
+          position: string
+          team_number: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          is_captain?: boolean | null
+          is_substitute?: boolean | null
+          performance_category?: string | null
+          period_id?: string | null
+          player_id?: string
+          position?: string
+          team_number?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_selections_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "event_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_selections_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_selections_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "team_selections_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "team_selections_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_selections_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
       team_settings: {
         Row: {
           created_at: string | null
@@ -1796,8 +1935,9 @@ export type Database = {
           format: string | null
           id: string
           location: string | null
+          meeting_time: string | null
           number_of_teams: number
-          system_category: string
+          team_name: string | null
           time: string | null
           updated_at: string | null
         }
@@ -1808,8 +1948,9 @@ export type Database = {
           format?: string | null
           id?: string
           location?: string | null
+          meeting_time?: string | null
           number_of_teams: number
-          system_category: string
+          team_name?: string | null
           time?: string | null
           updated_at?: string | null
         }
@@ -1820,8 +1961,9 @@ export type Database = {
           format?: string | null
           id?: string
           location?: string | null
+          meeting_time?: string | null
           number_of_teams?: number
-          system_category?: string
+          team_name?: string | null
           time?: string | null
           updated_at?: string | null
         }
