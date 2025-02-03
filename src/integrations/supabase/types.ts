@@ -408,6 +408,7 @@ export type Database = {
           meeting_time: string | null
           number_of_teams: number
           start_time: string | null
+          system_category: string | null
           team_name: string | null
           updated_at: string | null
         }
@@ -421,6 +422,7 @@ export type Database = {
           meeting_time?: string | null
           number_of_teams: number
           start_time?: string | null
+          system_category?: string | null
           team_name?: string | null
           updated_at?: string | null
         }
@@ -434,6 +436,7 @@ export type Database = {
           meeting_time?: string | null
           number_of_teams?: number
           start_time?: string | null
+          system_category?: string | null
           team_name?: string | null
           updated_at?: string | null
         }

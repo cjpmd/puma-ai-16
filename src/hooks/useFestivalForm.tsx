@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -9,12 +7,9 @@ export const useFestivalForm = (
   onSuccess: () => void,
   editingFestival?: any
 ) => {
-  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const handleSubmit = async (data: FormData) => {
-    setIsSaving(true);
     try {
       const festivalData = {
         date: format(data.date, "yyyy-MM-dd"),
@@ -23,33 +18,23 @@ export const useFestivalForm = (
         location: data.location || null,
         format: data.format,
         number_of_teams: data.numberOfTeams,
-        system_category: "FESTIVAL",
+        system_category: 'FESTIVAL',
       };
 
-      let festival;
       if (editingFestival) {
-        const { data: updatedFestival, error } = await supabase
+        const { error } = await supabase
           .from("festivals")
           .update(festivalData)
-          .eq("id", editingFestival.id)
-          .select()
-          .single();
+          .eq("id", editingFestival.id);
 
         if (error) throw error;
-        festival = updatedFestival;
       } else {
-        const { data: newFestival, error } = await supabase
+        const { error } = await supabase
           .from("festivals")
-          .insert(festivalData)
-          .select()
-          .single();
+          .insert(festivalData);
 
         if (error) throw error;
-        festival = newFestival;
       }
-
-      queryClient.invalidateQueries({ queryKey: ["festivals"] });
-      queryClient.invalidateQueries({ queryKey: ["calendar-data"] });
 
       toast({
         title: "Success",
@@ -64,13 +49,10 @@ export const useFestivalForm = (
         title: "Error",
         description: "Failed to save festival",
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
   return {
-    isSaving,
     handleSubmit,
   };
 };
