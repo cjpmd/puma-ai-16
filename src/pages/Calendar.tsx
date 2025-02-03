@@ -21,6 +21,14 @@ export const CalendarPage = () => {
     refetchObjectives,
   } = useCalendarData(calendarState.date);
 
+  console.log("Calendar data:", {
+    sessions,
+    fixtures,
+    festivals,
+    tournaments,
+    objectives,
+  });
+
   return (
     <div className="container mx-auto p-6 space-y-8">
       <CalendarHeader

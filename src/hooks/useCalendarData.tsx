@@ -7,6 +7,8 @@ export const useCalendarData = (date: Date) => {
   const { toast } = useToast();
   const formattedDate = format(date, "yyyy-MM-dd");
 
+  console.log("Fetching calendar data for date:", formattedDate);
+
   const { data: sessions, refetch: refetchSessions } = useQuery({
     queryKey: ["training-sessions", formattedDate],
     queryFn: async () => {
@@ -16,6 +18,7 @@ export const useCalendarData = (date: Date) => {
           .select("*, training_drills(*, training_files(*))")
           .eq("date", formattedDate);
         
+        console.log("Training sessions response:", { data, error });
         if (error) throw error;
         return data;
       } catch (error) {
@@ -42,6 +45,7 @@ export const useCalendarData = (date: Date) => {
           .select("*")
           .eq("date", formattedDate);
         
+        console.log("Fixtures response:", { data, error });
         if (error) throw error;
         return data;
       } catch (error) {
@@ -68,6 +72,7 @@ export const useCalendarData = (date: Date) => {
           .select("*")
           .eq("date", formattedDate);
         
+        console.log("Festivals response:", { data, error });
         if (error) throw error;
         return data;
       } catch (error) {
@@ -94,6 +99,7 @@ export const useCalendarData = (date: Date) => {
           .select("*")
           .eq("date", formattedDate);
         
+        console.log("Tournaments response:", { data, error });
         if (error) throw error;
         return data;
       } catch (error) {
@@ -120,6 +126,7 @@ export const useCalendarData = (date: Date) => {
           .select("*")
           .eq("review_date", formattedDate);
         
+        console.log("Objectives response:", { data, error });
         if (error) throw error;
         return data;
       } catch (error) {
