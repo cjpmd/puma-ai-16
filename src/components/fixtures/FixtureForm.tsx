@@ -21,8 +21,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Fixture } from "@/types/fixture";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
@@ -35,6 +33,7 @@ const formSchema = z.object({
   start_time: z.string().optional(),
   end_time: z.string().optional(),
   is_home: z.boolean().default(true),
+  format: z.string().default("7-a-side"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -62,6 +61,7 @@ export const FixtureForm = ({
       opponent: editingFixture?.opponent || "",
       location: editingFixture?.location || "",
       number_of_teams: editingFixture?.number_of_teams?.toString() || "1",
+      format: editingFixture?.format || "7-a-side",
       home_score: Array(editingFixture?.number_of_teams || 1).fill(""),
       away_score: Array(editingFixture?.number_of_teams || 1).fill(""),
       motm_player_ids: Array(editingFixture?.number_of_teams || 1).fill(""),
@@ -163,7 +163,6 @@ export const FixtureForm = ({
                     {...field}
                     onChange={(e) => {
                       field.onChange(e.target.value);
-                      // Update arrays when number of teams changes
                       const newLength = parseInt(e.target.value) || 1;
                       form.setValue('home_score', Array(newLength).fill(""));
                       form.setValue('away_score', Array(newLength).fill(""));
@@ -220,6 +219,31 @@ export const FixtureForm = ({
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="format"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Format</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select format" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="4-a-side">4-a-side</SelectItem>
+                  <SelectItem value="5-a-side">5-a-side</SelectItem>
+                  <SelectItem value="7-a-side">7-a-side</SelectItem>
+                  <SelectItem value="9-a-side">9-a-side</SelectItem>
+                  <SelectItem value="11-a-side">11-a-side</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {Array.from({ length: watchNumberOfTeams }).map((_, index) => (
           <div key={index} className="grid grid-cols-2 gap-4 border p-4 rounded-lg">
