@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationSelector } from "@/components/FormationSelector";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { Fixture } from "@/types/fixture";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
+import type { Fixture } from "@/types/fixture";
 
 interface TeamSelectionManagerProps {
   fixture: Fixture | null;
@@ -22,6 +22,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
   const [activeTeam, setActiveTeam] = useState<string>("1");
   const [activePeriod, setActivePeriod] = useState<string>("period-1");
   const [selections, setSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   const { data: availablePlayers } = useQuery({
     queryKey: ["available-players"],
@@ -52,6 +53,30 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     if (!fixture) return;
 
     try {
+      setIsSaving(true);
+
+      // First, create or get the period records
+      const periodPromises = periods.map(async (period) => {
+        const periodNumber = parseInt(period.id.split('-')[1]);
+        const { data, error } = await supabase
+          .from('event_periods')
+          .upsert({
+            event_id: fixture.id,
+            event_type: 'FIXTURE',
+            period_number: periodNumber,
+            duration_minutes: period.duration
+          }, {
+            onConflict: 'event_id,event_type,period_number'
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      });
+
+      const periodRecords = await Promise.all(periodPromises);
+
       // Delete existing selections
       await supabase
         .from("team_selections")
@@ -63,15 +88,20 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
 
       // Prepare all selections for insertion
       const allSelections = Object.entries(selections).flatMap(([teamNumber, teamSelections]) =>
-        Object.entries(teamSelections).map(([_, selection]) => ({
-          event_id: fixture.id,
-          event_type: 'FIXTURE',
-          team_number: parseInt(teamNumber),
-          player_id: selection.playerId,
-          position: selection.position,
-          period_id: activePeriod,
-          performance_category: selection.performanceCategory || 'MESSI'
-        }))
+        Object.entries(teamSelections).map(([_, selection]) => {
+          const periodId = periodRecords.find(p => 
+            p.period_number === parseInt(activePeriod.split('-')[1]))?.id;
+          
+          return {
+            event_id: fixture.id,
+            event_type: 'FIXTURE',
+            team_number: parseInt(teamNumber),
+            player_id: selection.playerId,
+            position: selection.position,
+            period_id: periodId,
+            performance_category: selection.performanceCategory || 'MESSI'
+          };
+        })
       );
 
       // Insert new selections
@@ -104,13 +134,9 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         title: "Error",
         description: "Failed to save team selections",
       });
+    } finally {
+      setIsSaving(false);
     }
-  };
-
-  const addPeriod = () => {
-    const newPeriodId = `period-${periods.length + 1}`;
-    setPeriods([...periods, { id: newPeriodId, duration: 20 }]);
-    setActivePeriod(newPeriodId);
   };
 
   if (!fixture || !availablePlayers) {
@@ -130,8 +156,12 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
             <Plus className="w-4 h-4 mr-2" />
             Add Period
           </Button>
-          <Button onClick={handleSave} variant="default">
-            Save Selections
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving}
+            variant="default"
+          >
+            {isSaving ? 'Saving...' : 'Save Selections'}
           </Button>
         </div>
       </div>
