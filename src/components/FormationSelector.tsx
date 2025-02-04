@@ -35,7 +35,6 @@ export const FormationSelector = ({
       const { data, error } = await supabase
         .from("players")
         .select("id, name, squad_number")
-        .eq("team_category", teamName)
         .order("name");
       
       if (error) throw error;
@@ -47,19 +46,23 @@ export const FormationSelector = ({
   // Use provided players or fetched players
   const players = initialPlayers || fetchedPlayers || [];
 
-  console.log("Available players:", players); // Debug log
-
   const handlePlayerSelection = (slotId: string, playerId: string) => {
     const position = slotId.split("-")[0].toUpperCase();
     setSelections((prev) => {
-      const newSelections = {
-        ...prev,
-        [slotId]: {
-          ...prev[slotId],
-          playerId,
-          position,
-        },
+      // Remove player from previous position if they were assigned somewhere else
+      const newSelections = { ...prev };
+      Object.entries(newSelections).forEach(([key, value]) => {
+        if (value.playerId === playerId && key !== slotId) {
+          newSelections[key] = { ...value, playerId: "unassigned" };
+        }
+      });
+
+      // Assign player to new position
+      newSelections[slotId] = {
+        playerId,
+        position,
       };
+
       onSelectionChange(newSelections);
       return newSelections;
     });
