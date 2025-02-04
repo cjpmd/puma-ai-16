@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerPositionSelectProps {
+  slotId: string;
   position: string;
   playerId: string;
   availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
@@ -13,6 +14,7 @@ interface PlayerPositionSelectProps {
 }
 
 export const PlayerPositionSelect = ({
+  slotId,
   position,
   playerId,
   availablePlayers = [],
