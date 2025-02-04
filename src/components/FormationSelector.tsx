@@ -122,14 +122,14 @@ export const FormationSelector = ({
   };
 
   // Convert available players to Player type for FormationView
-  const formationPlayers: Player[] = players.map(player => ({
+  const formationPlayers = players.map(player => ({
     id: player.id,
     name: player.name,
-    squadNumber: player.squad_number || 0,
-    age: 0, // Required by Player type
-    dateOfBirth: new Date().toISOString(), // Required by Player type
-    playerType: "OUTFIELD", // Required by Player type
-    attributes: [], // Required by Player type
+    squad_number: player.squad_number || 0, // Changed from squadNumber to squad_number
+    age: 0,
+    dateOfBirth: new Date().toISOString(),
+    playerType: "OUTFIELD",
+    attributes: []
   }));
 
   const maxSubstitutes = {
