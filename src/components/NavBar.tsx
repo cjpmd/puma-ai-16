@@ -22,19 +22,44 @@ export const NavBar = () => {
   // Check authentication status on mount and setup listener
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.log("No active session found");
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          if (sessionError.message.includes("session_not_found")) {
+            console.log("Session not found, signing out...");
+            await supabase.auth.signOut();
+          }
+          console.error("Session error:", sessionError);
+          navigate("/auth");
+          return;
+        }
+
+        if (!session) {
+          console.log("No active session found");
+          navigate("/auth");
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
         navigate("/auth");
       }
     };
 
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event);
+      
       if (event === 'SIGNED_OUT' || !session) {
         navigate("/auth");
+      } else if (event === 'SIGNED_IN' && session) {
+        // Verify the session is valid
+        const { error: verifyError } = await supabase.auth.getUser();
+        if (verifyError) {
+          console.error("Session verification failed:", verifyError);
+          await supabase.auth.signOut();
+          navigate("/auth");
+        }
       }
     });
 
@@ -46,60 +71,69 @@ export const NavBar = () => {
   const { data: profile, error: profileError, refetch: refetchProfile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
-      console.log("Fetching profile...");
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log("Current user:", user);
-      
-      if (!user) {
-        console.log("No user found");
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.error("User fetch error:", userError);
+          if (userError.message.includes("session_not_found")) {
+            await supabase.auth.signOut();
+            navigate("/auth");
+          }
+          return null;
+        }
+
+        if (!user) {
+          console.log("No user found");
+          return null;
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (profileError) {
+          console.error("Profile fetch error:", profileError);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to fetch profile",
+          });
+          return null;
+        }
+
+        return profile;
+      } catch (error) {
+        console.error("Profile query error:", error);
         return null;
       }
-
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      console.log("Profile data:", profile);
-      console.log("Profile error:", error);
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to fetch profile",
-        });
-        return null;
-      }
-
-      return profile;
     },
     retry: 1,
     refetchOnWindowFocus: true,
   });
 
-  // Show error toast if profile fetch fails
-  if (profileError) {
-    console.error("Profile error:", profileError);
-    toast({
-      variant: "destructive",
-      title: "Error",
-      description: "Failed to load profile",
-    });
-  }
-
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error signing out",
+          description: error.message,
+        });
+        return;
+      }
+      navigate("/auth");
+    } catch (error) {
+      console.error("Logout error:", error);
       toast({
         variant: "destructive",
-        title: "Error signing out",
-        description: error.message,
+        title: "Error",
+        description: "Failed to sign out",
       });
-      return;
     }
-    navigate("/auth");
   };
 
   return (
