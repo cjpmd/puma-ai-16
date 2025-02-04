@@ -15,6 +15,7 @@ interface FormationSelectorProps {
   onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => void;
   selectedPlayers: Set<string>;
   availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
+  performanceCategory?: string;
 }
 
 export const FormationSelector = ({
@@ -23,6 +24,7 @@ export const FormationSelector = ({
   onSelectionChange,
   selectedPlayers,
   availablePlayers: initialPlayers,
+  performanceCategory = "MESSI",
 }: FormationSelectorProps) => {
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
   const [captain, setCaptain] = useState<string>("unassigned");
@@ -53,12 +55,27 @@ export const FormationSelector = ({
       newSelections[slotId] = {
         playerId,
         position,
+        performanceCategory
       };
 
       onSelectionChange(newSelections);
       return newSelections;
     });
   };
+
+  // Update selections when performance category changes
+  useEffect(() => {
+    setSelections(prev => {
+      const updated = Object.fromEntries(
+        Object.entries(prev).map(([key, value]) => [
+          key,
+          { ...value, performanceCategory }
+        ])
+      );
+      onSelectionChange(updated);
+      return updated;
+    });
+  }, [performanceCategory, onSelectionChange]);
 
   const getFormationSlots = () => {
     switch (format) {
@@ -116,29 +133,6 @@ export const FormationSelector = ({
       }));
   };
 
-  // Convert available players to Player type for FormationView
-  const formationPlayers = players.map(player => ({
-    id: player.id,
-    name: player.name,
-    squad_number: player.squad_number || 0,
-    age: 0,
-    dateOfBirth: new Date().toISOString(),
-    playerType: "OUTFIELD",
-    attributes: []
-  }));
-
-  const maxSubstitutes = {
-    "5-a-side": 3,
-    "7-a-side": 3,
-    "9-a-side": 4,
-    "11-a-side": 5,
-  }[format];
-
-  // Reset selections when format changes
-  useEffect(() => {
-    setSelections({});
-  }, [format]);
-
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center mb-6">
@@ -165,7 +159,15 @@ export const FormationSelector = ({
       {showFormation && (
         <FormationView
           positions={formatSelectionsForFormation()}
-          players={formationPlayers}
+          players={players.map(player => ({
+            id: player.id,
+            name: player.name,
+            squad_number: player.squad_number || 0,
+            age: 0,
+            dateOfBirth: new Date().toISOString(),
+            playerType: "OUTFIELD",
+            attributes: []
+          }))}
           periodNumber={1}
           duration={parseInt(duration)}
         />
@@ -177,7 +179,7 @@ export const FormationSelector = ({
             <PlayerPositionSelect
               key={slot.id}
               slotId={slot.id}
-              position={slot.label}
+              position={selections[slot.id]?.position || slot.label}
               playerId={selections[slot.id]?.playerId || "unassigned"}
               availablePlayers={players}
               onSelectionChange={(playerId, position) => handlePlayerSelection(slot.id, playerId, position)}
@@ -188,7 +190,7 @@ export const FormationSelector = ({
       </div>
 
       <SubstitutesList
-        maxSubstitutes={maxSubstitutes}
+        maxSubstitutes={format === "11-a-side" ? 5 : 3}
         selections={selections}
         availablePlayers={players}
         onSelectionChange={handlePlayerSelection}

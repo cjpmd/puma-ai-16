@@ -52,46 +52,29 @@ export const TeamSelectionManager = ({
   const handleTeamSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
     const newSelections = {
       ...teamSelections,
-      [teamId]: {
-        ...selections,
-        ...Object.fromEntries(
-          Object.entries(selections).map(([key, value]) => [
-            key,
-            {
-              ...value,
-              performanceCategory: performanceCategories[teamId] || "MESSI"
-            }
-          ])
-        )
-      },
+      [teamId]: selections
     };
 
     setTeamSelections(newSelections);
     onTeamSelectionsChange?.(newSelections);
+
+    // Update selected players
+    const selectedPlayerIds = new Set<string>();
+    Object.values(newSelections).forEach(teamSelection => {
+      Object.values(teamSelection).forEach(selection => {
+        if (selection.playerId !== "unassigned") {
+          selectedPlayerIds.add(selection.playerId);
+        }
+      });
+    });
+    setSelectedPlayers(selectedPlayerIds);
   };
 
   const handlePerformanceCategoryChange = (teamId: string, category: string) => {
-    setPerformanceCategories(prev => {
-      const newCategories = {
-        ...prev,
-        [teamId]: category
-      };
-
-      // Update existing selections with new category
-      const updatedSelections = {
-        ...teamSelections,
-        [teamId]: Object.fromEntries(
-          Object.entries(teamSelections[teamId] || {}).map(([key, value]) => [
-            key,
-            { ...value, performanceCategory: category }
-          ])
-        )
-      };
-      setTeamSelections(updatedSelections);
-      onTeamSelectionsChange?.(updatedSelections);
-
-      return newCategories;
-    });
+    setPerformanceCategories(prev => ({
+      ...prev,
+      [teamId]: category
+    }));
   };
 
   const handleSave = async () => {
@@ -147,6 +130,7 @@ export const TeamSelectionManager = ({
               onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
               selectedPlayers={selectedPlayers}
               availablePlayers={players}
+              performanceCategory={performanceCategories[team.id] || "MESSI"}
             />
           </CardContent>
         </Card>
