@@ -22,6 +22,8 @@ export const FormationSelector = ({
   availablePlayers: initialPlayers,
 }: FormationSelectorProps) => {
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
+  const [captain, setCaptain] = useState<string>("unassigned");
+  const [duration, setDuration] = useState<string>("20");
 
   // Fetch players if not provided
   const { data: fetchedPlayers } = useQuery({
@@ -116,7 +118,13 @@ export const FormationSelector = ({
 
   return (
     <div className="space-y-8">
-      <TeamSettingsHeader />
+      <TeamSettingsHeader 
+        captain={captain}
+        duration={duration}
+        availablePlayers={players}
+        onCaptainChange={setCaptain}
+        onDurationChange={setDuration}
+      />
       
       <div className="grid grid-cols-5 gap-4">
         {getFormationSlots().map((slot) => (

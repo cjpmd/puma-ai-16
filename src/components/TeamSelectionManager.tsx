@@ -104,6 +104,11 @@ export const TeamSelectionManager = ({
     return <div>Loading players...</div>;
   }
 
+  // Ensure format is one of the allowed values
+  const validFormat = (format === "5-a-side" || format === "7-a-side" || format === "9-a-side" || format === "11-a-side") 
+    ? format 
+    : "7-a-side";
+
   return (
     <div className="space-y-6">
       {teams.map(team => (
@@ -126,12 +131,11 @@ export const TeamSelectionManager = ({
           </CardHeader>
           <CardContent>
             <FormationSelector
-              format={format as "4-a-side" | "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side"}
+              format={validFormat}
               teamName={team.name}
               onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
               selectedPlayers={selectedPlayers}
               availablePlayers={players}
-              performanceCategory={performanceCategories[team.id]}
             />
           </CardContent>
         </Card>
