@@ -26,6 +26,7 @@ export const TeamSelectionManager = ({
   const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   const { data: players, isLoading, error } = useQuery({
     queryKey: ["players"],
@@ -79,7 +80,10 @@ export const TeamSelectionManager = ({
 
   const handleSave = async () => {
     try {
+      setIsSaving(true);
       // Save team selections logic here
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+      
       toast({
         title: "Success",
         description: "Team selections saved successfully",
@@ -91,6 +95,8 @@ export const TeamSelectionManager = ({
         title: "Error",
         description: "Failed to save team selections",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -136,7 +142,12 @@ export const TeamSelectionManager = ({
         </Card>
       ))}
       <div className="flex justify-end">
-        <Button onClick={handleSave}>Save Team Selections</Button>
+        <Button 
+          onClick={handleSave} 
+          disabled={isSaving}
+        >
+          {isSaving ? 'Saving...' : 'Save Team Selections'}
+        </Button>
       </div>
     </div>
   );

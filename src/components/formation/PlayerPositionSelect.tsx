@@ -34,15 +34,15 @@ export const PlayerPositionSelect = ({
   });
 
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-2">
+    <div className="space-y-4 p-2">
+      <div className="grid grid-cols-1 gap-4">
         <div>
-          <Label className="text-xs text-muted-foreground">Position</Label>
+          <Label className="text-sm font-medium mb-2">Position</Label>
           <Select 
             value={position} 
             onValueChange={(newPosition) => onSelectionChange(playerId, newPosition)}
           >
-            <SelectTrigger className="text-left h-9">
+            <SelectTrigger className="w-full">
               <SelectValue>{position}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -55,9 +55,9 @@ export const PlayerPositionSelect = ({
           </Select>
         </div>
         <div>
-          <Label className="text-xs text-muted-foreground">Player</Label>
+          <Label className="text-sm font-medium mb-2">Player</Label>
           <Select value={playerId} onValueChange={(value) => onSelectionChange(value, position)}>
-            <SelectTrigger className="text-left h-9">
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Select player" />
             </SelectTrigger>
             <SelectContent>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
@@ -7,7 +7,6 @@ import { SubstitutesList } from "./formation/SubstitutesList";
 import { FormationView } from "./fixtures/FormationView";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import type { Player } from "@/types/player";
 
 interface FormationSelectorProps {
   format: "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
@@ -31,7 +30,6 @@ export const FormationSelector = ({
   const [duration, setDuration] = useState<string>("20");
   const [showFormation, setShowFormation] = useState(false);
 
-  // Fetch players if not provided
   const { data: fetchedPlayers } = useQuery({
     queryKey: ["available-players", teamName],
     queryFn: async () => {
@@ -46,10 +44,9 @@ export const FormationSelector = ({
     enabled: !initialPlayers,
   });
 
-  // Use provided players or fetched players
   const players = initialPlayers || fetchedPlayers || [];
 
-  const handlePlayerSelection = (slotId: string, playerId: string, position: string) => {
+  const handlePlayerSelection = useCallback((slotId: string, playerId: string, position: string) => {
     const newSelections = {
       ...selections,
       [slotId]: {
@@ -60,9 +57,8 @@ export const FormationSelector = ({
     };
     setSelections(newSelections);
     onSelectionChange(newSelections);
-  };
+  }, [selections, performanceCategory, onSelectionChange]);
 
-  // Update selections when performance category changes
   useEffect(() => {
     const updatedSelections = Object.fromEntries(
       Object.entries(selections).map(([key, value]) => [
@@ -71,12 +67,11 @@ export const FormationSelector = ({
       ])
     );
     
-    // Only update if the selections have actually changed
     if (JSON.stringify(selections) !== JSON.stringify(updatedSelections)) {
       setSelections(updatedSelections);
       onSelectionChange(updatedSelections);
     }
-  }, [performanceCategory]);
+  }, [performanceCategory, onSelectionChange]);
 
   const getFormationSlots = () => {
     switch (format) {
@@ -152,9 +147,6 @@ export const FormationSelector = ({
           >
             {showFormation ? 'Hide Formation' : 'Show Formation'}
           </Button>
-          <Button onClick={() => onSelectionChange(selections)}>
-            Save Selections
-          </Button>
         </div>
       </div>
       
@@ -175,7 +167,7 @@ export const FormationSelector = ({
         />
       )}
 
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-5 gap-6">
         {getFormationSlots().map((slot) => (
           <div key={slot.id} className={cn("space-y-2", slot.className)}>
             <PlayerPositionSelect
