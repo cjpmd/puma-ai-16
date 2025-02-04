@@ -1,19 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
-import { SubstitutesList } from "./formation/SubstitutesList";
 import { TeamSettingsHeader } from "./formation/TeamSettingsHeader";
+import { SubstitutesList } from "./formation/SubstitutesList";
+import { cn } from "@/lib/utils";
 
 interface FormationSelectorProps {
-  format: "4-a-side" | "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
+  format: "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
   teamName: string;
-  onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: string; isCaptain?: boolean }>) => void;
+  onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => void;
   selectedPlayers: Set<string>;
-  availablePlayers: Array<{
-    id: string;
-    name: string;
-    squad_number?: number;
-  }>;
-  performanceCategory?: string;
+  availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
 }
 
 export const FormationSelector = ({
@@ -21,154 +19,126 @@ export const FormationSelector = ({
   teamName,
   onSelectionChange,
   selectedPlayers,
-  availablePlayers,
-  performanceCategory = "MESSI"
+  availablePlayers: initialPlayers,
 }: FormationSelectorProps) => {
-  const [positions, setPositions] = useState<Array<{ id: string; position: string }>>([]);
-  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string; isCaptain?: boolean }>>({});
-  const [captain, setCaptain] = useState<string>("");
-  const [duration, setDuration] = useState<string>("90");
-  const [currentCategory, setCurrentCategory] = useState(performanceCategory);
+  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
 
-  useEffect(() => {
-    // Initialize positions based on the format with unique IDs
-    const getPositionsForFormat = (format: string) => {
-      switch (format) {
-        case "4-a-side":
-          return [
-            { id: "pos-1", position: "GK" },
-            { id: "pos-2", position: "DEF" },
-            { id: "pos-3", position: "MID" },
-            { id: "pos-4", position: "FWD" }
-          ];
-        case "5-a-side":
-          return [
-            { id: "pos-1", position: "GK" },
-            { id: "pos-2", position: "DEF" },
-            { id: "pos-3", position: "DEF" },
-            { id: "pos-4", position: "MID" },
-            { id: "pos-5", position: "FWD" }
-          ];
-        case "7-a-side":
-          return [
-            { id: "pos-1", position: "GK" },
-            { id: "pos-2", position: "DEF" },
-            { id: "pos-3", position: "DEF" },
-            { id: "pos-4", position: "MID" },
-            { id: "pos-5", position: "MID" },
-            { id: "pos-6", position: "FWD" },
-            { id: "pos-7", position: "FWD" }
-          ];
-        case "9-a-side":
-          return [
-            { id: "pos-1", position: "GK" },
-            { id: "pos-2", position: "DEF" },
-            { id: "pos-3", position: "DEF" },
-            { id: "pos-4", position: "MID" },
-            { id: "pos-5", position: "MID" },
-            { id: "pos-6", position: "MID" },
-            { id: "pos-7", position: "FWD" },
-            { id: "pos-8", position: "FWD" },
-            { id: "pos-9", position: "FWD" }
-          ];
-        case "11-a-side":
-          return [
-            { id: "pos-1", position: "GK" },
-            { id: "pos-2", position: "DEF" },
-            { id: "pos-3", position: "DEF" },
-            { id: "pos-4", position: "DEF" },
-            { id: "pos-5", position: "MID" },
-            { id: "pos-6", position: "MID" },
-            { id: "pos-7", position: "MID" },
-            { id: "pos-8", position: "FWD" },
-            { id: "pos-9", position: "FWD" },
-            { id: "pos-10", position: "FWD" },
-            { id: "pos-11", position: "FWD" }
-          ];
-        default:
-          return [];
-      }
-    };
+  // Fetch players if not provided
+  const { data: fetchedPlayers } = useQuery({
+    queryKey: ["available-players", teamName],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, name, squad_number")
+        .eq("team_category", teamName)
+        .order("name");
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !initialPlayers,
+  });
 
-    setPositions(getPositionsForFormat(format));
-  }, [format]);
+  // Use provided players or fetched players
+  const players = initialPlayers || fetchedPlayers || [];
 
-  const handlePlayerSelection = (positionId: string, playerId: string) => {
-    const position = positions.find(p => p.id === positionId)?.position || "";
-    const newSelections = {
-      ...selections,
-      [positionId]: { 
-        playerId, 
-        position, 
-        performanceCategory: currentCategory,
-        isCaptain: captain === playerId 
-      },
-    };
-    setSelections(newSelections);
-    onSelectionChange(newSelections);
-  };
+  console.log("Available players:", players); // Debug log
 
-  const handleCaptainChange = (playerId: string) => {
-    setCaptain(playerId);
-    // Update the selections to include captain information
-    const newSelections = { ...selections };
-    Object.keys(newSelections).forEach(key => {
-      newSelections[key] = { 
-        ...newSelections[key], 
-        isCaptain: newSelections[key].playerId === playerId 
+  const handlePlayerSelection = (slotId: string, playerId: string) => {
+    const position = slotId.split("-")[0].toUpperCase();
+    setSelections((prev) => {
+      const newSelections = {
+        ...prev,
+        [slotId]: {
+          ...prev[slotId],
+          playerId,
+          position,
+        },
       };
+      onSelectionChange(newSelections);
+      return newSelections;
     });
-    onSelectionChange(newSelections);
   };
 
-  const handleDurationChange = (newDuration: string) => {
-    setDuration(newDuration);
+  const getFormationSlots = () => {
+    switch (format) {
+      case "5-a-side":
+        return [
+          { id: "gk-1", label: "GK", className: "col-span-5" },
+          { id: "def-1", label: "DEF", className: "col-span-5" },
+          { id: "mid-1", label: "MID", className: "col-start-2 col-span-3" },
+          { id: "str-1", label: "STR", className: "col-start-3" },
+        ];
+      case "7-a-side":
+        return [
+          { id: "gk-1", label: "GK", className: "col-span-5" },
+          { id: "def-1", label: "DEF", className: "col-start-2" },
+          { id: "def-2", label: "DEF", className: "col-start-4" },
+          { id: "mid-1", label: "MID", className: "col-start-2" },
+          { id: "mid-2", label: "MID", className: "col-start-4" },
+          { id: "str-1", label: "STR", className: "col-start-3" },
+        ];
+      case "9-a-side":
+        return [
+          { id: "gk-1", label: "GK", className: "col-span-5" },
+          { id: "def-1", label: "DEF", className: "col-start-2" },
+          { id: "def-2", label: "DEF", className: "col-start-3" },
+          { id: "def-3", label: "DEF", className: "col-start-4" },
+          { id: "mid-1", label: "MID", className: "col-start-2" },
+          { id: "mid-2", label: "MID", className: "col-start-3" },
+          { id: "mid-3", label: "MID", className: "col-start-4" },
+          { id: "str-1", label: "STR", className: "col-start-3" },
+        ];
+      case "11-a-side":
+        return [
+          { id: "gk-1", label: "GK", className: "col-span-5" },
+          { id: "def-1", label: "DEF", className: "col-start-1" },
+          { id: "def-2", label: "DEF", className: "col-start-2" },
+          { id: "def-3", label: "DEF", className: "col-start-3" },
+          { id: "def-4", label: "DEF", className: "col-start-4" },
+          { id: "mid-1", label: "MID", className: "col-start-2" },
+          { id: "mid-2", label: "MID", className: "col-start-3" },
+          { id: "mid-3", label: "MID", className: "col-start-4" },
+          { id: "str-1", label: "STR", className: "col-start-2" },
+          { id: "str-2", label: "STR", className: "col-start-3" },
+        ];
+      default:
+        return [];
+    }
   };
 
-  const handleCategoryChange = (category: string) => {
-    setCurrentCategory(category);
-    // Update all selections with new category
-    const newSelections = { ...selections };
-    Object.keys(newSelections).forEach(key => {
-      newSelections[key] = { 
-        ...newSelections[key], 
-        performanceCategory: category 
-      };
-    });
-    onSelectionChange(newSelections);
-  };
+  const maxSubstitutes = {
+    "5-a-side": 3,
+    "7-a-side": 3,
+    "9-a-side": 4,
+    "11-a-side": 5,
+  }[format];
 
   return (
-    <div className="space-y-6">
-      <TeamSettingsHeader 
-        captain={captain}
-        duration={duration}
-        onCaptainChange={handleCaptainChange}
-        onDurationChange={handleDurationChange}
-        availablePlayers={availablePlayers}
-        performanceCategory={currentCategory}
-        onCategoryChange={handleCategoryChange}
-      />
+    <div className="space-y-8">
+      <TeamSettingsHeader />
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {positions.map(({ id, position }) => (
-          <PlayerPositionSelect
-            key={id}
-            slotId={id}
-            position={position}
-            playerId={selections[id]?.playerId || "unassigned"}
-            availablePlayers={availablePlayers}
-            onSelectionChange={(playerId) => handlePlayerSelection(id, playerId)}
-            selectedPlayers={selectedPlayers}
-          />
+      <div className="grid grid-cols-5 gap-4">
+        {getFormationSlots().map((slot) => (
+          <div key={slot.id} className={cn("space-y-2", slot.className)}>
+            <PlayerPositionSelect
+              key={slot.id}
+              slotId={slot.id}
+              position={slot.label}
+              playerId={selections[slot.id]?.playerId || "unassigned"}
+              availablePlayers={players}
+              onSelectionChange={(playerId) => handlePlayerSelection(slot.id, playerId)}
+              selectedPlayers={selectedPlayers}
+            />
+          </div>
         ))}
       </div>
 
       <SubstitutesList
-        maxSubstitutes={5}
+        maxSubstitutes={maxSubstitutes}
         selections={selections}
-        availablePlayers={availablePlayers}
-        onSelectionChange={(slotId, playerId) => handlePlayerSelection(slotId, playerId)}
+        availablePlayers={players}
+        onSelectionChange={handlePlayerSelection}
         selectedPlayers={selectedPlayers}
       />
     </div>
