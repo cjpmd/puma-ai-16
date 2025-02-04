@@ -4,6 +4,8 @@ import { FormationSelector } from "@/components/FormationSelector";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface TeamSelectionManagerProps {
   teams: Array<{
@@ -23,6 +25,7 @@ export const TeamSelectionManager = ({
   const { toast } = useToast();
   const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
+  const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
 
   const { data: players, isLoading, error } = useQuery({
     queryKey: ["players"],
@@ -68,6 +71,35 @@ export const TeamSelectionManager = ({
     onTeamSelectionsChange?.(newSelections);
   };
 
+  const handlePerformanceCategoryChange = (teamId: string, category: string) => {
+    setPerformanceCategories(prev => ({
+      ...prev,
+      [teamId]: category
+    }));
+  };
+
+  const handleSave = async () => {
+    try {
+      // Save team selections logic here
+      toast({
+        title: "Success",
+        description: "Team selections saved successfully",
+      });
+    } catch (error) {
+      console.error("Error saving team selections:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save team selections",
+      });
+    }
+  };
+
+  const getTeamName = (team: { name: string }, teamId: string) => {
+    const category = performanceCategories[teamId];
+    return category ? `${team.name} - ${category}` : `${team.name} - Team ${teamId}`;
+  };
+
   if (isLoading || !players) {
     return <div>Loading players...</div>;
   }
@@ -76,8 +108,21 @@ export const TeamSelectionManager = ({
     <div className="space-y-6">
       {teams.map(team => (
         <Card key={team.id} className="mb-6">
-          <CardHeader>
-            <CardTitle>{team.name}</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>{getTeamName(team, team.id)}</CardTitle>
+            <Select
+              value={performanceCategories[team.id] || "MESSI"}
+              onValueChange={(value) => handlePerformanceCategoryChange(team.id, value)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MESSI">Messi</SelectItem>
+                <SelectItem value="RONALDO">Ronaldo</SelectItem>
+                <SelectItem value="JAGS">Jags</SelectItem>
+              </SelectContent>
+            </Select>
           </CardHeader>
           <CardContent>
             <FormationSelector
@@ -86,10 +131,14 @@ export const TeamSelectionManager = ({
               onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
               selectedPlayers={selectedPlayers}
               availablePlayers={players}
+              performanceCategory={performanceCategories[team.id]}
             />
           </CardContent>
         </Card>
       ))}
+      <div className="flex justify-end">
+        <Button onClick={handleSave}>Save Team Selections</Button>
+      </div>
     </div>
   );
 };

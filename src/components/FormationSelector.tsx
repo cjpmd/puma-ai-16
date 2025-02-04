@@ -13,6 +13,7 @@ interface FormationSelectorProps {
     name: string;
     squad_number?: number;
   }>;
+  performanceCategory?: string;
 }
 
 export const FormationSelector = ({
@@ -21,9 +22,12 @@ export const FormationSelector = ({
   onSelectionChange,
   selectedPlayers,
   availablePlayers,
+  performanceCategory = "MESSI"
 }: FormationSelectorProps) => {
   const [positions, setPositions] = useState<Array<{ id: string; position: string }>>([]);
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
+  const [captain, setCaptain] = useState<string>("");
+  const [duration, setDuration] = useState<string>("90");
 
   useEffect(() => {
     // Initialize positions based on the format with unique IDs
@@ -92,19 +96,37 @@ export const FormationSelector = ({
     const position = positions.find(p => p.id === positionId)?.position || "";
     const newSelections = {
       ...selections,
-      [positionId]: { playerId, position, performanceCategory: "MESSI" },
+      [positionId]: { playerId, position, performanceCategory },
     };
     setSelections(newSelections);
     onSelectionChange(newSelections);
   };
 
+  const handleCaptainChange = (playerId: string) => {
+    setCaptain(playerId);
+    // Update the selections to include captain information
+    const newSelections = { ...selections };
+    Object.keys(newSelections).forEach(key => {
+      if (newSelections[key].playerId === playerId) {
+        newSelections[key] = { ...newSelections[key], isCaptain: true };
+      } else {
+        newSelections[key] = { ...newSelections[key], isCaptain: false };
+      }
+    });
+    onSelectionChange(newSelections);
+  };
+
+  const handleDurationChange = (newDuration: string) => {
+    setDuration(newDuration);
+  };
+
   return (
     <div className="space-y-6">
       <TeamSettingsHeader 
-        captain=""
-        duration="90"
-        onCaptainChange={() => {}}
-        onDurationChange={() => {}}
+        captain={captain}
+        duration={duration}
+        onCaptainChange={handleCaptainChange}
+        onDurationChange={handleDurationChange}
         availablePlayers={availablePlayers}
       />
       
