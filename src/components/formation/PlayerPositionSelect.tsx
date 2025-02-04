@@ -9,7 +9,7 @@ interface PlayerPositionSelectProps {
   position: string;
   playerId: string;
   availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
-  onSelectionChange: (playerId: string) => void;
+  onSelectionChange: (playerId: string, position: string) => void;
   selectedPlayers: Set<string>;
 }
 
@@ -38,7 +38,10 @@ export const PlayerPositionSelect = ({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-xs text-muted-foreground">Position</Label>
-          <Select value={position}>
+          <Select 
+            value={position} 
+            onValueChange={(newPosition) => onSelectionChange(playerId, newPosition)}
+          >
             <SelectTrigger className="text-left h-9">
               <SelectValue>{position}</SelectValue>
             </SelectTrigger>
@@ -53,7 +56,7 @@ export const PlayerPositionSelect = ({
         </div>
         <div>
           <Label className="text-xs text-muted-foreground">Player</Label>
-          <Select value={playerId} onValueChange={onSelectionChange}>
+          <Select value={playerId} onValueChange={(value) => onSelectionChange(value, position)}>
             <SelectTrigger className="text-left h-9">
               <SelectValue placeholder="Select player" />
             </SelectTrigger>

@@ -6,6 +6,7 @@ import { TeamSettingsHeader } from "./formation/TeamSettingsHeader";
 import { SubstitutesList } from "./formation/SubstitutesList";
 import { FormationView } from "./fixtures/FormationView";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import type { Player } from "@/types/player";
 
 interface FormationSelectorProps {
@@ -46,18 +47,9 @@ export const FormationSelector = ({
   // Use provided players or fetched players
   const players = initialPlayers || fetchedPlayers || [];
 
-  const handlePlayerSelection = (slotId: string, playerId: string) => {
-    const position = slotId.split("-")[0].toUpperCase();
+  const handlePlayerSelection = (slotId: string, playerId: string, position: string) => {
     setSelections((prev) => {
-      // Remove player from previous position if they were assigned somewhere else
       const newSelections = { ...prev };
-      Object.entries(newSelections).forEach(([key, value]) => {
-        if (value.playerId === playerId && key !== slotId) {
-          newSelections[key] = { ...value, playerId: "unassigned" };
-        }
-      });
-
-      // Assign player to new position
       newSelections[slotId] = {
         playerId,
         position,
@@ -149,21 +141,27 @@ export const FormationSelector = ({
 
   return (
     <div className="space-y-8">
-      <TeamSettingsHeader 
-        captain={captain}
-        duration={duration}
-        availablePlayers={players}
-        onCaptainChange={setCaptain}
-        onDurationChange={setDuration}
-      />
+      <div className="flex justify-between items-center mb-6">
+        <TeamSettingsHeader 
+          captain={captain}
+          duration={duration}
+          availablePlayers={players}
+          onCaptainChange={setCaptain}
+          onDurationChange={setDuration}
+        />
+        <div className="flex gap-4">
+          <Button
+            onClick={() => setShowFormation(!showFormation)}
+            variant="outline"
+          >
+            {showFormation ? 'Hide Formation' : 'Show Formation'}
+          </Button>
+          <Button onClick={() => onSelectionChange(selections)}>
+            Save Selections
+          </Button>
+        </div>
+      </div>
       
-      <button
-        onClick={() => setShowFormation(!showFormation)}
-        className="mb-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-      >
-        {showFormation ? 'Hide Formation' : 'Show Formation'}
-      </button>
-
       {showFormation && (
         <FormationView
           positions={formatSelectionsForFormation()}
@@ -182,7 +180,7 @@ export const FormationSelector = ({
               position={slot.label}
               playerId={selections[slot.id]?.playerId || "unassigned"}
               availablePlayers={players}
-              onSelectionChange={(playerId) => handlePlayerSelection(slot.id, playerId)}
+              onSelectionChange={(playerId, position) => handlePlayerSelection(slot.id, playerId, position)}
               selectedPlayers={selectedPlayers}
             />
           </div>

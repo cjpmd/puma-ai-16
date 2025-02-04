@@ -67,18 +67,6 @@ export const TeamSelectionManager = ({
     };
 
     setTeamSelections(newSelections);
-
-    // Update selected players
-    const newSelectedPlayers = new Set<string>();
-    Object.values(newSelections).forEach(teamSelection => {
-      Object.values(teamSelection).forEach(selection => {
-        if (selection.playerId !== "unassigned") {
-          newSelectedPlayers.add(selection.playerId);
-        }
-      });
-    });
-    setSelectedPlayers(newSelectedPlayers);
-
     onTeamSelectionsChange?.(newSelections);
   };
 
@@ -123,11 +111,6 @@ export const TeamSelectionManager = ({
     }
   };
 
-  const getTeamName = (team: { name: string }, teamId: string) => {
-    const category = performanceCategories[teamId];
-    return category ? `${team.name} - ${category}` : team.name;
-  };
-
   if (isLoading || !players) {
     return <div>Loading players...</div>;
   }
@@ -142,7 +125,7 @@ export const TeamSelectionManager = ({
       {teams.map(team => (
         <Card key={team.id} className="mb-6">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{getTeamName(team, team.id)}</CardTitle>
+            <CardTitle>{team.name}</CardTitle>
             <Select
               value={performanceCategories[team.id] || "MESSI"}
               onValueChange={(value) => handlePerformanceCategoryChange(team.id, value)}
