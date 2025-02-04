@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +31,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       const { data, error } = await supabase
         .from("players")
         .select("id, name, squad_number")
-        .eq("team_category", fixture?.team_name)
+        .eq("team_category", fixture?.category)
         .order('name');
       
       if (error) {
