@@ -85,13 +85,19 @@ export const AddFixtureDialog = ({
         opponent: data.opponent,
         location: data.location,
         category: data.category,
-        team_name: data.team_name,
+        team_name: "Broughty Pumas 2015s", // Hardcoded team name
         date: format(selectedDate, "yyyy-MM-dd"),
         home_score: data.home_score ? parseInt(data.home_score) : null,
         away_score: data.away_score ? parseInt(data.away_score) : null,
         motm_player_id: data.motm_player_id || null,
         time: data.time || null,
         outcome,
+        format: data.format || "7-a-side",
+        number_of_teams: parseInt(data.number_of_teams) || 1,
+        is_home: data.is_home,
+        meeting_time: data.meeting_time || null,
+        start_time: data.start_time || null,
+        end_time: data.end_time || null,
       };
 
       let savedFixture: Fixture;
@@ -115,7 +121,6 @@ export const AddFixtureDialog = ({
         savedFixture = insertedFixture;
         setNewFixture(savedFixture);
 
-        // Send WhatsApp notification for new fixtures
         try {
           await sendFixtureNotification({
             type: 'FIXTURE',

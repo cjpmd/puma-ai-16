@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import { Plus } from "lucide-react";
 
 interface TeamSelectionManagerProps {
   fixture: Fixture | null;
-  onSave?: (selectedPlayers: string[], captainId: string | null) => void;
 }
 
 export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => {
@@ -38,40 +37,31 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     enabled: !!fixture,
   });
 
-  const { data: existingSelections } = useQuery({
-    queryKey: ["team-selections", fixture?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("fixture_team_selections")
-        .select("*")
-        .eq("fixture_id", fixture?.id);
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const handleSelectionChange = async (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
+  const handleSelectionChange = async (selections: Record<string, { playerId: string; position: string }>) => {
     if (!fixture) return;
 
     try {
       // Delete existing selections for this team and period
       await supabase
-        .from("fixture_team_selections")
+        .from("team_selections")
         .delete()
-        .eq("fixture_id", fixture.id)
-        .eq("team_number", parseInt(activeTeam));
+        .match({
+          event_id: fixture.id,
+          event_type: 'FIXTURE',
+          team_number: parseInt(activeTeam),
+          period_id: activePeriod
+        });
 
       // Insert new selections
       const { error } = await supabase
-        .from("fixture_team_selections")
+        .from("team_selections")
         .insert(
-          Object.values(selections).map(({ playerId, position, performanceCategory }) => ({
-            fixture_id: fixture.id,
+          Object.entries(selections).map(([_, { playerId, position }]) => ({
+            event_id: fixture.id,
+            event_type: 'FIXTURE',
             team_number: parseInt(activeTeam),
             player_id: playerId,
             position,
-            performance_category: performanceCategory || 'MESSI',
             period_id: activePeriod
           }))
         );
