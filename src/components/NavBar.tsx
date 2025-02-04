@@ -19,8 +19,8 @@ export const NavBar = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check authentication status on mount and setup listener
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -29,29 +29,23 @@ export const NavBar = () => {
         
         if (sessionError) {
           console.error("Session error:", sessionError);
-          if (sessionError.message.includes("session_not_found")) {
-            await supabase.auth.signOut();
-          }
+          await supabase.auth.signOut();
+          setIsAuthenticated(false);
           navigate("/auth");
           return;
         }
 
         if (!session) {
           console.log("No active session found");
+          setIsAuthenticated(false);
           navigate("/auth");
           return;
         }
 
-        // If we have a session, verify the user exists
-        const { error: userError } = await supabase.auth.getUser();
-        if (userError) {
-          console.error("User verification failed:", userError);
-          await supabase.auth.signOut();
-          navigate("/auth");
-          return;
-        }
+        setIsAuthenticated(true);
       } catch (error) {
         console.error("Auth check error:", error);
+        setIsAuthenticated(false);
         navigate("/auth");
       } finally {
         setIsLoading(false);
@@ -64,19 +58,10 @@ export const NavBar = () => {
       console.log("Auth state changed:", event);
       
       if (event === 'SIGNED_OUT' || !session) {
+        setIsAuthenticated(false);
         navigate("/auth");
       } else if (event === 'SIGNED_IN' && session) {
-        try {
-          const { error: verifyError } = await supabase.auth.getUser();
-          if (verifyError) {
-            console.error("Session verification failed:", verifyError);
-            await supabase.auth.signOut();
-            navigate("/auth");
-          }
-        } catch (error) {
-          console.error("Auth state change error:", error);
-          navigate("/auth");
-        }
+        setIsAuthenticated(true);
       }
     });
 
@@ -85,45 +70,36 @@ export const NavBar = () => {
     };
   }, [navigate]);
 
-  const { data: profile, error: profileError } = useQuery({
+  const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
-      try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) {
-          console.error("User fetch error:", userError);
-          throw userError;
-        }
-
-        if (!user) {
-          console.log("No user found");
-          return null;
-        }
-
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (profileError) {
-          console.error("Profile fetch error:", profileError);
-          throw profileError;
-        }
-
-        return profile;
-      } catch (error) {
-        console.error("Profile query error:", error);
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error("User fetch error:", userError);
         return null;
       }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Profile fetch error:", profileError);
+        return null;
+      }
+
+      return profile;
     },
-    enabled: !isLoading,
+    enabled: isAuthenticated,
     retry: 1,
   });
 
   const handleLogout = async () => {
     try {
+      setIsLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) {
         toast({
@@ -133,6 +109,7 @@ export const NavBar = () => {
         });
         return;
       }
+      setIsAuthenticated(false);
       navigate("/auth");
     } catch (error) {
       console.error("Logout error:", error);
@@ -141,11 +118,19 @@ export const NavBar = () => {
         title: "Error",
         description: "Failed to sign out",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (isLoading) {
-    return <div>Loading...</div>; // Consider using a proper loading spinner
+    return (
+      <div className="w-full bg-white shadow-sm mb-8">
+        <div className="container mx-auto px-4 py-4">
+          <div>Loading...</div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -159,39 +144,43 @@ export const NavBar = () => {
           />
         </div>
         <div className="flex items-center gap-4">
-          <Link to="/home">
-            <Button variant="ghost">Home</Button>
-          </Link>
-          <Link to="/squad">
-            <Button variant="ghost">
-              <Users className="mr-2 h-4 w-4" />
-              Squad
-            </Button>
-          </Link>
-          <Link to="/analytics">
-            <Button variant="ghost">
-              <BarChart2 className="mr-2 h-4 w-4" />
-              Analytics
-            </Button>
-          </Link>
-          <Link to="/coaches">
-            <Button variant="ghost">
-              <UserCircle className="mr-2 h-4 w-4" />
-              Coaches
-            </Button>
-          </Link>
-          <Link to="/calendar">
-            <Button variant="ghost">
-              <Calendar className="mr-2 h-4 w-4" />
-              Calendar
-            </Button>
-          </Link>
-          <Link to="/settings">
-            <Button variant="ghost">
-              <Cog className="mr-2 h-4 w-4" />
-              Settings
-            </Button>
-          </Link>
+          {isAuthenticated && (
+            <>
+              <Link to="/home">
+                <Button variant="ghost">Home</Button>
+              </Link>
+              <Link to="/squad">
+                <Button variant="ghost">
+                  <Users className="mr-2 h-4 w-4" />
+                  Squad
+                </Button>
+              </Link>
+              <Link to="/analytics">
+                <Button variant="ghost">
+                  <BarChart2 className="mr-2 h-4 w-4" />
+                  Analytics
+                </Button>
+              </Link>
+              <Link to="/coaches">
+                <Button variant="ghost">
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  Coaches
+                </Button>
+              </Link>
+              <Link to="/calendar">
+                <Button variant="ghost">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Calendar
+                </Button>
+              </Link>
+              <Link to="/settings">
+                <Button variant="ghost">
+                  <Cog className="mr-2 h-4 w-4" />
+                  Settings
+                </Button>
+              </Link>
+            </>
+          )}
           {profile && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
