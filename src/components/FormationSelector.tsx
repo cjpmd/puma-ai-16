@@ -125,7 +125,7 @@ export const FormationSelector = ({
   const formationPlayers = players.map(player => ({
     id: player.id,
     name: player.name,
-    squad_number: player.squad_number || 0, // Changed from squadNumber to squad_number
+    squad_number: player.squad_number || 0,
     age: 0,
     dateOfBirth: new Date().toISOString(),
     playerType: "OUTFIELD",
