@@ -1,9 +1,10 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerPositionSelectProps {
-  slotId: string;
   position: string;
   playerId: string;
   availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
@@ -18,6 +19,19 @@ export const PlayerPositionSelect = ({
   onSelectionChange,
   selectedPlayers,
 }: PlayerPositionSelectProps) => {
+  const { data: positions } = useQuery({
+    queryKey: ["position-definitions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("position_definitions")
+        .select("*")
+        .order('abbreviation');
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
@@ -28,7 +42,11 @@ export const PlayerPositionSelect = ({
               <SelectValue>{position}</SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={position}>{position}</SelectItem>
+              {positions?.map((pos) => (
+                <SelectItem key={pos.id} value={pos.abbreviation}>
+                  {pos.abbreviation} - {pos.full_name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
