@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
@@ -140,7 +140,7 @@ export const FormationSelector = ({
   }[format];
 
   // Reset selections when format changes
-  React.useEffect(() => {
+  useEffect(() => {
     setSelections({});
   }, [format]);
 
