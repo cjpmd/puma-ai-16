@@ -24,15 +24,20 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
   const [selections, setSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
 
   const { data: availablePlayers } = useQuery({
-    queryKey: ["available-players", fixture?.team_name],
+    queryKey: ["available-players", fixture?.category],
     queryFn: async () => {
+      console.log("Fetching players for category:", fixture?.category);
       const { data, error } = await supabase
         .from("players")
         .select("id, name, squad_number")
-        .eq("team_category", fixture?.team_name?.toUpperCase())
+        .eq("team_category", fixture?.team_name)
         .order('name');
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching players:", error);
+        throw error;
+      }
+      console.log("Fetched players:", data);
       return data || [];
     },
     enabled: !!fixture,
@@ -153,12 +158,12 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                 <TabsContent key={index + 1} value={(index + 1).toString()}>
                   <Card>
                     <CardHeader>
-                      <CardTitle>Broughty Pumas 2015s - Team {index + 1}</CardTitle>
+                      <CardTitle>{fixture.team_name} - Team {index + 1}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <FormationSelector
                         format={fixture.format as "7-a-side"}
-                        teamName="Broughty Pumas 2015s"
+                        teamName={fixture.team_name}
                         onSelectionChange={handleSelectionChange}
                         selectedPlayers={selectedPlayers}
                         availablePlayers={availablePlayers}

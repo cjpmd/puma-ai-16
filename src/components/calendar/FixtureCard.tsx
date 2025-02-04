@@ -16,19 +16,8 @@ import { useState } from "react";
 import type { Fixture } from "@/types/fixture";
 
 interface FixtureCardProps {
-  fixture: {
-    id: string;
-    opponent: string;
-    home_score: number | null;
-    away_score: number | null;
-    category: string;
-    location?: string;
-    time?: string | null;
-    date: string;
-    outcome?: string | null;
-    team_name: string; // Added team_name here
-  };
-  onEdit: (fixture: FixtureCardProps["fixture"]) => void;
+  fixture: Fixture;
+  onEdit: (fixture: Fixture) => void;
   onDelete: (fixtureId: string) => void;
   onDateChange: (newDate: Date) => void;
 }
@@ -51,6 +40,13 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const hasScores = fixture.home_score !== null && fixture.away_score !== null;
 
+  const getFixtureTitle = () => {
+    if (fixture.is_home) {
+      return `${fixture.team_name} vs ${fixture.opponent}`;
+    }
+    return `${fixture.opponent} vs ${fixture.team_name}`;
+  };
+
   return (
     <>
       <Card className="hover:bg-accent/50 transition-colors">
@@ -58,7 +54,7 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
           <CardTitle className="text-lg flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Badge variant="outline">{fixture.category}</Badge>
-              <span>vs {fixture.opponent}</span>
+              <span>{getFixtureTitle()}</span>
             </div>
             <div className="flex gap-2">
               <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
@@ -145,7 +141,7 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
             <DialogTitle>Team Selection - {fixture.opponent}</DialogTitle>
           </DialogHeader>
           <TeamSelectionManager 
-            fixture={fixture} 
+            fixture={fixture}
           />
         </DialogContent>
       </Dialog>
