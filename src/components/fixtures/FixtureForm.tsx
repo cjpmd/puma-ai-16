@@ -34,6 +34,7 @@ const formSchema = z.object({
   end_time: z.string().optional(),
   is_home: z.boolean().default(true),
   format: z.string().default("7-a-side"),
+  team_name: z.string().default("Broughty Pumas 2015s"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -69,6 +70,7 @@ export const FixtureForm = ({
       start_time: editingFixture?.start_time || "",
       end_time: editingFixture?.end_time || "",
       is_home: editingFixture?.is_home ?? true,
+      team_name: editingFixture?.team_name || "Broughty Pumas 2015s",
     },
   });
 

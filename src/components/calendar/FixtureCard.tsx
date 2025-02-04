@@ -53,7 +53,6 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
         <CardHeader>
           <CardTitle className="text-lg flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <Badge variant="outline">{fixture.category}</Badge>
               <span>{getFixtureTitle()}</span>
             </div>
             <div className="flex gap-2">
