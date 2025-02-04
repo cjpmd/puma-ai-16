@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
 import { TeamSettingsHeader } from "./formation/TeamSettingsHeader";
 import { SubstitutesList } from "./formation/SubstitutesList";
+import { FormationView } from "./fixtures/FormationView";
 import { cn } from "@/lib/utils";
 
 interface FormationSelectorProps {
@@ -24,6 +25,7 @@ export const FormationSelector = ({
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
   const [captain, setCaptain] = useState<string>("unassigned");
   const [duration, setDuration] = useState<string>("20");
+  const [showFormation, setShowFormation] = useState(false);
 
   // Fetch players if not provided
   const { data: fetchedPlayers } = useQuery({
@@ -109,6 +111,15 @@ export const FormationSelector = ({
     }
   };
 
+  const formatSelectionsForFormation = () => {
+    return Object.entries(selections)
+      .filter(([_, value]) => !value.position.startsWith('sub-'))
+      .map(([_, value]) => ({
+        position: value.position,
+        playerId: value.playerId
+      }));
+  };
+
   const maxSubstitutes = {
     "5-a-side": 3,
     "7-a-side": 3,
@@ -126,6 +137,22 @@ export const FormationSelector = ({
         onDurationChange={setDuration}
       />
       
+      <button
+        onClick={() => setShowFormation(!showFormation)}
+        className="mb-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+      >
+        {showFormation ? 'Hide Formation' : 'Show Formation'}
+      </button>
+
+      {showFormation && (
+        <FormationView
+          positions={formatSelectionsForFormation()}
+          players={players}
+          periodNumber={1}
+          duration={parseInt(duration)}
+        />
+      )}
+
       <div className="grid grid-cols-5 gap-4">
         {getFormationSlots().map((slot) => (
           <div key={slot.id} className={cn("space-y-2", slot.className)}>
