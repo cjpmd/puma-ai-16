@@ -13,24 +13,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export const NavBar = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
 
   // Check authentication status on mount and setup listener
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        setIsLoading(true);
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
+          console.error("Session error:", sessionError);
           if (sessionError.message.includes("session_not_found")) {
-            console.log("Session not found, signing out...");
             await supabase.auth.signOut();
           }
-          console.error("Session error:", sessionError);
           navigate("/auth");
           return;
         }
@@ -38,10 +39,22 @@ export const NavBar = () => {
         if (!session) {
           console.log("No active session found");
           navigate("/auth");
+          return;
+        }
+
+        // If we have a session, verify the user exists
+        const { error: userError } = await supabase.auth.getUser();
+        if (userError) {
+          console.error("User verification failed:", userError);
+          await supabase.auth.signOut();
+          navigate("/auth");
+          return;
         }
       } catch (error) {
         console.error("Auth check error:", error);
         navigate("/auth");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -53,11 +66,15 @@ export const NavBar = () => {
       if (event === 'SIGNED_OUT' || !session) {
         navigate("/auth");
       } else if (event === 'SIGNED_IN' && session) {
-        // Verify the session is valid
-        const { error: verifyError } = await supabase.auth.getUser();
-        if (verifyError) {
-          console.error("Session verification failed:", verifyError);
-          await supabase.auth.signOut();
+        try {
+          const { error: verifyError } = await supabase.auth.getUser();
+          if (verifyError) {
+            console.error("Session verification failed:", verifyError);
+            await supabase.auth.signOut();
+            navigate("/auth");
+          }
+        } catch (error) {
+          console.error("Auth state change error:", error);
           navigate("/auth");
         }
       }
@@ -68,7 +85,7 @@ export const NavBar = () => {
     };
   }, [navigate]);
 
-  const { data: profile, error: profileError, refetch: refetchProfile } = useQuery({
+  const { data: profile, error: profileError } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
       try {
@@ -76,11 +93,7 @@ export const NavBar = () => {
         
         if (userError) {
           console.error("User fetch error:", userError);
-          if (userError.message.includes("session_not_found")) {
-            await supabase.auth.signOut();
-            navigate("/auth");
-          }
-          return null;
+          throw userError;
         }
 
         if (!user) {
@@ -96,12 +109,7 @@ export const NavBar = () => {
 
         if (profileError) {
           console.error("Profile fetch error:", profileError);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to fetch profile",
-          });
-          return null;
+          throw profileError;
         }
 
         return profile;
@@ -110,8 +118,8 @@ export const NavBar = () => {
         return null;
       }
     },
+    enabled: !isLoading,
     retry: 1,
-    refetchOnWindowFocus: true,
   });
 
   const handleLogout = async () => {
@@ -135,6 +143,10 @@ export const NavBar = () => {
       });
     }
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>; // Consider using a proper loading spinner
+  }
 
   return (
     <div className="w-full bg-white shadow-sm mb-8">
