@@ -6,6 +6,7 @@ import { TeamSettingsHeader } from "./formation/TeamSettingsHeader";
 import { SubstitutesList } from "./formation/SubstitutesList";
 import { FormationView } from "./fixtures/FormationView";
 import { cn } from "@/lib/utils";
+import type { Player } from "@/types/player";
 
 interface FormationSelectorProps {
   format: "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
@@ -120,6 +121,17 @@ export const FormationSelector = ({
       }));
   };
 
+  // Convert available players to Player type for FormationView
+  const formationPlayers: Player[] = players.map(player => ({
+    id: player.id,
+    name: player.name,
+    squadNumber: player.squad_number || 0,
+    age: 0, // Required by Player type
+    dateOfBirth: new Date().toISOString(), // Required by Player type
+    playerType: "OUTFIELD", // Required by Player type
+    attributes: [], // Required by Player type
+  }));
+
   const maxSubstitutes = {
     "5-a-side": 3,
     "7-a-side": 3,
@@ -147,7 +159,7 @@ export const FormationSelector = ({
       {showFormation && (
         <FormationView
           positions={formatSelectionsForFormation()}
-          players={players}
+          players={formationPlayers}
           periodNumber={1}
           duration={parseInt(duration)}
         />
