@@ -23,7 +23,7 @@ export const PlayerPositionSelect = ({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-xs text-muted-foreground">Position</Label>
-          <Select disabled value={position}>
+          <Select value={position}>
             <SelectTrigger className="text-left h-9">
               <SelectValue>{position}</SelectValue>
             </SelectTrigger>
@@ -44,7 +44,6 @@ export const PlayerPositionSelect = ({
                 <SelectItem 
                   key={player.id} 
                   value={player.id}
-                  disabled={selectedPlayers.has(player.id) && player.id !== playerId}
                   className={cn(
                     selectedPlayers.has(player.id) && player.id !== playerId && "opacity-50"
                   )}
