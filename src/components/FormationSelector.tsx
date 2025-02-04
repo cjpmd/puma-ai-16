@@ -50,32 +50,33 @@ export const FormationSelector = ({
   const players = initialPlayers || fetchedPlayers || [];
 
   const handlePlayerSelection = (slotId: string, playerId: string, position: string) => {
-    setSelections((prev) => {
-      const newSelections = { ...prev };
-      newSelections[slotId] = {
+    const newSelections = {
+      ...selections,
+      [slotId]: {
         playerId,
         position,
         performanceCategory
-      };
-
-      onSelectionChange(newSelections);
-      return newSelections;
-    });
+      }
+    };
+    setSelections(newSelections);
+    onSelectionChange(newSelections);
   };
 
   // Update selections when performance category changes
   useEffect(() => {
-    setSelections(prev => {
-      const updated = Object.fromEntries(
-        Object.entries(prev).map(([key, value]) => [
-          key,
-          { ...value, performanceCategory }
-        ])
-      );
-      onSelectionChange(updated);
-      return updated;
-    });
-  }, [performanceCategory, onSelectionChange]);
+    const updatedSelections = Object.fromEntries(
+      Object.entries(selections).map(([key, value]) => [
+        key,
+        { ...value, performanceCategory }
+      ])
+    );
+    
+    // Only update if the selections have actually changed
+    if (JSON.stringify(selections) !== JSON.stringify(updatedSelections)) {
+      setSelections(updatedSelections);
+      onSelectionChange(updatedSelections);
+    }
+  }, [performanceCategory]);
 
   const getFormationSlots = () => {
     switch (format) {
@@ -142,6 +143,7 @@ export const FormationSelector = ({
           availablePlayers={players}
           onCaptainChange={setCaptain}
           onDurationChange={setDuration}
+          performanceCategory={performanceCategory}
         />
         <div className="flex gap-4">
           <Button
