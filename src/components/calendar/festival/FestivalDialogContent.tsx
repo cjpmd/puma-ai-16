@@ -1,6 +1,7 @@
 import { DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { FestivalForm } from "./FestivalForm";
 import { TeamSelectionManager } from "@/components/TeamSelectionManager";
+import { useToast } from "@/hooks/use-toast";
 
 interface TeamSelection {
   playerId: string;
@@ -28,11 +29,15 @@ export const FestivalDialogContent = ({
   format,
   onTeamSelectionsChange,
 }: FestivalDialogContentProps) => {
+  const { toast } = useToast();
+
   return (
     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>
-          {editingFestival ? (showTeamSelection ? 'Team Selection' : 'Edit Festival') : 'Add New Festival'}
+          {editingFestival 
+            ? (showTeamSelection ? 'Team Selection' : 'Edit Festival') 
+            : 'Add New Festival'}
         </DialogTitle>
         <DialogDescription>
           {showTeamSelection 
@@ -48,22 +53,36 @@ export const FestivalDialogContent = ({
           selectedDate={selectedDate}
         />
       ) : (
-        <TeamSelectionManager
-          teams={teams}
-          format={format as "4-a-side" | "5-a-side" | "6-a-side" | "7-a-side" | "9-a-side" | "11-a-side"}
-          onTeamSelectionsChange={(selections) => {
-            const formattedSelections = Object.entries(selections).reduce<Record<string, TeamSelection[]>>((acc, [teamId, teamSelections]) => {
-              acc[teamId] = Object.entries(teamSelections).map(([_, selection]) => ({
-                playerId: selection.playerId,
-                position: selection.position,
-                is_substitute: selection.position.startsWith('sub-'),
-                performanceCategory: selection.performanceCategory || 'MESSI'
-              }));
-              return acc;
-            }, {});
-            onTeamSelectionsChange(formattedSelections);
-          }}
-        />
+        <div className="space-y-6">
+          <TeamSelectionManager
+            teams={teams}
+            format={format}
+            onTeamSelectionsChange={(selections) => {
+              try {
+                const formattedSelections = Object.entries(selections).reduce<Record<string, TeamSelection[]>>(
+                  (acc, [teamId, teamSelections]) => {
+                    acc[teamId] = Object.entries(teamSelections).map(([_, selection]) => ({
+                      playerId: selection.playerId,
+                      position: selection.position,
+                      is_substitute: selection.position.startsWith('sub-'),
+                      performanceCategory: selection.performanceCategory || 'MESSI'
+                    }));
+                    return acc;
+                  }, 
+                  {}
+                );
+                onTeamSelectionsChange(formattedSelections);
+              } catch (error) {
+                console.error('Error formatting team selections:', error);
+                toast({
+                  variant: "destructive",
+                  title: "Error",
+                  description: "Failed to update team selections",
+                });
+              }
+            }}
+          />
+        </div>
       )}
     </DialogContent>
   );

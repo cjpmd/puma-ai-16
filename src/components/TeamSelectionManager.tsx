@@ -20,10 +20,11 @@ export const TeamSelectionManager = ({
   format,
   onTeamSelectionsChange 
 }: TeamSelectionManagerProps) => {
+  const { toast } = useToast();
   const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
 
-  const { data: players } = useQuery({
+  const { data: players, isLoading, error } = useQuery({
     queryKey: ["players"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -35,6 +36,15 @@ export const TeamSelectionManager = ({
       return data || [];
     },
   });
+
+  if (error) {
+    console.error("Error loading players:", error);
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: "Failed to load players",
+    });
+  }
 
   const handleTeamSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
     const newSelections = {
@@ -58,7 +68,7 @@ export const TeamSelectionManager = ({
     onTeamSelectionsChange?.(newSelections);
   };
 
-  if (!players) {
+  if (isLoading || !players) {
     return <div>Loading players...</div>;
   }
 
@@ -75,7 +85,7 @@ export const TeamSelectionManager = ({
               teamName={team.name}
               onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
               selectedPlayers={selectedPlayers}
-              availablePlayers={players || []}
+              availablePlayers={players}
             />
           </CardContent>
         </Card>
