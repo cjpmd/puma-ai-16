@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -40,13 +40,11 @@ export const AddFixtureDialog = ({
   const [newFixture, setNewFixture] = useState<Fixture | null>(null);
 
   const { data: players } = useQuery({
-    queryKey: ["players", editingFixture?.category || "Ronaldo"],
+    queryKey: ["players"],
     queryFn: async () => {
-      const category = editingFixture?.category || "Ronaldo";
       const { data, error } = await supabase
         .from("players")
         .select("id, name, squad_number")
-        .eq("team_category", category.toUpperCase())
         .order('name');
       
       if (error) throw error;
@@ -84,8 +82,7 @@ export const AddFixtureDialog = ({
       const fixtureData = {
         opponent: data.opponent,
         location: data.location,
-        category: data.category,
-        team_name: "Broughty Pumas 2015s", // Hardcoded team name
+        team_name: "Broughty Pumas 2015s",
         date: format(selectedDate, "yyyy-MM-dd"),
         home_score: data.home_score ? parseInt(data.home_score) : null,
         away_score: data.away_score ? parseInt(data.away_score) : null,

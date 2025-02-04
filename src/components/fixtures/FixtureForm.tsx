@@ -19,8 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Fixture } from "@/types/fixture";
 
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
@@ -42,7 +40,7 @@ type FormData = z.infer<typeof formSchema>;
 interface FixtureFormProps {
   onSubmit: (data: FormData) => void;
   selectedDate?: Date;
-  editingFixture?: Fixture | null;
+  editingFixture?: any;
   players?: any[];
   isSubmitting?: boolean;
   showDateSelector?: boolean;

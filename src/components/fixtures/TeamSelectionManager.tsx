@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,13 +24,12 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
   const [selections, setSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
 
   const { data: availablePlayers } = useQuery({
-    queryKey: ["available-players", fixture?.category],
+    queryKey: ["available-players"],
     queryFn: async () => {
-      console.log("Fetching players for category:", fixture?.category);
+      console.log("Fetching all players");
       const { data, error } = await supabase
         .from("players")
         .select("id, name, squad_number")
-        .eq("team_category", fixture?.category)
         .order('name');
       
       if (error) {
@@ -41,7 +39,6 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       console.log("Fetched players:", data);
       return data || [];
     },
-    enabled: !!fixture,
   });
 
   const handleSelectionChange = (teamSelections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
@@ -125,7 +122,11 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Team Selection - {fixture.opponent}</h2>
         <div className="space-x-2">
-          <Button onClick={addPeriod} variant="outline">
+          <Button onClick={() => {
+            const newPeriodId = `period-${periods.length + 1}`;
+            setPeriods([...periods, { id: newPeriodId, duration: 20 }]);
+            setActivePeriod(newPeriodId);
+          }} variant="outline">
             <Plus className="w-4 h-4 mr-2" />
             Add Period
           </Button>
