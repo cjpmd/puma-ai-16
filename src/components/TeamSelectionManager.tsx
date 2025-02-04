@@ -52,7 +52,18 @@ export const TeamSelectionManager = ({
   const handleTeamSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
     const newSelections = {
       ...teamSelections,
-      [teamId]: selections,
+      [teamId]: {
+        ...selections,
+        ...Object.fromEntries(
+          Object.entries(selections).map(([key, value]) => [
+            key,
+            {
+              ...value,
+              performanceCategory: performanceCategories[teamId] || "MESSI"
+            }
+          ])
+        )
+      },
     };
 
     setTeamSelections(newSelections);
@@ -72,10 +83,27 @@ export const TeamSelectionManager = ({
   };
 
   const handlePerformanceCategoryChange = (teamId: string, category: string) => {
-    setPerformanceCategories(prev => ({
-      ...prev,
-      [teamId]: category
-    }));
+    setPerformanceCategories(prev => {
+      const newCategories = {
+        ...prev,
+        [teamId]: category
+      };
+
+      // Update existing selections with new category
+      const updatedSelections = {
+        ...teamSelections,
+        [teamId]: Object.fromEntries(
+          Object.entries(teamSelections[teamId] || {}).map(([key, value]) => [
+            key,
+            { ...value, performanceCategory: category }
+          ])
+        )
+      };
+      setTeamSelections(updatedSelections);
+      onTeamSelectionsChange?.(updatedSelections);
+
+      return newCategories;
+    });
   };
 
   const handleSave = async () => {
@@ -97,7 +125,7 @@ export const TeamSelectionManager = ({
 
   const getTeamName = (team: { name: string }, teamId: string) => {
     const category = performanceCategories[teamId];
-    return category ? `${team.name} - ${category}` : `${team.name} - Team ${teamId}`;
+    return category ? `${team.name} - ${category}` : team.name;
   };
 
   if (isLoading || !players) {
