@@ -70,7 +70,7 @@ export const FormationSelector = ({
       case "5-a-side":
         return [
           { id: "gk-1", label: "GK", className: "col-span-5" },
-          { id: "def-1", label: "DEF", className: "col-span-5" },
+          { id: "def-1", label: "DEF", className: "col-start-2 col-span-3" },
           { id: "mid-1", label: "MID", className: "col-start-2 col-span-3" },
           { id: "str-1", label: "STR", className: "col-start-3" },
         ];
@@ -114,7 +114,7 @@ export const FormationSelector = ({
 
   const formatSelectionsForFormation = () => {
     return Object.entries(selections)
-      .filter(([_, value]) => !value.position.startsWith('sub-'))
+      .filter(([_, value]) => value.playerId !== "unassigned" && !value.position.startsWith('sub-'))
       .map(([_, value]) => ({
         position: value.position,
         playerId: value.playerId
@@ -138,6 +138,11 @@ export const FormationSelector = ({
     "9-a-side": 4,
     "11-a-side": 5,
   }[format];
+
+  // Reset selections when format changes
+  React.useEffect(() => {
+    setSelections({});
+  }, [format]);
 
   return (
     <div className="space-y-8">
