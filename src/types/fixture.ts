@@ -17,4 +17,5 @@ export interface Fixture {
   end_time?: string | null;
   is_home?: boolean;
   number_of_teams?: number;
+  performance_category?: string;
 }
