@@ -21,6 +21,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
   ]);
   const [activeTeam, setActiveTeam] = useState<string>("1");
   const [activePeriod, setActivePeriod] = useState<string>("period-1");
+  const [selections, setSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
 
   const { data: availablePlayers } = useQuery({
     queryKey: ["available-players", fixture?.team_name],
@@ -37,49 +38,68 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     enabled: !!fixture,
   });
 
-  const handleSelectionChange = async (selections: Record<string, { playerId: string; position: string }>) => {
+  const handleSelectionChange = (teamSelections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
+    setSelections(prev => ({
+      ...prev,
+      [activeTeam]: teamSelections
+    }));
+  };
+
+  const handleSave = async () => {
     if (!fixture) return;
 
     try {
-      // Delete existing selections for this team and period
+      // Delete existing selections
       await supabase
         .from("team_selections")
         .delete()
         .match({
           event_id: fixture.id,
-          event_type: 'FIXTURE',
-          team_number: parseInt(activeTeam),
-          period_id: activePeriod
+          event_type: 'FIXTURE'
         });
+
+      // Prepare all selections for insertion
+      const allSelections = Object.entries(selections).flatMap(([teamNumber, teamSelections]) =>
+        Object.entries(teamSelections).map(([_, selection]) => ({
+          event_id: fixture.id,
+          event_type: 'FIXTURE',
+          team_number: parseInt(teamNumber),
+          player_id: selection.playerId,
+          position: selection.position,
+          period_id: activePeriod,
+          performance_category: selection.performanceCategory || 'MESSI'
+        }))
+      );
 
       // Insert new selections
       const { error } = await supabase
         .from("team_selections")
-        .insert(
-          Object.entries(selections).map(([_, { playerId, position }]) => ({
-            event_id: fixture.id,
-            event_type: 'FIXTURE',
-            team_number: parseInt(activeTeam),
-            player_id: playerId,
-            position,
-            period_id: activePeriod
-          }))
-        );
+        .insert(allSelections);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Team selection saved successfully",
+        description: "Team selections saved successfully",
       });
 
-      setSelectedPlayers(new Set(Object.values(selections).map(s => s.playerId)));
+      // Update selected players
+      const newSelectedPlayers = new Set<string>();
+      Object.values(selections).forEach(teamSelection => {
+        Object.values(teamSelection).forEach(selection => {
+          if (selection.playerId !== "unassigned") {
+            newSelectedPlayers.add(selection.playerId);
+          }
+        });
+      });
+      setSelectedPlayers(newSelectedPlayers);
+
     } catch (error) {
-      console.error("Error saving team selection:", error);
+      console.error("Error saving team selections:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save team selection",
+        description: "Failed to save team selections",
       });
     }
   };
@@ -98,10 +118,15 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Team Selection - {fixture.opponent}</h2>
-        <Button onClick={addPeriod} variant="outline">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Period
-        </Button>
+        <div className="space-x-2">
+          <Button onClick={addPeriod} variant="outline">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Period
+          </Button>
+          <Button onClick={handleSave} variant="default">
+            Save Selections
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="period-1" value={activePeriod} onValueChange={setActivePeriod}>

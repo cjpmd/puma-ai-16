@@ -120,16 +120,26 @@ export const FixtureForm = ({
             control={form.control}
             name="is_home"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel>Home Game</FormLabel>
+              <FormItem>
+                <FormLabel>Game Location</FormLabel>
+                <div className="flex gap-4">
+                  <Button
+                    type="button"
+                    variant={field.value ? "default" : "outline"}
+                    className="flex-1"
+                    onClick={() => field.onChange(true)}
+                  >
+                    Home
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={!field.value ? "default" : "outline"}
+                    className="flex-1"
+                    onClick={() => field.onChange(false)}
+                  >
+                    Away
+                  </Button>
                 </div>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
               </FormItem>
             )}
           />
