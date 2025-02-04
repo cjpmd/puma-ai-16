@@ -21,6 +21,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Fixture } from "@/types/fixture";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
@@ -34,6 +36,7 @@ const formSchema = z.object({
   end_time: z.string().optional(),
   is_home: z.boolean().default(true),
   number_of_teams: z.string().optional(),
+  performance_category: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -69,8 +72,32 @@ export const FixtureForm = ({
       end_time: editingFixture?.end_time || "",
       is_home: editingFixture?.is_home ?? true,
       number_of_teams: editingFixture?.number_of_teams?.toString() || "1",
+      performance_category: editingFixture?.performance_category || "MESSI",
     },
   });
+
+  const { data: performanceCategories } = useQuery({
+    queryKey: ["performance-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("team_performance_categories")
+        .select("performance_category");
+      
+      if (error) throw error;
+      return data?.map(d => d.performance_category) || ["MESSI", "RONALDO", "JAGS"];
+    },
+  });
+
+  const watchTeamName = form.watch("team_name");
+  const watchOpponent = form.watch("opponent");
+  const watchIsHome = form.watch("is_home");
+  const watchNumberOfTeams = form.watch("number_of_teams");
+
+  const getScoreLabel = (isHomeScore: boolean) => {
+    const homeTeam = watchIsHome ? watchTeamName : watchOpponent;
+    const awayTeam = watchIsHome ? watchOpponent : watchTeamName;
+    return isHomeScore ? `${homeTeam} Score` : `${awayTeam} Score`;
+  };
 
   return (
     <Form {...form}>
@@ -233,7 +260,7 @@ export const FixtureForm = ({
             name="home_score"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Home Score</FormLabel>
+                <FormLabel>{getScoreLabel(true)}</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
                 </FormControl>
@@ -246,7 +273,7 @@ export const FixtureForm = ({
             name="away_score"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Away Score</FormLabel>
+                <FormLabel>{getScoreLabel(false)}</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
                 </FormControl>
@@ -255,6 +282,36 @@ export const FixtureForm = ({
             )}
           />
         </div>
+
+        {parseInt(watchNumberOfTeams || "1") > 1 && (
+          <FormField
+            control={form.control}
+            name="performance_category"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Performance Category</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {performanceCategories?.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {players && (
           <FormField

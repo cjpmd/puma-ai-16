@@ -654,6 +654,7 @@ export type Database = {
           number_of_teams: number | null
           opponent: string
           outcome: string | null
+          performance_category: string | null
           start_time: string | null
           team_name: string
           time: string | null
@@ -676,6 +677,7 @@ export type Database = {
           number_of_teams?: number | null
           opponent: string
           outcome?: string | null
+          performance_category?: string | null
           start_time?: string | null
           team_name: string
           time?: string | null
@@ -698,6 +700,7 @@ export type Database = {
           number_of_teams?: number | null
           opponent?: string
           outcome?: string | null
+          performance_category?: string | null
           start_time?: string | null
           team_name?: string
           time?: string | null
@@ -2384,6 +2387,12 @@ export type Database = {
           position: string | null
           position_rank: number | null
           suitability_score: number | null
+        }
+        Relationships: []
+      }
+      team_performance_categories: {
+        Row: {
+          performance_category: string | null
         }
         Relationships: []
       }
