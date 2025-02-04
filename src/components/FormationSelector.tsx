@@ -6,7 +6,7 @@ import { TeamSettingsHeader } from "./formation/TeamSettingsHeader";
 interface FormationSelectorProps {
   format: "4-a-side" | "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
   teamName: string;
-  onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => void;
+  onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: string; isCaptain?: boolean }>) => void;
   selectedPlayers: Set<string>;
   availablePlayers: Array<{
     id: string;
@@ -25,7 +25,7 @@ export const FormationSelector = ({
   performanceCategory = "MESSI"
 }: FormationSelectorProps) => {
   const [positions, setPositions] = useState<Array<{ id: string; position: string }>>([]);
-  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
+  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string; isCaptain?: boolean }>>({});
   const [captain, setCaptain] = useState<string>("");
   const [duration, setDuration] = useState<string>("90");
 
@@ -96,7 +96,12 @@ export const FormationSelector = ({
     const position = positions.find(p => p.id === positionId)?.position || "";
     const newSelections = {
       ...selections,
-      [positionId]: { playerId, position, performanceCategory },
+      [positionId]: { 
+        playerId, 
+        position, 
+        performanceCategory,
+        isCaptain: captain === playerId 
+      },
     };
     setSelections(newSelections);
     onSelectionChange(newSelections);
@@ -107,11 +112,10 @@ export const FormationSelector = ({
     // Update the selections to include captain information
     const newSelections = { ...selections };
     Object.keys(newSelections).forEach(key => {
-      if (newSelections[key].playerId === playerId) {
-        newSelections[key] = { ...newSelections[key], isCaptain: true };
-      } else {
-        newSelections[key] = { ...newSelections[key], isCaptain: false };
-      }
+      newSelections[key] = { 
+        ...newSelections[key], 
+        isCaptain: newSelections[key].playerId === playerId 
+      };
     });
     onSelectionChange(newSelections);
   };
