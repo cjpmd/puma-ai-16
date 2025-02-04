@@ -28,6 +28,7 @@ export const FormationSelector = ({
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string; isCaptain?: boolean }>>({});
   const [captain, setCaptain] = useState<string>("");
   const [duration, setDuration] = useState<string>("90");
+  const [currentCategory, setCurrentCategory] = useState(performanceCategory);
 
   useEffect(() => {
     // Initialize positions based on the format with unique IDs
@@ -99,7 +100,7 @@ export const FormationSelector = ({
       [positionId]: { 
         playerId, 
         position, 
-        performanceCategory,
+        performanceCategory: currentCategory,
         isCaptain: captain === playerId 
       },
     };
@@ -124,6 +125,19 @@ export const FormationSelector = ({
     setDuration(newDuration);
   };
 
+  const handleCategoryChange = (category: string) => {
+    setCurrentCategory(category);
+    // Update all selections with new category
+    const newSelections = { ...selections };
+    Object.keys(newSelections).forEach(key => {
+      newSelections[key] = { 
+        ...newSelections[key], 
+        performanceCategory: category 
+      };
+    });
+    onSelectionChange(newSelections);
+  };
+
   return (
     <div className="space-y-6">
       <TeamSettingsHeader 
@@ -132,6 +146,8 @@ export const FormationSelector = ({
         onCaptainChange={handleCaptainChange}
         onDurationChange={handleDurationChange}
         availablePlayers={availablePlayers}
+        performanceCategory={currentCategory}
+        onCategoryChange={handleCategoryChange}
       />
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

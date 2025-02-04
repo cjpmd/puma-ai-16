@@ -1,14 +1,12 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 
 interface TeamSettingsHeaderProps {
   captain: string;
   duration: string;
   performanceCategory?: string;
-  availablePlayers?: any[];
+  availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
   onCaptainChange: (value: string) => void;
   onDurationChange: (value: string) => void;
   onCategoryChange?: (category: string) => void;
@@ -17,25 +15,12 @@ interface TeamSettingsHeaderProps {
 export const TeamSettingsHeader = ({
   captain,
   duration,
-  performanceCategory = "Ronaldo",
-  availablePlayers,
+  performanceCategory = "MESSI",
+  availablePlayers = [],
   onCaptainChange,
   onDurationChange,
   onCategoryChange,
 }: TeamSettingsHeaderProps) => {
-  const { data: categories } = useQuery({
-    queryKey: ["player-categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("player_categories")
-        .select("*")
-        .order("name");
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       <div>
@@ -48,7 +33,7 @@ export const TeamSettingsHeader = ({
             <SelectItem value="unassigned">None</SelectItem>
             {availablePlayers?.map(player => (
               <SelectItem key={player.id} value={player.id}>
-                {player.name} ({player.squad_number})
+                {player.name} {player.squad_number ? `(${player.squad_number})` : ''}
               </SelectItem>
             ))}
           </SelectContent>
@@ -74,11 +59,9 @@ export const TeamSettingsHeader = ({
             <SelectValue placeholder="Select performance category" />
           </SelectTrigger>
           <SelectContent>
-            {categories?.map(category => (
-              <SelectItem key={category.id} value={category.name}>
-                {category.name}
-              </SelectItem>
-            ))}
+            <SelectItem value="MESSI">Messi</SelectItem>
+            <SelectItem value="RONALDO">Ronaldo</SelectItem>
+            <SelectItem value="JAGS">Jags</SelectItem>
           </SelectContent>
         </Select>
       </div>
