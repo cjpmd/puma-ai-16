@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Fixture } from "@/types/fixture";
 
 const formSchema = z.object({
@@ -28,7 +29,11 @@ const formSchema = z.object({
   home_score: z.string().optional(),
   away_score: z.string().optional(),
   motm_player_id: z.string().optional(),
-  time: z.string().optional(),
+  meeting_time: z.string().optional(),
+  start_time: z.string().optional(),
+  end_time: z.string().optional(),
+  is_home: z.boolean().default(true),
+  number_of_teams: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -59,7 +64,11 @@ export const FixtureForm = ({
       home_score: editingFixture?.home_score?.toString() || "",
       away_score: editingFixture?.away_score?.toString() || "",
       motm_player_id: editingFixture?.motm_player_id || undefined,
-      time: editingFixture?.time || "",
+      meeting_time: editingFixture?.meeting_time || "",
+      start_time: editingFixture?.start_time || "",
+      end_time: editingFixture?.end_time || "",
+      is_home: editingFixture?.is_home ?? true,
+      number_of_teams: editingFixture?.number_of_teams?.toString() || "1",
     },
   });
 
@@ -74,7 +83,6 @@ export const FixtureForm = ({
               value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''} 
               onChange={(e) => {
                 const date = e.target.value ? new Date(e.target.value) : undefined;
-                // Handle date change if needed
               }}
             />
           </div>
@@ -105,20 +113,40 @@ export const FixtureForm = ({
             </FormItem>
           )}
         />
-        
-        <FormField
-          control={form.control}
-          name="opponent"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Opponent *</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="opponent"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Opponent *</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="is_home"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel>Home Game</FormLabel>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="grid grid-cols-2 gap-4">
           <FormField
@@ -134,12 +162,62 @@ export const FixtureForm = ({
               </FormItem>
             )}
           />
+          
           <FormField
             control={form.control}
-            name="time"
+            name="number_of_teams"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Time (optional)</FormLabel>
+                <FormLabel>Number of Teams</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min="1"
+                    {...field}
+                    onChange={(e) => field.onChange(e.target.value)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="meeting_time"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Meeting Time</FormLabel>
+                <FormControl>
+                  <Input type="time" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="start_time"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Kick Off Time</FormLabel>
+                <FormControl>
+                  <Input type="time" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="end_time"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>End Time</FormLabel>
                 <FormControl>
                   <Input type="time" {...field} />
                 </FormControl>
@@ -155,7 +233,7 @@ export const FixtureForm = ({
             name="home_score"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Puma Score</FormLabel>
+                <FormLabel>Home Score</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
                 </FormControl>
@@ -168,7 +246,7 @@ export const FixtureForm = ({
             name="away_score"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Opponent Score</FormLabel>
+                <FormLabel>Away Score</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
                 </FormControl>
