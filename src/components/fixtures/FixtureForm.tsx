@@ -27,16 +27,14 @@ import { supabase } from "@/integrations/supabase/client";
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
   location: z.string().optional(),
-  team_name: z.string().min(1, "Team name is required"),
-  home_score: z.string().optional(),
-  away_score: z.string().optional(),
-  motm_player_id: z.string().optional(),
+  number_of_teams: z.string().optional(),
+  home_score: z.array(z.string().optional()),
+  away_score: z.array(z.string().optional()),
+  motm_player_ids: z.array(z.string().optional()),
   meeting_time: z.string().optional(),
   start_time: z.string().optional(),
   end_time: z.string().optional(),
   is_home: z.boolean().default(true),
-  number_of_teams: z.string().optional(),
-  performance_category: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -63,40 +61,26 @@ export const FixtureForm = ({
     defaultValues: {
       opponent: editingFixture?.opponent || "",
       location: editingFixture?.location || "",
-      team_name: editingFixture?.team_name || "Ronaldo",
-      home_score: editingFixture?.home_score?.toString() || "",
-      away_score: editingFixture?.away_score?.toString() || "",
-      motm_player_id: editingFixture?.motm_player_id || undefined,
+      number_of_teams: editingFixture?.number_of_teams?.toString() || "1",
+      home_score: Array(editingFixture?.number_of_teams || 1).fill(""),
+      away_score: Array(editingFixture?.number_of_teams || 1).fill(""),
+      motm_player_ids: Array(editingFixture?.number_of_teams || 1).fill(""),
       meeting_time: editingFixture?.meeting_time || "",
       start_time: editingFixture?.start_time || "",
       end_time: editingFixture?.end_time || "",
       is_home: editingFixture?.is_home ?? true,
-      number_of_teams: editingFixture?.number_of_teams?.toString() || "1",
-      performance_category: editingFixture?.performance_category || "MESSI",
     },
   });
 
-  const { data: performanceCategories } = useQuery({
-    queryKey: ["performance-categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("team_performance_categories")
-        .select("performance_category");
-      
-      if (error) throw error;
-      return data?.map(d => d.performance_category) || ["MESSI", "RONALDO", "JAGS"];
-    },
-  });
-
-  const watchTeamName = form.watch("team_name");
+  const watchNumberOfTeams = parseInt(form.watch("number_of_teams") || "1");
   const watchOpponent = form.watch("opponent");
   const watchIsHome = form.watch("is_home");
-  const watchNumberOfTeams = form.watch("number_of_teams");
 
-  const getScoreLabel = (isHomeScore: boolean) => {
-    const homeTeam = watchIsHome ? watchTeamName : watchOpponent;
-    const awayTeam = watchIsHome ? watchOpponent : watchTeamName;
-    return isHomeScore ? `${homeTeam} Score` : `${awayTeam} Score`;
+  const getScoreLabel = (isHomeScore: boolean, teamIndex: number) => {
+    const homeTeam = watchIsHome ? "Broughty Pumas 2015s" : watchOpponent;
+    const awayTeam = watchIsHome ? watchOpponent : "Broughty Pumas 2015s";
+    const teamLabel = isHomeScore ? homeTeam : awayTeam;
+    return `${teamLabel} Team ${teamIndex + 1} Score`;
   };
 
   return (
@@ -114,33 +98,9 @@ export const FixtureForm = ({
             />
           </div>
         )}
-        
-        <FormField
-          control={form.control}
-          name="team_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Team *</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select team" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Ronaldo">Ronaldo</SelectItem>
-                  <SelectItem value="Messi">Messi</SelectItem>
-                  <SelectItem value="Jags">Jags</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
+        <div className="text-lg font-semibold mb-2">Team: Broughty Pumas 2015s</div>
+        
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -201,7 +161,14 @@ export const FixtureForm = ({
                     type="number" 
                     min="1"
                     {...field}
-                    onChange={(e) => field.onChange(e.target.value)}
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                      // Update arrays when number of teams changes
+                      const newLength = parseInt(e.target.value) || 1;
+                      form.setValue('home_score', Array(newLength).fill(""));
+                      form.setValue('away_score', Array(newLength).fill(""));
+                      form.setValue('motm_player_ids', Array(newLength).fill(""));
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -254,94 +221,65 @@ export const FixtureForm = ({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="home_score"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{getScoreLabel(true)}</FormLabel>
-                <FormControl>
-                  <Input type="number" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="away_score"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{getScoreLabel(false)}</FormLabel>
-                <FormControl>
-                  <Input type="number" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {parseInt(watchNumberOfTeams || "1") > 1 && (
-          <FormField
-            control={form.control}
-            name="performance_category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Performance Category</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+        {Array.from({ length: watchNumberOfTeams }).map((_, index) => (
+          <div key={index} className="grid grid-cols-2 gap-4 border p-4 rounded-lg">
+            <FormField
+              control={form.control}
+              name={`home_score.${index}`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{getScoreLabel(true, index)}</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
+                    <Input type="number" {...field} />
                   </FormControl>
-                  <SelectContent>
-                    {performanceCategories?.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-
-        {players && (
-          <FormField
-            control={form.control}
-            name="motm_player_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Man of the Match</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name={`away_score.${index}`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{getScoreLabel(false, index)}</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select player" />
-                    </SelectTrigger>
+                    <Input type="number" {...field} />
                   </FormControl>
-                  <SelectContent>
-                    {players.map((player) => (
-                      <SelectItem key={player.id} value={player.id}>
-                        {player.name} (#{player.squad_number})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {players && (
+              <FormField
+                control={form.control}
+                name={`motm_player_ids.${index}`}
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Team {index + 1} Man of the Match</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select player" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {players.map((player) => (
+                          <SelectItem key={player.id} value={player.id}>
+                            {player.name} (#{player.squad_number})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
-          />
-        )}
+          </div>
+        ))}
         
         <Button 
           type="submit" 
