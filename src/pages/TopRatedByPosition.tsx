@@ -23,6 +23,11 @@ interface PositionRankingData {
   position: string;
   suitability_score: number;
   player_category: string;
+}
+
+interface RawPositionData {
+  player_id: string;
+  suitability_score: number;
   players: {
     name: string;
     team_category: string;
@@ -86,12 +91,12 @@ const TopRatedByPosition = () => {
 
       if (error) throw error;
 
-      const transformedData = (data as any[]).map((item) => ({
+      const transformedData = (data as RawPositionData[]).map((item) => ({
         player_id: item.player_id,
-        player_name: item.players?.name,
-        position: item.position_definitions?.abbreviation,
+        player_name: item.players.name,
+        position: item.position_definitions.abbreviation,
         suitability_score: Number(item.suitability_score || 0),
-        player_category: item.players?.team_category
+        player_category: item.players.team_category
       }));
 
       return transformedData.reduce((acc: Record<string, PositionRankingData[]>, curr) => {

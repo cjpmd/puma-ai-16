@@ -33,7 +33,7 @@ export const AttributeTrends = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data as AttributeData[];
+      return (data as unknown as AttributeData[]);
     },
   });
 
