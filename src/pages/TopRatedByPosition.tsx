@@ -17,6 +17,22 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { PerformanceCategory } from "@/types/player";
 
+interface PositionRankingData {
+  player_id: string;
+  player_name: string;
+  position: string;
+  suitability_score: number;
+  player_category: string;
+  players: {
+    name: string;
+    team_category: string;
+  };
+  position_definitions: {
+    abbreviation: string;
+    full_name: string;
+  };
+}
+
 const positionTitles: Record<string, string> = {
   "GK": "Goalkeeper",
   "SK": "Sweeper Keeper",
@@ -70,7 +86,7 @@ const TopRatedByPosition = () => {
 
       if (error) throw error;
 
-      const transformedData = data.map((item) => ({
+      const transformedData = (data as any[]).map((item) => ({
         player_id: item.player_id,
         player_name: item.players?.name,
         position: item.position_definitions?.abbreviation,
@@ -78,7 +94,7 @@ const TopRatedByPosition = () => {
         player_category: item.players?.team_category
       }));
 
-      return transformedData.reduce((acc: any, curr) => {
+      return transformedData.reduce((acc: Record<string, PositionRankingData[]>, curr) => {
         if (!acc[curr.position]) {
           acc[curr.position] = [];
         }

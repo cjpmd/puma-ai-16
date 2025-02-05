@@ -37,12 +37,12 @@ export const RoleSuitabilityRankings = ({ roleId, limit = 5 }: RoleSuitabilityPr
         .from("role_suitability")
         .select(`
           suitability_score,
-          players (
+          players!inner (
             name,
             age,
             squad_number
           ),
-          role_definitions (
+          role_definitions!inner (
             abbreviation,
             full_name
           )
@@ -52,7 +52,7 @@ export const RoleSuitabilityRankings = ({ roleId, limit = 5 }: RoleSuitabilityPr
         .limit(limit);
 
       if (error) throw error;
-      return data as RankingData[];
+      return data as unknown as RankingData[];
     },
   });
 

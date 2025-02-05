@@ -5,6 +5,16 @@ import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+interface AttributeData {
+  value: number;
+  name: string;
+  category: string;
+  created_at: string;
+  players: {
+    name: string;
+  };
+}
+
 export const AttributeTrends = () => {
   const { data: trends, isLoading } = useQuery({
     queryKey: ["attribute-trends"],
@@ -16,14 +26,14 @@ export const AttributeTrends = () => {
           name,
           category,
           created_at,
-          players (
+          players!inner (
             name
           )
         `)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data;
+      return data as AttributeData[];
     },
   });
 
