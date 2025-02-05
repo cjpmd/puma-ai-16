@@ -103,11 +103,11 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         });
 
       // Prepare all selections for insertion
-      const allSelections = Object.entries(selections).flatMap(([periodId, periodSelections]) =>
+      const allSelections = Object.entries(selections).flatMap(([periodKey, periodSelections]) =>
         Object.entries(periodSelections).flatMap(([teamNumber, teamSelections]) =>
           Object.entries(teamSelections).map(([_, selection]) => {
-            const periodNumber = parseInt(periodId.split('-')[1]);
-            const periodId = periodRecords.find(p => p.period_number === periodNumber)?.id;
+            const periodNumber = parseInt(periodKey.split('-')[1]);
+            const currentPeriodId = periodRecords.find(p => p.period_number === periodNumber)?.id;
             
             return {
               event_id: fixture.id,
@@ -115,7 +115,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
               team_number: parseInt(teamNumber),
               player_id: selection.playerId,
               position: selection.position,
-              period_id: periodId,
+              period_id: currentPeriodId,
               performance_category: selection.performanceCategory || 'MESSI'
             };
           })
