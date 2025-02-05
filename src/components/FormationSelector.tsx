@@ -15,6 +15,7 @@ interface FormationSelectorProps {
   selectedPlayers: Set<string>;
   availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
   performanceCategory?: string;
+  initialSelections?: Record<string, { playerId: string; position: string; performanceCategory?: string }>;
 }
 
 export const FormationSelector = ({
@@ -24,8 +25,11 @@ export const FormationSelector = ({
   selectedPlayers,
   availablePlayers: initialPlayers,
   performanceCategory = "MESSI",
+  initialSelections,
 }: FormationSelectorProps) => {
-  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>({});
+  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
+    initialSelections || {}
+  );
   const [captain, setCaptain] = useState<string>("unassigned");
   const [duration, setDuration] = useState<string>("20");
   const [showFormation, setShowFormation] = useState(false);
@@ -46,6 +50,12 @@ export const FormationSelector = ({
   });
 
   const players = initialPlayers || fetchedPlayers || [];
+
+  useEffect(() => {
+    if (initialSelections) {
+      setSelections(initialSelections);
+    }
+  }, [initialSelections]);
 
   const handlePlayerSelection = useCallback((slotId: string, playerId: string, position: string) => {
     const newSelections = {
