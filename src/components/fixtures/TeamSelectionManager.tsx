@@ -102,32 +102,36 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
           event_type: 'FIXTURE'
         });
 
-      // Prepare all selections for insertion
+      // Prepare all selections for insertion, filtering out unassigned players
       const allSelections = Object.entries(selections).flatMap(([periodKey, periodSelections]) =>
         Object.entries(periodSelections).flatMap(([teamNumber, teamSelections]) =>
-          Object.entries(teamSelections).map(([_, selection]) => {
-            const periodNumber = parseInt(periodKey.split('-')[1]);
-            const currentPeriodId = periodRecords.find(p => p.period_number === periodNumber)?.id;
-            
-            return {
-              event_id: fixture.id,
-              event_type: 'FIXTURE',
-              team_number: parseInt(teamNumber),
-              player_id: selection.playerId,
-              position: selection.position,
-              period_id: currentPeriodId,
-              performance_category: selection.performanceCategory || 'MESSI'
-            };
-          })
+          Object.entries(teamSelections)
+            .filter(([_, selection]) => selection.playerId !== "unassigned") // Filter out unassigned players
+            .map(([_, selection]) => {
+              const periodNumber = parseInt(periodKey.split('-')[1]);
+              const currentPeriodId = periodRecords.find(p => p.period_number === periodNumber)?.id;
+              
+              return {
+                event_id: fixture.id,
+                event_type: 'FIXTURE',
+                team_number: parseInt(teamNumber),
+                player_id: selection.playerId,
+                position: selection.position,
+                period_id: currentPeriodId,
+                performance_category: selection.performanceCategory || 'MESSI'
+              };
+            })
         )
       );
 
-      // Insert new selections
-      const { error } = await supabase
-        .from("team_selections")
-        .insert(allSelections);
+      // Insert new selections only if there are valid selections
+      if (allSelections.length > 0) {
+        const { error } = await supabase
+          .from("team_selections")
+          .insert(allSelections);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
       toast({
         title: "Success",
@@ -206,6 +210,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                         onSelectionChange={(teamSelections) => handleSelectionChange(teamSelections)}
                         selectedPlayers={selectedPlayers}
                         availablePlayers={availablePlayers}
+                        initialSelections={selections[activePeriod]?.[activeTeam]}
                       />
                     </CardContent>
                   </Card>

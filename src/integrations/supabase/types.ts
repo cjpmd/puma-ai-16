@@ -859,6 +859,53 @@ export type Database = {
           },
         ]
       }
+      object_detections: {
+        Row: {
+          confidence: number
+          created_at: string
+          frame_time: number
+          height: number
+          id: string
+          object_class: string
+          video_id: string | null
+          width: number
+          x_coord: number
+          y_coord: number
+        }
+        Insert: {
+          confidence: number
+          created_at?: string
+          frame_time: number
+          height: number
+          id?: string
+          object_class: string
+          video_id?: string | null
+          width: number
+          x_coord: number
+          y_coord: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          frame_time?: number
+          height?: number
+          id?: string
+          object_class?: string
+          video_id?: string | null
+          width?: number
+          x_coord?: number
+          y_coord?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "object_detections_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "video_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pass_analysis: {
         Row: {
           created_at: string | null
