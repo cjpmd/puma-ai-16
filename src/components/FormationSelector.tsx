@@ -29,6 +29,7 @@ export const FormationSelector = ({
   const [captain, setCaptain] = useState<string>("unassigned");
   const [duration, setDuration] = useState<string>("20");
   const [showFormation, setShowFormation] = useState(false);
+  const [localPerformanceCategory, setLocalPerformanceCategory] = useState(performanceCategory);
 
   const { data: fetchedPlayers } = useQuery({
     queryKey: ["available-players", teamName],
@@ -52,18 +53,18 @@ export const FormationSelector = ({
       [slotId]: {
         playerId,
         position,
-        performanceCategory
+        performanceCategory: localPerformanceCategory
       }
     };
     setSelections(newSelections);
     onSelectionChange(newSelections);
-  }, [selections, performanceCategory, onSelectionChange]);
+  }, [selections, localPerformanceCategory, onSelectionChange]);
 
   useEffect(() => {
     const updatedSelections = Object.fromEntries(
       Object.entries(selections).map(([key, value]) => [
         key,
-        { ...value, performanceCategory }
+        { ...value, performanceCategory: localPerformanceCategory }
       ])
     );
     
@@ -71,49 +72,49 @@ export const FormationSelector = ({
       setSelections(updatedSelections);
       onSelectionChange(updatedSelections);
     }
-  }, [performanceCategory, onSelectionChange]);
+  }, [localPerformanceCategory, onSelectionChange]);
 
   const getFormationSlots = () => {
     switch (format) {
       case "5-a-side":
         return [
-          { id: "gk-1", label: "GK", className: "col-span-5" },
-          { id: "def-1", label: "DEF", className: "col-start-2 col-span-3" },
-          { id: "mid-1", label: "MID", className: "col-start-2 col-span-3" },
-          { id: "str-1", label: "STR", className: "col-start-3" },
+          { id: "gk-1", label: "GK", className: "w-full" },
+          { id: "def-1", label: "DEF", className: "w-full" },
+          { id: "mid-1", label: "MID", className: "w-full" },
+          { id: "str-1", label: "STR", className: "w-full" },
         ];
       case "7-a-side":
         return [
-          { id: "gk-1", label: "GK", className: "col-span-5" },
-          { id: "def-1", label: "DEF", className: "col-start-2" },
-          { id: "def-2", label: "DEF", className: "col-start-4" },
-          { id: "mid-1", label: "MID", className: "col-start-2" },
-          { id: "mid-2", label: "MID", className: "col-start-4" },
-          { id: "str-1", label: "STR", className: "col-start-3" },
+          { id: "gk-1", label: "GK", className: "w-full" },
+          { id: "def-1", label: "DEF", className: "w-full" },
+          { id: "def-2", label: "DEF", className: "w-full" },
+          { id: "mid-1", label: "MID", className: "w-full" },
+          { id: "mid-2", label: "MID", className: "w-full" },
+          { id: "str-1", label: "STR", className: "w-full" },
         ];
       case "9-a-side":
         return [
-          { id: "gk-1", label: "GK", className: "col-span-5" },
-          { id: "def-1", label: "DEF", className: "col-start-2" },
-          { id: "def-2", label: "DEF", className: "col-start-3" },
-          { id: "def-3", label: "DEF", className: "col-start-4" },
-          { id: "mid-1", label: "MID", className: "col-start-2" },
-          { id: "mid-2", label: "MID", className: "col-start-3" },
-          { id: "mid-3", label: "MID", className: "col-start-4" },
-          { id: "str-1", label: "STR", className: "col-start-3" },
+          { id: "gk-1", label: "GK", className: "w-full" },
+          { id: "def-1", label: "DEF", className: "w-full" },
+          { id: "def-2", label: "DEF", className: "w-full" },
+          { id: "def-3", label: "DEF", className: "w-full" },
+          { id: "mid-1", label: "MID", className: "w-full" },
+          { id: "mid-2", label: "MID", className: "w-full" },
+          { id: "mid-3", label: "MID", className: "w-full" },
+          { id: "str-1", label: "STR", className: "w-full" },
         ];
       case "11-a-side":
         return [
-          { id: "gk-1", label: "GK", className: "col-span-5" },
-          { id: "def-1", label: "DEF", className: "col-start-1" },
-          { id: "def-2", label: "DEF", className: "col-start-2" },
-          { id: "def-3", label: "DEF", className: "col-start-3" },
-          { id: "def-4", label: "DEF", className: "col-start-4" },
-          { id: "mid-1", label: "MID", className: "col-start-2" },
-          { id: "mid-2", label: "MID", className: "col-start-3" },
-          { id: "mid-3", label: "MID", className: "col-start-4" },
-          { id: "str-1", label: "STR", className: "col-start-2" },
-          { id: "str-2", label: "STR", className: "col-start-3" },
+          { id: "gk-1", label: "GK", className: "w-full" },
+          { id: "def-1", label: "DEF", className: "w-full" },
+          { id: "def-2", label: "DEF", className: "w-full" },
+          { id: "def-3", label: "DEF", className: "w-full" },
+          { id: "def-4", label: "DEF", className: "w-full" },
+          { id: "mid-1", label: "MID", className: "w-full" },
+          { id: "mid-2", label: "MID", className: "w-full" },
+          { id: "mid-3", label: "MID", className: "w-full" },
+          { id: "str-1", label: "STR", className: "w-full" },
+          { id: "str-2", label: "STR", className: "w-full" },
         ];
       default:
         return [];
@@ -138,7 +139,8 @@ export const FormationSelector = ({
           availablePlayers={players}
           onCaptainChange={setCaptain}
           onDurationChange={setDuration}
-          performanceCategory={performanceCategory}
+          performanceCategory={localPerformanceCategory}
+          onCategoryChange={setLocalPerformanceCategory}
         />
         <div className="flex gap-4">
           <Button
@@ -167,7 +169,7 @@ export const FormationSelector = ({
         />
       )}
 
-      <div className="grid grid-cols-5 gap-6">
+      <div className="max-w-md mx-auto space-y-4">
         {getFormationSlots().map((slot) => (
           <div key={slot.id} className={cn("space-y-2", slot.className)}>
             <PlayerPositionSelect
