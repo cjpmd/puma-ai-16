@@ -21,7 +21,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
   ]);
   const [activeTeam, setActiveTeam] = useState<string>("1");
   const [activePeriod, setActivePeriod] = useState<string>("period-1");
-  const [selections, setSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
+  const [selections, setSelections] = useState<Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>>({});
   const [isSaving, setIsSaving] = useState(false);
 
   const { data: availablePlayers } = useQuery({
@@ -45,8 +45,24 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
   const handleSelectionChange = (teamSelections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
     setSelections(prev => ({
       ...prev,
-      [activeTeam]: teamSelections
+      [activePeriod]: {
+        ...prev[activePeriod],
+        [activeTeam]: teamSelections
+      }
     }));
+
+    // Update selected players
+    const newSelectedPlayers = new Set<string>();
+    Object.values(selections).forEach(periodSelections => {
+      Object.values(periodSelections).forEach(teamSelections => {
+        Object.values(teamSelections).forEach(selection => {
+          if (selection.playerId !== "unassigned") {
+            newSelectedPlayers.add(selection.playerId);
+          }
+        });
+      });
+    });
+    setSelectedPlayers(newSelectedPlayers);
   };
 
   const handleSave = async () => {
@@ -87,21 +103,23 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         });
 
       // Prepare all selections for insertion
-      const allSelections = Object.entries(selections).flatMap(([teamNumber, teamSelections]) =>
-        Object.entries(teamSelections).map(([_, selection]) => {
-          const periodId = periodRecords.find(p => 
-            p.period_number === parseInt(activePeriod.split('-')[1]))?.id;
-          
-          return {
-            event_id: fixture.id,
-            event_type: 'FIXTURE',
-            team_number: parseInt(teamNumber),
-            player_id: selection.playerId,
-            position: selection.position,
-            period_id: periodId,
-            performance_category: selection.performanceCategory || 'MESSI'
-          };
-        })
+      const allSelections = Object.entries(selections).flatMap(([periodId, periodSelections]) =>
+        Object.entries(periodSelections).flatMap(([teamNumber, teamSelections]) =>
+          Object.entries(teamSelections).map(([_, selection]) => {
+            const periodNumber = parseInt(periodId.split('-')[1]);
+            const periodId = periodRecords.find(p => p.period_number === periodNumber)?.id;
+            
+            return {
+              event_id: fixture.id,
+              event_type: 'FIXTURE',
+              team_number: parseInt(teamNumber),
+              player_id: selection.playerId,
+              position: selection.position,
+              period_id: periodId,
+              performance_category: selection.performanceCategory || 'MESSI'
+            };
+          })
+        )
       );
 
       // Insert new selections
@@ -115,17 +133,6 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         title: "Success",
         description: "Team selections saved successfully",
       });
-
-      // Update selected players
-      const newSelectedPlayers = new Set<string>();
-      Object.values(selections).forEach(teamSelection => {
-        Object.values(teamSelection).forEach(selection => {
-          if (selection.playerId !== "unassigned") {
-            newSelectedPlayers.add(selection.playerId);
-          }
-        });
-      });
-      setSelectedPlayers(newSelectedPlayers);
 
     } catch (error) {
       console.error("Error saving team selections:", error);
@@ -196,7 +203,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                       <FormationSelector
                         format={fixture.format as "7-a-side"}
                         teamName={fixture.team_name}
-                        onSelectionChange={handleSelectionChange}
+                        onSelectionChange={(teamSelections) => handleSelectionChange(teamSelections)}
                         selectedPlayers={selectedPlayers}
                         availablePlayers={availablePlayers}
                       />
