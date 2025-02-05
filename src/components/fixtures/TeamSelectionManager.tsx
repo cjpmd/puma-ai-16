@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationSelector } from "@/components/FormationSelector";
 import { useQuery } from "@tanstack/react-query";
@@ -37,10 +37,61 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         console.error("Error fetching players:", error);
         throw error;
       }
-      console.log("Fetched players:", data);
       return data || [];
     },
   });
+
+  // Fetch existing selections when component mounts
+  useEffect(() => {
+    const fetchSelections = async () => {
+      if (!fixture) return;
+
+      const { data, error } = await supabase
+        .from('team_selections')
+        .select('*')
+        .eq('event_id', fixture.id)
+        .eq('event_type', 'FIXTURE');
+
+      if (error) {
+        console.error("Error fetching selections:", error);
+        return;
+      }
+
+      // Transform the data into our selections structure
+      const transformedSelections: Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>> = {};
+      
+      data.forEach(selection => {
+        const periodKey = `period-${selection.period_number || 1}`;
+        const teamKey = selection.team_number.toString();
+        
+        if (!transformedSelections[periodKey]) {
+          transformedSelections[periodKey] = {};
+        }
+        if (!transformedSelections[periodKey][teamKey]) {
+          transformedSelections[periodKey][teamKey] = {};
+        }
+
+        transformedSelections[periodKey][teamKey][selection.position] = {
+          playerId: selection.player_id,
+          position: selection.position,
+          performanceCategory: selection.performance_category
+        };
+      });
+
+      setSelections(transformedSelections);
+      
+      // Update selected players
+      const newSelectedPlayers = new Set<string>();
+      data.forEach(selection => {
+        if (selection.player_id !== "unassigned") {
+          newSelectedPlayers.add(selection.player_id);
+        }
+      });
+      setSelectedPlayers(newSelectedPlayers);
+    };
+
+    fetchSelections();
+  }, [fixture]);
 
   const handleSelectionChange = (teamSelections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
     setSelections(prev => ({
@@ -207,7 +258,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                       <FormationSelector
                         format={fixture.format as "7-a-side"}
                         teamName={fixture.team_name}
-                        onSelectionChange={(teamSelections) => handleSelectionChange(teamSelections)}
+                        onSelectionChange={handleSelectionChange}
                         selectedPlayers={selectedPlayers}
                         availablePlayers={availablePlayers}
                         initialSelections={selections[activePeriod]?.[activeTeam]}
