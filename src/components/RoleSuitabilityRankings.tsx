@@ -16,6 +16,19 @@ interface RoleSuitabilityProps {
   limit?: number;
 }
 
+interface RankingData {
+  suitability_score: number;
+  players: {
+    name: string;
+    age: number;
+    squad_number: number;
+  };
+  role_definitions: {
+    abbreviation: string;
+    full_name: string;
+  };
+}
+
 export const RoleSuitabilityRankings = ({ roleId, limit = 5 }: RoleSuitabilityProps) => {
   const { data: rankings, isLoading } = useQuery({
     queryKey: ["role-suitability", roleId],
@@ -39,7 +52,7 @@ export const RoleSuitabilityRankings = ({ roleId, limit = 5 }: RoleSuitabilityPr
         .limit(limit);
 
       if (error) throw error;
-      return data;
+      return data as RankingData[];
     },
   });
 
