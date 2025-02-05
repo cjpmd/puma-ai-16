@@ -91,7 +91,7 @@ const TopRatedByPosition = () => {
 
       if (error) throw error;
 
-      const transformedData = (data as RawPositionData[]).map((item) => ({
+      const transformedData = (data as unknown as RawPositionData[]).map((item) => ({
         player_id: item.player_id,
         player_name: item.players.name,
         position: item.position_definitions.abbreviation,
