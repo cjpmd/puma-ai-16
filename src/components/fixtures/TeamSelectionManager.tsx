@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationSelector } from "@/components/FormationSelector";
@@ -213,7 +212,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     try {
       setIsSaving(true);
 
-      // First, clear existing periods and selections
+      // First, delete existing periods and selections
       await supabase
         .from('event_periods')
         .delete()
@@ -224,11 +223,13 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         .delete()
         .match({ event_id: fixture.id, event_type: 'FIXTURE' });
 
-      // Create periods
-      const periodPromises = Object.entries(periodsPerTeam).flatMap(([teamId, periods]) =>
-        periods.map(async (period) => {
+      // Create new periods one by one to avoid conflicts
+      for (const [teamId, periods] of Object.entries(periodsPerTeam)) {
+        for (const period of periods) {
           const periodNumber = parseInt(period.id.split('-')[1]);
-          const { data, error } = await supabase
+          
+          // Insert period
+          const { data: periodData, error: periodError } = await supabase
             .from('event_periods')
             .upsert({
               event_id: fixture.id,
@@ -236,38 +237,39 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
               period_number: periodNumber,
               duration_minutes: period.duration
             })
-            .select();
+            .select()
+            .single();
 
-          if (error) throw error;
-          return data[0];
-        })
-      );
+          if (periodError) {
+            console.error("Error creating period:", periodError);
+            throw periodError;
+          }
 
-      await Promise.all(periodPromises);
-
-      // Create selections
-      const allSelections = Object.entries(selections).flatMap(([periodKey, periodSelections]) =>
-        Object.entries(periodSelections).flatMap(([teamNumber, teamSelections]) =>
-          Object.entries(teamSelections)
+          // Insert selections for this period
+          const periodSelections = selections[period.id]?.[teamId] || {};
+          const selectionRecords = Object.entries(periodSelections)
             .filter(([_, selection]) => selection.playerId !== "unassigned")
             .map(([_, selection]) => ({
               event_id: fixture.id,
               event_type: 'FIXTURE',
-              team_number: parseInt(teamNumber),
+              team_number: parseInt(teamId),
               player_id: selection.playerId,
               position: selection.position,
-              period_number: parseInt(periodKey.split('-')[1]),
-              performance_category: performanceCategories[`${periodKey}-${teamNumber}`] || 'MESSI'
-            }))
-        )
-      );
+              period_number: periodNumber,
+              performance_category: performanceCategories[`${period.id}-${teamId}`] || 'MESSI'
+            }));
 
-      if (allSelections.length > 0) {
-        const { error } = await supabase
-          .from("team_selections")
-          .insert(allSelections);
+          if (selectionRecords.length > 0) {
+            const { error: selectionsError } = await supabase
+              .from('team_selections')
+              .insert(selectionRecords);
 
-        if (error) throw error;
+            if (selectionsError) {
+              console.error("Error creating selections:", selectionsError);
+              throw selectionsError;
+            }
+          }
+        }
       }
 
       toast({
@@ -409,4 +411,3 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     </div>
   );
 };
-
