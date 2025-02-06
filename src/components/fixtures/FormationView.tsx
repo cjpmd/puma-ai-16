@@ -28,6 +28,14 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
 
   const renderPlayer = (positionCode: string) => {
     const player = getPlayerForPosition(positionCode);
+    
+    // Debug log for each position attempt
+    console.log(`Rendering position ${positionCode}:`, { 
+      foundPlayer: player,
+      allPositions: positions,
+      allPlayers: players
+    });
+
     if (!player) return null;
 
     return (
@@ -39,7 +47,15 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
     );
   };
 
-  console.log("Formation View Props:", { positions, players, periodNumber, duration });
+  // Debug log for all props
+  console.log("Formation View Props:", { 
+    positions, 
+    players, 
+    periodNumber, 
+    duration,
+    positionsCount: positions?.length,
+    playersCount: players?.length
+  });
 
   return (
     <Card className="p-4 mb-4">
@@ -102,7 +118,7 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
           <div>{renderPlayer("DCR")}</div>
           <div>{renderPlayer("DR")}</div>
 
-          {/* Sweeper Keeper */}
+          {/* Sweeper */}
           <div></div>
           <div></div>
           <div>{renderPlayer("SK")}</div>
