@@ -127,6 +127,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       [`${periodId}-${teamId}`]: category
     }));
 
+    // Update selections with new performance category
     setSelections(prev => ({
       ...prev,
       [periodId]: {
@@ -236,6 +237,22 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
             onClick={() => {
               const newPeriodId = `period-${periods.length + 1}`;
               setPeriods([...periods, { id: newPeriodId, duration: 20 }]);
+              
+              // Copy performance categories from the last period
+              const lastPeriod = periods[periods.length - 1];
+              if (lastPeriod) {
+                const newCategories: Record<string, string> = {};
+                Object.entries(performanceCategories).forEach(([key, value]) => {
+                  if (key.startsWith(`${lastPeriod.id}-`)) {
+                    const teamId = key.split('-')[2];
+                    newCategories[`${newPeriodId}-${teamId}`] = value;
+                  }
+                });
+                setPerformanceCategories(prev => ({
+                  ...prev,
+                  ...newCategories
+                }));
+              }
             }} 
             variant="outline"
           >
@@ -264,9 +281,9 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
             <CardHeader>
               <CardTitle>Period {period.id.split('-')[1]}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
-                <div key={index} className="mb-4">
+                <div key={index}>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-lg font-semibold">Team {index + 1}</h3>
                     <Select
