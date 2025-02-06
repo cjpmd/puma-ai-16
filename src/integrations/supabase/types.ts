@@ -202,6 +202,56 @@ export type Database = {
           },
         ]
       }
+      deep_tracking_results: {
+        Row: {
+          class_name: string
+          confidence: number
+          created_at: string | null
+          frame_number: number
+          height: number
+          id: string
+          track_id: number
+          video_id: string | null
+          width: number
+          x_coord: number
+          y_coord: number
+        }
+        Insert: {
+          class_name: string
+          confidence: number
+          created_at?: string | null
+          frame_number: number
+          height: number
+          id?: string
+          track_id: number
+          video_id?: string | null
+          width: number
+          x_coord: number
+          y_coord: number
+        }
+        Update: {
+          class_name?: string
+          confidence?: number
+          created_at?: string | null
+          frame_number?: number
+          height?: number
+          id?: string
+          track_id?: number
+          video_id?: string | null
+          width?: number
+          x_coord?: number
+          y_coord?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deep_tracking_results_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "video_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           assigned_player_id: string | null
@@ -2341,6 +2391,50 @@ export type Database = {
           },
         ]
       }
+      video_processing_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          server_url: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["video_processing_status"] | null
+          updated_at: string | null
+          video_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          server_url?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["video_processing_status"] | null
+          updated_at?: string | null
+          video_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          server_url?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["video_processing_status"] | null
+          updated_at?: string | null
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_processing_jobs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "video_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       attribute_history: {
@@ -2501,6 +2595,7 @@ export type Database = {
     }
     Enums: {
       coach_role: "Manager" | "Coach" | "Helper"
+      video_processing_status: "pending" | "processing" | "completed" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
