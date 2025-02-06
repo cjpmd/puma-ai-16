@@ -229,7 +229,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Team Selection - {fixture.opponent}</h2>
         <div className="space-x-2">
@@ -267,24 +267,24 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {periods.map((period) => (
           <Card key={period.id} className="relative">
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-2 right-2"
+              className="absolute top-3 right-3"
               onClick={() => handleDeletePeriod(period.id)}
             >
               <X className="h-4 w-4" />
             </Button>
-            <CardHeader>
+            <CardHeader className="pb-4">
               <CardTitle>Period {period.id.split('-')[1]}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
-                <div key={index}>
-                  <div className="flex items-center justify-between mb-2">
+                <div key={index} className="bg-muted/50 p-4 rounded-lg">
+                  <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">Team {index + 1}</h3>
                     <Select
                       value={performanceCategories[`${period.id}-${index + 1}`] || "MESSI"}
