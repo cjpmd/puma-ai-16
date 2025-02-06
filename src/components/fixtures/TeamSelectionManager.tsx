@@ -17,10 +17,7 @@ interface TeamSelectionManagerProps {
 export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => {
   const { toast } = useToast();
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
-  const [periodsPerTeam, setPeriodsPerTeam] = useState<Record<string, Array<{ id: string; duration: number }>>>({
-    "1": [{ id: "period-1", duration: 20 }],
-    "2": [{ id: "period-1", duration: 20 }]
-  });
+  const [periodsPerTeam, setPeriodsPerTeam] = useState<Record<string, Array<{ id: string; duration: number }>>>({});
   const [activeTeam, setActiveTeam] = useState<string>("1");
   const [selections, setSelections] = useState<Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>>({});
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
@@ -43,40 +40,69 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     const fetchSelections = async () => {
       if (!fixture) return;
 
-      const { data, error } = await supabase
+      const { data: eventPeriods, error: periodsError } = await supabase
+        .from('event_periods')
+        .select('*')
+        .eq('event_id', fixture.id)
+        .eq('event_type', 'FIXTURE')
+        .order('period_number');
+
+      if (periodsError) {
+        console.error("Error fetching periods:", periodsError);
+        return;
+      }
+
+      const { data: selections, error: selectionsError } = await supabase
         .from('team_selections')
         .select('*')
         .eq('event_id', fixture.id)
         .eq('event_type', 'FIXTURE');
 
-      if (error) {
-        console.error("Error fetching selections:", error);
+      if (selectionsError) {
+        console.error("Error fetching selections:", selectionsError);
         return;
       }
 
-      const transformedSelections: Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>> = {};
+      // Transform periods into periodsPerTeam structure
       const newPeriodsPerTeam: Record<string, Array<{ id: string; duration: number }>> = {};
-      
-      data.forEach(selection => {
+      const transformedSelections: Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>> = {};
+      const newPerformanceCategories: Record<string, string> = {};
+
+      // Initialize structure for all teams
+      for (let i = 1; i <= (fixture.number_of_teams || 1); i++) {
+        const teamKey = i.toString();
+        newPeriodsPerTeam[teamKey] = [];
+      }
+
+      // Process event periods
+      eventPeriods.forEach(period => {
+        for (let i = 1; i <= (fixture.number_of_teams || 1); i++) {
+          const teamKey = i.toString();
+          const periodKey = `period-${period.period_number}`;
+          newPeriodsPerTeam[teamKey].push({
+            id: periodKey,
+            duration: period.duration_minutes
+          });
+        }
+      });
+
+      // If no periods exist, initialize with one period per team
+      if (Object.values(newPeriodsPerTeam).every(periods => periods.length === 0)) {
+        Object.keys(newPeriodsPerTeam).forEach(teamKey => {
+          newPeriodsPerTeam[teamKey] = [{ id: "period-1", duration: 20 }];
+        });
+      }
+
+      // Process selections
+      selections.forEach(selection => {
         const periodKey = `period-${selection.period_number || 1}`;
         const teamKey = selection.team_number.toString();
-        
+
         if (!transformedSelections[periodKey]) {
           transformedSelections[periodKey] = {};
         }
         if (!transformedSelections[periodKey][teamKey]) {
           transformedSelections[periodKey][teamKey] = {};
-        }
-        if (!newPeriodsPerTeam[teamKey]) {
-          newPeriodsPerTeam[teamKey] = [];
-        }
-        
-        // Add period if it doesn't exist for this team
-        if (!newPeriodsPerTeam[teamKey].some(p => p.id === periodKey)) {
-          newPeriodsPerTeam[teamKey].push({
-            id: periodKey,
-            duration: selection.duration_minutes || 20
-          });
         }
 
         transformedSelections[periodKey][teamKey][selection.position] = {
@@ -85,25 +111,16 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
           performanceCategory: selection.performance_category
         };
 
-        setPerformanceCategories(prev => ({
-          ...prev,
-          [`${periodKey}-${teamKey}`]: selection.performance_category || 'MESSI'
-        }));
-      });
-
-      // Ensure each team has at least one period
-      Object.keys(fixture.number_of_teams ? Array(fixture.number_of_teams).fill(0) : ["1"]).forEach((teamIndex) => {
-        const teamKey = (parseInt(teamIndex) + 1).toString();
-        if (!newPeriodsPerTeam[teamKey]) {
-          newPeriodsPerTeam[teamKey] = [{ id: "period-1", duration: 20 }];
-        }
+        newPerformanceCategories[`${periodKey}-${teamKey}`] = selection.performance_category || 'MESSI';
       });
 
       setPeriodsPerTeam(newPeriodsPerTeam);
       setSelections(transformedSelections);
-      
+      setPerformanceCategories(newPerformanceCategories);
+
+      // Update selected players
       const newSelectedPlayers = new Set<string>();
-      data.forEach(selection => {
+      selections.forEach(selection => {
         if (selection.player_id !== "unassigned") {
           newSelectedPlayers.add(selection.player_id);
         }
@@ -115,19 +132,31 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
   }, [fixture]);
 
   const handleDeletePeriod = (teamId: string, periodId: string) => {
+    const periodNumber = parseInt(periodId.split('-')[1]);
+    
+    // Remove period from periodsPerTeam
     setPeriodsPerTeam(prev => ({
       ...prev,
       [teamId]: prev[teamId].filter(p => p.id !== periodId)
     }));
     
+    // Remove selections for this period
     setSelections(prev => {
       const newSelections = { ...prev };
       delete newSelections[periodId];
       return newSelections;
     });
+
+    // Remove performance category for this period
+    setPerformanceCategories(prev => {
+      const newCategories = { ...prev };
+      delete newCategories[`${periodId}-${teamId}`];
+      return newCategories;
+    });
   };
 
   const handleTeamSelectionChange = (periodId: string, teamId: string, teamSelections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
+    // Update selections for this period and team
     setSelections(prev => ({
       ...prev,
       [periodId]: {
@@ -136,6 +165,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       }
     }));
 
+    // Update selected players
     const newSelectedPlayers = new Set<string>();
     Object.values(selections).forEach(periodSelections => {
       Object.values(periodSelections).forEach(teamSelections => {
@@ -146,6 +176,14 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         });
       });
     });
+
+    // Add newly selected players
+    Object.values(teamSelections).forEach(selection => {
+      if (selection.playerId !== "unassigned") {
+        newSelectedPlayers.add(selection.playerId);
+      }
+    });
+
     setSelectedPlayers(newSelectedPlayers);
   };
 
@@ -175,64 +213,52 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     try {
       setIsSaving(true);
 
-      // Flatten all periods from all teams
-      const allPeriods = Object.entries(periodsPerTeam).flatMap(([teamId, periods]) =>
-        periods.map(period => ({
-          ...period,
-          teamId,
-          periodNumber: parseInt(period.id.split('-')[1])
-        }))
-      );
-
-      const periodPromises = allPeriods.map(async (period) => {
-        const { data, error } = await supabase
-          .from('event_periods')
-          .upsert({
-            event_id: fixture.id,
-            event_type: 'FIXTURE',
-            period_number: period.periodNumber,
-            duration_minutes: period.duration
-          }, {
-            onConflict: 'event_id,event_type,period_number'
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        return { ...data, teamId: period.teamId };
-      });
-
-      const periodRecords = await Promise.all(periodPromises);
+      // First, clear existing periods and selections
+      await supabase
+        .from('event_periods')
+        .delete()
+        .match({ event_id: fixture.id, event_type: 'FIXTURE' });
 
       await supabase
-        .from("team_selections")
+        .from('team_selections')
         .delete()
-        .match({
-          event_id: fixture.id,
-          event_type: 'FIXTURE'
-        });
+        .match({ event_id: fixture.id, event_type: 'FIXTURE' });
 
+      // Create periods
+      const periodPromises = Object.entries(periodsPerTeam).flatMap(([teamId, periods]) =>
+        periods.map(async (period) => {
+          const periodNumber = parseInt(period.id.split('-')[1]);
+          const { data, error } = await supabase
+            .from('event_periods')
+            .upsert({
+              event_id: fixture.id,
+              event_type: 'FIXTURE',
+              period_number: periodNumber,
+              duration_minutes: period.duration
+            })
+            .select();
+
+          if (error) throw error;
+          return data[0];
+        })
+      );
+
+      await Promise.all(periodPromises);
+
+      // Create selections
       const allSelections = Object.entries(selections).flatMap(([periodKey, periodSelections]) =>
         Object.entries(periodSelections).flatMap(([teamNumber, teamSelections]) =>
           Object.entries(teamSelections)
             .filter(([_, selection]) => selection.playerId !== "unassigned")
-            .map(([_, selection]) => {
-              const periodNumber = parseInt(periodKey.split('-')[1]);
-              const currentPeriodId = periodRecords.find(p => 
-                p.period_number === periodNumber && p.teamId === teamNumber
-              )?.id;
-              const performanceCategory = performanceCategories[`${periodKey}-${teamNumber}`] || 'MESSI';
-              
-              return {
-                event_id: fixture.id,
-                event_type: 'FIXTURE',
-                team_number: parseInt(teamNumber),
-                player_id: selection.playerId,
-                position: selection.position,
-                period_id: currentPeriodId,
-                performance_category: performanceCategory
-              };
-            })
+            .map(([_, selection]) => ({
+              event_id: fixture.id,
+              event_type: 'FIXTURE',
+              team_number: parseInt(teamNumber),
+              player_id: selection.playerId,
+              position: selection.position,
+              period_number: parseInt(periodKey.split('-')[1]),
+              performance_category: performanceCategories[`${periodKey}-${teamNumber}`] || 'MESSI'
+            }))
         )
       );
 

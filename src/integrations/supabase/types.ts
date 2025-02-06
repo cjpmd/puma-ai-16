@@ -1961,6 +1961,7 @@ export type Database = {
       team_selections: {
         Row: {
           created_at: string | null
+          duration_minutes: number | null
           event_id: string
           event_type: string
           id: string
@@ -1975,6 +1976,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          duration_minutes?: number | null
           event_id: string
           event_type: string
           id?: string
@@ -1989,6 +1991,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          duration_minutes?: number | null
           event_id?: string
           event_type?: string
           id?: string
