@@ -90,6 +90,7 @@ export const FormationSelector = ({
         return [
           { id: "gk-1", label: "GK", className: "w-full" },
           { id: "def-1", label: "DEF", className: "w-full" },
+          { id: "def-2", label: "DEF", className: "w-full" },
           { id: "mid-1", label: "MID", className: "w-full" },
           { id: "str-1", label: "STR", className: "w-full" },
         ];
@@ -101,6 +102,7 @@ export const FormationSelector = ({
           { id: "mid-1", label: "MID", className: "w-full" },
           { id: "mid-2", label: "MID", className: "w-full" },
           { id: "str-1", label: "STR", className: "w-full" },
+          { id: "str-2", label: "STR", className: "w-full" },
         ];
       case "9-a-side":
         return [
@@ -112,6 +114,7 @@ export const FormationSelector = ({
           { id: "mid-2", label: "MID", className: "w-full" },
           { id: "mid-3", label: "MID", className: "w-full" },
           { id: "str-1", label: "STR", className: "w-full" },
+          { id: "str-2", label: "STR", className: "w-full" },
         ];
       case "11-a-side":
         return [
@@ -123,6 +126,7 @@ export const FormationSelector = ({
           { id: "mid-1", label: "MID", className: "w-full" },
           { id: "mid-2", label: "MID", className: "w-full" },
           { id: "mid-3", label: "MID", className: "w-full" },
+          { id: "mid-4", label: "MID", className: "w-full" },
           { id: "str-1", label: "STR", className: "w-full" },
           { id: "str-2", label: "STR", className: "w-full" },
         ];

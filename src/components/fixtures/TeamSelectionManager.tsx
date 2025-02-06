@@ -5,8 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { X } from "lucide-react";
 
 interface TeamSelectionManagerProps {
   fixture: any | null;
@@ -28,7 +28,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name, squad_number")
+        .select("*")
         .order('name');
       
       if (error) throw error;
@@ -70,7 +70,6 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
           performanceCategory: selection.performance_category
         };
 
-        // Update performance categories state
         setPerformanceCategories(prev => ({
           ...prev,
           [`${periodKey}-${teamKey}`]: selection.performance_category || 'MESSI'
@@ -91,7 +90,16 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     fetchSelections();
   }, [fixture]);
 
-  const handleSelectionChange = (periodId: string, teamId: string, teamSelections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
+  const handleDeletePeriod = (periodId: string) => {
+    setPeriods(prev => prev.filter(p => p.id !== periodId));
+    setSelections(prev => {
+      const newSelections = { ...prev };
+      delete newSelections[periodId];
+      return newSelections;
+    });
+  };
+
+  const handleTeamSelectionChange = (periodId: string, teamId: string, teamSelections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
     setSelections(prev => ({
       ...prev,
       [periodId]: {
@@ -119,7 +127,6 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       [`${periodId}-${teamId}`]: category
     }));
 
-    // Update selections with new performance category
     setSelections(prev => ({
       ...prev,
       [periodId]: {
@@ -140,7 +147,6 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     try {
       setIsSaving(true);
 
-      // First, create or get the period records
       const periodPromises = periods.map(async (period) => {
         const periodNumber = parseInt(period.id.split('-')[1]);
         const { data, error } = await supabase
@@ -162,7 +168,6 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
 
       const periodRecords = await Promise.all(periodPromises);
 
-      // Delete existing selections
       await supabase
         .from("team_selections")
         .delete()
@@ -171,7 +176,6 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
           event_type: 'FIXTURE'
         });
 
-      // Prepare all selections for insertion
       const allSelections = Object.entries(selections).flatMap(([periodKey, periodSelections]) =>
         Object.entries(periodSelections).flatMap(([teamNumber, teamSelections]) =>
           Object.entries(teamSelections)
@@ -235,7 +239,6 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
             }} 
             variant="outline"
           >
-            <Plus className="w-4 h-4 mr-2" />
             Add Period
           </Button>
           <Button 
@@ -247,9 +250,17 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {periods.map((period) => (
-          <Card key={period.id} className="mb-4">
+          <Card key={period.id} className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2"
+              onClick={() => handleDeletePeriod(period.id)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
             <CardHeader>
               <CardTitle>Period {period.id.split('-')[1]}</CardTitle>
             </CardHeader>
@@ -276,7 +287,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                     format={fixture.format as "7-a-side"}
                     teamName={fixture.team_name}
                     onSelectionChange={(teamSelections) => 
-                      handleSelectionChange(period.id, (index + 1).toString(), teamSelections)
+                      handleTeamSelectionChange(period.id, (index + 1).toString(), teamSelections)
                     }
                     selectedPlayers={selectedPlayers}
                     availablePlayers={availablePlayers}
