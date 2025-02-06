@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationSelector } from "@/components/FormationSelector";
@@ -94,7 +95,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
 
       // Process selections
       selections.forEach(selection => {
-        const periodKey = `period-${selection.period_number || 1}`;
+        const periodKey = `period-${selection.period_number}`;
         const teamKey = selection.team_number.toString();
 
         if (!transformedSelections[periodKey]) {

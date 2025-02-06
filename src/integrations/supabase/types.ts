@@ -1969,6 +1969,7 @@ export type Database = {
           is_substitute: boolean | null
           performance_category: string | null
           period_id: string | null
+          period_number: number | null
           player_id: string
           position: string
           team_number: number
@@ -1984,6 +1985,7 @@ export type Database = {
           is_substitute?: boolean | null
           performance_category?: string | null
           period_id?: string | null
+          period_number?: number | null
           player_id: string
           position: string
           team_number: number
@@ -1999,12 +2001,20 @@ export type Database = {
           is_substitute?: boolean | null
           performance_category?: string | null
           period_id?: string | null
+          period_number?: number | null
           player_id?: string
           position?: string
           team_number?: number
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_event_period"
+            columns: ["event_id", "event_type", "period_number"]
+            isOneToOne: false
+            referencedRelation: "event_periods"
+            referencedColumns: ["event_id", "event_type", "period_number"]
+          },
           {
             foreignKeyName: "team_selections_period_id_fkey"
             columns: ["period_id"]
