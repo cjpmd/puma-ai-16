@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationSelector } from "@/components/FormationSelector";
@@ -16,9 +17,10 @@ interface TeamSelectionManagerProps {
 export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => {
   const { toast } = useToast();
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
-  const [periods, setPeriods] = useState<Array<{ id: string; duration: number }>>([
-    { id: "period-1", duration: 20 }
-  ]);
+  const [periodsPerTeam, setPeriodsPerTeam] = useState<Record<string, Array<{ id: string; duration: number }>>>({
+    "1": [{ id: "period-1", duration: 20 }],
+    "2": [{ id: "period-1", duration: 20 }]
+  });
   const [activeTeam, setActiveTeam] = useState<string>("1");
   const [selections, setSelections] = useState<Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>>({});
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
@@ -53,6 +55,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       }
 
       const transformedSelections: Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>> = {};
+      const newPeriodsPerTeam: Record<string, Array<{ id: string; duration: number }>> = {};
       
       data.forEach(selection => {
         const periodKey = `period-${selection.period_number || 1}`;
@@ -63,6 +66,17 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         }
         if (!transformedSelections[periodKey][teamKey]) {
           transformedSelections[periodKey][teamKey] = {};
+        }
+        if (!newPeriodsPerTeam[teamKey]) {
+          newPeriodsPerTeam[teamKey] = [];
+        }
+        
+        // Add period if it doesn't exist for this team
+        if (!newPeriodsPerTeam[teamKey].some(p => p.id === periodKey)) {
+          newPeriodsPerTeam[teamKey].push({
+            id: periodKey,
+            duration: selection.duration_minutes || 20
+          });
         }
 
         transformedSelections[periodKey][teamKey][selection.position] = {
@@ -77,6 +91,15 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         }));
       });
 
+      // Ensure each team has at least one period
+      Object.keys(fixture.number_of_teams ? Array(fixture.number_of_teams).fill(0) : ["1"]).forEach((teamIndex) => {
+        const teamKey = (parseInt(teamIndex) + 1).toString();
+        if (!newPeriodsPerTeam[teamKey]) {
+          newPeriodsPerTeam[teamKey] = [{ id: "period-1", duration: 20 }];
+        }
+      });
+
+      setPeriodsPerTeam(newPeriodsPerTeam);
       setSelections(transformedSelections);
       
       const newSelectedPlayers = new Set<string>();
@@ -91,8 +114,12 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     fetchSelections();
   }, [fixture]);
 
-  const handleDeletePeriod = (periodId: string) => {
-    setPeriods(prev => prev.filter(p => p.id !== periodId));
+  const handleDeletePeriod = (teamId: string, periodId: string) => {
+    setPeriodsPerTeam(prev => ({
+      ...prev,
+      [teamId]: prev[teamId].filter(p => p.id !== periodId)
+    }));
+    
     setSelections(prev => {
       const newSelections = { ...prev };
       delete newSelections[periodId];
@@ -148,14 +175,22 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     try {
       setIsSaving(true);
 
-      const periodPromises = periods.map(async (period) => {
-        const periodNumber = parseInt(period.id.split('-')[1]);
+      // Flatten all periods from all teams
+      const allPeriods = Object.entries(periodsPerTeam).flatMap(([teamId, periods]) =>
+        periods.map(period => ({
+          ...period,
+          teamId,
+          periodNumber: parseInt(period.id.split('-')[1])
+        }))
+      );
+
+      const periodPromises = allPeriods.map(async (period) => {
         const { data, error } = await supabase
           .from('event_periods')
           .upsert({
             event_id: fixture.id,
             event_type: 'FIXTURE',
-            period_number: periodNumber,
+            period_number: period.periodNumber,
             duration_minutes: period.duration
           }, {
             onConflict: 'event_id,event_type,period_number'
@@ -164,7 +199,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
           .single();
 
         if (error) throw error;
-        return data;
+        return { ...data, teamId: period.teamId };
       });
 
       const periodRecords = await Promise.all(periodPromises);
@@ -183,7 +218,9 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
             .filter(([_, selection]) => selection.playerId !== "unassigned")
             .map(([_, selection]) => {
               const periodNumber = parseInt(periodKey.split('-')[1]);
-              const currentPeriodId = periodRecords.find(p => p.period_number === periodNumber)?.id;
+              const currentPeriodId = periodRecords.find(p => 
+                p.period_number === periodNumber && p.teamId === teamNumber
+              )?.id;
               const performanceCategory = performanceCategories[`${periodKey}-${teamNumber}`] || 'MESSI';
               
               return {
@@ -232,39 +269,12 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Team Selection - {fixture.opponent}</h2>
-        <div className="space-x-2">
-          <Button 
-            onClick={() => {
-              const newPeriodId = `period-${periods.length + 1}`;
-              setPeriods([...periods, { id: newPeriodId, duration: 20 }]);
-              
-              // Copy performance categories from the last period
-              const lastPeriod = periods[periods.length - 1];
-              if (lastPeriod) {
-                const newCategories: Record<string, string> = {};
-                Object.entries(performanceCategories).forEach(([key, value]) => {
-                  if (key.startsWith(`${lastPeriod.id}-`)) {
-                    const teamId = key.split('-')[2];
-                    newCategories[`${newPeriodId}-${teamId}`] = value;
-                  }
-                });
-                setPerformanceCategories(prev => ({
-                  ...prev,
-                  ...newCategories
-                }));
-              }
-            }} 
-            variant="outline"
-          >
-            Add Period
-          </Button>
-          <Button 
-            onClick={handleSave} 
-            disabled={isSaving}
-          >
-            {isSaving ? 'Saving...' : 'Save Selections'}
-          </Button>
-        </div>
+        <Button 
+          onClick={handleSave} 
+          disabled={isSaving}
+        >
+          {isSaving ? 'Saving...' : 'Save Selections'}
+        </Button>
       </div>
 
       <Tabs defaultValue="1" className="w-full" onValueChange={setActiveTeam}>
@@ -280,61 +290,85 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
           ))}
         </TabsList>
 
-        {Array.from({ length: fixture.number_of_teams || 1 }).map((_, teamIndex) => (
-          <TabsContent 
-            key={teamIndex} 
-            value={(teamIndex + 1).toString()}
-            className="mt-0"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {periods.map((period) => (
-                <Card key={period.id} className="relative">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-3 right-3"
-                    onClick={() => handleDeletePeriod(period.id)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                  <CardHeader className="pb-4">
-                    <CardTitle>Period {period.id.split('-')[1]}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-end">
-                        <Select
-                          value={performanceCategories[`${period.id}-${teamIndex + 1}`] || "MESSI"}
-                          onValueChange={(value) => handlePerformanceCategoryChange(period.id, (teamIndex + 1).toString(), value)}
-                        >
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="MESSI">Messi</SelectItem>
-                            <SelectItem value="RONALDO">Ronaldo</SelectItem>
-                            <SelectItem value="JAGS">Jags</SelectItem>
-                          </SelectContent>
-                        </Select>
+        {Array.from({ length: fixture.number_of_teams || 1 }).map((_, teamIndex) => {
+          const teamId = (teamIndex + 1).toString();
+          const teamPeriods = periodsPerTeam[teamId] || [];
+
+          return (
+            <TabsContent 
+              key={teamIndex} 
+              value={teamId}
+              className="mt-0"
+            >
+              <div className="flex justify-end mb-4">
+                <Button 
+                  onClick={() => {
+                    const maxPeriodNumber = Math.max(...teamPeriods.map(p => 
+                      parseInt(p.id.split('-')[1])
+                    ), 0);
+                    const newPeriodId = `period-${maxPeriodNumber + 1}`;
+                    
+                    setPeriodsPerTeam(prev => ({
+                      ...prev,
+                      [teamId]: [...(prev[teamId] || []), { id: newPeriodId, duration: 20 }]
+                    }));
+                  }} 
+                  variant="outline"
+                >
+                  Add Period
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {teamPeriods.map((period) => (
+                  <Card key={period.id} className="relative">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-3 right-3"
+                      onClick={() => handleDeletePeriod(teamId, period.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    <CardHeader className="pb-4">
+                      <CardTitle>Period {period.id.split('-')[1]}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-end">
+                          <Select
+                            value={performanceCategories[`${period.id}-${teamId}`] || "MESSI"}
+                            onValueChange={(value) => handlePerformanceCategoryChange(period.id, teamId, value)}
+                          >
+                            <SelectTrigger className="w-[140px]">
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="MESSI">Messi</SelectItem>
+                              <SelectItem value="RONALDO">Ronaldo</SelectItem>
+                              <SelectItem value="JAGS">Jags</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <FormationSelector
+                          format={fixture.format as "7-a-side"}
+                          teamName={fixture.team_name}
+                          onSelectionChange={(teamSelections) => 
+                            handleTeamSelectionChange(period.id, teamId, teamSelections)
+                          }
+                          selectedPlayers={selectedPlayers}
+                          availablePlayers={availablePlayers}
+                          initialSelections={selections[period.id]?.[teamId]}
+                          performanceCategory={performanceCategories[`${period.id}-${teamId}`]}
+                        />
                       </div>
-                      <FormationSelector
-                        format={fixture.format as "7-a-side"}
-                        teamName={fixture.team_name}
-                        onSelectionChange={(teamSelections) => 
-                          handleTeamSelectionChange(period.id, (teamIndex + 1).toString(), teamSelections)
-                        }
-                        selectedPlayers={selectedPlayers}
-                        availablePlayers={availablePlayers}
-                        initialSelections={selections[period.id]?.[teamIndex + 1]}
-                        performanceCategory={performanceCategories[`${period.id}-${teamIndex + 1}`]}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          );
+        })}
       </Tabs>
     </div>
   );
