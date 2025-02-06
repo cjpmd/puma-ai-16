@@ -24,9 +24,9 @@ export const PlayerPositionSelect = ({
   ];
 
   return (
-    <div className="flex gap-2">
-      <div className="flex-1">
-        <Label className="text-xs text-muted-foreground">Position</Label>
+    <div className="grid grid-cols-2 gap-3 p-2">
+      <div>
+        <Label className="text-xs text-muted-foreground mb-1 block">Position</Label>
         <Select 
           value={position} 
           onValueChange={(newPosition) => onSelectionChange(playerId, newPosition)}
@@ -44,8 +44,8 @@ export const PlayerPositionSelect = ({
         </Select>
       </div>
 
-      <div className="flex-1">
-        <Label className="text-xs text-muted-foreground">Player</Label>
+      <div>
+        <Label className="text-xs text-muted-foreground mb-1 block">Player</Label>
         <Select 
           value={playerId} 
           onValueChange={(value) => onSelectionChange(value, position)}
@@ -73,3 +73,4 @@ export const PlayerPositionSelect = ({
     </div>
   );
 };
+

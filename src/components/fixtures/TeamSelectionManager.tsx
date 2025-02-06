@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationSelector } from "@/components/FormationSelector";
@@ -7,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TeamSelectionManagerProps {
   fixture: any | null;
@@ -281,38 +283,57 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
             <CardHeader className="pb-4">
               <CardTitle>Period {period.id.split('-')[1]}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
-                <div key={index} className="bg-muted/50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Team {index + 1}</h3>
-                    <Select
-                      value={performanceCategories[`${period.id}-${index + 1}`] || "MESSI"}
-                      onValueChange={(value) => handlePerformanceCategoryChange(period.id, (index + 1).toString(), value)}
+            <CardContent>
+              <Tabs defaultValue="1" className="w-full">
+                <TabsList className="w-full mb-4">
+                  {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
+                    <TabsTrigger 
+                      key={index} 
+                      value={(index + 1).toString()}
+                      className="flex-1"
                     >
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MESSI">Messi</SelectItem>
-                        <SelectItem value="RONALDO">Ronaldo</SelectItem>
-                        <SelectItem value="JAGS">Jags</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <FormationSelector
-                    format={fixture.format as "7-a-side"}
-                    teamName={fixture.team_name}
-                    onSelectionChange={(teamSelections) => 
-                      handleTeamSelectionChange(period.id, (index + 1).toString(), teamSelections)
-                    }
-                    selectedPlayers={selectedPlayers}
-                    availablePlayers={availablePlayers}
-                    initialSelections={selections[period.id]?.[index + 1]}
-                    performanceCategory={performanceCategories[`${period.id}-${index + 1}`]}
-                  />
-                </div>
-              ))}
+                      Team {index + 1}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+
+                {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
+                  <TabsContent 
+                    key={index} 
+                    value={(index + 1).toString()}
+                    className="mt-0"
+                  >
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-end">
+                        <Select
+                          value={performanceCategories[`${period.id}-${index + 1}`] || "MESSI"}
+                          onValueChange={(value) => handlePerformanceCategoryChange(period.id, (index + 1).toString(), value)}
+                        >
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="MESSI">Messi</SelectItem>
+                            <SelectItem value="RONALDO">Ronaldo</SelectItem>
+                            <SelectItem value="JAGS">Jags</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <FormationSelector
+                        format={fixture.format as "7-a-side"}
+                        teamName={fixture.team_name}
+                        onSelectionChange={(teamSelections) => 
+                          handleTeamSelectionChange(period.id, (index + 1).toString(), teamSelections)
+                        }
+                        selectedPlayers={selectedPlayers}
+                        availablePlayers={availablePlayers}
+                        initialSelections={selections[period.id]?.[index + 1]}
+                        performanceCategory={performanceCategories[`${period.id}-${index + 1}`]}
+                      />
+                    </div>
+                  </TabsContent>
+                ))}
+              </Tabs>
             </CardContent>
           </Card>
         ))}
@@ -320,3 +341,4 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     </div>
   );
 };
+
