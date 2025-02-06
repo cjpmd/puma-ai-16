@@ -247,7 +247,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {periods.map((period) => (
           <Card key={period.id} className="mb-4">
             <CardHeader>

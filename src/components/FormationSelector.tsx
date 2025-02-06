@@ -141,8 +141,8 @@ export const FormationSelector = ({
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
         <TeamSettingsHeader 
           captain={captain}
           duration={duration}
@@ -156,6 +156,7 @@ export const FormationSelector = ({
           <Button
             onClick={() => setShowFormation(!showFormation)}
             variant="outline"
+            size="sm"
           >
             {showFormation ? 'Hide Formation' : 'Show Formation'}
           </Button>
@@ -179,19 +180,16 @@ export const FormationSelector = ({
         />
       )}
 
-      <div className="max-w-md mx-auto space-y-4">
+      <div className="grid grid-cols-2 gap-2">
         {getFormationSlots().map((slot) => (
-          <div key={slot.id} className={cn("space-y-2", slot.className)}>
-            <PlayerPositionSelect
-              key={slot.id}
-              slotId={slot.id}
-              position={selections[slot.id]?.position || slot.label}
-              playerId={selections[slot.id]?.playerId || "unassigned"}
-              availablePlayers={players}
-              onSelectionChange={(playerId, position) => handlePlayerSelection(slot.id, playerId, position)}
-              selectedPlayers={selectedPlayers}
-            />
-          </div>
+          <PlayerPositionSelect
+            key={slot.id}
+            position={selections[slot.id]?.position || slot.label}
+            playerId={selections[slot.id]?.playerId || "unassigned"}
+            availablePlayers={players}
+            onSelectionChange={(playerId, position) => handlePlayerSelection(slot.id, playerId, position)}
+            selectedPlayers={selectedPlayers}
+          />
         ))}
       </div>
 

@@ -23,19 +23,19 @@ export const PlayerPositionSelect = ({
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-2 mb-2">
+    <div className="grid grid-cols-2 gap-1">
       <div>
         <Label className="text-xs text-muted-foreground">Position</Label>
         <Select 
           value={position} 
           onValueChange={(newPosition) => onSelectionChange(playerId, newPosition)}
         >
-          <SelectTrigger className="text-left h-8 text-sm">
+          <SelectTrigger className="text-left h-7 text-xs">
             <SelectValue placeholder="Select position" />
           </SelectTrigger>
           <SelectContent>
             {allPositions.map(pos => (
-              <SelectItem key={pos} value={pos} className="text-sm">
+              <SelectItem key={pos} value={pos} className="text-xs">
                 {pos}
               </SelectItem>
             ))}
@@ -49,17 +49,17 @@ export const PlayerPositionSelect = ({
           value={playerId} 
           onValueChange={(value) => onSelectionChange(value, position)}
         >
-          <SelectTrigger className="text-left h-8 text-sm">
+          <SelectTrigger className="text-left h-7 text-xs">
             <SelectValue placeholder="Select player" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="unassigned" className="text-sm">None</SelectItem>
+            <SelectItem value="unassigned" className="text-xs">None</SelectItem>
             {availablePlayers.map(player => (
               <SelectItem 
                 key={player.id} 
                 value={player.id}
                 className={cn(
-                  "text-sm",
+                  "text-xs",
                   selectedPlayers.has(player.id) && player.id !== playerId && "opacity-50"
                 )}
               >
