@@ -267,7 +267,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Team Selection - {fixture.opponent}</h2>
         <Button 
           onClick={handleSave} 
@@ -308,9 +308,19 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                     ), 0);
                     const newPeriodId = `period-${maxPeriodNumber + 1}`;
                     
+                    // Get the performance category from the last period
+                    const lastPeriod = teamPeriods[teamPeriods.length - 1];
+                    const lastCategory = lastPeriod ? performanceCategories[`${lastPeriod.id}-${teamId}`] || 'MESSI' : 'MESSI';
+                    
                     setPeriodsPerTeam(prev => ({
                       ...prev,
                       [teamId]: [...(prev[teamId] || []), { id: newPeriodId, duration: 20 }]
+                    }));
+
+                    // Set the performance category for the new period
+                    setPerformanceCategories(prev => ({
+                      ...prev,
+                      [`${newPeriodId}-${teamId}`]: lastCategory
                     }));
                   }} 
                   variant="outline"
@@ -319,7 +329,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="flex flex-col space-y-6">
                 {teamPeriods.map((period) => (
                   <Card key={period.id} className="relative">
                     <Button
@@ -331,25 +341,25 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                       <X className="h-4 w-4" />
                     </Button>
                     <CardHeader className="pb-4">
-                      <CardTitle>Period {period.id.split('-')[1]}</CardTitle>
+                      <div className="flex justify-between items-center">
+                        <CardTitle>Period {period.id.split('-')[1]}</CardTitle>
+                        <Select
+                          value={performanceCategories[`${period.id}-${teamId}`] || "MESSI"}
+                          onValueChange={(value) => handlePerformanceCategoryChange(period.id, teamId, value)}
+                        >
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="MESSI">Messi</SelectItem>
+                            <SelectItem value="RONALDO">Ronaldo</SelectItem>
+                            <SelectItem value="JAGS">Jags</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-end">
-                          <Select
-                            value={performanceCategories[`${period.id}-${teamId}`] || "MESSI"}
-                            onValueChange={(value) => handlePerformanceCategoryChange(period.id, teamId, value)}
-                          >
-                            <SelectTrigger className="w-[140px]">
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="MESSI">Messi</SelectItem>
-                              <SelectItem value="RONALDO">Ronaldo</SelectItem>
-                              <SelectItem value="JAGS">Jags</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div className="min-h-[500px]">
                         <FormationSelector
                           format={fixture.format as "7-a-side"}
                           teamName={fixture.team_name}
@@ -373,3 +383,4 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     </div>
   );
 };
+
