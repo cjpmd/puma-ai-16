@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationSelector } from "@/components/FormationSelector";
@@ -129,7 +128,6 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       [`${periodId}-${teamId}`]: category
     }));
 
-    // Update selections with new performance category
     setSelections(prev => ({
       ...prev,
       [periodId]: {
@@ -269,45 +267,45 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {periods.map((period) => (
-          <Card key={period.id} className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-3 right-3"
-              onClick={() => handleDeletePeriod(period.id)}
+      <Tabs defaultValue="1" className="w-full" onValueChange={setActiveTeam}>
+        <TabsList className="w-full mb-4">
+          {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
+            <TabsTrigger 
+              key={index} 
+              value={(index + 1).toString()}
+              className="flex-1"
             >
-              <X className="h-4 w-4" />
-            </Button>
-            <CardHeader className="pb-4">
-              <CardTitle>Period {period.id.split('-')[1]}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="1" className="w-full">
-                <TabsList className="w-full mb-4">
-                  {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
-                    <TabsTrigger 
-                      key={index} 
-                      value={(index + 1).toString()}
-                      className="flex-1"
-                    >
-                      Team {index + 1}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
+              Team {index + 1}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-                {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
-                  <TabsContent 
-                    key={index} 
-                    value={(index + 1).toString()}
-                    className="mt-0"
+        {Array.from({ length: fixture.number_of_teams || 1 }).map((_, teamIndex) => (
+          <TabsContent 
+            key={teamIndex} 
+            value={(teamIndex + 1).toString()}
+            className="mt-0"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {periods.map((period) => (
+                <Card key={period.id} className="relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-3 right-3"
+                    onClick={() => handleDeletePeriod(period.id)}
                   >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <CardHeader className="pb-4">
+                    <CardTitle>Period {period.id.split('-')[1]}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <div className="space-y-4">
                       <div className="flex items-center justify-end">
                         <Select
-                          value={performanceCategories[`${period.id}-${index + 1}`] || "MESSI"}
-                          onValueChange={(value) => handlePerformanceCategoryChange(period.id, (index + 1).toString(), value)}
+                          value={performanceCategories[`${period.id}-${teamIndex + 1}`] || "MESSI"}
+                          onValueChange={(value) => handlePerformanceCategoryChange(period.id, (teamIndex + 1).toString(), value)}
                         >
                           <SelectTrigger className="w-[140px]">
                             <SelectValue placeholder="Select category" />
@@ -323,22 +321,21 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                         format={fixture.format as "7-a-side"}
                         teamName={fixture.team_name}
                         onSelectionChange={(teamSelections) => 
-                          handleTeamSelectionChange(period.id, (index + 1).toString(), teamSelections)
+                          handleTeamSelectionChange(period.id, (teamIndex + 1).toString(), teamSelections)
                         }
                         selectedPlayers={selectedPlayers}
                         availablePlayers={availablePlayers}
-                        initialSelections={selections[period.id]?.[index + 1]}
-                        performanceCategory={performanceCategories[`${period.id}-${index + 1}`]}
+                        initialSelections={selections[period.id]?.[teamIndex + 1]}
+                        performanceCategory={performanceCategories[`${period.id}-${teamIndex + 1}`]}
                       />
                     </div>
-                  </TabsContent>
-                ))}
-              </Tabs>
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
         ))}
-      </div>
+      </Tabs>
     </div>
   );
 };
-

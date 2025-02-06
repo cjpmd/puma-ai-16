@@ -24,8 +24,8 @@ export const PlayerPositionSelect = ({
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 p-2">
-      <div>
+    <div className="flex gap-3 p-2">
+      <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Position</Label>
         <Select 
           value={position} 
@@ -44,7 +44,7 @@ export const PlayerPositionSelect = ({
         </Select>
       </div>
 
-      <div>
+      <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Player</Label>
         <Select 
           value={playerId} 
@@ -73,4 +73,3 @@ export const PlayerPositionSelect = ({
     </div>
   );
 };
-
