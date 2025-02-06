@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 
 interface Position {
@@ -28,6 +29,7 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
   const renderPlayer = (positionCode: string) => {
     const player = getPlayerForPosition(positionCode);
     if (!player) return null;
+
     return (
       <div className="text-center text-sm bg-white/10 backdrop-blur-sm rounded-md p-2">
         <div className="font-semibold">{positionCode}</div>
@@ -36,6 +38,8 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
       </div>
     );
   };
+
+  console.log("Formation View Props:", { positions, players, periodNumber, duration });
 
   return (
     <Card className="p-4 mb-4">
@@ -85,11 +89,11 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
           <div>{renderPlayer("MR")}</div>
 
           {/* Defensive Midfielders */}
-          <div>{renderPlayer("WBR")}</div>
-          <div>{renderPlayer("DCML")}</div>
-          <div>{renderPlayer("DCM")}</div>
-          <div>{renderPlayer("DCMR")}</div>
           <div>{renderPlayer("WBL")}</div>
+          <div>{renderPlayer("DMCL")}</div>
+          <div>{renderPlayer("DCM")}</div>
+          <div>{renderPlayer("DMCR")}</div>
+          <div>{renderPlayer("WBR")}</div>
 
           {/* Defenders */}
           <div>{renderPlayer("DL")}</div>

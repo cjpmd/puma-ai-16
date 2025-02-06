@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationSelector } from "@/components/FormationSelector";
@@ -185,6 +184,13 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     });
 
     setSelectedPlayers(newSelectedPlayers);
+
+    console.log("Team Selections Updated:", {
+      periodId,
+      teamId,
+      teamSelections,
+      allSelections: selections
+    });
   };
 
   const handlePerformanceCategoryChange = (periodId: string, teamId: string, category: string) => {
