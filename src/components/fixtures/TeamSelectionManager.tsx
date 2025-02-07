@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Crown } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 interface TeamSelectionManagerProps {
   fixture: any | null;
@@ -143,7 +145,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       const newSelectedPlayers = new Set<string>();
       selectionsData.forEach(selection => {
         if (selection.player_id !== "unassigned") {
-          newSelectedPlayers.add(selection.player_id);
+          newSelectedPlayers.add(selection.playerId);
         }
       });
       setSelectedPlayers(newSelectedPlayers);
@@ -390,25 +392,31 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
               className="mt-0"
             >
               <div className="flex justify-end items-center gap-4 mb-4">
-                <Select
-                  value={teamCaptains[teamId] || "unassigned"}
-                  onValueChange={(value) => handleCaptainChange(teamId, value)}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select captain" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">None</SelectItem>
-                    {availablePlayers?.map(player => (
-                      <SelectItem 
-                        key={player.id} 
-                        value={player.id}
-                      >
-                        {player.name} {player.squad_number ? `(${player.squad_number})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex-1 flex items-center gap-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Crown className="h-4 w-4" />
+                    Captain
+                  </Label>
+                  <Select
+                    value={teamCaptains[teamId] || "unassigned"}
+                    onValueChange={(value) => handleCaptainChange(teamId, value)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select captain" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">None</SelectItem>
+                      {availablePlayers?.map(player => (
+                        <SelectItem 
+                          key={player.id} 
+                          value={player.id}
+                        >
+                          {player.name} {player.squad_number ? `(${player.squad_number})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
                 <Select
                   value={performanceCategories[`period-1-${teamId}`] || "MESSI"}
