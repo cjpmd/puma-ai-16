@@ -153,8 +153,6 @@ export const FormationSelector = ({
           availablePlayers={players}
           onCaptainChange={setCaptain}
           onDurationChange={setDuration}
-          performanceCategory={localPerformanceCategory}
-          onCategoryChange={setLocalPerformanceCategory}
         />
         <div className="flex gap-4">
           <Button
