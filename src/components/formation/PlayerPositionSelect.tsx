@@ -18,9 +18,26 @@ export const PlayerPositionSelect = ({
   onSelectionChange,
   selectedPlayers,
 }: PlayerPositionSelectProps) => {
+  // Updated to match grid positions exactly
   const allPositions = [
-    'GK', 'SK', 'LB', 'CB', 'RB', 'LWB', 'RWB', 'DM', 'CM', 'LM', 'RM',
-    'CAM', 'CDM', 'LW', 'RW', 'ST', 'CF'
+    'GK',     // Goalkeeper
+    'DL',     // Left Back
+    'DCL',    // Left Center Back
+    'DC',     // Center Back
+    'DCR',    // Right Center Back
+    'DR',     // Right Back
+    'WBL',    // Left Wing Back
+    'WBR',    // Right Wing Back
+    'DMC',    // Defensive Midfielder
+    'ML',     // Left Midfielder
+    'MCL',    // Left Center Midfielder
+    'MC',     // Center Midfielder
+    'MCR',    // Right Center Midfielder
+    'MR',     // Right Midfielder
+    'AML',    // Left Attacking Midfielder
+    'AMC',    // Attacking Midfielder
+    'AMR',    // Right Attacking Midfielder
+    'STC',    // Striker
   ];
 
   return (

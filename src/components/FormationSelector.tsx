@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
 import { TeamSettingsHeader } from "./formation/TeamSettingsHeader";
 import { SubstitutesList } from "./formation/SubstitutesList";
-import { FormationView } from "./fixtures/FormationView";
+import { FormationView } from "@/components/fixtures/FormationView";
 import { Button } from "@/components/ui/button";
 
 interface FormationSelectorProps {
@@ -89,46 +88,46 @@ export const FormationSelector = ({
       case "5-a-side":
         return [
           { id: "gk-1", label: "GK", className: "w-full" },
-          { id: "def-1", label: "DEF", className: "w-full" },
-          { id: "def-2", label: "DEF", className: "w-full" },
-          { id: "mid-1", label: "MID", className: "w-full" },
-          { id: "str-1", label: "STR", className: "w-full" },
+          { id: "def-1", label: "DL", className: "w-full" }, // Changed from DEF to match grid
+          { id: "def-2", label: "DC", className: "w-full" }, // Changed to match grid
+          { id: "def-3", label: "DR", className: "w-full" }, // Changed from DEF to match grid
+          { id: "str-1", label: "STC", className: "w-full" }, // Changed from STR to match grid
         ];
       case "7-a-side":
         return [
           { id: "gk-1", label: "GK", className: "w-full" },
-          { id: "def-1", label: "DEF", className: "w-full" },
-          { id: "def-2", label: "DEF", className: "w-full" },
-          { id: "mid-1", label: "MID", className: "w-full" },
-          { id: "mid-2", label: "MID", className: "w-full" },
-          { id: "str-1", label: "STR", className: "w-full" },
-          { id: "str-2", label: "STR", className: "w-full" },
+          { id: "def-1", label: "DL", className: "w-full" },
+          { id: "def-2", label: "DC", className: "w-full" },
+          { id: "def-3", label: "DR", className: "w-full" },
+          { id: "mid-1", label: "MC", className: "w-full" },
+          { id: "str-1", label: "STC", className: "w-full" },
+          { id: "str-2", label: "AMC", className: "w-full" },
         ];
       case "9-a-side":
         return [
           { id: "gk-1", label: "GK", className: "w-full" },
-          { id: "def-1", label: "DEF", className: "w-full" },
-          { id: "def-2", label: "DEF", className: "w-full" },
-          { id: "def-3", label: "DEF", className: "w-full" },
-          { id: "mid-1", label: "MID", className: "w-full" },
-          { id: "mid-2", label: "MID", className: "w-full" },
-          { id: "mid-3", label: "MID", className: "w-full" },
-          { id: "str-1", label: "STR", className: "w-full" },
-          { id: "str-2", label: "STR", className: "w-full" },
+          { id: "def-1", label: "DL", className: "w-full" },
+          { id: "def-2", label: "DC", className: "w-full" },
+          { id: "def-3", label: "DR", className: "w-full" },
+          { id: "mid-1", label: "ML", className: "w-full" },
+          { id: "mid-2", label: "MC", className: "w-full" },
+          { id: "mid-3", label: "MR", className: "w-full" },
+          { id: "str-1", label: "AMC", className: "w-full" },
+          { id: "str-2", label: "STC", className: "w-full" },
         ];
       case "11-a-side":
         return [
           { id: "gk-1", label: "GK", className: "w-full" },
-          { id: "def-1", label: "DEF", className: "w-full" },
-          { id: "def-2", label: "DEF", className: "w-full" },
-          { id: "def-3", label: "DEF", className: "w-full" },
-          { id: "def-4", label: "DEF", className: "w-full" },
-          { id: "mid-1", label: "MID", className: "w-full" },
-          { id: "mid-2", label: "MID", className: "w-full" },
-          { id: "mid-3", label: "MID", className: "w-full" },
-          { id: "mid-4", label: "MID", className: "w-full" },
-          { id: "str-1", label: "STR", className: "w-full" },
-          { id: "str-2", label: "STR", className: "w-full" },
+          { id: "def-1", label: "DL", className: "w-full" },
+          { id: "def-2", label: "DCL", className: "w-full" },
+          { id: "def-3", label: "DC", className: "w-full" },
+          { id: "def-4", label: "DR", className: "w-full" },
+          { id: "mid-1", label: "ML", className: "w-full" },
+          { id: "mid-2", label: "MCL", className: "w-full" },
+          { id: "mid-3", label: "MC", className: "w-full" },
+          { id: "mid-4", label: "MR", className: "w-full" },
+          { id: "str-1", label: "AMC", className: "w-full" },
+          { id: "str-2", label: "STC", className: "w-full" },
         ];
       default:
         return [];
@@ -136,43 +135,19 @@ export const FormationSelector = ({
   };
 
   const formatSelectionsForFormation = () => {
-    // Define position mappings based on formation roles
-    const positionMap: Record<string, string> = {
-      'GK': 'GK',
-      'SK': 'SW',  // Sweeper keeper maps to sweeper position
-      'LB': 'DL',  // Left back
-      'CB': 'DC',  // Center back
-      'RB': 'DR',  // Right back
-      'LWB': 'WBL', // Left wing back
-      'RWB': 'WBR', // Right wing back
-      'DM': 'DCM', // Defensive mid
-      'CM': 'MC',  // Center mid
-      'LM': 'ML',  // Left mid
-      'RM': 'MR',  // Right mid
-      'CAM': 'AMC', // Attacking mid
-      'CDM': 'DMC', // Defensive mid
-      'LW': 'AML', // Left wing
-      'RW': 'AMR', // Right wing
-      'ST': 'STC', // Striker
-      'CF': 'STC', // Center forward
-      'STR': 'STC', // Alternative striker notation
-    };
-
+    // No position mapping needed anymore since we're using grid positions directly
     console.log("Current selections:", selections);
 
     const formattedSelections = Object.entries(selections)
       .filter(([_, value]) => value.playerId !== "unassigned" && !value.position.startsWith('sub-'))
       .map(([_, value]) => {
-        const mappedPosition = positionMap[value.position] || value.position;
-        
-        console.log("Mapping position:", {
-          original: value.position,
-          mapped: mappedPosition,
+        console.log("Processing position:", {
+          position: value.position,
           playerId: value.playerId
         });
 
         return {
-          position: mappedPosition,
+          position: value.position, // Use the position directly without mapping
           playerId: value.playerId
         };
       });
