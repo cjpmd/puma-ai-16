@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -76,11 +77,22 @@ export const FixtureForm = ({
   const watchOpponent = form.watch("opponent");
   const watchIsHome = form.watch("is_home");
 
-  const getScoreLabel = (isHomeScore: boolean, teamIndex: number) => {
+  const getScoreLabel = (isHomeScore: boolean, teamIndex: number, teamCategory?: string) => {
     const homeTeam = watchIsHome ? "Broughty Pumas 2015s" : watchOpponent;
     const awayTeam = watchIsHome ? watchOpponent : "Broughty Pumas 2015s";
     const teamLabel = isHomeScore ? homeTeam : awayTeam;
-    return `${teamLabel} Team ${teamIndex + 1} Score`;
+
+    // For Broughty teams, append team number and category if available
+    if (teamLabel === "Broughty Pumas 2015s") {
+      const categoryLabel = teamCategory ? ` ${teamCategory}` : '';
+      return `Team ${teamIndex + 1}${categoryLabel} Score`;
+    }
+    return `${teamLabel} Score`;
+  };
+
+  const getMotmLabel = (teamIndex: number, teamCategory?: string) => {
+    const categoryLabel = teamCategory ? ` ${teamCategory}` : '';
+    return `Team ${teamIndex + 1}${categoryLabel} Man of the Match`;
   };
 
   return (
@@ -262,7 +274,7 @@ export const FixtureForm = ({
               name={`home_score.${index}`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{getScoreLabel(true, index)}</FormLabel>
+                  <FormLabel>{getScoreLabel(true, index, editingFixture?.performance_category)}</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} />
                   </FormControl>
@@ -275,7 +287,7 @@ export const FixtureForm = ({
               name={`away_score.${index}`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{getScoreLabel(false, index)}</FormLabel>
+                  <FormLabel>{getScoreLabel(false, index, editingFixture?.performance_category)}</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} />
                   </FormControl>
@@ -289,7 +301,7 @@ export const FixtureForm = ({
                 name={`motm_player_ids.${index}`}
                 render={({ field }) => (
                   <FormItem className="col-span-2">
-                    <FormLabel>Team {index + 1} Man of the Match</FormLabel>
+                    <FormLabel>{getMotmLabel(index, editingFixture?.performance_category)}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
@@ -326,3 +338,4 @@ export const FixtureForm = ({
     </Form>
   );
 };
+
