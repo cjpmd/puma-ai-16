@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -136,19 +135,47 @@ export const FormationSelector = ({
   };
 
   const formatSelectionsForFormation = () => {
+    // Updated position mapping to match the grid in FormationView
     const positionMap: Record<string, string> = {
       'GK': 'GK',
-      'DEF': 'DCL',
-      'MID': 'MCL',
-      'STR': 'STCL'
+      'DEF': 'DCL', // Left center back
+      'DEF-2': 'DC',  // Center back
+      'DEF-3': 'DCR', // Right center back
+      'MID': 'MCL', // Left midfielder
+      'MID-2': 'MC', // Center midfielder
+      'MID-3': 'MCR', // Right midfielder
+      'STR': 'STCL', // Left striker
+      'STR-2': 'STC'  // Center striker
     };
 
-    return Object.entries(selections)
+    console.log("Current selections:", selections);
+
+    const formattedSelections = Object.entries(selections)
       .filter(([_, value]) => value.playerId !== "unassigned" && !value.position.startsWith('sub-'))
-      .map(([_, value]) => ({
-        position: positionMap[value.position] || value.position,
-        playerId: value.playerId
-      }));
+      .map(([slotId, value]) => {
+        // Determine the mapped position based on the slot ID and position
+        let mappedPosition = value.position;
+        if (slotId.includes('-')) {
+          // If it's a numbered position (e.g., def-2), use the slot ID to determine the specific position
+          mappedPosition = positionMap[`${value.position}-${slotId.split('-')[1]}`] || positionMap[value.position];
+        } else {
+          mappedPosition = positionMap[value.position] || value.position;
+        }
+
+        console.log(`Mapping position for slot ${slotId}:`, {
+          original: value.position,
+          mapped: mappedPosition,
+          playerId: value.playerId
+        });
+
+        return {
+          position: mappedPosition,
+          playerId: value.playerId
+        };
+      });
+
+    console.log("Formatted selections:", formattedSelections);
+    return formattedSelections;
   };
 
   return (
