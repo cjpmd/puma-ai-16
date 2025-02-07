@@ -2010,10 +2010,10 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fk_event_period"
-            columns: ["event_id", "event_type", "period_number"]
+            columns: ["period_id"]
             isOneToOne: false
             referencedRelation: "event_periods"
-            referencedColumns: ["event_id", "event_type", "period_number"]
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "team_selections_period_id_fkey"
