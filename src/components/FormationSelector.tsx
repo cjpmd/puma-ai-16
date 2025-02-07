@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,7 +6,6 @@ import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
 import { TeamSettingsHeader } from "./formation/TeamSettingsHeader";
 import { SubstitutesList } from "./formation/SubstitutesList";
 import { FormationView } from "./fixtures/FormationView";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 interface FormationSelectorProps {
@@ -136,10 +136,17 @@ export const FormationSelector = ({
   };
 
   const formatSelectionsForFormation = () => {
+    const positionMap: Record<string, string> = {
+      'GK': 'GK',
+      'DEF': 'DCL',
+      'MID': 'MCL',
+      'STR': 'STCL'
+    };
+
     return Object.entries(selections)
       .filter(([_, value]) => value.playerId !== "unassigned" && !value.position.startsWith('sub-'))
       .map(([_, value]) => ({
-        position: value.position,
+        position: positionMap[value.position] || value.position,
         playerId: value.playerId
       }));
   };

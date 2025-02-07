@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 
 interface Position {
@@ -10,6 +9,10 @@ interface Player {
   id: string;
   name: string;
   squad_number: number;
+  age: number;
+  dateOfBirth: string;
+  playerType: string;
+  attributes: any[];
 }
 
 interface FormationViewProps {
@@ -47,16 +50,6 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
     );
   };
 
-  // Debug log for all props
-  console.log("Formation View Props:", { 
-    positions, 
-    players, 
-    periodNumber, 
-    duration,
-    positionsCount: positions?.length,
-    playersCount: players?.length
-  });
-
   return (
     <Card className="p-4 mb-4">
       <div className="text-sm font-semibold mb-2">
@@ -65,19 +58,10 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
       <div className="relative bg-green-600 rounded-lg p-4">
         {/* Football pitch markings */}
         <div className="absolute inset-0 rounded-lg">
-          {/* Halfway line */}
           <div className="absolute top-0 left-0 right-0 border-t-4 border-white/70"></div>
-          
-          {/* Center circle (half) - inverted */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 border-b-4 border-white/70 rounded-b-full"></div>
-          
-          {/* Penalty area */}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-32 border-4 border-white/70 border-b-0"></div>
-          
-          {/* Goal area */}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-12 border-4 border-white/70 border-b-0"></div>
-          
-          {/* Goal line */}
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/70"></div>
         </div>
 
@@ -121,7 +105,7 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
           {/* Sweeper */}
           <div></div>
           <div></div>
-          <div>{renderPlayer("SK")}</div>
+          <div>{renderPlayer("SW")}</div>
           <div></div>
           <div></div>
 
