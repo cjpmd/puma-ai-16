@@ -266,6 +266,19 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         .delete()
         .match({ fixture_id: fixture.id });
 
+      // Update fixture with the new performance category
+      const { error: fixtureUpdateError } = await supabase
+        .from('fixtures')
+        .update({
+          performance_category: performanceCategories[`period-1-${activeTeam}`] || 'MESSI'
+        })
+        .eq('id', fixture.id);
+
+      if (fixtureUpdateError) {
+        console.error("Error updating fixture performance category:", fixtureUpdateError);
+        throw fixtureUpdateError;
+      }
+
       // Update team captains
       for (const [teamId, captainId] of Object.entries(teamCaptains)) {
         if (captainId && captainId !== "unassigned") {
