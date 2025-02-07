@@ -29,7 +29,6 @@ export const FormationSelector = ({
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
     initialSelections || {}
   );
-  const [captain, setCaptain] = useState<string>("unassigned");
   const [duration, setDuration] = useState<string>("20");
   const [showFormation, setShowFormation] = useState(false);
   const [localPerformanceCategory, setLocalPerformanceCategory] = useState(performanceCategory);
@@ -88,10 +87,10 @@ export const FormationSelector = ({
       case "5-a-side":
         return [
           { id: "gk-1", label: "GK", className: "w-full" },
-          { id: "def-1", label: "DL", className: "w-full" }, // Changed from DEF to match grid
-          { id: "def-2", label: "DC", className: "w-full" }, // Changed to match grid
-          { id: "def-3", label: "DR", className: "w-full" }, // Changed from DEF to match grid
-          { id: "str-1", label: "STC", className: "w-full" }, // Changed from STR to match grid
+          { id: "def-1", label: "DL", className: "w-full" },
+          { id: "def-2", label: "DC", className: "w-full" },
+          { id: "def-3", label: "DR", className: "w-full" },
+          { id: "str-1", label: "STC", className: "w-full" },
         ];
       case "7-a-side":
         return [
@@ -135,24 +134,15 @@ export const FormationSelector = ({
   };
 
   const formatSelectionsForFormation = () => {
-    // No position mapping needed anymore since we're using grid positions directly
-    console.log("Current selections:", selections);
-
     const formattedSelections = Object.entries(selections)
       .filter(([_, value]) => value.playerId !== "unassigned" && !value.position.startsWith('sub-'))
       .map(([_, value]) => {
-        console.log("Processing position:", {
-          position: value.position,
-          playerId: value.playerId
-        });
-
         return {
-          position: value.position, // Use the position directly without mapping
+          position: value.position,
           playerId: value.playerId
         };
       });
 
-    console.log("Formatted selections:", formattedSelections);
     return formattedSelections;
   };
 
@@ -160,10 +150,7 @@ export const FormationSelector = ({
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
         <TeamSettingsHeader 
-          captain={captain}
           duration={duration}
-          availablePlayers={players}
-          onCaptainChange={setCaptain}
           onDurationChange={setDuration}
         />
         <div className="flex gap-4">
