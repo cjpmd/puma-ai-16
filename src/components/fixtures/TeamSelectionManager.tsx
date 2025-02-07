@@ -335,7 +335,45 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
               value={teamId}
               className="mt-0"
             >
-              <div className="flex justify-end mb-4">
+              <div className="flex justify-end items-center gap-4 mb-4">
+                <Select
+                  value={performanceCategories[`period-1-${teamId}`] || "MESSI"}
+                  onValueChange={(value) => {
+                    // Update all periods for this team with the new category
+                    const updatedCategories = { ...performanceCategories };
+                    teamPeriods.forEach(period => {
+                      updatedCategories[`${period.id}-${teamId}`] = value;
+                    });
+                    setPerformanceCategories(updatedCategories);
+
+                    // Update all selections for this team with the new category
+                    setSelections(prev => {
+                      const newSelections = { ...prev };
+                      teamPeriods.forEach(period => {
+                        if (newSelections[period.id]?.[teamId]) {
+                          Object.keys(newSelections[period.id][teamId]).forEach(position => {
+                            if (newSelections[period.id][teamId][position]) {
+                              newSelections[period.id][teamId][position] = {
+                                ...newSelections[period.id][teamId][position],
+                                performanceCategory: value
+                              };
+                            }
+                          });
+                        }
+                      });
+                      return newSelections;
+                    });
+                  }}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MESSI">Messi</SelectItem>
+                    <SelectItem value="RONALDO">Ronaldo</SelectItem>
+                    <SelectItem value="JAGS">Jags</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button 
                   onClick={() => {
                     const maxPeriodNumber = Math.max(...teamPeriods.map(p => 
@@ -343,9 +381,8 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                     ), 0);
                     const newPeriodId = `period-${maxPeriodNumber + 1}`;
                     
-                    // Get the performance category from the last period
-                    const lastPeriod = teamPeriods[teamPeriods.length - 1];
-                    const lastCategory = lastPeriod ? performanceCategories[`${lastPeriod.id}-${teamId}`] || 'MESSI' : 'MESSI';
+                    // Get the current performance category for this team
+                    const currentCategory = performanceCategories[`period-1-${teamId}`] || 'MESSI';
                     
                     setPeriodsPerTeam(prev => ({
                       ...prev,
@@ -355,7 +392,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                     // Set the performance category for the new period
                     setPerformanceCategories(prev => ({
                       ...prev,
-                      [`${newPeriodId}-${teamId}`]: lastCategory
+                      [`${newPeriodId}-${teamId}`]: currentCategory
                     }));
                   }} 
                   variant="outline"
@@ -376,22 +413,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                       <X className="h-4 w-4" />
                     </Button>
                     <CardHeader className="pb-4">
-                      <div className="flex justify-between items-center">
-                        <CardTitle>Period {period.id.split('-')[1]}</CardTitle>
-                        <Select
-                          value={performanceCategories[`${period.id}-${teamId}`] || "MESSI"}
-                          onValueChange={(value) => handlePerformanceCategoryChange(period.id, teamId, value)}
-                        >
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="MESSI">Messi</SelectItem>
-                            <SelectItem value="RONALDO">Ronaldo</SelectItem>
-                            <SelectItem value="JAGS">Jags</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <CardTitle>Period {period.id.split('-')[1]}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="min-h-[500px]">
