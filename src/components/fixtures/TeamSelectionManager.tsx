@@ -20,6 +20,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
   const [activeTeam, setActiveTeam] = useState<string>("1");
   const [selections, setSelections] = useState<Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>>({});
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
+  const [teamCaptains, setTeamCaptains] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
 
   const { data: availablePlayers } = useQuery({
@@ -51,7 +52,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         return;
       }
 
-      const { data: selections, error: selectionsError } = await supabase
+      const { data: selectionsData, error: selectionsError } = await supabase
         .from('team_selections')
         .select('*')
         .eq('event_id', fixture.id)
@@ -61,6 +62,27 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         console.error("Error fetching selections:", selectionsError);
         return;
       }
+
+      // Fetch team captains
+      const { data: teamSelections, error: teamSelectionsError } = await supabase
+        .from('fixture_team_selections')
+        .select('*')
+        .eq('fixture_id', fixture.id)
+        .eq('is_captain', true);
+
+      if (teamSelectionsError) {
+        console.error("Error fetching team captains:", teamSelectionsError);
+        return;
+      }
+
+      // Set team captains
+      const captains: Record<string, string> = {};
+      teamSelections?.forEach(selection => {
+        if (selection.is_captain) {
+          captains[selection.team_number.toString()] = selection.player_id;
+        }
+      });
+      setTeamCaptains(captains);
 
       // Transform periods into periodsPerTeam structure
       const newPeriodsPerTeam: Record<string, Array<{ id: string; duration: number }>> = {};
@@ -93,7 +115,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       }
 
       // Process selections
-      selections.forEach(selection => {
+      selectionsData.forEach(selection => {
         const periodKey = `period-${selection.period_number}`;
         const teamKey = selection.team_number.toString();
 
@@ -119,7 +141,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
 
       // Update selected players
       const newSelectedPlayers = new Set<string>();
-      selections.forEach(selection => {
+      selectionsData.forEach(selection => {
         if (selection.player_id !== "unassigned") {
           newSelectedPlayers.add(selection.player_id);
         }
@@ -129,6 +151,13 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
 
     fetchSelections();
   }, [fixture]);
+
+  const handleCaptainChange = (teamId: string, playerId: string) => {
+    setTeamCaptains(prev => ({
+      ...prev,
+      [teamId]: playerId
+    }));
+  };
 
   const handleDeletePeriod = (teamId: string, periodId: string) => {
     const periodNumber = parseInt(periodId.split('-')[1]);
@@ -229,6 +258,31 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         .from('team_selections')
         .delete()
         .match({ event_id: fixture.id, event_type: 'FIXTURE' });
+
+      await supabase
+        .from('fixture_team_selections')
+        .delete()
+        .match({ fixture_id: fixture.id });
+
+      // Update team captains
+      for (const [teamId, captainId] of Object.entries(teamCaptains)) {
+        if (captainId && captainId !== "unassigned") {
+          const { error: captainError } = await supabase
+            .from('fixture_team_selections')
+            .upsert({
+              fixture_id: fixture.id,
+              player_id: captainId,
+              team_number: parseInt(teamId),
+              is_captain: true,
+              performance_category: performanceCategories[`period-1-${teamId}`] || 'MESSI'
+            });
+
+          if (captainError) {
+            console.error("Error updating captain:", captainError);
+            throw captainError;
+          }
+        }
+      }
 
       // Create new periods one by one to avoid conflicts
       for (const [teamId, periods] of Object.entries(periodsPerTeam)) {
@@ -337,6 +391,26 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
             >
               <div className="flex justify-end items-center gap-4 mb-4">
                 <Select
+                  value={teamCaptains[teamId] || "unassigned"}
+                  onValueChange={(value) => handleCaptainChange(teamId, value)}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select captain" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">None</SelectItem>
+                    {availablePlayers?.map(player => (
+                      <SelectItem 
+                        key={player.id} 
+                        value={player.id}
+                      >
+                        {player.name} {player.squad_number ? `(${player.squad_number})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
                   value={performanceCategories[`period-1-${teamId}`] || "MESSI"}
                   onValueChange={(value) => {
                     // Update all periods for this team with the new category
@@ -374,6 +448,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                     <SelectItem value="JAGS">Jags</SelectItem>
                   </SelectContent>
                 </Select>
+
                 <Button 
                   onClick={() => {
                     const maxPeriodNumber = Math.max(...teamPeriods.map(p => 

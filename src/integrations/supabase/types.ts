@@ -341,6 +341,7 @@ export type Database = {
           created_at: string | null
           festival_team_id: string | null
           id: string
+          is_captain: boolean | null
           is_substitute: boolean | null
           performance_category: string | null
           player_id: string | null
@@ -351,6 +352,7 @@ export type Database = {
           created_at?: string | null
           festival_team_id?: string | null
           id?: string
+          is_captain?: boolean | null
           is_substitute?: boolean | null
           performance_category?: string | null
           player_id?: string | null
@@ -361,6 +363,7 @@ export type Database = {
           created_at?: string | null
           festival_team_id?: string | null
           id?: string
+          is_captain?: boolean | null
           is_substitute?: boolean | null
           performance_category?: string | null
           player_id?: string | null
@@ -1965,7 +1968,6 @@ export type Database = {
           event_id: string
           event_type: string
           id: string
-          is_captain: boolean | null
           is_substitute: boolean | null
           performance_category: string | null
           period_id: string | null
@@ -1981,7 +1983,6 @@ export type Database = {
           event_id: string
           event_type: string
           id?: string
-          is_captain?: boolean | null
           is_substitute?: boolean | null
           performance_category?: string | null
           period_id?: string | null
@@ -1997,7 +1998,6 @@ export type Database = {
           event_id?: string
           event_type?: string
           id?: string
-          is_captain?: boolean | null
           is_substitute?: boolean | null
           performance_category?: string | null
           period_id?: string | null
@@ -2090,6 +2090,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          is_captain: boolean | null
           is_substitute: boolean | null
           performance_category: string | null
           player_id: string | null
@@ -2100,6 +2101,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          is_captain?: boolean | null
           is_substitute?: boolean | null
           performance_category?: string | null
           player_id?: string | null
@@ -2110,6 +2112,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          is_captain?: boolean | null
           is_substitute?: boolean | null
           performance_category?: string | null
           player_id?: string | null
