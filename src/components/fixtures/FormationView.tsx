@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 
 interface Position {
@@ -91,7 +92,7 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
           {/* Defensive Midfielders */}
           <div>{renderPlayer("WBL")}</div>
           <div>{renderPlayer("DMCL")}</div>
-          <div>{renderPlayer("DCM")}</div>
+          <div>{renderPlayer("DMC")}</div> {/* Changed from DCM to DMC */}
           <div>{renderPlayer("DMCR")}</div>
           <div>{renderPlayer("WBR")}</div>
 
