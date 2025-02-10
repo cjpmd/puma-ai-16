@@ -10,99 +10,95 @@ export const saveTeamSelections = async (
 ) => {
   if (!fixture) return;
 
-  // Clear existing team selections
-  const { error: deleteSelectionsError } = await supabase
-    .from('team_selections')
-    .delete()
-    .eq('event_id', fixture.id)
-    .eq('event_type', 'FIXTURE');
+  try {
+    // Clear existing team selections
+    const { error: deleteSelectionsError } = await supabase
+      .from('team_selections')
+      .delete()
+      .eq('event_id', fixture.id)
+      .eq('event_type', 'FIXTURE');
 
-  if (deleteSelectionsError) throw deleteSelectionsError;
+    if (deleteSelectionsError) throw deleteSelectionsError;
 
-  // Clear existing periods
-  const { error: deletePeriodsError } = await supabase
-    .from('event_periods')
-    .delete()
-    .eq('event_id', fixture.id)
-    .eq('event_type', 'FIXTURE');
+    // Clear existing periods
+    const { error: deletePeriodsError } = await supabase
+      .from('event_periods')
+      .delete()
+      .eq('event_id', fixture.id)
+      .eq('event_type', 'FIXTURE');
 
-  if (deletePeriodsError) throw deletePeriodsError;
+    if (deletePeriodsError) throw deletePeriodsError;
 
-  // Insert new periods and selections for each team
-  for (const [teamId, periods] of Object.entries(periodsPerTeam)) {
-    const teamNumber = parseInt(teamId);
-    
-    for (const [index, period] of periods.entries()) {
-      const periodNumber = index + 1;
+    // Process each team's periods and selections
+    for (const [teamId, periods] of Object.entries(periodsPerTeam)) {
+      const teamNumber = parseInt(teamId);
       
-      // Insert period with team_number
-      const { data: insertedPeriod, error: periodError } = await supabase
-        .from('event_periods')
-        .insert({
-          event_id: fixture.id,
-          event_type: 'FIXTURE',
-          period_number: periodNumber,
-          duration_minutes: period.duration,
-          team_number: teamNumber
-        })
-        .select()
-        .single();
+      for (const [index, period] of periods.entries()) {
+        const periodNumber = index + 1;
+        
+        // Insert period with team_number
+        const { data: insertedPeriod, error: periodError } = await supabase
+          .from('event_periods')
+          .insert({
+            event_id: fixture.id,
+            event_type: 'FIXTURE',
+            period_number: periodNumber,
+            duration_minutes: period.duration,
+            team_number: teamNumber
+          })
+          .select()
+          .single();
 
-      if (periodError) {
-        console.error("Error creating period:", periodError);
-        throw periodError;
-      }
+        if (periodError) {
+          console.error("Error creating period:", periodError);
+          throw periodError;
+        }
 
-      // Insert selections for this period if they exist
-      const periodSelections = selections[period.id]?.[teamId] || {};
-      const selectionRecords = Object.entries(periodSelections)
-        .filter(([_, selection]) => selection.playerId !== "unassigned")
-        .map(([position, selection]) => ({
-          event_id: fixture.id,
-          event_type: 'FIXTURE',
-          team_number: teamNumber,
-          player_id: selection.playerId,
-          position: position,
-          period_number: periodNumber,
-          performance_category: performanceCategories[`${period.id}-${teamId}`] || 'MESSI'
-        }));
+        // Process selections for this period
+        const periodSelections = selections[period.id]?.[teamId] || {};
+        const selectionRecords = Object.entries(periodSelections)
+          .filter(([_, selection]) => selection.playerId !== "unassigned")
+          .map(([pos, selection]) => ({
+            event_id: fixture.id,
+            event_type: 'FIXTURE',
+            team_number: teamNumber,
+            player_id: selection.playerId,
+            position: pos,
+            period_number: periodNumber,
+            performance_category: performanceCategories[`${period.id}-${teamId}`] || 'MESSI'
+          }));
 
-      if (selectionRecords.length > 0) {
-        const { error: selectionsError } = await supabase
-          .from('team_selections')
-          .insert(selectionRecords);
+        if (selectionRecords.length > 0) {
+          const { error: selectionsError } = await supabase
+            .from('team_selections')
+            .insert(selectionRecords);
 
-        if (selectionsError) {
-          console.error("Error saving team selections:", selectionsError);
-          throw selectionsError;
+          if (selectionsError) {
+            console.error("Error saving team selections:", selectionsError);
+            throw selectionsError;
+          }
         }
       }
-    }
-  }
 
-  // Handle team captains
-  await Promise.all(
-    Object.entries(teamCaptains).map(async ([teamId, captainId]) => {
-      if (captainId && captainId !== "unassigned") {
-        // Get captain's position from first period selections if available
+      // Handle team captains
+      if (teamCaptains[teamId] && teamCaptains[teamId] !== "unassigned") {
+        // First find the captain's position from the first period
         const firstPeriodId = periodsPerTeam[teamId]?.[0]?.id;
-        const captainPositionInfo = firstPeriodId && 
-          selections[firstPeriodId]?.[teamId] && 
-          Object.entries(selections[firstPeriodId][teamId]).find(([_, sel]) => 
-            sel.playerId === captainId
-          );
-          
-        const captainPosition = captainPositionInfo ? captainPositionInfo[0] : null;
+        const firstPeriodSelections = selections[firstPeriodId]?.[teamId] || {};
+        const captainPositionEntry = Object.entries(firstPeriodSelections)
+          .find(([_, sel]) => sel.playerId === teamCaptains[teamId]);
+        
+        const captainPosition = captainPositionEntry ? captainPositionEntry[0] : null;
 
         const { error: captainError } = await supabase
           .from('fixture_team_selections')
           .upsert({
             fixture_id: fixture.id,
-            player_id: captainId,
-            team_number: parseInt(teamId),
+            player_id: teamCaptains[teamId],
+            team_number: teamNumber,
             is_captain: true,
-            performance_category: performanceCategories[`period-1-${teamId}`] || 'MESSI',
-            position: captainPosition
+            position: captainPosition,
+            performance_category: performanceCategories[`period-1-${teamId}`] || 'MESSI'
           });
 
         if (captainError) {
@@ -110,6 +106,9 @@ export const saveTeamSelections = async (
           throw captainError;
         }
       }
-    })
-  );
+    }
+  } catch (error) {
+    console.error("Error in saveTeamSelections:", error);
+    throw error;
+  }
 };
