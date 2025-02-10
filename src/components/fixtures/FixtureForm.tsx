@@ -274,7 +274,7 @@ export const FixtureForm = ({
               name={`home_score.${index}`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{getScoreLabel(true, index, editingFixture?.performance_category)}</FormLabel>
+                  <FormLabel>{getScoreLabel(true, index, editingFixture?.performance_category || 'MESSI')}</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} />
                   </FormControl>
@@ -287,7 +287,7 @@ export const FixtureForm = ({
               name={`away_score.${index}`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{getScoreLabel(false, index, editingFixture?.performance_category)}</FormLabel>
+                  <FormLabel>{getScoreLabel(false, index, editingFixture?.performance_category || 'MESSI')}</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} />
                   </FormControl>
@@ -301,7 +301,7 @@ export const FixtureForm = ({
                 name={`motm_player_ids.${index}`}
                 render={({ field }) => (
                   <FormItem className="col-span-2">
-                    <FormLabel>{getMotmLabel(index, editingFixture?.performance_category)}</FormLabel>
+                    <FormLabel>{getMotmLabel(index, editingFixture?.performance_category || 'MESSI')}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
@@ -338,4 +338,3 @@ export const FixtureForm = ({
     </Form>
   );
 };
-
