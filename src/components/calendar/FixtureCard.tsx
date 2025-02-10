@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -14,6 +15,8 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, parseISO } from "date-fns";
 import { useState } from "react";
 import type { Fixture } from "@/types/fixture";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FixtureCardProps {
   fixture: Fixture;
@@ -39,6 +42,26 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
   const [isTeamSelectionOpen, setIsTeamSelectionOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const hasScores = fixture.home_score !== null && fixture.away_score !== null;
+
+  // Fetch team selections to get performance categories
+  const { data: teamSelections } = useQuery({
+    queryKey: ["team-selections", fixture.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('team_selections')
+        .select('*')
+        .eq('event_id', fixture.id)
+        .eq('event_type', 'FIXTURE');
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const getTeamName = (teamNumber: number) => {
+    const performanceCategory = fixture.performance_category || 'MESSI';
+    return `Team ${teamNumber} ${performanceCategory}`;
+  };
 
   const getFixtureTitle = () => {
     if (fixture.is_home) {
@@ -130,6 +153,9 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
               <p>Time: {fixture.time}</p>
             )}
             <p>Date: {format(parseISO(fixture.date), "MMMM do, yyyy")}</p>
+            {fixture.motm_player_id && (
+              <p>Man of the Match: {getTeamName(1)}</p>
+            )}
           </div>
         </CardContent>
       </Card>
