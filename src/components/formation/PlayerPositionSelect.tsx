@@ -2,6 +2,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
 
 interface PlayerPositionSelectProps {
   position: string;
@@ -18,7 +19,6 @@ export const PlayerPositionSelect = ({
   onSelectionChange,
   selectedPlayers,
 }: PlayerPositionSelectProps) => {
-  // Updated to match grid positions exactly
   const allPositions = [
     'GK',     // Goalkeeper
     'DL',     // Left Back
@@ -42,6 +42,17 @@ export const PlayerPositionSelect = ({
 
   // Find the currently selected player
   const selectedPlayer = availablePlayers?.find(player => player.id === playerId);
+
+  // Debug logs
+  useEffect(() => {
+    console.log("PlayerPositionSelect - Current playerId:", playerId);
+    console.log("PlayerPositionSelect - Selected player:", selectedPlayer);
+    console.log("PlayerPositionSelect - Available players:", availablePlayers);
+  }, [playerId, selectedPlayer, availablePlayers]);
+
+  const getPlayerDisplay = (player: { name: string; squad_number?: number }) => {
+    return `${player.name}${player.squad_number ? ` (${player.squad_number})` : ''}`;
+  };
 
   return (
     <div className="flex gap-3 p-2">
@@ -67,12 +78,12 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Player</Label>
         <Select 
-          value={playerId} 
+          value={playerId || "unassigned"} 
           onValueChange={(value) => onSelectionChange(value, position)}
         >
           <SelectTrigger className="h-8">
             <SelectValue placeholder="Select player">
-              {selectedPlayer ? `${selectedPlayer.name}${selectedPlayer.squad_number ? ` (${selectedPlayer.squad_number})` : ''}` : 'None'}
+              {selectedPlayer ? getPlayerDisplay(selectedPlayer) : 'None'}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -86,7 +97,7 @@ export const PlayerPositionSelect = ({
                   selectedPlayers.has(player.id) && player.id !== playerId && "opacity-50"
                 )}
               >
-                {player.name} {player.squad_number ? `(${player.squad_number})` : ''}
+                {getPlayerDisplay(player)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -95,3 +106,4 @@ export const PlayerPositionSelect = ({
     </div>
   );
 };
+
