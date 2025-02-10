@@ -250,103 +250,93 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     try {
       setIsSaving(true);
 
-      // First, delete existing periods and selections
-      await supabase
+      // First, clear all existing data in a single transaction
+      const { error: deleteError } = await supabase
         .from('event_periods')
         .delete()
-        .match({ event_id: fixture.id, event_type: 'FIXTURE' });
+        .eq('event_id', fixture.id)
+        .eq('event_type', 'FIXTURE');
 
-      await supabase
-        .from('team_selections')
-        .delete()
-        .match({ event_id: fixture.id, event_type: 'FIXTURE' });
-
-      await supabase
-        .from('fixture_team_selections')
-        .delete()
-        .match({ fixture_id: fixture.id });
-
-      // Update fixture with the new performance category
-      const { error: fixtureUpdateError } = await supabase
-        .from('fixtures')
-        .update({
-          performance_category: performanceCategories[`period-1-${activeTeam}`] || 'MESSI'
-        })
-        .eq('id', fixture.id);
-
-      if (fixtureUpdateError) {
-        console.error("Error updating fixture performance category:", fixtureUpdateError);
-        throw fixtureUpdateError;
+      if (deleteError) {
+        console.error("Error deleting periods:", deleteError);
+        throw deleteError;
       }
 
-      // Update team captains
-      for (const [teamId, captainId] of Object.entries(teamCaptains)) {
-        if (captainId && captainId !== "unassigned") {
-          const { error: captainError } = await supabase
-            .from('fixture_team_selections')
-            .upsert({
-              fixture_id: fixture.id,
-              player_id: captainId,
-              team_number: parseInt(teamId),
-              is_captain: true,
-              performance_category: performanceCategories[`period-1-${teamId}`] || 'MESSI'
-            });
+      // Wait a brief moment to ensure deletion is complete
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-          if (captainError) {
-            console.error("Error updating captain:", captainError);
-            throw captainError;
-          }
-        }
-      }
-
-      // Create new periods one by one to avoid conflicts
+      // Now insert new periods one by one
       for (const [teamId, periods] of Object.entries(periodsPerTeam)) {
         for (const period of periods) {
           const periodNumber = parseInt(period.id.split('-')[1]);
           
-          // Insert period
-          const { data: periodData, error: periodError } = await supabase
-            .from('event_periods')
-            .upsert({
-              event_id: fixture.id,
-              event_type: 'FIXTURE',
-              period_number: periodNumber,
-              duration_minutes: period.duration
-            })
-            .select()
-            .single();
+          try {
+            const { error: periodError } = await supabase
+              .from('event_periods')
+              .insert({
+                event_id: fixture.id,
+                event_type: 'FIXTURE',
+                period_number: periodNumber,
+                duration_minutes: period.duration
+              });
 
-          if (periodError) {
-            console.error("Error creating period:", periodError);
-            throw periodError;
-          }
-
-          // Insert selections for this period
-          const periodSelections = selections[period.id]?.[teamId] || {};
-          const selectionRecords = Object.entries(periodSelections)
-            .filter(([_, selection]) => selection.playerId !== "unassigned")
-            .map(([_, selection]) => ({
-              event_id: fixture.id,
-              event_type: 'FIXTURE',
-              team_number: parseInt(teamId),
-              player_id: selection.playerId,
-              position: selection.position,
-              period_number: periodNumber,
-              performance_category: performanceCategories[`${period.id}-${teamId}`] || 'MESSI'
-            }));
-
-          if (selectionRecords.length > 0) {
-            const { error: selectionsError } = await supabase
-              .from('team_selections')
-              .insert(selectionRecords);
-
-            if (selectionsError) {
-              console.error("Error creating selections:", selectionsError);
-              throw selectionsError;
+            if (periodError) {
+              console.error("Error creating period:", periodError);
+              throw periodError;
             }
+
+            // Insert selections for this period
+            const periodSelections = selections[period.id]?.[teamId] || {};
+            const selectionRecords = Object.entries(periodSelections)
+              .filter(([_, selection]) => selection.playerId !== "unassigned")
+              .map(([_, selection]) => ({
+                event_id: fixture.id,
+                event_type: 'FIXTURE',
+                team_number: parseInt(teamId),
+                player_id: selection.playerId,
+                position: selection.position,
+                period_number: periodNumber,
+                performance_category: performanceCategories[`${period.id}-${teamId}`] || 'MESSI'
+              }));
+
+            if (selectionRecords.length > 0) {
+              const { error: selectionsError } = await supabase
+                .from('team_selections')
+                .insert(selectionRecords);
+
+              if (selectionsError) {
+                console.error("Error creating selections:", selectionsError);
+                throw selectionsError;
+              }
+            }
+          } catch (error) {
+            console.error(`Error processing period ${periodNumber}:`, error);
+            throw error;
           }
         }
       }
+
+      // Handle team captains
+      await Promise.all(
+        Object.entries(teamCaptains).map(async ([teamId, captainId]) => {
+          if (captainId && captainId !== "unassigned") {
+            const { error: captainError } = await supabase
+              .from('fixture_team_selections')
+              .upsert({
+                fixture_id: fixture.id,
+                player_id: captainId,
+                team_number: parseInt(teamId),
+                is_captain: true,
+                performance_category: performanceCategories[`period-1-${teamId}`] || 'MESSI'
+              });
+
+            if (captainError) {
+              console.error("Error updating captain:", captainError);
+              throw captainError;
+            }
+          }
+        })
+      );
 
       toast({
         title: "Success",
