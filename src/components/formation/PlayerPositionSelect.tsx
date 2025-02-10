@@ -45,10 +45,10 @@ export const PlayerPositionSelect = ({
 
   // Debug logs
   useEffect(() => {
-    console.log("PlayerPositionSelect - Current playerId:", playerId);
+    console.log("PlayerPositionSelect - Position:", position);
+    console.log("PlayerPositionSelect - PlayerId:", playerId);
     console.log("PlayerPositionSelect - Selected player:", selectedPlayer);
-    console.log("PlayerPositionSelect - Available players:", availablePlayers);
-  }, [playerId, selectedPlayer, availablePlayers]);
+  }, [position, playerId, selectedPlayer]);
 
   const getPlayerDisplay = (player: { name: string; squad_number?: number }) => {
     return `${player.name}${player.squad_number ? ` (${player.squad_number})` : ''}`;
@@ -59,11 +59,12 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Position</Label>
         <Select 
+          defaultValue={position}
           value={position} 
           onValueChange={(newPosition) => onSelectionChange(playerId, newPosition)}
         >
           <SelectTrigger className="h-8">
-            <SelectValue placeholder="Select position">{position}</SelectValue>
+            <SelectValue>{position}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {allPositions.map(pos => (
@@ -78,11 +79,12 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Player</Label>
         <Select 
+          defaultValue={playerId}
           value={playerId || "unassigned"} 
           onValueChange={(value) => onSelectionChange(value, position)}
         >
           <SelectTrigger className="h-8">
-            <SelectValue placeholder="Select player">
+            <SelectValue>
               {selectedPlayer ? getPlayerDisplay(selectedPlayer) : 'None'}
             </SelectValue>
           </SelectTrigger>
@@ -96,6 +98,7 @@ export const PlayerPositionSelect = ({
                   "text-sm",
                   selectedPlayers.has(player.id) && player.id !== playerId && "opacity-50"
                 )}
+                disabled={selectedPlayers.has(player.id) && player.id !== playerId}
               >
                 {getPlayerDisplay(player)}
               </SelectItem>
@@ -106,4 +109,3 @@ export const PlayerPositionSelect = ({
     </div>
   );
 };
-
