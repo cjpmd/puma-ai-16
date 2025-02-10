@@ -74,6 +74,8 @@ export const saveTeamSelections = async (
             duration_minutes: period.duration
           };
 
+          console.log("Saving selection record:", selectionRecord);
+
           const { error: selectionError } = await supabase
             .from('team_selections')
             .insert(selectionRecord);
@@ -87,13 +89,6 @@ export const saveTeamSelections = async (
 
       // Handle team captains
       if (teamCaptains[teamId] && teamCaptains[teamId] !== "unassigned") {
-        const firstPeriodId = periodsPerTeam[teamId]?.[0]?.id;
-        const firstPeriodSelections = selections[firstPeriodId]?.[teamId] || {};
-        const captainEntry = Object.entries(firstPeriodSelections)
-          .find(([_, sel]) => sel.playerId === teamCaptains[teamId]);
-        
-        const captainPosition = captainEntry ? captainEntry[1].position : null;
-
         const { error: captainError } = await supabase
           .from('fixture_team_selections')
           .upsert({
@@ -101,7 +96,8 @@ export const saveTeamSelections = async (
             player_id: teamCaptains[teamId],
             team_number: teamNumber,
             is_captain: true,
-            position: captainPosition,
+            position: Object.entries(selections[periodsPerTeam[teamId][0]?.id]?.[teamId] || {})
+              .find(([_, sel]) => sel.playerId === teamCaptains[teamId])?.[1]?.position,
             performance_category: performanceCategories[`period-1-${teamId}`] || 'MESSI'
           });
 
