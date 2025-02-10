@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { FormationSelector } from "@/components/FormationSelector";
+import { TeamSettingsHeader } from "@/components/formation/TeamSettingsHeader";
 
 interface TeamPeriodCardProps {
   periodId: string;
@@ -16,6 +17,8 @@ interface TeamPeriodCardProps {
   initialSelections?: Record<string, { playerId: string; position: string; performanceCategory?: string }>;
   performanceCategory?: string;
   onDeletePeriod: (teamId: string, periodId: string) => void;
+  duration: number;
+  onDurationChange: (duration: number) => void;
 }
 
 export const TeamPeriodCard = ({
@@ -29,7 +32,9 @@ export const TeamPeriodCard = ({
   availablePlayers,
   initialSelections,
   performanceCategory,
-  onDeletePeriod
+  onDeletePeriod,
+  duration,
+  onDurationChange
 }: TeamPeriodCardProps) => {
   return (
     <Card className="relative">
@@ -45,6 +50,10 @@ export const TeamPeriodCard = ({
         <CardTitle>Period {periodNumber}</CardTitle>
       </CardHeader>
       <CardContent>
+        <TeamSettingsHeader
+          duration={duration.toString()}
+          onDurationChange={(value) => onDurationChange(parseInt(value))}
+        />
         <div className="min-h-[500px]">
           <FormationSelector
             format={format as "7-a-side"}

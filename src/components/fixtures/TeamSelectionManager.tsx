@@ -124,6 +124,15 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         newPerformanceCategories[`${periodId}-${teamId}`] = selection.performance_category || 'MESSI';
       });
 
+      // Sort periods by number to maintain order
+      Object.keys(newPeriodsPerTeam).forEach(teamId => {
+        newPeriodsPerTeam[teamId].sort((a, b) => {
+          const aNum = parseInt(a.id.split('-')[1]);
+          const bNum = parseInt(b.id.split('-')[1]);
+          return aNum - bNum;
+        });
+      });
+
       setPeriodsPerTeam(newPeriodsPerTeam);
       setSelections(newSelections);
       setPerformanceCategories(newPerformanceCategories);
@@ -194,23 +203,12 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     });
   };
 
-  const handlePerformanceCategoryChange = (periodId: string, teamId: string, category: string) => {
-    setPerformanceCategories(prev => ({
+  const handleDurationChange = (teamId: string, periodId: string, duration: number) => {
+    setPeriodsPerTeam(prev => ({
       ...prev,
-      [`${periodId}-${teamId}`]: category
-    }));
-
-    setSelections(prev => ({
-      ...prev,
-      [periodId]: {
-        ...prev[periodId],
-        [teamId]: Object.fromEntries(
-          Object.entries(prev[periodId]?.[teamId] || {}).map(([pos, sel]) => [
-            pos,
-            { ...sel, performanceCategory: category }
-          ])
-        )
-      }
+      [teamId]: prev[teamId].map(period => 
+        period.id === periodId ? { ...period, duration } : period
+      )
     }));
   };
 
@@ -345,6 +343,8 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                     initialSelections={selections[period.id]?.[teamId]}
                     performanceCategory={performanceCategories[`${period.id}-${teamId}`]}
                     onDeletePeriod={handleDeletePeriod}
+                    duration={period.duration}
+                    onDurationChange={(duration) => handleDurationChange(teamId, period.id, duration)}
                   />
                 ))}
               </div>
