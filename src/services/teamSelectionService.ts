@@ -72,7 +72,10 @@ export const saveTeamSelections = async (
           .from('team_selections')
           .insert(selectionRecords);
 
-        if (selectionsError) throw selectionsError;
+        if (selectionsError) {
+          console.error("Error saving team selections:", selectionsError);
+          throw selectionsError;
+        }
       }
     }
   }
@@ -91,7 +94,10 @@ export const saveTeamSelections = async (
             performance_category: performanceCategories[`period-1-${teamId}`] || 'MESSI'
           });
 
-        if (captainError) throw captainError;
+        if (captainError) {
+          console.error("Error saving team captain:", captainError);
+          throw captainError;
+        }
       }
     })
   );
