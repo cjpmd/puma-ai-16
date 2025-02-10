@@ -59,7 +59,9 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
   });
 
   const getTeamName = (teamNumber: number) => {
-    const performanceCategory = fixture.performance_category || 'MESSI';
+    // Find the performance category for this team number
+    const teamSelection = teamSelections?.find(s => s.team_number === teamNumber);
+    const performanceCategory = teamSelection?.performance_category || 'MESSI';
     return `Team ${teamNumber} ${performanceCategory}`;
   };
 
