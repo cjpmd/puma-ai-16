@@ -37,18 +37,23 @@ export const TeamPeriodCard = ({
   duration,
   onDurationChange
 }: TeamPeriodCardProps) => {
+  const [localSelections, setLocalSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
+    initialSelections || {}
+  );
   const [localDuration, setLocalDuration] = useState(duration);
   const [localPerformanceCategory, setLocalPerformanceCategory] = useState(performanceCategory);
-  const [localSelections, setLocalSelections] = useState(initialSelections || {});
 
   useEffect(() => {
-    console.log("Initial selections updated:", initialSelections);
-    setLocalDuration(duration);
-    setLocalPerformanceCategory(performanceCategory);
-    if (initialSelections) {
+    console.log("Initial selections received:", initialSelections);
+    if (initialSelections && Object.keys(initialSelections).length > 0) {
       setLocalSelections(initialSelections);
     }
-  }, [duration, performanceCategory, initialSelections]);
+  }, [initialSelections]);
+
+  useEffect(() => {
+    setLocalDuration(duration);
+    setLocalPerformanceCategory(performanceCategory);
+  }, [duration, performanceCategory]);
 
   const handleDurationChange = (newDuration: string) => {
     const parsedDuration = parseInt(newDuration);
@@ -57,7 +62,7 @@ export const TeamPeriodCard = ({
   };
 
   const handleSelectionChange = (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
-    console.log("Handling selection change:", selections);
+    console.log("Handling selection change in TeamPeriodCard:", selections);
     const updatedSelections = Object.entries(selections).reduce((acc, [position, selection]) => {
       acc[position] = {
         ...selection,
@@ -69,6 +74,8 @@ export const TeamPeriodCard = ({
     setLocalSelections(updatedSelections);
     onSelectionChange(periodId, teamId, updatedSelections);
   };
+
+  console.log("Current local selections:", localSelections);
 
   return (
     <Card className="relative">

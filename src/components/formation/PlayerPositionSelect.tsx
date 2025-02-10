@@ -2,7 +2,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface PlayerPositionSelectProps {
   position: string;
@@ -40,15 +40,24 @@ export const PlayerPositionSelect = ({
     'STC',    // Striker
   ];
 
+  const [currentPlayerId, setCurrentPlayerId] = useState(playerId);
+  const [currentPosition, setCurrentPosition] = useState(position);
+
   // Find the currently selected player
-  const selectedPlayer = availablePlayers?.find(player => player.id === playerId);
+  const selectedPlayer = availablePlayers?.find(player => player.id === currentPlayerId);
+
+  // Update local state when props change
+  useEffect(() => {
+    setCurrentPlayerId(playerId);
+    setCurrentPosition(position);
+  }, [playerId, position]);
 
   // Debug logs
   useEffect(() => {
-    console.log("PlayerPositionSelect - Position:", position);
-    console.log("PlayerPositionSelect - PlayerId:", playerId);
+    console.log("PlayerPositionSelect - Position:", currentPosition);
+    console.log("PlayerPositionSelect - PlayerId:", currentPlayerId);
     console.log("PlayerPositionSelect - Selected player:", selectedPlayer);
-  }, [position, playerId, selectedPlayer]);
+  }, [currentPosition, currentPlayerId, selectedPlayer]);
 
   const getPlayerDisplay = (player: { name: string; squad_number?: number }) => {
     return `${player.name}${player.squad_number ? ` (${player.squad_number})` : ''}`;
@@ -59,12 +68,14 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Position</Label>
         <Select 
-          defaultValue={position}
-          value={position} 
-          onValueChange={(newPosition) => onSelectionChange(playerId, newPosition)}
+          value={currentPosition}
+          onValueChange={(newPosition) => {
+            setCurrentPosition(newPosition);
+            onSelectionChange(currentPlayerId, newPosition);
+          }}
         >
           <SelectTrigger className="h-8">
-            <SelectValue>{position}</SelectValue>
+            <SelectValue>{currentPosition}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {allPositions.map(pos => (
@@ -79,9 +90,11 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Player</Label>
         <Select 
-          defaultValue={playerId}
-          value={playerId || "unassigned"} 
-          onValueChange={(value) => onSelectionChange(value, position)}
+          value={currentPlayerId || "unassigned"}
+          onValueChange={(value) => {
+            setCurrentPlayerId(value);
+            onSelectionChange(value, currentPosition);
+          }}
         >
           <SelectTrigger className="h-8">
             <SelectValue>
@@ -96,9 +109,9 @@ export const PlayerPositionSelect = ({
                 value={player.id}
                 className={cn(
                   "text-sm",
-                  selectedPlayers.has(player.id) && player.id !== playerId && "opacity-50"
+                  selectedPlayers.has(player.id) && player.id !== currentPlayerId && "opacity-50"
                 )}
-                disabled={selectedPlayers.has(player.id) && player.id !== playerId}
+                disabled={selectedPlayers.has(player.id) && player.id !== currentPlayerId}
               >
                 {getPlayerDisplay(player)}
               </SelectItem>
