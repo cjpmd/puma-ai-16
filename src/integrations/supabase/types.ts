@@ -627,6 +627,7 @@ export type Database = {
           is_captain: boolean | null
           performance_category: string | null
           player_id: string | null
+          position: string | null
           updated_at: string | null
         }
         Insert: {
@@ -636,6 +637,7 @@ export type Database = {
           is_captain?: boolean | null
           performance_category?: string | null
           player_id?: string | null
+          position?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -645,6 +647,7 @@ export type Database = {
           is_captain?: boolean | null
           performance_category?: string | null
           player_id?: string | null
+          position?: string | null
           updated_at?: string | null
         }
         Relationships: [
