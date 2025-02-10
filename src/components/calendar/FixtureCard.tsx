@@ -172,6 +172,11 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
             )}
           </div>
           <div className="space-y-1 mt-2 text-sm text-muted-foreground">
+            <div className="space-y-1">
+              {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
+                <p key={index}>{getTeamName(index + 1)}</p>
+              ))}
+            </div>
             {fixture.location && (
               <p>Location: {fixture.location}</p>
             )}
