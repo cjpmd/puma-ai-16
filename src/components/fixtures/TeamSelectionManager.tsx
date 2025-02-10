@@ -250,68 +250,69 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     try {
       setIsSaving(true);
 
-      // First, clear all existing data in a single transaction
-      const { error: deleteError } = await supabase
+      // First, clear existing team selections for this fixture
+      const { error: deleteSelectionsError } = await supabase
+        .from('team_selections')
+        .delete()
+        .eq('event_id', fixture.id)
+        .eq('event_type', 'FIXTURE');
+
+      if (deleteSelectionsError) throw deleteSelectionsError;
+
+      // Then clear existing periods
+      const { error: deletePeriodsError } = await supabase
         .from('event_periods')
         .delete()
         .eq('event_id', fixture.id)
         .eq('event_type', 'FIXTURE');
 
-      if (deleteError) {
-        console.error("Error deleting periods:", deleteError);
-        throw deleteError;
-      }
+      if (deletePeriodsError) throw deletePeriodsError;
 
-      // Wait a brief moment to ensure deletion is complete
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Now insert new periods one by one
+      // Insert new periods one by one
       for (const [teamId, periods] of Object.entries(periodsPerTeam)) {
-        for (const period of periods) {
-          const periodNumber = parseInt(period.id.split('-')[1]);
+        for (const [index, period] of periods.entries()) {
+          const periodNumber = index + 1;
           
-          try {
-            const { error: periodError } = await supabase
-              .from('event_periods')
-              .insert({
-                event_id: fixture.id,
-                event_type: 'FIXTURE',
-                period_number: periodNumber,
-                duration_minutes: period.duration
-              });
+          // Insert the period
+          const { data: periodData, error: periodError } = await supabase
+            .from('event_periods')
+            .insert({
+              event_id: fixture.id,
+              event_type: 'FIXTURE',
+              period_number: periodNumber,
+              duration_minutes: period.duration
+            })
+            .select()
+            .single();
 
-            if (periodError) {
-              console.error("Error creating period:", periodError);
-              throw periodError;
+          if (periodError) {
+            console.error("Error creating period:", periodError);
+            throw periodError;
+          }
+
+          // Insert selections for this period if they exist
+          const periodSelections = selections[period.id]?.[teamId] || {};
+          const selectionRecords = Object.entries(periodSelections)
+            .filter(([_, selection]) => selection.playerId !== "unassigned")
+            .map(([position, selection]) => ({
+              event_id: fixture.id,
+              event_type: 'FIXTURE',
+              team_number: parseInt(teamId),
+              player_id: selection.playerId,
+              position: position,
+              period_number: periodNumber,
+              performance_category: performanceCategories[`${period.id}-${teamId}`] || 'MESSI'
+            }));
+
+          if (selectionRecords.length > 0) {
+            const { error: selectionsError } = await supabase
+              .from('team_selections')
+              .insert(selectionRecords);
+
+            if (selectionsError) {
+              console.error("Error saving selections:", selectionsError);
+              throw selectionsError;
             }
-
-            // Insert selections for this period
-            const periodSelections = selections[period.id]?.[teamId] || {};
-            const selectionRecords = Object.entries(periodSelections)
-              .filter(([_, selection]) => selection.playerId !== "unassigned")
-              .map(([_, selection]) => ({
-                event_id: fixture.id,
-                event_type: 'FIXTURE',
-                team_number: parseInt(teamId),
-                player_id: selection.playerId,
-                position: selection.position,
-                period_number: periodNumber,
-                performance_category: performanceCategories[`${period.id}-${teamId}`] || 'MESSI'
-              }));
-
-            if (selectionRecords.length > 0) {
-              const { error: selectionsError } = await supabase
-                .from('team_selections')
-                .insert(selectionRecords);
-
-              if (selectionsError) {
-                console.error("Error creating selections:", selectionsError);
-                throw selectionsError;
-              }
-            }
-          } catch (error) {
-            console.error(`Error processing period ${periodNumber}:`, error);
-            throw error;
           }
         }
       }
