@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { FormationSelector } from "@/components/FormationSelector";
 import { TeamSettingsHeader } from "@/components/formation/TeamSettingsHeader";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 
 interface TeamPeriodCardProps {
@@ -42,7 +41,6 @@ export const TeamPeriodCard = ({
   const [localPerformanceCategory, setLocalPerformanceCategory] = useState(performanceCategory);
   const [localSelections, setLocalSelections] = useState(initialSelections || {});
 
-  // Update local state when props change
   useEffect(() => {
     console.log("Initial selections updated:", initialSelections);
     setLocalDuration(duration);
@@ -83,25 +81,7 @@ export const TeamPeriodCard = ({
         <X className="h-4 w-4" />
       </Button>
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center justify-between">
-          <span>Period {periodNumber}</span>
-          <Select
-            value={localPerformanceCategory}
-            onValueChange={(value) => {
-              setLocalPerformanceCategory(value);
-              handleSelectionChange(localSelections);
-            }}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Performance" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="MESSI">Messi</SelectItem>
-              <SelectItem value="RONALDO">Ronaldo</SelectItem>
-              <SelectItem value="JAGS">Jags</SelectItem>
-            </SelectContent>
-          </Select>
-        </CardTitle>
+        <CardTitle>Period {periodNumber}</CardTitle>
       </CardHeader>
       <CardContent>
         <TeamSettingsHeader
