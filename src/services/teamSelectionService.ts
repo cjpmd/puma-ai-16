@@ -11,6 +11,8 @@ export const saveTeamSelections = async (
   if (!fixture) return;
 
   try {
+    console.log('Saving team selections:', { periodsPerTeam, selections, performanceCategories });
+
     // Clear existing team selections
     const { error: deleteSelectionsError } = await supabase
       .from('team_selections')
@@ -36,7 +38,7 @@ export const saveTeamSelections = async (
       for (const [index, period] of periods.entries()) {
         const periodNumber = index + 1;
         
-        // Insert period with team_number
+        // Insert period with team_number and duration
         const { data: insertedPeriod, error: periodError } = await supabase
           .from('event_periods')
           .insert({
@@ -57,7 +59,7 @@ export const saveTeamSelections = async (
         // Get selections for this period and team
         const periodSelections = selections[period.id]?.[teamId] || {};
         
-        // Create selection records for all positions, including unassigned ones
+        // Create selection records for all positions
         for (const [positionKey, selection] of Object.entries(periodSelections)) {
           if (selection.playerId === "unassigned") continue;
 
@@ -68,7 +70,8 @@ export const saveTeamSelections = async (
             player_id: selection.playerId,
             position: selection.position || positionKey,
             period_number: periodNumber,
-            performance_category: performanceCategories[`${period.id}-${teamId}`] || 'MESSI'
+            performance_category: performanceCategories[`${period.id}-${teamId}`] || selection.performanceCategory || 'MESSI',
+            duration_minutes: period.duration
           };
 
           const { error: selectionError } = await supabase
@@ -84,7 +87,6 @@ export const saveTeamSelections = async (
 
       // Handle team captains
       if (teamCaptains[teamId] && teamCaptains[teamId] !== "unassigned") {
-        // First find the captain's position from the first period
         const firstPeriodId = periodsPerTeam[teamId]?.[0]?.id;
         const firstPeriodSelections = selections[firstPeriodId]?.[teamId] || {};
         const captainEntry = Object.entries(firstPeriodSelections)
