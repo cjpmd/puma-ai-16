@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +31,42 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     setTeamCaptains
   } = useTeamSelections(fixture);
 
+  // Fetch existing team selections
+  const { data: existingSelections, isLoading: isLoadingSelections } = useQuery({
+    queryKey: ["team-selections", fixture?.id],
+    queryFn: async () => {
+      if (!fixture?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('team_selections')
+        .select('*')
+        .eq('event_id', fixture.id)
+        .eq('event_type', 'FIXTURE');
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!fixture?.id
+  });
+
+  // Fetch team captains
+  const { data: existingCaptains, isLoading: isLoadingCaptains } = useQuery({
+    queryKey: ["team-captains", fixture?.id],
+    queryFn: async () => {
+      if (!fixture?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('fixture_team_selections')
+        .select('*')
+        .eq('fixture_id', fixture.id)
+        .eq('is_captain', true);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!fixture?.id
+  });
+
   const { data: availablePlayers } = useQuery({
     queryKey: ["available-players"],
     queryFn: async () => {
@@ -43,6 +79,67 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       return data || [];
     },
   });
+
+  // Initialize selections and periods from existing data
+  useEffect(() => {
+    if (existingSelections && !isLoadingSelections) {
+      const newPeriodsPerTeam: Record<string, Array<{ id: string; duration: number }>> = {};
+      const newSelections: Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>> = {};
+      const newPerformanceCategories: Record<string, string> = {};
+
+      // Group selections by team and period
+      existingSelections.forEach(selection => {
+        const teamId = selection.team_number.toString();
+        const periodId = `period-${selection.period_number}`;
+        
+        // Initialize team periods if not exists
+        if (!newPeriodsPerTeam[teamId]) {
+          newPeriodsPerTeam[teamId] = [];
+        }
+        
+        // Add period if not exists
+        if (!newPeriodsPerTeam[teamId].find(p => p.id === periodId)) {
+          newPeriodsPerTeam[teamId].push({
+            id: periodId,
+            duration: selection.duration_minutes || 20
+          });
+        }
+
+        // Initialize selections structure
+        if (!newSelections[periodId]) {
+          newSelections[periodId] = {};
+        }
+        if (!newSelections[periodId][teamId]) {
+          newSelections[periodId][teamId] = {};
+        }
+
+        // Add selection
+        newSelections[periodId][teamId][selection.position] = {
+          playerId: selection.player_id,
+          position: selection.position,
+          performanceCategory: selection.performance_category
+        };
+
+        // Store performance category
+        newPerformanceCategories[`${periodId}-${teamId}`] = selection.performance_category || 'MESSI';
+      });
+
+      setPeriodsPerTeam(newPeriodsPerTeam);
+      setSelections(newSelections);
+      setPerformanceCategories(newPerformanceCategories);
+    }
+  }, [existingSelections, isLoadingSelections, setPeriodsPerTeam, setSelections, setPerformanceCategories]);
+
+  // Initialize team captains
+  useEffect(() => {
+    if (existingCaptains && !isLoadingCaptains) {
+      const newTeamCaptains: Record<string, string> = {};
+      existingCaptains.forEach(captain => {
+        newTeamCaptains[captain.team_number.toString()] = captain.player_id;
+      });
+      setTeamCaptains(newTeamCaptains);
+    }
+  }, [existingCaptains, isLoadingCaptains, setTeamCaptains]);
 
   const handleCaptainChange = (teamId: string, playerId: string) => {
     setTeamCaptains(prev => ({
