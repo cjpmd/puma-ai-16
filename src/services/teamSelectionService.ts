@@ -54,16 +54,18 @@ export const saveTeamSelections = async (
           throw periodError;
         }
 
-        // Process selections for this period
+        // Get selections for this period and team
         const periodSelections = selections[period.id]?.[teamId] || {};
+        
+        // Create selection records, maintaining position information
         const selectionRecords = Object.entries(periodSelections)
           .filter(([_, selection]) => selection.playerId !== "unassigned")
-          .map(([pos, selection]) => ({
+          .map(([positionKey, selection]) => ({
             event_id: fixture.id,
             event_type: 'FIXTURE',
             team_number: teamNumber,
             player_id: selection.playerId,
-            position: pos,
+            position: selection.position || positionKey, // Use the saved position or the position key
             period_number: periodNumber,
             performance_category: performanceCategories[`${period.id}-${teamId}`] || 'MESSI'
           }));
@@ -85,10 +87,10 @@ export const saveTeamSelections = async (
         // First find the captain's position from the first period
         const firstPeriodId = periodsPerTeam[teamId]?.[0]?.id;
         const firstPeriodSelections = selections[firstPeriodId]?.[teamId] || {};
-        const captainPositionEntry = Object.entries(firstPeriodSelections)
+        const captainEntry = Object.entries(firstPeriodSelections)
           .find(([_, sel]) => sel.playerId === teamCaptains[teamId]);
         
-        const captainPosition = captainPositionEntry ? captainPositionEntry[0] : null;
+        const captainPosition = captainEntry ? captainEntry[1].position : null;
 
         const { error: captainError } = await supabase
           .from('fixture_team_selections')
