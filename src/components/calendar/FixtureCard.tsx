@@ -12,7 +12,7 @@ import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, parseISO } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Fixture } from "@/types/fixture";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +40,7 @@ const getOutcomeIcon = (outcome: string | null | undefined) => {
 export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: FixtureCardProps) => {
   const [isTeamSelectionOpen, setIsTeamSelectionOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [motmName, setMotmName] = useState<string | null>(null);
   const hasScores = fixture.home_score !== null && fixture.away_score !== null;
 
   // Fetch team selections to get performance categories
@@ -64,15 +65,29 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
     return `Team ${teamNumber} ${performanceCategory}`;
   };
 
-  const getMotmName = () => {
-    if (!fixture.motm_player_id) return null;
-    const { data } = await supabase
-      .from('players')
-      .select('name')
-      .eq('id', fixture.motm_player_id)
-      .single();
-    return data?.name || 'Unknown Player';
-  };
+  // Fetch MOTM player name when fixture.motm_player_id changes
+  useEffect(() => {
+    const fetchMotmName = async () => {
+      if (!fixture.motm_player_id) {
+        setMotmName(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('players')
+        .select('name')
+        .eq('id', fixture.motm_player_id)
+        .single();
+
+      if (!error && data) {
+        setMotmName(data.name);
+      } else {
+        setMotmName('Unknown Player');
+      }
+    };
+
+    fetchMotmName();
+  }, [fixture.motm_player_id]);
 
   const getFixtureTitle = () => {
     if (fixture.is_home) {
@@ -164,8 +179,8 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
               <p>Time: {fixture.time}</p>
             )}
             <p>Date: {format(parseISO(fixture.date), "MMMM do, yyyy")}</p>
-            {fixture.motm_player_id && (
-              <p>Man of the Match: {getMotmName()}</p>
+            {fixture.motm_player_id && motmName && (
+              <p>Man of the Match: {motmName}</p>
             )}
           </div>
         </CardContent>
