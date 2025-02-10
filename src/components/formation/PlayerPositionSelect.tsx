@@ -40,6 +40,9 @@ export const PlayerPositionSelect = ({
     'STC',    // Striker
   ];
 
+  // Find the currently selected player
+  const selectedPlayer = availablePlayers?.find(player => player.id === playerId);
+
   return (
     <div className="flex gap-3 p-2">
       <div className="flex-1">
@@ -49,7 +52,7 @@ export const PlayerPositionSelect = ({
           onValueChange={(newPosition) => onSelectionChange(playerId, newPosition)}
         >
           <SelectTrigger className="h-8">
-            <SelectValue placeholder="Select position" />
+            <SelectValue placeholder="Select position">{position}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {allPositions.map(pos => (
@@ -68,7 +71,9 @@ export const PlayerPositionSelect = ({
           onValueChange={(value) => onSelectionChange(value, position)}
         >
           <SelectTrigger className="h-8">
-            <SelectValue placeholder="Select player" />
+            <SelectValue placeholder="Select player">
+              {selectedPlayer ? `${selectedPlayer.name}${selectedPlayer.squad_number ? ` (${selectedPlayer.squad_number})` : ''}` : 'None'}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="unassigned" className="text-sm">None</SelectItem>
