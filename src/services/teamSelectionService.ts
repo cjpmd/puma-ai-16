@@ -86,10 +86,13 @@ export const saveTeamSelections = async (
       if (captainId && captainId !== "unassigned") {
         // Get captain's position from first period selections if available
         const firstPeriodId = periodsPerTeam[teamId]?.[0]?.id;
-        const captainPosition = firstPeriodId && 
-          selections[firstPeriodId]?.[teamId]?.[Object.keys(selections[firstPeriodId][teamId]).find(key => 
-            selections[firstPeriodId][teamId][key].playerId === captainId
-          ) || '']?.position || null;
+        const captainPositionInfo = firstPeriodId && 
+          selections[firstPeriodId]?.[teamId] && 
+          Object.entries(selections[firstPeriodId][teamId]).find(([_, sel]) => 
+            sel.playerId === captainId
+          );
+          
+        const captainPosition = captainPositionInfo ? captainPositionInfo[0] : null;
 
         const { error: captainError } = await supabase
           .from('fixture_team_selections')
