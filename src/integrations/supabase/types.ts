@@ -628,6 +628,7 @@ export type Database = {
           performance_category: string | null
           player_id: string | null
           position: string | null
+          team_number: number | null
           updated_at: string | null
         }
         Insert: {
@@ -638,6 +639,7 @@ export type Database = {
           performance_category?: string | null
           player_id?: string | null
           position?: string | null
+          team_number?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -648,6 +650,7 @@ export type Database = {
           performance_category?: string | null
           player_id?: string | null
           position?: string | null
+          team_number?: number | null
           updated_at?: string | null
         }
         Relationships: [
