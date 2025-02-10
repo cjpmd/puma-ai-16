@@ -314,6 +314,7 @@ export type Database = {
           event_type: string
           id: string
           period_number: number
+          team_number: number | null
           updated_at: string | null
         }
         Insert: {
@@ -323,6 +324,7 @@ export type Database = {
           event_type: string
           id?: string
           period_number: number
+          team_number?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -332,6 +334,7 @@ export type Database = {
           event_type?: string
           id?: string
           period_number?: number
+          team_number?: number | null
           updated_at?: string | null
         }
         Relationships: []

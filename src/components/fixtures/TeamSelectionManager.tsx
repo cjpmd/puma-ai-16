@@ -268,19 +268,22 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
 
       if (deletePeriodsError) throw deletePeriodsError;
 
-      // Insert new periods one by one
+      // Insert new periods one by one for each team
       for (const [teamId, periods] of Object.entries(periodsPerTeam)) {
+        const teamNumber = parseInt(teamId);
+        
         for (const [index, period] of periods.entries()) {
           const periodNumber = index + 1;
           
-          // Insert the period
+          // Insert the period with team_number
           const { data: periodData, error: periodError } = await supabase
             .from('event_periods')
             .insert({
               event_id: fixture.id,
               event_type: 'FIXTURE',
               period_number: periodNumber,
-              duration_minutes: period.duration
+              duration_minutes: period.duration,
+              team_number: teamNumber
             })
             .select()
             .single();
@@ -297,7 +300,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
             .map(([position, selection]) => ({
               event_id: fixture.id,
               event_type: 'FIXTURE',
-              team_number: parseInt(teamId),
+              team_number: teamNumber,
               player_id: selection.playerId,
               position: position,
               period_number: periodNumber,
