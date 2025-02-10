@@ -6,7 +6,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Calendar, Pencil, Trash2, Users, Trophy, Minus, XCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
@@ -51,7 +50,8 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
         .from('team_selections')
         .select('*')
         .eq('event_id', fixture.id)
-        .eq('event_type', 'FIXTURE');
+        .eq('event_type', 'FIXTURE')
+        .eq('period_number', 1); // Get first period for display purposes
       
       if (error) throw error;
       return data || [];
@@ -59,10 +59,19 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
   });
 
   const getTeamName = (teamNumber: number) => {
-    // Find the performance category for this team number
     const teamSelection = teamSelections?.find(s => s.team_number === teamNumber);
     const performanceCategory = teamSelection?.performance_category || 'MESSI';
     return `Team ${teamNumber} ${performanceCategory}`;
+  };
+
+  const getMotmName = () => {
+    if (!fixture.motm_player_id) return null;
+    const { data } = await supabase
+      .from('players')
+      .select('name')
+      .eq('id', fixture.motm_player_id)
+      .single();
+    return data?.name || 'Unknown Player';
   };
 
   const getFixtureTitle = () => {
@@ -156,7 +165,7 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
             )}
             <p>Date: {format(parseISO(fixture.date), "MMMM do, yyyy")}</p>
             {fixture.motm_player_id && (
-              <p>Man of the Match: {getTeamName(1)}</p>
+              <p>Man of the Match: {getMotmName()}</p>
             )}
           </div>
         </CardContent>

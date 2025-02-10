@@ -36,7 +36,7 @@ export const saveTeamSelections = async (
       const periodNumber = index + 1;
       
       // Insert period with team_number
-      const { error: periodError } = await supabase
+      const { data: insertedPeriod, error: periodError } = await supabase
         .from('event_periods')
         .insert({
           event_id: fixture.id,
