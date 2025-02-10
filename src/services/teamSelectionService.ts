@@ -57,27 +57,27 @@ export const saveTeamSelections = async (
         // Get selections for this period and team
         const periodSelections = selections[period.id]?.[teamId] || {};
         
-        // Create selection records, maintaining position information
-        const selectionRecords = Object.entries(periodSelections)
-          .filter(([_, selection]) => selection.playerId !== "unassigned")
-          .map(([positionKey, selection]) => ({
+        // Create selection records for all positions, including unassigned ones
+        for (const [positionKey, selection] of Object.entries(periodSelections)) {
+          if (selection.playerId === "unassigned") continue;
+
+          const selectionRecord = {
             event_id: fixture.id,
             event_type: 'FIXTURE',
             team_number: teamNumber,
             player_id: selection.playerId,
-            position: selection.position || positionKey, // Use the saved position or the position key
+            position: selection.position || positionKey,
             period_number: periodNumber,
             performance_category: performanceCategories[`${period.id}-${teamId}`] || 'MESSI'
-          }));
+          };
 
-        if (selectionRecords.length > 0) {
-          const { error: selectionsError } = await supabase
+          const { error: selectionError } = await supabase
             .from('team_selections')
-            .insert(selectionRecords);
+            .insert(selectionRecord);
 
-          if (selectionsError) {
-            console.error("Error saving team selections:", selectionsError);
-            throw selectionsError;
+          if (selectionError) {
+            console.error("Error saving team selection:", selectionError);
+            throw selectionError;
           }
         }
       }
@@ -109,6 +109,8 @@ export const saveTeamSelections = async (
         }
       }
     }
+
+    console.log("Team selections saved successfully");
   } catch (error) {
     console.error("Error in saveTeamSelections:", error);
     throw error;
