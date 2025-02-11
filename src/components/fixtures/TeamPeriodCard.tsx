@@ -45,7 +45,7 @@ export const TeamPeriodCard = ({
 
   useEffect(() => {
     console.log("Initial selections received:", initialSelections);
-    if (initialSelections && Object.keys(initialSelections).length > 0) {
+    if (initialSelections) {
       setLocalSelections(initialSelections);
     }
   }, [initialSelections]);
@@ -74,8 +74,6 @@ export const TeamPeriodCard = ({
     setLocalSelections(updatedSelections);
     onSelectionChange(periodId, teamId, updatedSelections);
   };
-
-  console.log("Current local selections:", localSelections);
 
   return (
     <Card className="relative">

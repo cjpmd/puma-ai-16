@@ -48,16 +48,10 @@ export const PlayerPositionSelect = ({
 
   // Update local state when props change
   useEffect(() => {
+    console.log("PlayerPositionSelect - Props updated:", { playerId, position });
     setCurrentPlayerId(playerId);
     setCurrentPosition(position);
   }, [playerId, position]);
-
-  // Debug logs
-  useEffect(() => {
-    console.log("PlayerPositionSelect - Position:", currentPosition);
-    console.log("PlayerPositionSelect - PlayerId:", currentPlayerId);
-    console.log("PlayerPositionSelect - Selected player:", selectedPlayer);
-  }, [currentPosition, currentPlayerId, selectedPlayer]);
 
   const getPlayerDisplay = (player: { name: string; squad_number?: number }) => {
     return `${player.name}${player.squad_number ? ` (${player.squad_number})` : ''}`;
@@ -68,6 +62,7 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Position</Label>
         <Select 
+          defaultValue={currentPosition}
           value={currentPosition}
           onValueChange={(newPosition) => {
             setCurrentPosition(newPosition);
@@ -90,6 +85,7 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Player</Label>
         <Select 
+          defaultValue={currentPlayerId}
           value={currentPlayerId || "unassigned"}
           onValueChange={(value) => {
             setCurrentPlayerId(value);
