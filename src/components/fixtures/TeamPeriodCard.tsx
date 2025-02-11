@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -37,14 +36,12 @@ export const TeamPeriodCard = ({
   duration,
   onDurationChange
 }: TeamPeriodCardProps) => {
-  // Initialize with initialSelections or empty object
   const [localSelections, setLocalSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
     initialSelections || {}
   );
   const [localDuration, setLocalDuration] = useState(duration);
-  const [localPerformanceCategory] = useState(performanceCategory);
 
-  // Update local state when initialSelections changes
+  // Sync local state with props whenever initialSelections changes
   useEffect(() => {
     if (initialSelections) {
       setLocalSelections(initialSelections);
@@ -62,22 +59,28 @@ export const TeamPeriodCard = ({
   };
 
   const handleSelectionChange = (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
+    // Merge new selections with existing ones
     const updatedSelections = {
       ...localSelections,
       ...Object.entries(selections).reduce((acc, [position, selection]) => {
         if (selection.playerId === "unassigned") {
+          // If player is unassigned, remove the position from selections
           const { [position]: removed, ...rest } = acc;
           return rest;
         }
+        // Otherwise update or add the selection
         acc[position] = {
           ...selection,
-          performanceCategory: localPerformanceCategory
+          performanceCategory
         };
         return acc;
-      }, { ...localSelections })
+      }, {} as Record<string, { playerId: string; position: string; performanceCategory?: string }>)
     };
 
+    // Update local state
     setLocalSelections(updatedSelections);
+    
+    // Notify parent component
     onSelectionChange(periodId, teamId, updatedSelections);
   };
 
@@ -101,13 +104,14 @@ export const TeamPeriodCard = ({
         />
         <div className="min-h-[500px]">
           <FormationSelector
+            key={`${periodId}-${teamId}`}
             format={format as "7-a-side"}
             teamName={teamName}
             onSelectionChange={handleSelectionChange}
             selectedPlayers={selectedPlayers}
             availablePlayers={availablePlayers}
             initialSelections={localSelections}
-            performanceCategory={localPerformanceCategory}
+            performanceCategory={performanceCategory}
           />
         </div>
       </CardContent>
