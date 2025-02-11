@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
@@ -16,7 +17,8 @@ export const Auth = () => {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          if (error.message.includes("session_not_found")) {
+          if (error.message.includes("refresh_token_not_found")) {
+            // Clear the invalid session
             await supabase.auth.signOut();
             setErrorMessage("Your session has expired. Please sign in again.");
           } else {
@@ -40,6 +42,9 @@ export const Auth = () => {
       console.log("Auth state changed:", event, session);
       
       if (event === "SIGNED_IN" && session) {
+        // Clear any existing error messages
+        setErrorMessage("");
+        
         // Ensure profile exists before redirecting
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -58,6 +63,10 @@ export const Auth = () => {
         }
       } else if (event === "SIGNED_OUT") {
         setErrorMessage("");
+      } else if (event === "TOKEN_REFRESHED") {
+        console.log("Token refreshed successfully");
+      } else if (event === "USER_UPDATED") {
+        console.log("User updated successfully");
       }
     });
 
