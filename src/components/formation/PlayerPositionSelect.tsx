@@ -43,7 +43,7 @@ export const PlayerPositionSelect = ({
   const selectedPlayer = availablePlayers?.find(player => player.id === playerId);
 
   const getPlayerDisplay = (player: { name: string; squad_number?: number }) => {
-    return `${player.name}${player.squad_number ? ` (${player.squad_number})` : ''}`;
+    return player ? `${player.name}${player.squad_number ? ` (${player.squad_number})` : ''}` : 'None';
   };
 
   return (
@@ -56,10 +56,12 @@ export const PlayerPositionSelect = ({
             onSelectionChange(playerId, newPosition);
           }}
         >
-          <SelectTrigger className="h-8">
-            <SelectValue>{position}</SelectValue>
+          <SelectTrigger className="h-8 text-left">
+            <SelectValue placeholder="Select position">
+              {position}
+            </SelectValue>
           </SelectTrigger>
-          <SelectContent className="bg-white">
+          <SelectContent className="bg-white z-50">
             {allPositions.map(pos => (
               <SelectItem key={pos} value={pos} className="text-sm">
                 {pos}
@@ -77,13 +79,15 @@ export const PlayerPositionSelect = ({
             onSelectionChange(value, position);
           }}
         >
-          <SelectTrigger className="h-8">
-            <SelectValue>
+          <SelectTrigger className="h-8 text-left">
+            <SelectValue placeholder="Select player">
               {selectedPlayer ? getPlayerDisplay(selectedPlayer) : 'None'}
             </SelectValue>
           </SelectTrigger>
           <SelectContent className="bg-white z-50">
-            <SelectItem value="unassigned" className="text-sm">None</SelectItem>
+            <SelectItem value="unassigned" className="text-sm">
+              None
+            </SelectItem>
             {availablePlayers.map(player => (
               <SelectItem 
                 key={player.id} 
