@@ -2,7 +2,6 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
 
 interface PlayerPositionSelectProps {
   position: string;
@@ -52,7 +51,6 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Position</Label>
         <Select 
-          defaultValue={position}
           value={position}
           onValueChange={(newPosition) => {
             onSelectionChange(playerId, newPosition);
@@ -61,7 +59,7 @@ export const PlayerPositionSelect = ({
           <SelectTrigger className="h-8">
             <SelectValue>{position}</SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white">
             {allPositions.map(pos => (
               <SelectItem key={pos} value={pos} className="text-sm">
                 {pos}
@@ -74,7 +72,6 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Player</Label>
         <Select 
-          defaultValue={playerId || "unassigned"}
           value={playerId || "unassigned"}
           onValueChange={(value) => {
             onSelectionChange(value, position);
@@ -85,7 +82,7 @@ export const PlayerPositionSelect = ({
               {selectedPlayer ? getPlayerDisplay(selectedPlayer) : 'None'}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="bg-white">
+          <SelectContent className="bg-white z-50">
             <SelectItem value="unassigned" className="text-sm">None</SelectItem>
             {availablePlayers.map(player => (
               <SelectItem 
