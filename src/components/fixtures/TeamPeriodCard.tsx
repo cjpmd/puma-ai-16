@@ -43,9 +43,10 @@ export const TeamPeriodCard = ({
   const [localDuration, setLocalDuration] = useState(duration);
   const [localPerformanceCategory, setLocalPerformanceCategory] = useState(performanceCategory);
 
+  // Update local state when props change
   useEffect(() => {
-    console.log("Initial selections received:", initialSelections);
     if (initialSelections) {
+      console.log("Setting initial selections:", initialSelections);
       setLocalSelections(initialSelections);
     }
   }, [initialSelections]);
@@ -63,14 +64,20 @@ export const TeamPeriodCard = ({
 
   const handleSelectionChange = (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
     console.log("Handling selection change in TeamPeriodCard:", selections);
-    const updatedSelections = Object.entries(selections).reduce((acc, [position, selection]) => {
-      acc[position] = {
-        ...selection,
-        performanceCategory: localPerformanceCategory
-      };
-      return acc;
-    }, {} as Record<string, { playerId: string; position: string; performanceCategory?: string }>);
     
+    // Ensure we're maintaining existing selections and just updating the changed ones
+    const updatedSelections = {
+      ...localSelections,
+      ...Object.entries(selections).reduce((acc, [position, selection]) => {
+        acc[position] = {
+          ...selection,
+          performanceCategory: localPerformanceCategory
+        };
+        return acc;
+      }, {} as Record<string, { playerId: string; position: string; performanceCategory?: string }>)
+    };
+    
+    console.log("Updated selections:", updatedSelections);
     setLocalSelections(updatedSelections);
     onSelectionChange(periodId, teamId, updatedSelections);
   };

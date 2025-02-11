@@ -40,7 +40,7 @@ export const PlayerPositionSelect = ({
     'STC',    // Striker
   ];
 
-  const [currentPlayerId, setCurrentPlayerId] = useState(playerId);
+  const [currentPlayerId, setCurrentPlayerId] = useState(playerId || "unassigned");
   const [currentPosition, setCurrentPosition] = useState(position);
 
   // Find the currently selected player
@@ -48,9 +48,12 @@ export const PlayerPositionSelect = ({
 
   // Update local state when props change
   useEffect(() => {
-    console.log("PlayerPositionSelect - Props updated:", { playerId, position });
-    setCurrentPlayerId(playerId);
-    setCurrentPosition(position);
+    if (playerId !== undefined) {
+      setCurrentPlayerId(playerId);
+    }
+    if (position) {
+      setCurrentPosition(position);
+    }
   }, [playerId, position]);
 
   const getPlayerDisplay = (player: { name: string; squad_number?: number }) => {
@@ -86,7 +89,7 @@ export const PlayerPositionSelect = ({
         <Label className="text-xs text-muted-foreground mb-1 block">Player</Label>
         <Select 
           defaultValue={currentPlayerId}
-          value={currentPlayerId || "unassigned"}
+          value={currentPlayerId}
           onValueChange={(value) => {
             setCurrentPlayerId(value);
             onSelectionChange(value, currentPosition);
