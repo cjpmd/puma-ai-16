@@ -41,8 +41,17 @@ export const TeamPeriodCard = ({
   );
   const [localDuration, setLocalDuration] = useState(duration);
 
+  console.log('TeamPeriodCard render:', {
+    periodId,
+    teamId,
+    initialSelections,
+    localSelections,
+    performanceCategory
+  });
+
   // Sync local state with props whenever initialSelections changes
   useEffect(() => {
+    console.log('initialSelections changed:', initialSelections);
     if (initialSelections) {
       setLocalSelections(initialSelections);
     }
@@ -59,24 +68,27 @@ export const TeamPeriodCard = ({
   };
 
   const handleSelectionChange = (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
-    // Merge new selections with existing ones
-    const updatedSelections = {
-      ...localSelections,
-      ...Object.entries(selections).reduce((acc, [position, selection]) => {
-        if (selection.playerId === "unassigned") {
-          // If player is unassigned, remove the position from selections
-          const { [position]: removed, ...rest } = acc;
-          return rest;
-        }
-        // Otherwise update or add the selection
-        acc[position] = {
-          ...selection,
-          performanceCategory
-        };
-        return acc;
-      }, {} as Record<string, { playerId: string; position: string; performanceCategory?: string }>)
-    };
+    console.log('handleSelectionChange called with:', selections);
+    
+    // Create a new selections object that preserves existing selections
+    const updatedSelections = Object.entries(selections).reduce((acc, [position, selection]) => {
+      if (selection.playerId === "unassigned") {
+        // If the player is unassigned, don't include this position
+        const { [position]: removed, ...rest } = acc;
+        return rest;
+      }
+      
+      // Keep existing selection data and merge with new selection
+      acc[position] = {
+        ...selection,
+        performanceCategory: performanceCategory
+      };
+      
+      return acc;
+    }, { ...localSelections }); // Start with existing selections
 
+    console.log('Updated selections:', updatedSelections);
+    
     // Update local state
     setLocalSelections(updatedSelections);
     
@@ -104,7 +116,7 @@ export const TeamPeriodCard = ({
         />
         <div className="min-h-[500px]">
           <FormationSelector
-            key={`${periodId}-${teamId}`}
+            key={`${periodId}-${teamId}-${JSON.stringify(localSelections)}`}
             format={format as "7-a-side"}
             teamName={teamName}
             onSelectionChange={handleSelectionChange}
