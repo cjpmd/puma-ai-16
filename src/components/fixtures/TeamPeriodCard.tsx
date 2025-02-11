@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -37,14 +36,14 @@ export const TeamPeriodCard = ({
   duration,
   onDurationChange
 }: TeamPeriodCardProps) => {
-  const [localSelections, setLocalSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(initialSelections || {});
+  const [localSelections, setLocalSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
+    initialSelections || {}
+  );
   const [localDuration, setLocalDuration] = useState(duration);
   const [localPerformanceCategory, setLocalPerformanceCategory] = useState(performanceCategory);
 
   useEffect(() => {
-    if (initialSelections) {
-      setLocalSelections(initialSelections);
-    }
+    setLocalSelections(initialSelections || {});
   }, [initialSelections]);
 
   useEffect(() => {
@@ -62,12 +61,16 @@ export const TeamPeriodCard = ({
     const updatedSelections = {
       ...localSelections,
       ...Object.entries(selections).reduce((acc, [position, selection]) => {
+        if (selection.playerId === "unassigned") {
+          const { [position]: removed, ...rest } = acc;
+          return rest;
+        }
         acc[position] = {
           ...selection,
           performanceCategory: localPerformanceCategory
         };
         return acc;
-      }, {} as Record<string, { playerId: string; position: string; performanceCategory?: string }>)
+      }, { ...localSelections })
     };
 
     setLocalSelections(updatedSelections);
@@ -107,4 +110,3 @@ export const TeamPeriodCard = ({
     </Card>
   );
 };
-

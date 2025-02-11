@@ -40,20 +40,18 @@ export const PlayerPositionSelect = ({
     'STC',    // Striker
   ];
 
-  const [currentPlayerId, setCurrentPlayerId] = useState<string>(playerId || "unassigned");
+  // Initialize with props but don't use default values
+  const [currentPlayerId, setCurrentPlayerId] = useState<string>(playerId);
   const [currentPosition, setCurrentPosition] = useState<string>(position);
 
   // Find the currently selected player
   const selectedPlayer = availablePlayers?.find(player => player.id === currentPlayerId);
 
+  // Update local state when props change
   useEffect(() => {
-    if (playerId !== currentPlayerId) {
-      setCurrentPlayerId(playerId || "unassigned");
-    }
-    if (position !== currentPosition) {
-      setCurrentPosition(position);
-    }
-  }, [playerId, position, currentPlayerId, currentPosition]);
+    setCurrentPlayerId(playerId);
+    setCurrentPosition(position);
+  }, [playerId, position]);
 
   const getPlayerDisplay = (player: { name: string; squad_number?: number }) => {
     return `${player.name}${player.squad_number ? ` (${player.squad_number})` : ''}`;
@@ -86,7 +84,7 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Player</Label>
         <Select 
-          value={currentPlayerId}
+          value={currentPlayerId || "unassigned"}
           onValueChange={(value) => {
             setCurrentPlayerId(value);
             onSelectionChange(value, currentPosition);
@@ -105,7 +103,7 @@ export const PlayerPositionSelect = ({
                 value={player.id}
                 className={cn(
                   "text-sm",
-                  selectedPlayers.has(player.id) && player.id !== currentPlayerId && "opacity-50"
+                  selectedPlayers.has(player.id) && player.id !== currentPlayerId && "opacity-50 pointer-events-none"
                 )}
                 disabled={selectedPlayers.has(player.id) && player.id !== currentPlayerId}
               >
@@ -118,4 +116,3 @@ export const PlayerPositionSelect = ({
     </div>
   );
 };
-
