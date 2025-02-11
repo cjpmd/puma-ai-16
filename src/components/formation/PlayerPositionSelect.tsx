@@ -40,18 +40,8 @@ export const PlayerPositionSelect = ({
     'STC',    // Striker
   ];
 
-  // Initialize with props but don't use default values
-  const [currentPlayerId, setCurrentPlayerId] = useState<string>(playerId);
-  const [currentPosition, setCurrentPosition] = useState<string>(position);
-
   // Find the currently selected player
-  const selectedPlayer = availablePlayers?.find(player => player.id === currentPlayerId);
-
-  // Update local state when props change
-  useEffect(() => {
-    setCurrentPlayerId(playerId);
-    setCurrentPosition(position);
-  }, [playerId, position]);
+  const selectedPlayer = availablePlayers?.find(player => player.id === playerId);
 
   const getPlayerDisplay = (player: { name: string; squad_number?: number }) => {
     return `${player.name}${player.squad_number ? ` (${player.squad_number})` : ''}`;
@@ -62,14 +52,14 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Position</Label>
         <Select 
-          value={currentPosition}
+          defaultValue={position}
+          value={position}
           onValueChange={(newPosition) => {
-            setCurrentPosition(newPosition);
-            onSelectionChange(currentPlayerId, newPosition);
+            onSelectionChange(playerId, newPosition);
           }}
         >
           <SelectTrigger className="h-8">
-            <SelectValue>{currentPosition}</SelectValue>
+            <SelectValue>{position}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {allPositions.map(pos => (
@@ -84,10 +74,10 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Player</Label>
         <Select 
-          value={currentPlayerId || "unassigned"}
+          defaultValue={playerId || "unassigned"}
+          value={playerId || "unassigned"}
           onValueChange={(value) => {
-            setCurrentPlayerId(value);
-            onSelectionChange(value, currentPosition);
+            onSelectionChange(value, position);
           }}
         >
           <SelectTrigger className="h-8">
@@ -95,7 +85,7 @@ export const PlayerPositionSelect = ({
               {selectedPlayer ? getPlayerDisplay(selectedPlayer) : 'None'}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white">
             <SelectItem value="unassigned" className="text-sm">None</SelectItem>
             {availablePlayers.map(player => (
               <SelectItem 
@@ -103,9 +93,9 @@ export const PlayerPositionSelect = ({
                 value={player.id}
                 className={cn(
                   "text-sm",
-                  selectedPlayers.has(player.id) && player.id !== currentPlayerId && "opacity-50 pointer-events-none"
+                  selectedPlayers.has(player.id) && player.id !== playerId && "opacity-50 pointer-events-none"
                 )}
-                disabled={selectedPlayers.has(player.id) && player.id !== currentPlayerId}
+                disabled={selectedPlayers.has(player.id) && player.id !== playerId}
               >
                 {getPlayerDisplay(player)}
               </SelectItem>

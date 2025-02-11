@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -36,20 +37,23 @@ export const TeamPeriodCard = ({
   duration,
   onDurationChange
 }: TeamPeriodCardProps) => {
+  // Initialize with initialSelections or empty object
   const [localSelections, setLocalSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
     initialSelections || {}
   );
   const [localDuration, setLocalDuration] = useState(duration);
-  const [localPerformanceCategory, setLocalPerformanceCategory] = useState(performanceCategory);
+  const [localPerformanceCategory] = useState(performanceCategory);
 
+  // Update local state when initialSelections changes
   useEffect(() => {
-    setLocalSelections(initialSelections || {});
+    if (initialSelections) {
+      setLocalSelections(initialSelections);
+    }
   }, [initialSelections]);
 
   useEffect(() => {
     setLocalDuration(duration);
-    setLocalPerformanceCategory(performanceCategory);
-  }, [duration, performanceCategory]);
+  }, [duration]);
 
   const handleDurationChange = (newDuration: string) => {
     const parsedDuration = parseInt(newDuration);
