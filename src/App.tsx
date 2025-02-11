@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Index from "./pages/Index";
 import Squad from "./pages/SquadManagement";
@@ -22,7 +23,7 @@ function App() {
       <Router>
         <NavBar />
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<Navigate to="/auth" replace />} />
           <Route path="/home" element={<Index />} />
           <Route path="/squad" element={<Squad />} />
           <Route path="/calendar" element={<CalendarPage />} />
