@@ -40,16 +40,20 @@ export const PlayerPositionSelect = ({
     'STC',    // Striker
   ];
 
-  const [currentPlayerId, setCurrentPlayerId] = useState(playerId);
-  const [currentPosition, setCurrentPosition] = useState(position);
+  const [currentPlayerId, setCurrentPlayerId] = useState<string>(playerId || "unassigned");
+  const [currentPosition, setCurrentPosition] = useState<string>(position);
 
   // Find the currently selected player
   const selectedPlayer = availablePlayers?.find(player => player.id === currentPlayerId);
 
   useEffect(() => {
-    setCurrentPlayerId(playerId);
-    setCurrentPosition(position);
-  }, [playerId, position]);
+    if (playerId !== currentPlayerId) {
+      setCurrentPlayerId(playerId || "unassigned");
+    }
+    if (position !== currentPosition) {
+      setCurrentPosition(position);
+    }
+  }, [playerId, position, currentPlayerId, currentPosition]);
 
   const getPlayerDisplay = (player: { name: string; squad_number?: number }) => {
     return `${player.name}${player.squad_number ? ` (${player.squad_number})` : ''}`;
@@ -114,3 +118,4 @@ export const PlayerPositionSelect = ({
     </div>
   );
 };
+

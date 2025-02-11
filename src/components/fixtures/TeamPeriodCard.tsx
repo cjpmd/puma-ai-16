@@ -59,14 +59,17 @@ export const TeamPeriodCard = ({
   };
 
   const handleSelectionChange = (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
-    const updatedSelections = Object.entries(selections).reduce((acc, [position, selection]) => {
-      acc[position] = {
-        ...selection,
-        performanceCategory: localPerformanceCategory
-      };
-      return acc;
-    }, {} as Record<string, { playerId: string; position: string; performanceCategory?: string }>);
-    
+    const updatedSelections = {
+      ...localSelections,
+      ...Object.entries(selections).reduce((acc, [position, selection]) => {
+        acc[position] = {
+          ...selection,
+          performanceCategory: localPerformanceCategory
+        };
+        return acc;
+      }, {} as Record<string, { playerId: string; position: string; performanceCategory?: string }>)
+    };
+
     setLocalSelections(updatedSelections);
     onSelectionChange(periodId, teamId, updatedSelections);
   };
@@ -104,3 +107,4 @@ export const TeamPeriodCard = ({
     </Card>
   );
 };
+
