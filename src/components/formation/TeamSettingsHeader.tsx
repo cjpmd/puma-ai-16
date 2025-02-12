@@ -20,10 +20,8 @@ export const TeamSettingsHeader = ({
           value={duration}
           onChange={(e) => onDurationChange(e.target.value)}
           min="1"
-          className="h-9"
         />
       </div>
     </div>
   );
 };
-
