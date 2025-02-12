@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -41,17 +42,7 @@ export const TeamPeriodCard = ({
   );
   const [localDuration, setLocalDuration] = useState(duration);
 
-  console.log('TeamPeriodCard render:', {
-    periodId,
-    teamId,
-    initialSelections,
-    localSelections,
-    performanceCategory
-  });
-
-  // Sync local state with props whenever initialSelections changes
   useEffect(() => {
-    console.log('initialSelections changed:', initialSelections);
     if (initialSelections) {
       setLocalSelections(initialSelections);
     }
@@ -68,32 +59,29 @@ export const TeamPeriodCard = ({
   };
 
   const handleSelectionChange = (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
-    console.log('handleSelectionChange called with:', selections);
-    
-    // Create a new selections object that preserves existing selections
     const updatedSelections = Object.entries(selections).reduce((acc, [position, selection]) => {
       if (selection.playerId === "unassigned") {
-        // If the player is unassigned, don't include this position
         const { [position]: removed, ...rest } = acc;
         return rest;
       }
       
-      // Keep existing selection data and merge with new selection
       acc[position] = {
         ...selection,
-        performanceCategory: performanceCategory
+        performanceCategory
       };
       
       return acc;
-    }, { ...localSelections }); // Start with existing selections
-
-    console.log('Updated selections:', updatedSelections);
+    }, { ...localSelections });
     
-    // Update local state
     setLocalSelections(updatedSelections);
-    
-    // Notify parent component
     onSelectionChange(periodId, teamId, updatedSelections);
+  };
+
+  const formatSelectionsForFormation = () => {
+    return Object.entries(localSelections).map(([_, value]) => ({
+      position: value.position,
+      playerId: value.playerId
+    }));
   };
 
   return (

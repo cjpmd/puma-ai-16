@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 
 interface Position {
@@ -33,20 +32,13 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
   const renderPlayer = (positionCode: string) => {
     const player = getPlayerForPosition(positionCode);
     
-    // Debug log for each position attempt
-    console.log(`Rendering position ${positionCode}:`, { 
-      foundPlayer: player,
-      allPositions: positions,
-      allPlayers: players
-    });
-
     if (!player) return null;
 
     return (
       <div className="text-center text-sm bg-white/10 backdrop-blur-sm rounded-md p-2">
         <div className="font-semibold">{positionCode}</div>
         <div>{player.name}</div>
-        <div className="text-gray-300">#{player.squad_number}</div>
+        {player.squad_number && <div className="text-gray-300">#{player.squad_number}</div>}
       </div>
     );
   };
@@ -56,8 +48,7 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
       <div className="text-sm font-semibold mb-2">
         Period {periodNumber} ({duration} minutes)
       </div>
-      <div className="relative bg-green-600 rounded-lg p-4">
-        {/* Football pitch markings */}
+      <div className="relative bg-green-600 min-h-[500px] rounded-lg p-4">
         <div className="absolute inset-0 rounded-lg">
           <div className="absolute top-0 left-0 right-0 border-t-4 border-white/70"></div>
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 border-b-4 border-white/70 rounded-b-full"></div>
@@ -66,51 +57,43 @@ export const FormationView = ({ positions, players, periodNumber, duration }: Fo
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/70"></div>
         </div>
 
-        {/* Player positions grid */}
         <div className="grid grid-cols-5 gap-4 max-w-2xl mx-auto relative z-10">
-          {/* Strikers */}
           <div></div>
           <div>{renderPlayer("STCL")}</div>
           <div>{renderPlayer("STC")}</div>
           <div>{renderPlayer("STCR")}</div>
           <div></div>
 
-          {/* Attacking Midfielders */}
           <div>{renderPlayer("AML")}</div>
           <div>{renderPlayer("AMCL")}</div>
           <div>{renderPlayer("AMC")}</div>
           <div>{renderPlayer("AMCR")}</div>
           <div>{renderPlayer("AMR")}</div>
 
-          {/* Central Midfielders */}
           <div>{renderPlayer("ML")}</div>
           <div>{renderPlayer("MCL")}</div>
           <div>{renderPlayer("MC")}</div>
           <div>{renderPlayer("MCR")}</div>
           <div>{renderPlayer("MR")}</div>
 
-          {/* Defensive Midfielders */}
           <div>{renderPlayer("WBL")}</div>
           <div>{renderPlayer("DMCL")}</div>
-          <div>{renderPlayer("DMC")}</div> {/* Changed from DCM to DMC */}
+          <div>{renderPlayer("DMC")}</div>
           <div>{renderPlayer("DMCR")}</div>
           <div>{renderPlayer("WBR")}</div>
 
-          {/* Defenders */}
           <div>{renderPlayer("DL")}</div>
           <div>{renderPlayer("DCL")}</div>
           <div>{renderPlayer("DC")}</div>
           <div>{renderPlayer("DCR")}</div>
           <div>{renderPlayer("DR")}</div>
 
-          {/* Sweeper */}
           <div></div>
           <div></div>
           <div>{renderPlayer("SW")}</div>
           <div></div>
           <div></div>
 
-          {/* Goalkeeper */}
           <div></div>
           <div></div>
           <div>{renderPlayer("GK")}</div>
