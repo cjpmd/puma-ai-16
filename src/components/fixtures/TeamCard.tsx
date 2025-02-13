@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,10 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 import { UseFormReturn } from "react-hook-form";
 import { FixtureFormData } from "./schemas/fixtureFormSchema";
-import { supabase } from "@/integrations/supabase/client";
 
 interface TeamCardProps {
   index: number;
@@ -22,83 +20,58 @@ interface TeamCardProps {
   getMotmLabel: (teamIndex: number) => string;
 }
 
-export const TeamCard = ({ 
-  index, 
-  form, 
+export const TeamCard = ({
+  index,
+  form,
   players,
   getScoreLabel,
-  getMotmLabel
+  getMotmLabel,
 }: TeamCardProps) => {
-  // Load existing scores when the component mounts
-  useEffect(() => {
-    const loadExistingScores = async () => {
-      const formValues = form.getValues();
-      if (!formValues.id) return;
-
-      try {
-        // Fetch both scores and team times
-        const [{ data: scores, error: scoresError }, { data: times, error: timesError }] = await Promise.all([
-          supabase
-            .from('fixture_team_scores')
-            .select('*')
-            .eq('fixture_id', formValues.id)
-            .eq('team_number', index + 1)
-            .single(),
-          supabase
-            .from('fixture_team_times')
-            .select('*')
-            .eq('fixture_id', formValues.id)
-            .eq('team_number', index + 1)
-            .single()
-        ]);
-
-        if (scoresError && !scoresError.message.includes('No rows found')) {
-          console.error('Error loading scores:', scoresError);
-          return;
-        }
-
-        // Load the score into the correct field based on team number
-        if (scores) {
-          if (index === 0) {
-            // First team score goes to home_score
-            form.setValue('home_score', scores.score.toString());
-          } else {
-            // Second team score goes to away_score
-            form.setValue('away_score', scores.score.toString());
-          }
-        }
-
-        if (times) {
-          form.setValue(`team_times.${index}`, {
-            meeting_time: times.meeting_time || '',
-            start_time: times.start_time || '',
-            end_time: times.end_time || '',
-            performance_category: times.performance_category || 'MESSI'
-          });
-        }
-
-      } catch (error) {
-        console.error('Error in loadExistingScores:', error);
-      }
-    };
-
-    loadExistingScores();
-  }, [form, index]);
+  const isHome = form.watch('is_home');
 
   return (
-    <Card className="p-4">
+    <Card>
+      <CardHeader>
+        <CardTitle>Team {index + 1}</CardTitle>
+      </CardHeader>
       <CardContent className="space-y-4">
-        <div className="text-lg font-semibold mb-4 flex justify-between items-center">
-          <span>Team {index + 1}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name={isHome ? 'home_score' : 'away_score'}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{getScoreLabel(isHome, index)}</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min="0"
+                    {...field}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (isHome) {
+                        form.setValue('home_score', value);
+                      } else {
+                        form.setValue('away_score', value);
+                      }
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name={`team_times.${index}.performance_category`}
             render={({ field }) => (
-              <FormItem className="w-48">
-                <Select onValueChange={field.onChange} value={field.value}>
+              <FormItem>
+                <FormLabel>Performance Category</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Performance Category" />
+                      <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -112,95 +85,6 @@ export const TeamCard = ({
             )}
           />
         </div>
-        
-        <div className="grid grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name={`team_times.${index}.meeting_time`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Meeting Time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name={`team_times.${index}.start_time`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Kick Off Time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name={`team_times.${index}.end_time`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>End Time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name={'home_score'}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{getScoreLabel(true, index)}</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    {...field} 
-                    min="0"
-                    onChange={(e) => {
-                      field.onChange(e);
-                      console.log('Home score changed:', e.target.value);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name={'away_score'}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{getScoreLabel(false, index)}</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    {...field} 
-                    min="0"
-                    onChange={(e) => {
-                      field.onChange(e);
-                      console.log('Away score changed:', e.target.value);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
 
         {players && (
           <FormField
@@ -209,10 +93,7 @@ export const TeamCard = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{getMotmLabel(index)}</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value || ""}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select player" />
@@ -221,7 +102,7 @@ export const TeamCard = ({
                   <SelectContent>
                     {players.map((player) => (
                       <SelectItem key={player.id} value={player.id}>
-                        {player.name} (#{player.squad_number})
+                        {player.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

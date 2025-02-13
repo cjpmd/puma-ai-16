@@ -44,27 +44,23 @@ export const TeamScores = ({
     return <p className="text-muted-foreground">Score not yet recorded</p>;
   }
 
+  // Sort scores by team number to ensure consistent order
+  const sortedScores = [...scores].sort((a, b) => a.team_number - b.team_number);
+
   return (
     <div className="space-y-4">
-      {scores.map((score, index) => {
+      {sortedScores.map((score, index) => {
         const teamNumber = score.team_number;
         const teamTime = times.find(t => t.team_number === teamNumber);
         const performanceCategory = teamTime?.performance_category || 'MESSI';
         const ourTeamName = `Team ${teamNumber} (${performanceCategory})`;
         
-        // For each team, get their score and the opposing team's score
-        const ourScore = score.score;
-        const opposingTeamScore = scores.find(s => s.team_number !== teamNumber)?.score || 0;
+        // Calculate our score and their score correctly based on home/away status
+        const ourScore = fixture.is_home ? score.score : (scores.find(s => s.team_number !== teamNumber)?.score || 0);
+        const theirScore = fixture.is_home ? (scores.find(s => s.team_number !== teamNumber)?.score || 0) : score.score;
         
-        // Determine if we're showing a home or away score format
-        const isFirstTeam = teamNumber === 1;
-        const displayScore = fixture.is_home ?
-          `${ourScore} - ${opposingTeamScore}` :
-          `${opposingTeamScore} - ${ourScore}`;
-
-        const teamOutcome = fixture.is_home ?
-          getTeamOutcome(ourScore, opposingTeamScore) :
-          getTeamOutcome(opposingTeamScore, ourScore);
+        const displayScore = `${ourScore} - ${theirScore}`;
+        const teamOutcome = getTeamOutcome(ourScore, theirScore);
 
         return (
           <div key={teamNumber} className="space-y-2">
