@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager
 import { FixtureForm } from "@/components/fixtures/FixtureForm";
 import { FixtureFormData } from "@/components/fixtures/schemas/fixtureFormSchema";
 import { Fixture } from "@/types/fixture";
+import { sendFixtureNotification } from "@/components/fixtures/FixtureNotification";
 
 interface AddFixtureDialogProps {
   isOpen: boolean;
@@ -85,6 +86,24 @@ export const AddFixtureDialog = ({
 
       // We'll let the FixtureForm handle the data saving now
       const savedData = { ...data, id: editingFixture?.id };
+
+      // Send notification for new fixtures only
+      if (!editingFixture) {
+        try {
+          await sendFixtureNotification({
+            type: 'FIXTURE',
+            date: format(selectedDate || new Date(), "dd/MM/yyyy"),
+            time: data.team_times?.[0]?.meeting_time,
+            opponent: data.opponent,
+            location: data.location,
+            category: data.team_name,
+            eventId: savedData.id
+          });
+        } catch (notificationError) {
+          console.error('Error sending notification:', notificationError);
+          // Continue with the save even if notification fails
+        }
+      }
 
       // Invalidate queries to refresh the data
       await queryClient.invalidateQueries({ queryKey: ["team-data"] });
