@@ -68,7 +68,8 @@ export const saveTeamSelections = async (
             event_type: 'FIXTURE',
             team_number: teamNumber,
             player_id: selection.playerId,
-            position: selection.position || positionKey,
+            position: selection.position,
+            position_key: positionKey,
             period_number: periodNumber,
             performance_category: performanceCategories[`${period.id}-${teamId}`] || selection.performanceCategory || 'MESSI',
             duration_minutes: period.duration

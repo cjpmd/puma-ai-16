@@ -1983,6 +1983,7 @@ export type Database = {
           period_number: number | null
           player_id: string
           position: string
+          position_key: string | null
           team_number: number
           updated_at: string | null
         }
@@ -1998,6 +1999,7 @@ export type Database = {
           period_number?: number | null
           player_id: string
           position: string
+          position_key?: string | null
           team_number: number
           updated_at?: string | null
         }
@@ -2013,6 +2015,7 @@ export type Database = {
           period_number?: number | null
           player_id?: string
           position?: string
+          position_key?: string | null
           team_number?: number
           updated_at?: string | null
         }

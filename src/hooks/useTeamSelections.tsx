@@ -30,7 +30,13 @@ export const useTeamSelections = (fixture: any | null) => {
 
       const { data: selectionsData, error: selectionsError } = await supabase
         .from('team_selections')
-        .select('*')
+        .select(`
+          *,
+          players:player_id (
+            id,
+            name
+          )
+        `)
         .eq('event_id', fixture.id)
         .eq('event_type', 'FIXTURE');
 
@@ -50,6 +56,7 @@ export const useTeamSelections = (fixture: any | null) => {
         return;
       }
 
+      // Process team captains
       const captains: Record<string, string> = {};
       teamSelections?.forEach(selection => {
         if (selection.is_captain) {
@@ -58,15 +65,18 @@ export const useTeamSelections = (fixture: any | null) => {
       });
       setTeamCaptains(captains);
 
+      // Process periods
       const newPeriodsPerTeam: Record<string, Array<{ id: string; duration: number }>> = {};
       const transformedSelections: Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>> = {};
       const newPerformanceCategories: Record<string, string> = {};
 
+      // Initialize team periods
       for (let i = 1; i <= (fixture.number_of_teams || 1); i++) {
         const teamKey = i.toString();
         newPeriodsPerTeam[teamKey] = [];
       }
 
+      // Process event periods
       eventPeriods.forEach(period => {
         for (let i = 1; i <= (fixture.number_of_teams || 1); i++) {
           const teamKey = i.toString();
@@ -78,15 +88,18 @@ export const useTeamSelections = (fixture: any | null) => {
         }
       });
 
+      // Create default period if none exist
       if (Object.values(newPeriodsPerTeam).every(periods => periods.length === 0)) {
         Object.keys(newPeriodsPerTeam).forEach(teamKey => {
           newPeriodsPerTeam[teamKey] = [{ id: "period-1", duration: 20 }];
         });
       }
 
+      // Process selections
       selectionsData.forEach(selection => {
         const periodKey = `period-${selection.period_number}`;
         const teamKey = selection.team_number.toString();
+        const positionKey = selection.position_key || selection.position;
 
         if (!transformedSelections[periodKey]) {
           transformedSelections[periodKey] = {};
@@ -95,7 +108,7 @@ export const useTeamSelections = (fixture: any | null) => {
           transformedSelections[periodKey][teamKey] = {};
         }
 
-        transformedSelections[periodKey][teamKey][selection.position] = {
+        transformedSelections[periodKey][teamKey][positionKey] = {
           playerId: selection.player_id,
           position: selection.position,
           performanceCategory: selection.performance_category
@@ -108,10 +121,11 @@ export const useTeamSelections = (fixture: any | null) => {
       setSelections(transformedSelections);
       setPerformanceCategories(newPerformanceCategories);
 
+      // Update selected players set
       const newSelectedPlayers = new Set<string>();
       selectionsData.forEach(selection => {
         if (selection.player_id !== "unassigned") {
-          newSelectedPlayers.add(selection.playerId);
+          newSelectedPlayers.add(selection.player_id);
         }
       });
       setSelectedPlayers(newSelectedPlayers);
