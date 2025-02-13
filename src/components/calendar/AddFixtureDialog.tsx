@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -103,46 +102,6 @@ export const AddFixtureDialog = ({
           .eq("id", editingFixture.id);
           
         if (error) throw error;
-
-        // Update team scores
-        const scorePromises = data.team_times.map(async (teamTime: any, index: number) => {
-          const teamNumber = index + 1;
-          const score = parseInt(data.home_score[index]) || 0;
-          
-          const { error: scoreError } = await supabase
-            .from('fixture_team_scores')
-            .upsert({
-              fixture_id: editingFixture.id,
-              team_number: teamNumber,
-              score
-            });
-
-          if (scoreError) throw scoreError;
-        });
-
-        await Promise.all(scorePromises);
-
-        // Update team times
-        const teamTimesPromises = data.team_times.map(async (teamTime: any, index: number) => {
-          const teamNumber = index + 1;
-          const teamTimeData = {
-            fixture_id: editingFixture.id,
-            team_number: teamNumber,
-            meeting_time: teamTime.meeting_time || null,
-            start_time: teamTime.start_time || null,
-            end_time: teamTime.end_time || null,
-            performance_category: teamTime.performance_category || 'MESSI'
-          };
-
-          const { error: updateError } = await supabase
-            .from('fixture_team_times')
-            .upsert(teamTimeData);
-
-          if (updateError) throw updateError;
-        });
-
-        await Promise.all(teamTimesPromises);
-        
         savedFixture = { ...editingFixture, ...fixtureData } as Fixture;
       } else {
         const { data: insertedFixture, error } = await supabase
@@ -154,45 +113,47 @@ export const AddFixtureDialog = ({
         if (error) throw error;
         savedFixture = insertedFixture;
         setNewFixture(savedFixture);
+      }
 
-        // Insert team scores
-        const scorePromises = data.team_times.map(async (teamTime: any, index: number) => {
-          const teamNumber = index + 1;
-          const score = parseInt(data.home_score[index]) || 0;
-          
-          const { error: scoreError } = await supabase
-            .from('fixture_team_scores')
-            .insert({
-              fixture_id: savedFixture.id,
-              team_number: teamNumber,
-              score
-            });
-
-          if (scoreError) throw scoreError;
-        });
-
-        await Promise.all(scorePromises);
-
-        // Insert team times
-        const teamTimesPromises = data.team_times.map(async (teamTime: any, index: number) => {
-          const teamTimeData = {
+      // Update or insert team scores
+      const scorePromises = data.team_times.map(async (teamTime: any, index: number) => {
+        const teamNumber = index + 1;
+        const score = parseInt(data.home_score[index]) || 0;
+        
+        const { error: scoreError } = await supabase
+          .from('fixture_team_scores')
+          .upsert({
             fixture_id: savedFixture.id,
-            team_number: index + 1,
-            meeting_time: teamTime.meeting_time || null,
-            start_time: teamTime.start_time || null,
-            end_time: teamTime.end_time || null,
-            performance_category: teamTime.performance_category || 'MESSI'
-          };
+            team_number: teamNumber,
+            score
+          });
 
-          const { error: teamTimeError } = await supabase
-            .from('fixture_team_times')
-            .insert(teamTimeData);
+        if (scoreError) throw scoreError;
+      });
 
-          if (teamTimeError) throw teamTimeError;
-        });
+      await Promise.all(scorePromises);
 
-        await Promise.all(teamTimesPromises);
+      // Update or insert team times
+      const teamTimesPromises = data.team_times.map(async (teamTime: any, index: number) => {
+        const teamTimeData = {
+          fixture_id: savedFixture.id,
+          team_number: index + 1,
+          meeting_time: teamTime.meeting_time || null,
+          start_time: teamTime.start_time || null,
+          end_time: teamTime.end_time || null,
+          performance_category: teamTime.performance_category || 'MESSI'
+        };
 
+        const { error: teamTimeError } = await supabase
+          .from('fixture_team_times')
+          .upsert(teamTimeData);
+
+        if (teamTimeError) throw teamTimeError;
+      });
+
+      await Promise.all(teamTimesPromises);
+
+      if (!editingFixture) {
         try {
           await sendFixtureNotification({
             type: 'FIXTURE',
