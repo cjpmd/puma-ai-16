@@ -88,9 +88,6 @@ export const AddFixtureDialog = ({
         location: data.location,
         team_name: data.team_name || "Broughty Pumas 2015s",
         date: format(selectedDate || parseISO(editingFixture!.date), "yyyy-MM-dd"),
-        home_score: totalHomeScore || null,
-        away_score: totalAwayScore || null,
-        motm_player_id: data.motm_player_ids?.[0] || null,
         outcome,
         format: data.format || "7-a-side",
         number_of_teams: parseInt(data.number_of_teams) || 1,
@@ -107,20 +104,25 @@ export const AddFixtureDialog = ({
           
         if (error) throw error;
 
-        // First, get existing team times to determine if we need to update or insert
-        const { data: existingTeamTimes, error: fetchError } = await supabase
-          .from('fixture_team_times')
-          .select('*')
-          .eq('fixture_id', editingFixture.id);
+        // Update team scores
+        const scorePromises = data.team_times.map(async (teamTime: any, index: number) => {
+          const teamNumber = index + 1;
+          const score = parseInt(data.home_score[index]) || 0;
+          
+          const { error: scoreError } = await supabase
+            .from('fixture_team_scores')
+            .upsert({
+              fixture_id: editingFixture.id,
+              team_number: teamNumber,
+              score
+            });
 
-        if (fetchError) throw fetchError;
+          if (scoreError) throw scoreError;
+        });
 
-        // Create a map of existing team times for quick lookup
-        const existingTeamTimesMap = new Map(
-          existingTeamTimes?.map(tt => [`${tt.fixture_id}-${tt.team_number}`, tt]) || []
-        );
+        await Promise.all(scorePromises);
 
-        // Handle team times for each team
+        // Update team times
         const teamTimesPromises = data.team_times.map(async (teamTime: any, index: number) => {
           const teamNumber = index + 1;
           const teamTimeData = {
@@ -132,25 +134,11 @@ export const AddFixtureDialog = ({
             performance_category: teamTime.performance_category || 'MESSI'
           };
 
-          const existingTeamTime = existingTeamTimesMap.get(`${editingFixture.id}-${teamNumber}`);
+          const { error: updateError } = await supabase
+            .from('fixture_team_times')
+            .upsert(teamTimeData);
 
-          if (existingTeamTime) {
-            // Update existing team time
-            const { error: updateError } = await supabase
-              .from('fixture_team_times')
-              .update(teamTimeData)
-              .eq('fixture_id', editingFixture.id)
-              .eq('team_number', teamNumber);
-
-            if (updateError) throw updateError;
-          } else {
-            // Insert new team time
-            const { error: insertError } = await supabase
-              .from('fixture_team_times')
-              .insert(teamTimeData);
-
-            if (insertError) throw insertError;
-          }
+          if (updateError) throw updateError;
         });
 
         await Promise.all(teamTimesPromises);
@@ -167,7 +155,25 @@ export const AddFixtureDialog = ({
         savedFixture = insertedFixture;
         setNewFixture(savedFixture);
 
-        // Insert team times for each team
+        // Insert team scores
+        const scorePromises = data.team_times.map(async (teamTime: any, index: number) => {
+          const teamNumber = index + 1;
+          const score = parseInt(data.home_score[index]) || 0;
+          
+          const { error: scoreError } = await supabase
+            .from('fixture_team_scores')
+            .insert({
+              fixture_id: savedFixture.id,
+              team_number: teamNumber,
+              score
+            });
+
+          if (scoreError) throw scoreError;
+        });
+
+        await Promise.all(scorePromises);
+
+        // Insert team times
         const teamTimesPromises = data.team_times.map(async (teamTime: any, index: number) => {
           const teamTimeData = {
             fixture_id: savedFixture.id,

@@ -619,6 +619,41 @@ export type Database = {
           },
         ]
       }
+      fixture_team_scores: {
+        Row: {
+          created_at: string | null
+          fixture_id: string | null
+          id: string
+          score: number
+          team_number: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          fixture_id?: string | null
+          id?: string
+          score: number
+          team_number: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          fixture_id?: string | null
+          id?: string
+          score?: number
+          team_number?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixture_team_scores_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fixture_team_selections: {
         Row: {
           created_at: string | null
