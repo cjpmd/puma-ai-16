@@ -40,7 +40,14 @@ export const useCalendarData = (date: Date) => {
       try {
         const { data, error } = await supabase
           .from("fixtures")
-          .select("*")
+          .select(`
+            *,
+            event_attendance (
+              status,
+              player_id,
+              responded_by
+            )
+          `)
           .eq("date", formattedDate);
         
         if (error) throw error;
@@ -64,7 +71,14 @@ export const useCalendarData = (date: Date) => {
       try {
         const { data, error } = await supabase
           .from("festivals")
-          .select("*")
+          .select(`
+            *,
+            event_attendance (
+              status,
+              player_id,
+              responded_by
+            )
+          `)
           .eq("date", formattedDate);
         
         if (error) throw error;
@@ -88,7 +102,14 @@ export const useCalendarData = (date: Date) => {
       try {
         const { data, error } = await supabase
           .from("tournaments")
-          .select("*")
+          .select(`
+            *,
+            event_attendance (
+              status,
+              player_id,
+              responded_by
+            )
+          `)
           .eq("date", formattedDate);
         
         if (error) throw error;
