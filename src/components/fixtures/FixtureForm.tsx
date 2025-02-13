@@ -38,8 +38,8 @@ export const FixtureForm = ({
       format: editingFixture?.format || "7-a-side",
       home_score: editingFixture?.home_score?.toString() || "",
       away_score: editingFixture?.away_score?.toString() || "",
-      motm_player_ids: editingFixture?.motm_player_id 
-        ? [editingFixture.motm_player_id]
+      motm_player_ids: editingFixture?.potm_player_id 
+        ? [editingFixture.potm_player_id]
         : Array(editingFixture?.number_of_teams || 1).fill(""),
       team_times: editingFixture?.team_times || [{ 
         meeting_time: "", 
@@ -78,7 +78,7 @@ export const FixtureForm = ({
 
   const getMotmLabel = (teamIndex: number) => {
     const performanceCategory = form.watch(`team_times.${teamIndex}.performance_category`);
-    return `Team ${teamIndex + 1} ${performanceCategory} Man of the Match`;
+    return `Team ${teamIndex + 1} ${performanceCategory} Player of the Match`;
   };
 
   return (

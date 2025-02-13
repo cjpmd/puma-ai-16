@@ -798,11 +798,11 @@ export type Database = {
           is_home: boolean | null
           location: string | null
           meeting_time: string | null
-          motm_player_id: string | null
           number_of_teams: number | null
           opponent: string
           outcome: string | null
           performance_category: string | null
+          potm_player_id: string | null
           start_time: string | null
           team_name: string
           time: string | null
@@ -821,11 +821,11 @@ export type Database = {
           is_home?: boolean | null
           location?: string | null
           meeting_time?: string | null
-          motm_player_id?: string | null
           number_of_teams?: number | null
           opponent: string
           outcome?: string | null
           performance_category?: string | null
+          potm_player_id?: string | null
           start_time?: string | null
           team_name: string
           time?: string | null
@@ -844,88 +844,17 @@ export type Database = {
           is_home?: boolean | null
           location?: string | null
           meeting_time?: string | null
-          motm_player_id?: string | null
           number_of_teams?: number | null
           opponent?: string
           outcome?: string | null
           performance_category?: string | null
+          potm_player_id?: string | null
           start_time?: string | null
           team_name?: string
           time?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fixtures_motm_player_id_fkey"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "available_players_by_category"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fixtures_motm_player_id_fkey"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "fixtures_motm_player_id_fkey"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "player_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "fixtures_motm_player_id_fkey"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fixtures_motm_player_id_fkey"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "position_rankings"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "fk_motm_player"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "available_players_by_category"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_motm_player"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "player_fixture_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "fk_motm_player"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "player_stats"
-            referencedColumns: ["player_id"]
-          },
-          {
-            foreignKeyName: "fk_motm_player"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_motm_player"
-            columns: ["motm_player_id"]
-            isOneToOne: false
-            referencedRelation: "position_rankings"
-            referencedColumns: ["player_id"]
-          },
-        ]
+        Relationships: []
       }
       ml_models: {
         Row: {
@@ -2683,10 +2612,10 @@ export type Database = {
         Row: {
           captain_appearances: number | null
           fixture_history: Json | null
-          motm_appearances: number | null
           player_id: string | null
           player_name: string | null
           positions_played: Json | null
+          potm_appearances: number | null
           total_appearances: number | null
           total_minutes_played: number | null
         }

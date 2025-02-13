@@ -24,7 +24,7 @@ export const FixtureCard = ({
 }: FixtureCardProps) => {
   const [isTeamSelectionOpen, setIsTeamSelectionOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [motmName, setMotmName] = useState<string | null>(null);
+  const [potmName, setPotmName] = useState<string | null>(null);
 
   const {
     data: teamData,
@@ -95,31 +95,31 @@ export const FixtureCard = ({
   });
 
   useEffect(() => {
-    const fetchMotmName = async () => {
-      if (!fixture.motm_player_id) {
-        setMotmName(null);
+    const fetchPotmName = async () => {
+      if (!fixture.potm_player_id) {
+        setPotmName(null);
         return;
       }
 
       const { data, error } = await supabase
         .from('players')
         .select('name')
-        .eq('id', fixture.motm_player_id)
+        .eq('id', fixture.potm_player_id)
         .single();
 
       if (error) {
-        console.error('Error fetching MOTM player:', error);
-        setMotmName('Unknown Player');
+        console.error('Error fetching POTM player:', error);
+        setPotmName('Unknown Player');
         return;
       }
 
       if (data) {
-        setMotmName(data.name);
+        setPotmName(data.name);
       }
     };
 
-    fetchMotmName();
-  }, [fixture.motm_player_id]);
+    fetchPotmName();
+  }, [fixture.potm_player_id]);
 
   return (
     <>
@@ -153,8 +153,8 @@ export const FixtureCard = ({
 
           <div className="space-y-1 mt-4 text-sm text-muted-foreground">
             {fixture.location && <p>Location: {fixture.location}</p>}
-            {fixture.motm_player_id && motmName && (
-              <p>Man of the Match: {motmName}</p>
+            {fixture.potm_player_id && potmName && (
+              <p>Player of the Match: {potmName}</p>
             )}
           </div>
         </CardContent>
