@@ -16,9 +16,9 @@ interface TeamScoresProps {
   };
 }
 
-const getTeamOutcome = (teamScore: number, opponentScore: number) => {
-  if (teamScore > opponentScore) return 'WIN';
-  if (teamScore < opponentScore) return 'LOSS';
+const getTeamOutcome = (ourScore: number, theirScore: number) => {
+  if (ourScore > theirScore) return 'WIN';
+  if (ourScore < theirScore) return 'LOSS';
   return 'DRAW';
 };
 
@@ -42,24 +42,29 @@ export const TeamScores = ({ scores, times, fixture }: TeamScoresProps) => {
 
   return (
     <div className="space-y-4">
-      {scores.map((score, index) => {
+      {scores.map((score) => {
         const teamNumber = score.team_number;
         const teamTime = times.find(t => t.team_number === teamNumber);
         const performanceCategory = teamTime?.performance_category || 'MESSI';
         const ourTeamName = `Team ${teamNumber} (${performanceCategory})`;
         
+        // For each of our teams, get their score and the opponent's score
         const ourScore = score.score;
-        const theirScore = fixture.is_home ? ourScore : score.score;
-        const outcome = getTeamOutcome(ourScore, theirScore);
+        const opponentScore = ourScore; // Since each score entry represents our team's score
+
+        // Calculate outcome based on whether it's a home or away game
+        const outcome = fixture.is_home 
+          ? getTeamOutcome(ourScore, opponentScore) 
+          : getTeamOutcome(opponentScore, ourScore);
 
         return (
           <div key={teamNumber} className="space-y-2">
             <div className="flex items-center gap-2">
               <p className="text-xl font-bold">
                 {fixture.is_home ? (
-                  `${ourTeamName}: ${ourScore} - ${theirScore} ${fixture.opponent}`
+                  `${ourTeamName}: ${ourScore} - ${opponentScore} ${fixture.opponent}`
                 ) : (
-                  `${fixture.opponent}: ${theirScore} - ${ourScore} ${ourTeamName}`
+                  `${fixture.opponent}: ${opponentScore} - ${ourScore} ${ourTeamName}`
                 )}
               </p>
               {getOutcomeIcon(outcome)}
