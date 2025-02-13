@@ -34,6 +34,7 @@ const formSchema = z.object({
     meeting_time: z.string().optional(),
     start_time: z.string().optional(),
     end_time: z.string().optional(),
+    performance_category: z.string().default('MESSI'),
   })),
   is_home: z.boolean().default(true),
   format: z.string().default("7-a-side"),
@@ -72,7 +73,8 @@ export const FixtureForm = ({
       team_times: editingFixture?.team_times || [{ 
         meeting_time: "", 
         start_time: "", 
-        end_time: "" 
+        end_time: "",
+        performance_category: "MESSI"
       }],
       is_home: editingFixture?.is_home ?? true,
       team_name: editingFixture?.team_name || "Broughty Pumas 2015s",
@@ -84,31 +86,36 @@ export const FixtureForm = ({
   const watchIsHome = form.watch("is_home");
 
   // Update team times array when number of teams changes
-  React.useEffect(() => {
+  useEffect(() => {
     const currentTimes = form.getValues("team_times");
     if (currentTimes.length !== watchNumberOfTeams) {
       const newTimes = Array(watchNumberOfTeams).fill(null).map((_, i) => 
-        currentTimes[i] || { meeting_time: "", start_time: "", end_time: "" }
+        currentTimes[i] || { 
+          meeting_time: "", 
+          start_time: "", 
+          end_time: "",
+          performance_category: "MESSI"
+        }
       );
       form.setValue("team_times", newTimes);
     }
   }, [watchNumberOfTeams, form]);
 
-  const getScoreLabel = (isHomeScore: boolean, teamIndex: number, teamCategory?: string) => {
+  const getScoreLabel = (isHomeScore: boolean, teamIndex: number) => {
     const homeTeam = watchIsHome ? "Broughty Pumas 2015s" : watchOpponent;
     const awayTeam = watchIsHome ? watchOpponent : "Broughty Pumas 2015s";
     const teamLabel = isHomeScore ? homeTeam : awayTeam;
+    const performanceCategory = form.watch(`team_times.${teamIndex}.performance_category`);
 
     if (teamLabel === "Broughty Pumas 2015s") {
-      const categoryLabel = teamCategory ? ` ${teamCategory}` : '';
-      return `Team ${teamIndex + 1}${categoryLabel} Score`;
+      return `Team ${teamIndex + 1} ${performanceCategory} Score`;
     }
     return `${teamLabel} Score`;
   };
 
-  const getMotmLabel = (teamIndex: number, teamCategory?: string) => {
-    const categoryLabel = teamCategory ? ` ${teamCategory}` : '';
-    return `Team ${teamIndex + 1}${categoryLabel} Man of the Match`;
+  const getMotmLabel = (teamIndex: number) => {
+    const performanceCategory = form.watch(`team_times.${teamIndex}.performance_category`);
+    return `Team ${teamIndex + 1} ${performanceCategory} Man of the Match`;
   };
 
   return (
@@ -242,7 +249,30 @@ export const FixtureForm = ({
         {Array.from({ length: watchNumberOfTeams }).map((_, index) => (
           <Card key={index} className="p-4">
             <CardContent className="space-y-4">
-              <div className="text-lg font-semibold">Team {index + 1} Times</div>
+              <div className="text-lg font-semibold mb-4 flex justify-between items-center">
+                <span>Team {index + 1}</span>
+                <FormField
+                  control={form.control}
+                  name={`team_times.${index}.performance_category`}
+                  render={({ field }) => (
+                    <FormItem className="w-48">
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Performance Category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="MESSI">Messi</SelectItem>
+                          <SelectItem value="RONALDO">Ronaldo</SelectItem>
+                          <SelectItem value="JAGS">Jags</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               
               <div className="grid grid-cols-3 gap-4">
                 <FormField
@@ -294,7 +324,7 @@ export const FixtureForm = ({
                   name={`home_score.${index}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{getScoreLabel(true, index, editingFixture?.performance_category || 'MESSI')}</FormLabel>
+                      <FormLabel>{getScoreLabel(true, index)}</FormLabel>
                       <FormControl>
                         <Input type="number" {...field} />
                       </FormControl>
@@ -307,7 +337,7 @@ export const FixtureForm = ({
                   name={`away_score.${index}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{getScoreLabel(false, index, editingFixture?.performance_category || 'MESSI')}</FormLabel>
+                      <FormLabel>{getScoreLabel(false, index)}</FormLabel>
                       <FormControl>
                         <Input type="number" {...field} />
                       </FormControl>
@@ -323,7 +353,7 @@ export const FixtureForm = ({
                   name={`motm_player_ids.${index}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{getMotmLabel(index, editingFixture?.performance_category || 'MESSI')}</FormLabel>
+                      <FormLabel>{getMotmLabel(index)}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
