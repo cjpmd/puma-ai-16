@@ -56,6 +56,16 @@ export const useTeamSelections = (fixture: any | null) => {
         return;
       }
 
+      const { data: teamTimes, error: teamTimesError } = await supabase
+        .from('fixture_team_times')
+        .select('*')
+        .eq('fixture_id', fixture.id);
+
+      if (teamTimesError) {
+        console.error("Error fetching team times:", teamTimesError);
+        return;
+      }
+
       // Process team captains
       const captains: Record<string, string> = {};
       teamSelections?.forEach(selection => {
@@ -94,6 +104,12 @@ export const useTeamSelections = (fixture: any | null) => {
           newPeriodsPerTeam[teamKey] = [{ id: "period-1", duration: 20 }];
         });
       }
+
+      // Process team times and set performance categories
+      teamTimes?.forEach(teamTime => {
+        const teamKey = teamTime.team_number.toString();
+        newPerformanceCategories[`period-1-${teamKey}`] = teamTime.performance_category || 'MESSI';
+      });
 
       // Process selections
       selectionsData.forEach(selection => {

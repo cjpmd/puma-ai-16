@@ -35,6 +35,20 @@ export const saveTeamSelections = async (
     for (const [teamId, periods] of Object.entries(periodsPerTeam)) {
       const teamNumber = parseInt(teamId);
       
+      // Update fixture_team_times with performance category
+      const { error: updateTeamTimesError } = await supabase
+        .from('fixture_team_times')
+        .upsert({
+          fixture_id: fixture.id,
+          team_number: teamNumber,
+          performance_category: performanceCategories[`period-1-${teamId}`] || 'MESSI'
+        });
+
+      if (updateTeamTimesError) {
+        console.error("Error updating team times:", updateTeamTimesError);
+        throw updateTeamTimesError;
+      }
+      
       for (const [index, period] of periods.entries()) {
         const periodNumber = index + 1;
         
