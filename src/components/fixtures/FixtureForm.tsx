@@ -121,23 +121,22 @@ export const FixtureForm = ({
 
       let fixtureId = editingFixture?.id;
 
-      if (editingFixture?.id) {
-        const { error: updateError } = await supabase
-          .from('fixtures')
-          .update(fixtureData)
-          .eq('id', editingFixture.id);
+      // Handle fixture creation/update
+      const fixtureResult = editingFixture?.id 
+        ? await supabase
+            .from('fixtures')
+            .update(fixtureData)
+            .eq('id', editingFixture.id)
+            .select()
+            .single()
+        : await supabase
+            .from('fixtures')
+            .insert(fixtureData)
+            .select()
+            .single();
 
-        if (updateError) throw updateError;
-      } else {
-        const { data: insertedFixture, error: insertError } = await supabase
-          .from('fixtures')
-          .insert(fixtureData)
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-        fixtureId = insertedFixture.id;
-      }
+      if (fixtureResult.error) throw fixtureResult.error;
+      fixtureId = fixtureResult.data.id;
 
       // Then save team times
       if (fixtureId) {
@@ -180,10 +179,13 @@ export const FixtureForm = ({
           console.error("Error saving team scores:", scoresError);
           throw scoresError;
         }
-      }
 
-      // Call the onSubmit callback with the form data
-      await onSubmit(data);
+        // Only call onSubmit after all data is saved successfully
+        await onSubmit({
+          ...data,
+          id: fixtureId // Make sure to pass the fixture ID back
+        });
+      }
 
       toast({
         title: "Success",
