@@ -44,15 +44,21 @@ export const TeamScores = ({ scores, times, fixture }: TeamScoresProps) => {
   const team1Score = scores.find(s => s.team_number === 1)?.score || 0;
   const team2Score = scores.find(s => s.team_number === 2)?.score || 0;
 
-  // Find performance categories
+  // Find performance categories for our teams only
   const team1Time = times.find(t => t.team_number === 1);
   const team2Time = times.find(t => t.team_number === 2);
-  const team1Category = team1Time?.performance_category || 'MESSI';
-  const team2Category = team2Time?.performance_category || 'MESSI';
+  
+  // Format team names based on home/away status
+  const formatTeamName = (teamNumber: number, isOurTeam: boolean) => {
+    if (!isOurTeam) return fixture.opponent;
+    const category = times.find(t => t.team_number === teamNumber)?.performance_category || 'MESSI';
+    return `Team ${teamNumber} (${category})`;
+  };
 
-  // Determine team names based on home/away status
-  const team1Name = fixture.is_home ? fixture.team_name : fixture.opponent;
-  const team2Name = fixture.is_home ? fixture.opponent : fixture.team_name;
+  // For home games, Team 1 is our team
+  // For away games, Team 2 is our team
+  const firstTeamName = fixture.is_home ? formatTeamName(1, true) : fixture.opponent;
+  const secondTeamName = fixture.is_home ? fixture.opponent : formatTeamName(2, true);
 
   // Get outcomes for each team
   const team1Outcome = getTeamOutcome(team1Score, team2Score);
@@ -60,15 +66,15 @@ export const TeamScores = ({ scores, times, fixture }: TeamScoresProps) => {
 
   return (
     <div className="space-y-4">
-      {/* Team 1 */}
+      {/* First Team */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <p className="text-xl font-bold">
-            {team1Name} ({team1Category}): {team1Score} - {team2Score} {team2Name}
+            {firstTeamName}: {team1Score} - {team2Score} {secondTeamName}
           </p>
-          {getOutcomeIcon(team1Outcome)}
+          {getOutcomeIcon(fixture.is_home ? team1Outcome : team2Outcome)}
         </div>
-        {team1Time && (
+        {team1Time && fixture.is_home && (
           <div className="text-sm text-muted-foreground">
             {team1Time.meeting_time && (
               <p>Meeting: {team1Time.meeting_time}</p>
@@ -83,16 +89,16 @@ export const TeamScores = ({ scores, times, fixture }: TeamScoresProps) => {
         )}
       </div>
 
-      {/* Team 2 (if it exists) */}
+      {/* Second Team (if multiple teams) */}
       {scores.length > 1 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <p className="text-xl font-bold">
-              {team2Name} ({team2Category}): {team2Score} - {team1Score} {team1Name}
+              {secondTeamName}: {team2Score} - {team1Score} {firstTeamName}
             </p>
-            {getOutcomeIcon(team2Outcome)}
+            {getOutcomeIcon(fixture.is_home ? team2Outcome : team1Outcome)}
           </div>
-          {team2Time && (
+          {team2Time && !fixture.is_home && (
             <div className="text-sm text-muted-foreground">
               {team2Time.meeting_time && (
                 <p>Meeting: {team2Time.meeting_time}</p>
