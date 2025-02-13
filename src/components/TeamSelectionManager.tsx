@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationSelector } from "@/components/FormationSelector";
@@ -27,6 +28,44 @@ export const TeamSelectionManager = ({
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+
+  const { data: attendanceData } = useQuery({
+    queryKey: ["attendance-status"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('event_attendance')
+        .select(`
+          id,
+          player_id,
+          status,
+          players (
+            id,
+            name
+          )
+        `)
+        .eq('event_type', 'FIXTURE');
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const getPlayerAttendanceStatus = (playerId: string) => {
+    const attendance = attendanceData?.find(a => a.player_id === playerId);
+    return attendance?.status || 'PENDING';
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'CONFIRMED':
+        return 'text-green-500';
+      case 'DECLINED':
+        return 'text-red-500';
+      case 'PENDING':
+      default:
+        return 'text-amber-500';
+    }
+  };
 
   const { data: players, isLoading, error } = useQuery({
     queryKey: ["players"],
@@ -104,6 +143,12 @@ export const TeamSelectionManager = ({
     return <div>Loading players...</div>;
   }
 
+  // Add attendance status to player objects
+  const playersWithStatus = players.map(player => ({
+    ...player,
+    attendanceStatus: getPlayerAttendanceStatus(player.id),
+  }));
+
   // Ensure format is one of the allowed values
   const validFormat = (format === "5-a-side" || format === "7-a-side" || format === "9-a-side" || format === "11-a-side") 
     ? format 
@@ -135,7 +180,7 @@ export const TeamSelectionManager = ({
               teamName={team.name}
               onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
               selectedPlayers={selectedPlayers}
-              availablePlayers={players}
+              availablePlayers={playersWithStatus}
               performanceCategory={performanceCategories[team.id] || "MESSI"}
             />
           </CardContent>
