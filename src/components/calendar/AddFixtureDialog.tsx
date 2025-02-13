@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,7 +48,10 @@ export const AddFixtureDialog = ({
         .select("id, name, squad_number")
         .order('name');
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching players:", error);
+        return [];
+      }
       return data || [];
     },
     enabled: isOpen,
@@ -115,43 +119,41 @@ export const AddFixtureDialog = ({
         setNewFixture(savedFixture);
       }
 
-      // Update or insert team scores
-      const scorePromises = data.team_times.map(async (teamTime: any, index: number) => {
+      // Handle team scores and times sequentially to avoid conflicts
+      for (let index = 0; index < data.team_times.length; index++) {
+        const teamTime = data.team_times[index];
         const teamNumber = index + 1;
         const score = parseInt(data.home_score[index]) || 0;
-        
+
+        // Update score
         const { error: scoreError } = await supabase
           .from('fixture_team_scores')
           .upsert({
             fixture_id: savedFixture.id,
             team_number: teamNumber,
             score
+          }, {
+            onConflict: 'fixture_id,team_number'
           });
 
         if (scoreError) throw scoreError;
-      });
 
-      await Promise.all(scorePromises);
-
-      // Update or insert team times
-      const teamTimesPromises = data.team_times.map(async (teamTime: any, index: number) => {
-        const teamTimeData = {
-          fixture_id: savedFixture.id,
-          team_number: index + 1,
-          meeting_time: teamTime.meeting_time || null,
-          start_time: teamTime.start_time || null,
-          end_time: teamTime.end_time || null,
-          performance_category: teamTime.performance_category || 'MESSI'
-        };
-
+        // Update team time
         const { error: teamTimeError } = await supabase
           .from('fixture_team_times')
-          .upsert(teamTimeData);
+          .upsert({
+            fixture_id: savedFixture.id,
+            team_number: teamNumber,
+            meeting_time: teamTime.meeting_time || null,
+            start_time: teamTime.start_time || null,
+            end_time: teamTime.end_time || null,
+            performance_category: teamTime.performance_category || 'MESSI'
+          }, {
+            onConflict: 'fixture_id,team_number'
+          });
 
         if (teamTimeError) throw teamTimeError;
-      });
-
-      await Promise.all(teamTimesPromises);
+      }
 
       if (!editingFixture) {
         try {
@@ -173,6 +175,9 @@ export const AddFixtureDialog = ({
         }
       }
 
+      // Invalidate queries to refresh the data
+      await queryClient.invalidateQueries({ queryKey: ["team-data"] });
+      
       onSuccess();
       if (!showTeamSelection) {
         onOpenChange(false);

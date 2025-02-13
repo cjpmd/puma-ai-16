@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qaecjlqraydbprsjfjdg.supabase.co';
@@ -44,6 +45,29 @@ export type Database = {
           created_at: string | null;
         };
       };
+      fixture_team_scores: {
+        Row: {
+          id: string;
+          fixture_id: string;
+          team_number: number;
+          score: number;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      fixture_team_times: {
+        Row: {
+          id: string;
+          fixture_id: string;
+          team_number: number;
+          meeting_time: string | null;
+          start_time: string | null;
+          end_time: string | null;
+          performance_category: string;
+          created_at: string;
+          updated_at: string;
+        };
+      };
     };
   };
 };
@@ -53,5 +77,14 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true
+  },
+  db: {
+    schema: 'public'
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'supabase-js-client'
+    }
   }
 });
+
