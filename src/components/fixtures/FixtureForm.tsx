@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface FixtureFormProps {
-  onSubmit: (data: FixtureFormData) => void;
+  onSubmit: (data: FixtureFormData) => Promise<FixtureFormData>;
   selectedDate?: Date;
   editingFixture?: any;
   players?: any[];
@@ -60,7 +60,7 @@ export const FixtureForm = ({
       // First submit the form data
       const savedData = await onSubmit(data);
       
-      if (savedData?.id) {
+      if (savedData && savedData.id) {
         // Send WhatsApp notification
         const { error: notificationError } = await supabase.functions.invoke('send-whatsapp-notification', {
           body: {

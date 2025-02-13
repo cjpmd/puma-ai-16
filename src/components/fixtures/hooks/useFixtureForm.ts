@@ -81,10 +81,13 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
 
         if (scoresError) throw scoresError;
 
-        await onSubmit({
+        const savedFixture = {
           ...data,
           id: fixtureId
-        });
+        };
+
+        await onSubmit(savedFixture);
+        return savedFixture; // Return the saved fixture data
       }
 
       toast({
@@ -98,6 +101,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         title: "Error",
         description: "Failed to save fixture",
       });
+      throw error; // Re-throw to be handled by the form
     } finally {
       setIsSubmitting(false);
     }
