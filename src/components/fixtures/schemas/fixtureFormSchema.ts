@@ -2,6 +2,7 @@
 import { z } from "zod";
 
 export const fixtureFormSchema = z.object({
+  id: z.string().optional(),
   opponent: z.string().min(1, "Opponent name is required"),
   location: z.string().optional(),
   number_of_teams: z.string().optional(),

@@ -32,13 +32,13 @@ export const TeamCard = ({
   // Load existing scores when the component mounts
   useEffect(() => {
     const loadExistingScores = async () => {
-      const fixtureId = form.getValues("id");
-      if (!fixtureId) return;
+      const formValues = form.getValues();
+      if (!formValues.id) return;
 
       const { data: scores, error } = await supabase
         .from('fixture_team_scores')
         .select('*')
-        .eq('fixture_id', fixtureId)
+        .eq('fixture_id', formValues.id)
         .eq('team_number', index + 1)
         .single();
 
