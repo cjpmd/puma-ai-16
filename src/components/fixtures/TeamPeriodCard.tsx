@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { FormationSelector } from "@/components/FormationSelector";
-import { TeamSettingsHeader } from "@/components/formation/TeamSettingsHeader";
 import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface TeamPeriodCardProps {
   periodId: string;
@@ -40,23 +41,12 @@ export const TeamPeriodCard = ({
   const [localSelections, setLocalSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
     initialSelections || {}
   );
-  const [localDuration, setLocalDuration] = useState(duration);
 
   useEffect(() => {
     if (initialSelections) {
       setLocalSelections(initialSelections);
     }
   }, [initialSelections]);
-
-  useEffect(() => {
-    setLocalDuration(duration);
-  }, [duration]);
-
-  const handleDurationChange = (newDuration: string) => {
-    const parsedDuration = parseInt(newDuration);
-    setLocalDuration(parsedDuration);
-    onDurationChange(parsedDuration);
-  };
 
   const handleSelectionChange = (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
     const updatedSelections = Object.entries(selections).reduce((acc, [position, selection]) => {
@@ -77,13 +67,6 @@ export const TeamPeriodCard = ({
     onSelectionChange(periodId, teamId, updatedSelections);
   };
 
-  const formatSelectionsForFormation = () => {
-    return Object.entries(localSelections).map(([_, value]) => ({
-      position: value.position,
-      playerId: value.playerId
-    }));
-  };
-
   return (
     <Card className="relative">
       <Button
@@ -95,13 +78,26 @@ export const TeamPeriodCard = ({
         <X className="h-4 w-4" />
       </Button>
       <CardHeader className="pb-4">
-        <CardTitle>Period {periodNumber}</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          <span>Period {periodNumber}</span>
+          <div className="w-32">
+            <Label className="text-xs">Duration (mins)</Label>
+            <Input
+              type="number"
+              value={duration}
+              onChange={(e) => {
+                const value = parseInt(e.target.value);
+                if (!isNaN(value) && value > 0) {
+                  onDurationChange(value);
+                }
+              }}
+              min="1"
+              className="h-8"
+            />
+          </div>
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <TeamSettingsHeader
-          duration={localDuration.toString()}
-          onDurationChange={handleDurationChange}
-        />
         <div className="min-h-[500px]">
           <FormationSelector
             key={`${periodId}-${teamId}-${JSON.stringify(localSelections)}`}

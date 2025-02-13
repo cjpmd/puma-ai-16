@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +42,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       if (error) throw error;
       return data || [];
     },
+    staleTime: Infinity, // Keep the data cached
   });
 
   const handleCaptainChange = (teamId: string, playerId: string) => {
