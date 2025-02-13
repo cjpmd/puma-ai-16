@@ -13,6 +13,7 @@ interface NotificationData {
   opponent: string;
   location?: string;
   category: string;
+  eventId: string;
 }
 
 serve(async (req) => {
@@ -22,7 +23,7 @@ serve(async (req) => {
   }
 
   try {
-    const { type, date, time, opponent, location, category } = await req.json() as NotificationData;
+    const { type, date, time, opponent, location, category, eventId } = await req.json() as NotificationData;
 
     const WHATSAPP_API_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN');
     const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
@@ -37,7 +38,7 @@ serve(async (req) => {
 
     switch (type) {
       case 'FIXTURE':
-        templateName = 'fixture_notification';
+        templateName = 'fixture_attendance';
         components = [
           {
             type: "body",
@@ -47,6 +48,28 @@ serve(async (req) => {
               { type: "text", text: opponent },
               { type: "text", text: location || 'TBD' },
               { type: "text", text: category }
+            ]
+          },
+          {
+            type: "button",
+            sub_type: "quick_reply",
+            index: 0,
+            parameters: [
+              {
+                type: "payload",
+                payload: `attending:${eventId}`
+              }
+            ]
+          },
+          {
+            type: "button",
+            sub_type: "quick_reply",
+            index: 1,
+            parameters: [
+              {
+                type: "payload",
+                payload: `not_attending:${eventId}`
+              }
             ]
           }
         ];
@@ -64,7 +87,7 @@ serve(async (req) => {
 
     const { data: parents, error: parentsError } = await supabase
       .from('player_parents')
-      .select('phone')
+      .select('phone, id, player_id')
       .not('phone', 'is', null);
 
     if (parentsError) {
@@ -74,6 +97,23 @@ serve(async (req) => {
     // Send WhatsApp message to each parent
     const sendPromises = parents.map(async (parent) => {
       if (!parent.phone) return;
+
+      // Create event attendance record for each player
+      if (parent.player_id) {
+        const { error: attendanceError } = await supabase
+          .from('event_attendance')
+          .upsert({
+            event_id: eventId,
+            player_id: parent.player_id,
+            parent_id: parent.id,
+            status: 'pending',
+            event_type: type,
+          });
+
+        if (attendanceError) {
+          console.error('Error creating attendance record:', attendanceError);
+        }
+      }
 
       const messageBody = {
         messaging_product: "whatsapp",
@@ -133,3 +173,4 @@ serve(async (req) => {
     );
   }
 });
+
