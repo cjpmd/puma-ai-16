@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 
 export type UserRole = 'admin' | 'manager' | 'coach' | 'parent';
 
@@ -14,23 +15,66 @@ interface UserProfile {
 
 export const useAuth = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) return null;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) return null;
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
 
-      if (error) throw error;
-      return data as UserProfile;
+        if (error) {
+          console.error('Error fetching profile:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load user profile",
+            variant: "destructive"
+          });
+          return null;
+        }
+
+        // If no profile exists, create one with default role
+        if (!data) {
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert([
+              { id: user.id, email: user.email, role: 'parent' }
+            ])
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('Error creating profile:', createError);
+            toast({
+              title: "Error",
+              description: "Failed to create user profile",
+              variant: "destructive"
+            });
+            return null;
+          }
+
+          return newProfile as UserProfile;
+        }
+
+        return data as UserProfile;
+      } catch (err) {
+        console.error('Auth error:', err);
+        toast({
+          title: "Error",
+          description: "Authentication error occurred",
+          variant: "destructive"
+        });
+        return null;
+      }
     },
     retry: false
   });
