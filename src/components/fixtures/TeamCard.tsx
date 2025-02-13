@@ -28,6 +28,7 @@ export const TeamCard = ({
   getMotmLabel,
 }: TeamCardProps) => {
   const isHome = form.watch('is_home');
+  const opponent = form.watch('opponent');
 
   return (
     <Card>
@@ -36,25 +37,37 @@ export const TeamCard = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Our Team Score */}
           <FormField
             control={form.control}
-            name={isHome ? 'home_score' : 'away_score'}
+            name={`home_score`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{getScoreLabel(isHome, index)}</FormLabel>
+                <FormLabel>{`Team ${index + 1} Score`}</FormLabel>
                 <FormControl>
                   <Input 
                     type="number" 
                     min="0"
                     {...field}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (isHome) {
-                        form.setValue('home_score', value);
-                      } else {
-                        form.setValue('away_score', value);
-                      }
-                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Opponent Score */}
+          <FormField
+            control={form.control}
+            name={`away_score`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{`${opponent} Score`}</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min="0"
+                    {...field}
                   />
                 </FormControl>
                 <FormMessage />
