@@ -37,7 +37,6 @@ export const TeamCard = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Our Team Score */}
           <FormField
             control={form.control}
             name={`home_score`}
@@ -56,7 +55,6 @@ export const TeamCard = ({
             )}
           />
 
-          {/* Opponent Score */}
           <FormField
             control={form.control}
             name={`away_score`}

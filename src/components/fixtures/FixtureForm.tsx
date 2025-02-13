@@ -38,7 +38,9 @@ export const FixtureForm = ({
       format: editingFixture?.format || "7-a-side",
       home_score: editingFixture?.home_score?.toString() || "",
       away_score: editingFixture?.away_score?.toString() || "",
-      motm_player_ids: Array(editingFixture?.number_of_teams || 1).fill(""),
+      motm_player_ids: editingFixture?.motm_player_id 
+        ? [editingFixture.motm_player_id]
+        : Array(editingFixture?.number_of_teams || 1).fill(""),
       team_times: editingFixture?.team_times || [{ 
         meeting_time: "", 
         start_time: "", 

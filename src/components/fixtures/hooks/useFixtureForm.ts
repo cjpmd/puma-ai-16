@@ -28,6 +28,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         home_score: data.home_score ? parseInt(data.home_score) : null,
         away_score: data.away_score ? parseInt(data.away_score) : null,
         date: format(selectedDate || new Date(), "yyyy-MM-dd"),
+        motm_player_id: data.motm_player_ids?.[0] || null // Save the first team's MotM
       };
 
       const fixtureResult = editingFixture?.id 
