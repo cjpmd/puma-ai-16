@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
 import { FixtureForm } from "@/components/fixtures/FixtureForm";
-import { sendFixtureNotification } from "@/components/fixtures/FixtureNotification";
+import { FixtureFormData } from "@/components/fixtures/schemas/fixtureFormSchema";
 import { Fixture } from "@/types/fixture";
 
 interface AddFixtureDialogProps {
@@ -57,7 +57,7 @@ export const AddFixtureDialog = ({
     enabled: isOpen,
   });
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: FixtureFormData): Promise<FixtureFormData> => {
     try {
       setIsSubmitting(true);
       
@@ -67,7 +67,7 @@ export const AddFixtureDialog = ({
           title: "Error",
           description: "Please select a date",
         });
-        return;
+        throw new Error("Date is required");
       }
 
       // Determine outcome
@@ -84,25 +84,7 @@ export const AddFixtureDialog = ({
       }
 
       // We'll let the FixtureForm handle the data saving now
-      if (!editingFixture) {
-        try {
-          await sendFixtureNotification({
-            type: 'FIXTURE',
-            date: format(selectedDate || parseISO(editingFixture!.date), "dd/MM/yyyy"),
-            time: data.time,
-            opponent: data.opponent,
-            location: data.location,
-            category: data.category
-          });
-        } catch (notificationError) {
-          console.error('Error sending WhatsApp notification:', notificationError);
-          toast({
-            title: "Warning",
-            description: "Fixture created but there was an error sending notifications",
-            variant: "destructive",
-          });
-        }
-      }
+      const savedData = { ...data, id: editingFixture?.id };
 
       // Invalidate queries to refresh the data
       await queryClient.invalidateQueries({ queryKey: ["team-data"] });
@@ -117,6 +99,8 @@ export const AddFixtureDialog = ({
           ? "Fixture updated successfully" 
           : "Fixture added successfully",
       });
+
+      return savedData;
     } catch (error) {
       console.error("Error saving fixture:", error);
       toast({
@@ -124,6 +108,7 @@ export const AddFixtureDialog = ({
         title: "Error",
         description: "Failed to save fixture",
       });
+      throw error;
     } finally {
       setIsSubmitting(false);
     }
