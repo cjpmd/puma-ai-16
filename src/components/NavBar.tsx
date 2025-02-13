@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Users, BarChart2, UserCircle, Calendar, LogOut, Cog } from "lucide-react";
@@ -14,102 +15,32 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
+import { useAuth, UserRole } from "@/hooks/useAuth";
+
+interface MenuItem {
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+  roles: UserRole[];
+}
 
 export const NavBar = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { profile, isLoading, hasPermission } = useAuth();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        setIsLoading(true);
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error("Session error:", sessionError);
-          await supabase.auth.signOut();
-          setIsAuthenticated(false);
-          navigate("/auth");
-          return;
-        }
-
-        if (!session) {
-          console.log("No active session found");
-          setIsAuthenticated(false);
-          navigate("/auth");
-          return;
-        }
-
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error("Auth check error:", error);
-        setIsAuthenticated(false);
-        navigate("/auth");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event);
-      
-      if (event === 'SIGNED_OUT' || !session) {
-        setIsAuthenticated(false);
-        navigate("/auth");
-      } else if (event === 'SIGNED_IN' && session) {
-        setIsAuthenticated(true);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [navigate]);
-
-  const { data: profile } = useQuery({
-    queryKey: ["profile"],
-    queryFn: async () => {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        console.error("User fetch error:", userError);
-        return null;
-      }
-
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error("Profile fetch error:", profileError);
-        return null;
-      }
-
-      return profile;
-    },
-    enabled: isAuthenticated,
-    retry: 1,
-  });
+  const menuItems: MenuItem[] = [
+    { to: "/home", icon: <UserCircle className="mr-2 h-4 w-4" />, label: "Home", roles: ['admin', 'manager', 'coach', 'parent'] },
+    { to: "/squad", icon: <Users className="mr-2 h-4 w-4" />, label: "Squad", roles: ['admin', 'manager'] },
+    { to: "/analytics", icon: <BarChart2 className="mr-2 h-4 w-4" />, label: "Analytics", roles: ['admin', 'manager', 'coach'] },
+    { to: "/calendar", icon: <Calendar className="mr-2 h-4 w-4" />, label: "Calendar", roles: ['admin', 'manager', 'coach', 'parent'] },
+    { to: "/settings", icon: <Cog className="mr-2 h-4 w-4" />, label: "Settings", roles: ['admin'] },
+  ];
 
   const handleLogout = async () => {
     try {
-      setIsLoading(true);
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Error signing out",
-          description: error.message,
-        });
-        return;
-      }
-      setIsAuthenticated(false);
+      if (error) throw error;
       navigate("/auth");
     } catch (error) {
       console.error("Logout error:", error);
@@ -118,8 +49,6 @@ export const NavBar = () => {
         title: "Error",
         description: "Failed to sign out",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -144,50 +73,23 @@ export const NavBar = () => {
           />
         </div>
         <div className="flex items-center gap-4">
-          {isAuthenticated && (
-            <>
-              <Link to="/home">
-                <Button variant="ghost">Home</Button>
-              </Link>
-              <Link to="/squad">
+          {profile && menuItems.map((item) => (
+            hasPermission(item.roles) && (
+              <Link key={item.to} to={item.to}>
                 <Button variant="ghost">
-                  <Users className="mr-2 h-4 w-4" />
-                  Squad
+                  {item.icon}
+                  {item.label}
                 </Button>
               </Link>
-              <Link to="/analytics">
-                <Button variant="ghost">
-                  <BarChart2 className="mr-2 h-4 w-4" />
-                  Analytics
-                </Button>
-              </Link>
-              <Link to="/coaches">
-                <Button variant="ghost">
-                  <UserCircle className="mr-2 h-4 w-4" />
-                  Coaches
-                </Button>
-              </Link>
-              <Link to="/calendar">
-                <Button variant="ghost">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Calendar
-                </Button>
-              </Link>
-              <Link to="/settings">
-                <Button variant="ghost">
-                  <Cog className="mr-2 h-4 w-4" />
-                  Settings
-                </Button>
-              </Link>
-            </>
-          )}
+            )
+          ))}
           {profile && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback>
-                      {profile.name?.charAt(0).toUpperCase()}
+                      {profile.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -195,7 +97,7 @@ export const NavBar = () => {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{profile.name}</p>
+                    <p className="text-sm font-medium leading-none">{profile.email}</p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {profile.role}
                     </p>
