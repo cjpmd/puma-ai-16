@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -18,9 +19,8 @@ export const useCalendarData = (date: Date) => {
           .select("*, training_drills(*, training_files(*))")
           .eq("date", formattedDate);
         
-        console.log("Training sessions response:", { data, error });
         if (error) throw error;
-        return data;
+        return data || [];
       } catch (error) {
         console.error("Error fetching sessions:", error);
         toast({
@@ -31,9 +31,7 @@ export const useCalendarData = (date: Date) => {
         return [];
       }
     },
-    retry: 3,
-    retryDelay: 1000,
-    initialData: [],
+    retry: false
   });
 
   const { data: fixtures, refetch: refetchFixtures } = useQuery({
@@ -45,9 +43,8 @@ export const useCalendarData = (date: Date) => {
           .select("*")
           .eq("date", formattedDate);
         
-        console.log("Fixtures response:", { data, error });
         if (error) throw error;
-        return data;
+        return data || [];
       } catch (error) {
         console.error("Error fetching fixtures:", error);
         toast({
@@ -58,9 +55,7 @@ export const useCalendarData = (date: Date) => {
         return [];
       }
     },
-    retry: 3,
-    retryDelay: 1000,
-    initialData: [],
+    retry: false
   });
 
   const { data: festivals, refetch: refetchFestivals } = useQuery({
@@ -72,9 +67,8 @@ export const useCalendarData = (date: Date) => {
           .select("*")
           .eq("date", formattedDate);
         
-        console.log("Festivals response:", { data, error });
         if (error) throw error;
-        return data;
+        return data || [];
       } catch (error) {
         console.error("Error fetching festivals:", error);
         toast({
@@ -85,9 +79,7 @@ export const useCalendarData = (date: Date) => {
         return [];
       }
     },
-    retry: 3,
-    retryDelay: 1000,
-    initialData: [],
+    retry: false
   });
 
   const { data: tournaments, refetch: refetchTournaments } = useQuery({
@@ -99,9 +91,8 @@ export const useCalendarData = (date: Date) => {
           .select("*")
           .eq("date", formattedDate);
         
-        console.log("Tournaments response:", { data, error });
         if (error) throw error;
-        return data;
+        return data || [];
       } catch (error) {
         console.error("Error fetching tournaments:", error);
         toast({
@@ -112,9 +103,7 @@ export const useCalendarData = (date: Date) => {
         return [];
       }
     },
-    retry: 3,
-    retryDelay: 1000,
-    initialData: [],
+    retry: false
   });
 
   const { data: objectives, refetch: refetchObjectives } = useQuery({
@@ -126,9 +115,8 @@ export const useCalendarData = (date: Date) => {
           .select("*")
           .eq("review_date", formattedDate);
         
-        console.log("Objectives response:", { data, error });
         if (error) throw error;
-        return data;
+        return data || [];
       } catch (error) {
         console.error("Error fetching objectives:", error);
         toast({
@@ -139,9 +127,7 @@ export const useCalendarData = (date: Date) => {
         return [];
       }
     },
-    retry: 3,
-    retryDelay: 1000,
-    initialData: [],
+    retry: false
   });
 
   return {
