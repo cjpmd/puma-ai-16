@@ -8,6 +8,7 @@ interface NotificationData {
   opponent: string;
   location?: string;
   category: string;
+  eventId?: string;  // Made optional to maintain backward compatibility
 }
 
 export const sendFixtureNotification = async (data: NotificationData) => {
