@@ -154,34 +154,39 @@ export const FixtureCard = ({
           </CardTitle>
         </CardHeader>
         <CardContent onClick={() => onEdit(fixture)} className="cursor-pointer">
-          <div className="space-y-2">
+          <p className="font-semibold text-sm text-muted-foreground mb-4">
+            Date: {format(parseISO(fixture.date), "MMMM do, yyyy")}
+          </p>
+          <div className="space-y-4">
             {teamData?.scores?.map((score, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <p className="text-xl font-bold">
-                  {getTeamName(score.team_number)}: {score.score}
-                </p>
-                {index === 0 && getOutcomeIcon(fixture.outcome)}
+              <div key={index} className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-xl font-bold">
+                    {getTeamName(score.team_number)}: {score.score}
+                  </p>
+                  {index === 0 && getOutcomeIcon(fixture.outcome)}
+                </div>
+                {teamData?.times?.[index] && (
+                  <div className="text-sm text-muted-foreground">
+                    {teamData.times[index].meeting_time && (
+                      <p>Meeting: {teamData.times[index].meeting_time}</p>
+                    )}
+                    {teamData.times[index].start_time && (
+                      <p>Start: {teamData.times[index].start_time}</p>
+                    )}
+                    {teamData.times[index].end_time && (
+                      <p>End: {teamData.times[index].end_time}</p>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
             {(!teamData?.scores || teamData.scores.length === 0) && (
               <p className="text-muted-foreground">Score not yet recorded</p>
             )}
           </div>
-          <div className="space-y-1 mt-2 text-sm text-muted-foreground">
-            <div className="space-y-1">
-              {teamData?.times.map((teamTime, index) => (
-                <div key={index} className="space-y-1">
-                  <p className="font-semibold">
-                    {getTeamName(teamTime.team_number)} Times:
-                  </p>
-                  {teamTime.meeting_time && <p>Meeting Time: {teamTime.meeting_time}</p>}
-                  {teamTime.start_time && <p>Kick Off Time: {teamTime.start_time}</p>}
-                  {teamTime.end_time && <p>End Time: {teamTime.end_time}</p>}
-                </div>
-              ))}
-            </div>
+          <div className="space-y-1 mt-4 text-sm text-muted-foreground">
             {fixture.location && <p>Location: {fixture.location}</p>}
-            <p className="font-semibold">Date: {format(parseISO(fixture.date), "MMMM do, yyyy")}</p>
             {fixture.motm_player_id && motmName && <p>Man of the Match: {motmName}</p>}
           </div>
         </CardContent>
