@@ -52,20 +52,19 @@ export const TeamCard = ({
             .single()
         ]);
 
-        if (scoresError) {
+        if (scoresError && !scoresError.message.includes('No rows found')) {
           console.error('Error loading scores:', scoresError);
           return;
         }
 
+        // Load the score into the correct field based on team number
         if (scores) {
-          // Check if this is a home or away team based on the fixture's is_home value
-          const isHome = formValues.is_home;
           if (index === 0) {
-            // First team is always the home team for scoring purposes
-            form.setValue(`home_score.${index}`, scores.score.toString());
+            // First team score goes to home_score
+            form.setValue('home_score', scores.score.toString());
           } else {
-            // Second team is always the away team for scoring purposes
-            form.setValue(`away_score.${index}`, scores.score.toString());
+            // Second team score goes to away_score
+            form.setValue('away_score', scores.score.toString());
           }
         }
 
@@ -161,7 +160,7 @@ export const TeamCard = ({
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name={`home_score.${index}`}
+            name={index === 0 ? 'home_score' : `home_score.${index}`}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{getScoreLabel(true, index)}</FormLabel>
@@ -182,7 +181,7 @@ export const TeamCard = ({
           />
           <FormField
             control={form.control}
-            name={`away_score.${index}`}
+            name={index === 1 ? 'away_score' : `away_score.${index}`}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{getScoreLabel(false, index)}</FormLabel>
