@@ -38,24 +38,28 @@ export const useCalendarData = (date: Date) => {
     queryKey: ["fixtures", formattedDate],
     queryFn: async () => {
       try {
-        const [fixturesResult, attendanceResult] = await Promise.all([
-          supabase
-            .from("fixtures")
-            .select("*")
-            .eq("date", formattedDate),
-          supabase
-            .from("event_attendance")
-            .select("status, player_id, responded_by, event_id")
-            .eq("event_type", "FIXTURE")
-        ]);
+        // First get fixtures for the date
+        const { data: fixturesData, error: fixturesError } = await supabase
+          .from("fixtures")
+          .select("*")
+          .eq("date", formattedDate);
         
-        if (fixturesResult.error) throw fixturesResult.error;
-        if (attendanceResult.error) throw attendanceResult.error;
+        if (fixturesError) throw fixturesError;
+        if (!fixturesData?.length) return [];
+
+        // Then get attendance only for those specific fixtures
+        const fixtureIds = fixturesData.map(f => f.id);
+        const { data: attendanceData, error: attendanceError } = await supabase
+          .from("event_attendance")
+          .select("status, player_id, responded_by, event_id")
+          .eq("event_type", "FIXTURE")
+          .in("event_id", fixtureIds);
+
+        if (attendanceError) throw attendanceError;
         
-        // Combine fixtures with their attendance data
-        return (fixturesResult.data || []).map(fixture => ({
+        return fixturesData.map(fixture => ({
           ...fixture,
-          event_attendance: attendanceResult.data.filter(a => a.event_id === fixture.id)
+          event_attendance: (attendanceData || []).filter(a => a.event_id === fixture.id)
         }));
       } catch (error) {
         console.error("Error fetching fixtures:", error);
@@ -74,23 +78,28 @@ export const useCalendarData = (date: Date) => {
     queryKey: ["festivals", formattedDate],
     queryFn: async () => {
       try {
-        const [festivalsResult, attendanceResult] = await Promise.all([
-          supabase
-            .from("festivals")
-            .select("*")
-            .eq("date", formattedDate),
-          supabase
-            .from("event_attendance")
-            .select("status, player_id, responded_by, event_id")
-            .eq("event_type", "FESTIVAL")
-        ]);
+        // First get festivals for the date
+        const { data: festivalsData, error: festivalsError } = await supabase
+          .from("festivals")
+          .select("*")
+          .eq("date", formattedDate);
         
-        if (festivalsResult.error) throw festivalsResult.error;
-        if (attendanceResult.error) throw attendanceResult.error;
+        if (festivalsError) throw festivalsError;
+        if (!festivalsData?.length) return [];
+
+        // Then get attendance only for those specific festivals
+        const festivalIds = festivalsData.map(f => f.id);
+        const { data: attendanceData, error: attendanceError } = await supabase
+          .from("event_attendance")
+          .select("status, player_id, responded_by, event_id")
+          .eq("event_type", "FESTIVAL")
+          .in("event_id", festivalIds);
+
+        if (attendanceError) throw attendanceError;
         
-        return (festivalsResult.data || []).map(festival => ({
+        return festivalsData.map(festival => ({
           ...festival,
-          event_attendance: attendanceResult.data.filter(a => a.event_id === festival.id)
+          event_attendance: (attendanceData || []).filter(a => a.event_id === festival.id)
         }));
       } catch (error) {
         console.error("Error fetching festivals:", error);
@@ -109,23 +118,28 @@ export const useCalendarData = (date: Date) => {
     queryKey: ["tournaments", formattedDate],
     queryFn: async () => {
       try {
-        const [tournamentsResult, attendanceResult] = await Promise.all([
-          supabase
-            .from("tournaments")
-            .select("*")
-            .eq("date", formattedDate),
-          supabase
-            .from("event_attendance")
-            .select("status, player_id, responded_by, event_id")
-            .eq("event_type", "TOURNAMENT")
-        ]);
+        // First get tournaments for the date
+        const { data: tournamentsData, error: tournamentsError } = await supabase
+          .from("tournaments")
+          .select("*")
+          .eq("date", formattedDate);
         
-        if (tournamentsResult.error) throw tournamentsResult.error;
-        if (attendanceResult.error) throw attendanceResult.error;
+        if (tournamentsError) throw tournamentsError;
+        if (!tournamentsData?.length) return [];
+
+        // Then get attendance only for those specific tournaments
+        const tournamentIds = tournamentsData.map(t => t.id);
+        const { data: attendanceData, error: attendanceError } = await supabase
+          .from("event_attendance")
+          .select("status, player_id, responded_by, event_id")
+          .eq("event_type", "TOURNAMENT")
+          .in("event_id", tournamentIds);
+
+        if (attendanceError) throw attendanceError;
         
-        return (tournamentsResult.data || []).map(tournament => ({
+        return tournamentsData.map(tournament => ({
           ...tournament,
-          event_attendance: attendanceResult.data.filter(a => a.event_id === tournament.id)
+          event_attendance: (attendanceData || []).filter(a => a.event_id === tournament.id)
         }));
       } catch (error) {
         console.error("Error fetching tournaments:", error);
