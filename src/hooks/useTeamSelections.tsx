@@ -77,19 +77,19 @@ export const useTeamSelections = (fixture: any | null) => {
       }
 
       // Process event periods
-      eventPeriods.forEach(period => {
-        for (let i = 1; i <= (fixture.number_of_teams || 1); i++) {
-          const teamKey = i.toString();
-          const periodKey = `period-${period.period_number}`;
-          newPeriodsPerTeam[teamKey].push({
-            id: periodKey,
-            duration: period.duration_minutes
-          });
-        }
-      });
-
-      // Create default period if none exist
-      if (Object.values(newPeriodsPerTeam).every(periods => periods.length === 0)) {
+      if (eventPeriods.length > 0) {
+        eventPeriods.forEach(period => {
+          for (let i = 1; i <= (fixture.number_of_teams || 1); i++) {
+            const teamKey = i.toString();
+            const periodKey = `period-${period.period_number}`;
+            newPeriodsPerTeam[teamKey].push({
+              id: periodKey,
+              duration: period.duration_minutes
+            });
+          }
+        });
+      } else {
+        // Only create a single default period per team if no periods exist
         Object.keys(newPeriodsPerTeam).forEach(teamKey => {
           newPeriodsPerTeam[teamKey] = [{ id: "period-1", duration: 20 }];
         });
