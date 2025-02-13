@@ -35,18 +35,46 @@ export const saveTeamSelections = async (
     for (const [teamId, periods] of Object.entries(periodsPerTeam)) {
       const teamNumber = parseInt(teamId);
       
-      // Update fixture_team_times with performance category
-      const { error: updateTeamTimesError } = await supabase
+      // Check if fixture_team_times entry exists
+      const { data: existingTime, error: checkError } = await supabase
         .from('fixture_team_times')
-        .upsert({
-          fixture_id: fixture.id,
-          team_number: teamNumber,
-          performance_category: performanceCategories[`period-1-${teamId}`] || 'MESSI'
-        });
+        .select('*')
+        .eq('fixture_id', fixture.id)
+        .eq('team_number', teamNumber)
+        .single();
 
-      if (updateTeamTimesError) {
-        console.error("Error updating team times:", updateTeamTimesError);
-        throw updateTeamTimesError;
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found" error
+        console.error("Error checking team times:", checkError);
+        throw checkError;
+      }
+
+      // Update or insert fixture_team_times
+      if (existingTime) {
+        const { error: updateError } = await supabase
+          .from('fixture_team_times')
+          .update({
+            performance_category: performanceCategories[`period-1-${teamId}`] || 'MESSI'
+          })
+          .eq('fixture_id', fixture.id)
+          .eq('team_number', teamNumber);
+
+        if (updateError) {
+          console.error("Error updating team times:", updateError);
+          throw updateError;
+        }
+      } else {
+        const { error: insertError } = await supabase
+          .from('fixture_team_times')
+          .insert({
+            fixture_id: fixture.id,
+            team_number: teamNumber,
+            performance_category: performanceCategories[`period-1-${teamId}`] || 'MESSI'
+          });
+
+        if (insertError) {
+          console.error("Error inserting team times:", insertError);
+          throw insertError;
+        }
       }
       
       for (const [index, period] of periods.entries()) {
