@@ -96,7 +96,7 @@ export const FixtureCard = ({
 
   useEffect(() => {
     const fetchPotmName = async () => {
-      if (!fixture.potm_player_id) {
+      if (!fixture.motm_player_id) {
         setPotmName(null);
         return;
       }
@@ -104,7 +104,7 @@ export const FixtureCard = ({
       const { data, error } = await supabase
         .from('players')
         .select('name')
-        .eq('id', fixture.potm_player_id)
+        .eq('id', fixture.motm_player_id)
         .single();
 
       if (error) {
@@ -119,7 +119,7 @@ export const FixtureCard = ({
     };
 
     fetchPotmName();
-  }, [fixture.potm_player_id]);
+  }, [fixture.motm_player_id]);
 
   return (
     <>
@@ -153,7 +153,7 @@ export const FixtureCard = ({
 
           <div className="space-y-1 mt-4 text-sm text-muted-foreground">
             {fixture.location && <p>Location: {fixture.location}</p>}
-            {fixture.potm_player_id && potmName && (
+            {fixture.motm_player_id && potmName && (
               <p>Player of the Match: {potmName}</p>
             )}
           </div>
