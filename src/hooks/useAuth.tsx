@@ -52,7 +52,7 @@ export const useAuth = () => {
               { 
                 id: user.id, 
                 email: user.email, 
-                role: 'admin', // Change default role to admin
+                role: 'admin' as UserRole, // Explicitly type the role
                 name: user.email // name is required by our schema
               }
             ])
@@ -109,7 +109,7 @@ export const useAuth = () => {
     if (profile.role === 'admin') return true;
     
     // If parent view is required, allow admin and coach to access it
-    if (requiredRole.includes('parent') && (profile.role === 'admin' || profile.role === 'coach')) return true;
+    if (requiredRole.includes('parent') && profile.role === 'coach') return true;
     
     // Otherwise check if the user's role is in the required roles array
     return requiredRole.includes(profile.role);
