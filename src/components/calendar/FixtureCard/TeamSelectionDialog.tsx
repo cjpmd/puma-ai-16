@@ -21,7 +21,7 @@ export const TeamSelectionDialog = ({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <TeamSelectionManager 
           fixture={fixture} 
-          onSave={onSuccess}
+          onSuccess={onSuccess}
         />
       </DialogContent>
     </Dialog>
