@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormationSelector } from "@/components/FormationSelector";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTeamSelections } from "@/hooks/useTeamSelections";
 import { TeamHeaderControls } from "./TeamHeaderControls";
 import { TeamPeriodCard } from "./TeamPeriodCard";
-import { saveTeamSelections } from "@/services/teamSelectionService";
 
 interface TeamSelectionManagerProps {
   fixture: any | null;
@@ -137,6 +138,46 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     }
   };
 
+  const handleAddPeriod = (teamId: string) => {
+    const currentPeriods = periodsPerTeam[teamId] || [];
+    const maxPeriodNumber = Math.max(...currentPeriods.map(p => 
+      parseInt(p.id.split('-')[1])
+    ), 0);
+    const newPeriodId = `period-${maxPeriodNumber + 1}`;
+    
+    // Get the last period's selections to duplicate
+    const lastPeriodId = currentPeriods[currentPeriods.length - 1]?.id;
+    const lastPeriodSelections = lastPeriodId ? selections[lastPeriodId]?.[teamId] : {};
+    
+    setPeriodsPerTeam(prev => ({
+      ...prev,
+      [teamId]: [...(prev[teamId] || []), { id: newPeriodId, duration: 20 }]
+    }));
+
+    // Duplicate the selections from the last period
+    if (lastPeriodSelections) {
+      setSelections(prev => ({
+        ...prev,
+        [newPeriodId]: {
+          ...prev[newPeriodId],
+          [teamId]: { ...lastPeriodSelections }
+        }
+      }));
+    }
+
+    const currentCategory = performanceCategories[`${lastPeriodId}-${teamId}`] || 'MESSI';
+    setPerformanceCategories(prev => ({
+      ...prev,
+      [`${newPeriodId}-${teamId}`]: currentCategory
+    }));
+
+    // Show toast notification
+    toast({
+      title: "Period Added",
+      description: `Period ${maxPeriodNumber + 1} has been created with the previous period's selections.`,
+    });
+  };
+
   if (!fixture || !availablePlayers) {
     return <div>Loading...</div>;
   }
@@ -206,24 +247,7 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
                     return newSelections;
                   });
                 }}
-                onAddPeriod={() => {
-                  const maxPeriodNumber = Math.max(...teamPeriods.map(p => 
-                    parseInt(p.id.split('-')[1])
-                  ), 0);
-                  const newPeriodId = `period-${maxPeriodNumber + 1}`;
-                  
-                  const currentCategory = performanceCategories[`period-1-${teamId}`] || 'MESSI';
-                  
-                  setPeriodsPerTeam(prev => ({
-                    ...prev,
-                    [teamId]: [...(prev[teamId] || []), { id: newPeriodId, duration: 20 }]
-                  }));
-
-                  setPerformanceCategories(prev => ({
-                    ...prev,
-                    [`${newPeriodId}-${teamId}`]: currentCategory
-                  }));
-                }}
+                onAddPeriod={() => handleAddPeriod(teamId)}
               />
 
               <div className="flex flex-col space-y-6">
