@@ -7,12 +7,14 @@ interface TeamSelectionDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   fixture: Fixture;
+  onSuccess?: () => void;
 }
 
 export const TeamSelectionDialog = ({
   isOpen,
   onOpenChange,
   fixture,
+  onSuccess
 }: TeamSelectionDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -20,7 +22,10 @@ export const TeamSelectionDialog = ({
         <DialogHeader>
           <DialogTitle>Team Selection - {fixture.opponent}</DialogTitle>
         </DialogHeader>
-        <TeamSelectionManager fixture={fixture} />
+        <TeamSelectionManager 
+          fixture={fixture} 
+          onSuccess={onSuccess}
+        />
       </DialogContent>
     </Dialog>
   );
