@@ -252,6 +252,79 @@ export type Database = {
           },
         ]
       }
+      device_tokens: {
+        Row: {
+          created_at: string | null
+          device_token: string
+          device_type: string
+          id: string
+          last_used: string | null
+          parent_id: string | null
+          player_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_token: string
+          device_type: string
+          id?: string
+          last_used?: string | null
+          parent_id?: string | null
+          player_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_token?: string
+          device_type?: string
+          id?: string
+          last_used?: string | null
+          parent_id?: string | null
+          player_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_parent"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "player_parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           assigned_player_id: string | null
@@ -300,6 +373,88 @@ export type Database = {
           {
             foreignKeyName: "devices_assigned_player_id_fkey"
             columns: ["assigned_player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
+      event_attendance: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          event_type: string
+          id: string
+          parent_id: string | null
+          player_id: string
+          responded_by: string | null
+          response_time: string | null
+          status: Database["public"]["Enums"]["attendance_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          event_type: string
+          id?: string
+          parent_id?: string | null
+          player_id: string
+          responded_by?: string | null
+          response_time?: string | null
+          status?: Database["public"]["Enums"]["attendance_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          parent_id?: string | null
+          player_id?: string
+          responded_by?: string | null
+          response_time?: string | null
+          status?: Database["public"]["Enums"]["attendance_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_parent"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "player_parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "position_rankings"
             referencedColumns: ["player_id"]
@@ -964,6 +1119,82 @@ export type Database = {
           },
           {
             foreignKeyName: "ml_training_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string | null
+          id: string
+          notify_email: boolean | null
+          notify_push: boolean | null
+          notify_whatsapp: boolean | null
+          parent_id: string | null
+          player_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notify_email?: boolean | null
+          notify_push?: boolean | null
+          notify_whatsapp?: boolean | null
+          parent_id?: string | null
+          player_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notify_email?: boolean | null
+          notify_push?: boolean | null
+          notify_whatsapp?: boolean | null
+          parent_id?: string | null
+          player_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_parent"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "player_parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fk_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "position_rankings"
@@ -2672,6 +2903,7 @@ export type Database = {
       }
     }
     Enums: {
+      attendance_status: "PENDING" | "CONFIRMED" | "DECLINED"
       coach_role: "Manager" | "Coach" | "Helper"
       video_processing_status: "pending" | "processing" | "completed" | "failed"
     }
