@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +14,7 @@ interface FormationSelectorProps {
   availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
   performanceCategory?: string;
   initialSelections?: Record<string, { playerId: string; position: string; performanceCategory?: string }>;
+  viewMode?: "team-sheet" | "formation";
 }
 
 export const FormationSelector = ({
@@ -25,6 +25,7 @@ export const FormationSelector = ({
   availablePlayers: initialPlayers,
   performanceCategory = "MESSI",
   initialSelections,
+  viewMode = "team-sheet"
 }: FormationSelectorProps) => {
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
     initialSelections || {}
@@ -144,6 +145,25 @@ export const FormationSelector = ({
 
     return formattedSelections;
   };
+
+  if (viewMode === "formation") {
+    return (
+      <FormationView
+        positions={formatSelectionsForFormation()}
+        players={players.map(player => ({
+          id: player.id,
+          name: player.name,
+          squad_number: player.squad_number || 0,
+          age: 0,
+          dateOfBirth: new Date().toISOString(),
+          playerType: "OUTFIELD",
+          attributes: []
+        }))}
+        periodNumber={1}
+        duration={20}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">

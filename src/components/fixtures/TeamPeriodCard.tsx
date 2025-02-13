@@ -6,6 +6,7 @@ import { FormationSelector } from "@/components/FormationSelector";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface TeamPeriodCardProps {
   periodId: string;
@@ -41,6 +42,7 @@ export const TeamPeriodCard = ({
   const [localSelections, setLocalSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
     initialSelections || {}
   );
+  const [view, setView] = useState<"team-sheet" | "formation">("team-sheet");
 
   useEffect(() => {
     if (initialSelections) {
@@ -80,20 +82,30 @@ export const TeamPeriodCard = ({
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center justify-between">
           <span>Period {periodNumber}</span>
-          <div className="w-32">
-            <Label className="text-xs">Duration (mins)</Label>
-            <Input
-              type="number"
-              value={duration}
-              onChange={(e) => {
-                const value = parseInt(e.target.value);
-                if (!isNaN(value) && value > 0) {
-                  onDurationChange(value);
-                }
-              }}
-              min="1"
-              className="h-8"
-            />
+          <div className="flex items-center gap-4">
+            <ToggleGroup type="single" value={view} onValueChange={(value) => value && setView(value as "team-sheet" | "formation")}>
+              <ToggleGroupItem value="team-sheet" aria-label="Show team sheet">
+                Team Sheet
+              </ToggleGroupItem>
+              <ToggleGroupItem value="formation" aria-label="Show formation">
+                Formation
+              </ToggleGroupItem>
+            </ToggleGroup>
+            <div className="w-32">
+              <Label className="text-xs">Duration (mins)</Label>
+              <Input
+                type="number"
+                value={duration}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (!isNaN(value) && value > 0) {
+                    onDurationChange(value);
+                  }
+                }}
+                min="1"
+                className="h-8"
+              />
+            </div>
           </div>
         </CardTitle>
       </CardHeader>
@@ -108,6 +120,7 @@ export const TeamPeriodCard = ({
             availablePlayers={availablePlayers}
             initialSelections={localSelections}
             performanceCategory={performanceCategory}
+            viewMode={view}
           />
         </div>
       </CardContent>
