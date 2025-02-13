@@ -111,20 +111,35 @@ export const FixtureForm = ({
 
       // Update fixture_team_times for each team
       if (editingFixture?.id) {
-        const upsertPromises = data.team_times.map((teamTime, index) => 
-          supabase
-            .from('fixture_team_times')
-            .upsert({
+        // First, delete existing team times for this fixture
+        const { error: deleteError } = await supabase
+          .from('fixture_team_times')
+          .delete()
+          .eq('fixture_id', editingFixture.id);
+
+        if (deleteError) {
+          console.error("Error deleting existing team times:", deleteError);
+          throw deleteError;
+        }
+
+        // Then insert the new team times
+        const { error: insertError } = await supabase
+          .from('fixture_team_times')
+          .insert(
+            data.team_times.map((teamTime, index) => ({
               fixture_id: editingFixture.id,
               team_number: index + 1,
               meeting_time: teamTime.meeting_time || null,
               start_time: teamTime.start_time || null,
               end_time: teamTime.end_time || null,
               performance_category: teamTime.performance_category || "MESSI"
-            })
-        );
+            }))
+          );
 
-        await Promise.all(upsertPromises);
+        if (insertError) {
+          console.error("Error inserting team times:", insertError);
+          throw insertError;
+        }
       }
 
       toast({
