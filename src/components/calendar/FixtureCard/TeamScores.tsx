@@ -40,79 +40,46 @@ export const TeamScores = ({ scores, times, fixture }: TeamScoresProps) => {
     return <p className="text-muted-foreground">Score not yet recorded</p>;
   }
 
-  // Find scores for each team
-  const team1Score = scores.find(s => s.team_number === 1)?.score || 0;
-  const team2Score = scores.find(s => s.team_number === 2)?.score || 0;
-
-  // Find performance categories for our teams only
-  const team1Time = times.find(t => t.team_number === 1);
-  const team2Time = times.find(t => t.team_number === 2);
-  
-  // Format team names based on home/away status
-  const formatTeamName = (teamNumber: number, isOurTeam: boolean) => {
-    if (!isOurTeam) return fixture.opponent;
-    const category = times.find(t => t.team_number === teamNumber)?.performance_category || 'MESSI';
-    return `Team ${teamNumber} (${category})`;
-  };
-
-  // For home games, Team 1 is our team
-  // For away games, Team 2 is our team
-  const firstTeamName = fixture.is_home ? formatTeamName(1, true) : fixture.opponent;
-  const secondTeamName = fixture.is_home ? fixture.opponent : formatTeamName(2, true);
-
-  // Get outcomes for each team
-  const team1Outcome = getTeamOutcome(team1Score, team2Score);
-  const team2Outcome = getTeamOutcome(team2Score, team1Score);
-
   return (
     <div className="space-y-4">
-      {/* First Team */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <p className="text-xl font-bold">
-            {firstTeamName}: {team1Score} - {team2Score} {secondTeamName}
-          </p>
-          {getOutcomeIcon(fixture.is_home ? team1Outcome : team2Outcome)}
-        </div>
-        {team1Time && fixture.is_home && (
-          <div className="text-sm text-muted-foreground">
-            {team1Time.meeting_time && (
-              <p>Meeting: {team1Time.meeting_time}</p>
-            )}
-            {team1Time.start_time && (
-              <p>Start: {team1Time.start_time}</p>
-            )}
-            {team1Time.end_time && (
-              <p>End: {team1Time.end_time}</p>
-            )}
-          </div>
-        )}
-      </div>
+      {scores.map((score, index) => {
+        const teamNumber = score.team_number;
+        const teamTime = times.find(t => t.team_number === teamNumber);
+        const performanceCategory = teamTime?.performance_category || 'MESSI';
+        const ourTeamName = `Team ${teamNumber} (${performanceCategory})`;
+        
+        const ourScore = score.score;
+        const theirScore = fixture.is_home ? ourScore : score.score;
+        const outcome = getTeamOutcome(ourScore, theirScore);
 
-      {/* Second Team (if multiple teams) */}
-      {scores.length > 1 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <p className="text-xl font-bold">
-              {secondTeamName}: {team2Score} - {team1Score} {firstTeamName}
-            </p>
-            {getOutcomeIcon(fixture.is_home ? team2Outcome : team1Outcome)}
-          </div>
-          {team2Time && !fixture.is_home && (
-            <div className="text-sm text-muted-foreground">
-              {team2Time.meeting_time && (
-                <p>Meeting: {team2Time.meeting_time}</p>
-              )}
-              {team2Time.start_time && (
-                <p>Start: {team2Time.start_time}</p>
-              )}
-              {team2Time.end_time && (
-                <p>End: {team2Time.end_time}</p>
-              )}
+        return (
+          <div key={teamNumber} className="space-y-2">
+            <div className="flex items-center gap-2">
+              <p className="text-xl font-bold">
+                {fixture.is_home ? (
+                  `${ourTeamName}: ${ourScore} - ${theirScore} ${fixture.opponent}`
+                ) : (
+                  `${fixture.opponent}: ${theirScore} - ${ourScore} ${ourTeamName}`
+                )}
+              </p>
+              {getOutcomeIcon(outcome)}
             </div>
-          )}
-        </div>
-      )}
+            {teamTime && (
+              <div className="text-sm text-muted-foreground">
+                {teamTime.meeting_time && (
+                  <p>Meeting: {teamTime.meeting_time}</p>
+                )}
+                {teamTime.start_time && (
+                  <p>Start: {teamTime.start_time}</p>
+                )}
+                {teamTime.end_time && (
+                  <p>End: {teamTime.end_time}</p>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };
