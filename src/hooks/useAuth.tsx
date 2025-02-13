@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,7 +52,7 @@ export const useAuth = () => {
               { 
                 id: user.id, 
                 email: user.email, 
-                role: 'parent',
+                role: 'admin', // Change default role to admin
                 name: user.email // name is required by our schema
               }
             ])
@@ -105,6 +104,14 @@ export const useAuth = () => {
 
   const hasPermission = (requiredRole: UserRole[]): boolean => {
     if (!profile) return false;
+    
+    // If user is admin, they automatically have access to everything
+    if (profile.role === 'admin') return true;
+    
+    // If parent view is required, allow admin and coach to access it
+    if (requiredRole.includes('parent') && (profile.role === 'admin' || profile.role === 'coach')) return true;
+    
+    // Otherwise check if the user's role is in the required roles array
     return requiredRole.includes(profile.role);
   };
 
