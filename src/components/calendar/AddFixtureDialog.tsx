@@ -107,24 +107,50 @@ export const AddFixtureDialog = ({
           
         if (error) throw error;
 
+        // First, get existing team times to determine if we need to update or insert
+        const { data: existingTeamTimes, error: fetchError } = await supabase
+          .from('fixture_team_times')
+          .select('*')
+          .eq('fixture_id', editingFixture.id);
+
+        if (fetchError) throw fetchError;
+
+        // Create a map of existing team times for quick lookup
+        const existingTeamTimesMap = new Map(
+          existingTeamTimes?.map(tt => [`${tt.fixture_id}-${tt.team_number}`, tt]) || []
+        );
+
         // Handle team times for each team
         const teamTimesPromises = data.team_times.map(async (teamTime: any, index: number) => {
+          const teamNumber = index + 1;
           const teamTimeData = {
             fixture_id: editingFixture.id,
-            team_number: index + 1,
+            team_number: teamNumber,
             meeting_time: teamTime.meeting_time || null,
             start_time: teamTime.start_time || null,
             end_time: teamTime.end_time || null,
             performance_category: teamTime.performance_category || 'MESSI'
           };
 
-          const { error: teamTimeError } = await supabase
-            .from('fixture_team_times')
-            .upsert(teamTimeData)
-            .eq('fixture_id', editingFixture.id)
-            .eq('team_number', index + 1);
+          const existingTeamTime = existingTeamTimesMap.get(`${editingFixture.id}-${teamNumber}`);
 
-          if (teamTimeError) throw teamTimeError;
+          if (existingTeamTime) {
+            // Update existing team time
+            const { error: updateError } = await supabase
+              .from('fixture_team_times')
+              .update(teamTimeData)
+              .eq('fixture_id', editingFixture.id)
+              .eq('team_number', teamNumber);
+
+            if (updateError) throw updateError;
+          } else {
+            // Insert new team time
+            const { error: insertError } = await supabase
+              .from('fixture_team_times')
+              .insert(teamTimeData);
+
+            if (insertError) throw insertError;
+          }
         });
 
         await Promise.all(teamTimesPromises);
