@@ -15,9 +15,13 @@ interface TeamScoresProps {
   };
 }
 
-const getTeamOutcome = (ourScore: number, theirScore: number) => {
-  if (ourScore > theirScore) return 'WIN';
-  if (ourScore < theirScore) return 'LOSS';
+const getTeamOutcome = (ourScore: number, theirScore: number, isHome: boolean) => {
+  // When we're away, we need to swap the scores for the outcome calculation
+  const finalOurScore = isHome ? ourScore : theirScore;
+  const finalTheirScore = isHome ? theirScore : ourScore;
+  
+  if (finalOurScore > finalTheirScore) return 'WIN';
+  if (finalOurScore < finalTheirScore) return 'LOSS';
   return 'DRAW';
 };
 
@@ -44,45 +48,40 @@ export const TeamScores = ({
     return <p className="text-muted-foreground">Score not yet recorded</p>;
   }
 
-  // Sort scores by team number to ensure consistent order
-  const sortedScores = [...scores].sort((a, b) => a.team_number - b.team_number);
+  // Only show Team 1 score
+  const team1Score = scores.find(s => s.team_number === 1);
+  if (!team1Score) return null;
+
+  const ourScore = fixture.is_home ? team1Score.score : (scores.find(s => s.team_number === 2)?.score || 0);
+  const theirScore = fixture.is_home ? (scores.find(s => s.team_number === 2)?.score || 0) : team1Score.score;
+  
+  const teamTime = times.find(t => t.team_number === 1);
+  const performanceCategory = teamTime?.performance_category || 'MESSI';
+  const ourTeamName = `Team 1 (${performanceCategory})`;
+  
+  const displayScore = `${ourScore} - ${theirScore}`;
+  const teamOutcome = getTeamOutcome(ourScore, theirScore, fixture.is_home);
 
   return (
     <div className="space-y-4">
-      {sortedScores.map((score, index) => {
-        const teamNumber = score.team_number;
-        const teamTime = times.find(t => t.team_number === teamNumber);
-        const performanceCategory = teamTime?.performance_category || 'MESSI';
-        const ourTeamName = `Team ${teamNumber} (${performanceCategory})`;
-        
-        // Calculate our score and their score correctly based on home/away status
-        const ourScore = fixture.is_home ? score.score : (scores.find(s => s.team_number !== teamNumber)?.score || 0);
-        const theirScore = fixture.is_home ? (scores.find(s => s.team_number !== teamNumber)?.score || 0) : score.score;
-        
-        const displayScore = `${ourScore} - ${theirScore}`;
-        const teamOutcome = getTeamOutcome(ourScore, theirScore);
-
-        return (
-          <div key={teamNumber} className="space-y-2">
-            <div className="flex items-center gap-2">
-              <p className="font-semibold text-base">
-                {fixture.is_home ? 
-                  `${ourTeamName}: ${displayScore} ${fixture.opponent}` :
-                  `${fixture.opponent}: ${displayScore} ${ourTeamName}`
-                }
-              </p>
-              {getOutcomeIcon(teamOutcome)}
-            </div>
-            {teamTime && (
-              <div className="text-sm text-muted-foreground">
-                {teamTime.meeting_time && <p>Meeting: {teamTime.meeting_time}</p>}
-                {teamTime.start_time && <p>Start: {teamTime.start_time}</p>}
-                {teamTime.end_time && <p>End: {teamTime.end_time}</p>}
-              </div>
-            )}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-base">
+            {fixture.is_home ? 
+              `${ourTeamName}: ${displayScore} ${fixture.opponent}` :
+              `${fixture.opponent}: ${displayScore} ${ourTeamName}`
+            }
+          </p>
+          {getOutcomeIcon(teamOutcome)}
+        </div>
+        {teamTime && (
+          <div className="text-sm text-muted-foreground">
+            {teamTime.meeting_time && <p>Meeting: {teamTime.meeting_time}</p>}
+            {teamTime.start_time && <p>Start: {teamTime.start_time}</p>}
+            {teamTime.end_time && <p>End: {teamTime.end_time}</p>}
           </div>
-        );
-      })}
+        )}
+      </div>
     </div>
   );
 };
