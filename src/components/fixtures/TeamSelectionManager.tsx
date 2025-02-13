@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationSelector } from "@/components/FormationSelector";
@@ -9,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useTeamSelections } from "@/hooks/useTeamSelections";
 import { TeamHeaderControls } from "./TeamHeaderControls";
 import { TeamPeriodCard } from "./TeamPeriodCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { saveTeamSelections } from "@/services/teamSelectionService";
 
 interface TeamSelectionManagerProps {
   fixture: any | null;
