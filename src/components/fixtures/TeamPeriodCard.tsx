@@ -121,6 +121,8 @@ export const TeamPeriodCard = ({
             initialSelections={localSelections}
             performanceCategory={performanceCategory}
             viewMode={view}
+            duration={duration}
+            periodNumber={periodNumber}
           />
         </div>
       </CardContent>

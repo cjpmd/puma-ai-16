@@ -15,6 +15,8 @@ interface FormationSelectorProps {
   performanceCategory?: string;
   initialSelections?: Record<string, { playerId: string; position: string; performanceCategory?: string }>;
   viewMode?: "team-sheet" | "formation";
+  duration?: number;
+  periodNumber?: number;
 }
 
 export const FormationSelector = ({
@@ -25,7 +27,9 @@ export const FormationSelector = ({
   availablePlayers: initialPlayers,
   performanceCategory = "MESSI",
   initialSelections,
-  viewMode = "team-sheet"
+  viewMode = "team-sheet",
+  duration = 20,
+  periodNumber = 1
 }: FormationSelectorProps) => {
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
     initialSelections || {}
@@ -158,8 +162,8 @@ export const FormationSelector = ({
           playerType: "OUTFIELD",
           attributes: []
         }))}
-        periodNumber={1}
-        duration={20}
+        periodNumber={periodNumber}
+        duration={duration}
       />
     );
   }
