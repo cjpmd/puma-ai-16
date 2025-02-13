@@ -9,6 +9,11 @@ interface TeamScoresProps {
   scores: TeamScore[];
   times: TeamTime[];
   outcome: string | null | undefined;
+  fixture: {
+    opponent: string;
+    team_name: string;
+    is_home: boolean;
+  };
 }
 
 const getOutcomeIcon = (outcome: string | null | undefined) => {
@@ -24,41 +29,47 @@ const getOutcomeIcon = (outcome: string | null | undefined) => {
   }
 };
 
-const getTeamName = (teamNumber: number, times: TeamTime[]) => {
+const getTeamName = (teamNumber: number, times: TeamTime[], fixture: TeamScoresProps['fixture']) => {
   const teamTime = times.find(t => t.team_number === teamNumber);
-  return `Team ${teamNumber} ${teamTime?.performance_category || 'MESSI'}`;
+  if (teamNumber === 1) {
+    return fixture.is_home ? fixture.team_name : fixture.opponent;
+  }
+  return fixture.is_home ? fixture.opponent : fixture.team_name;
 };
 
-export const TeamScores = ({ scores, times, outcome }: TeamScoresProps) => {
+export const TeamScores = ({ scores, times, outcome, fixture }: TeamScoresProps) => {
   if (!scores || scores.length === 0) {
     return <p className="text-muted-foreground">Score not yet recorded</p>;
   }
 
   return (
     <div className="space-y-4">
-      {scores.map((score, index) => (
-        <div key={index} className="space-y-2">
-          <div className="flex items-center gap-2">
-            <p className="text-xl font-bold">
-              {getTeamName(score.team_number, times)}: {score.score}
-            </p>
-            {index === 0 && getOutcomeIcon(outcome)}
-          </div>
-          {times[index] && (
-            <div className="text-sm text-muted-foreground">
-              {times[index].meeting_time && (
-                <p>Meeting: {times[index].meeting_time}</p>
-              )}
-              {times[index].start_time && (
-                <p>Start: {times[index].start_time}</p>
-              )}
-              {times[index].end_time && (
-                <p>End: {times[index].end_time}</p>
-              )}
+      {scores.map((score, index) => {
+        const isHomeTeam = fixture.is_home ? index === 0 : index === 1;
+        return (
+          <div key={index} className="space-y-2">
+            <div className="flex items-center gap-2">
+              <p className="text-xl font-bold">
+                {getTeamName(score.team_number, times, fixture)}: {score.score}
+              </p>
+              {isHomeTeam && getOutcomeIcon(outcome)}
             </div>
-          )}
-        </div>
-      ))}
+            {times[index] && (
+              <div className="text-sm text-muted-foreground">
+                {times[index].meeting_time && (
+                  <p>Meeting: {times[index].meeting_time}</p>
+                )}
+                {times[index].start_time && (
+                  <p>Start: {times[index].start_time}</p>
+                )}
+                {times[index].end_time && (
+                  <p>End: {times[index].end_time}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   );
 };

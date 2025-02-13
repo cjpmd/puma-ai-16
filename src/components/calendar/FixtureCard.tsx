@@ -26,9 +26,31 @@ export const FixtureCard = ({
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [motmName, setMotmName] = useState<string | null>(null);
 
-  const { data: teamData } = useQuery({
+  const { data: teamData, isLoading } = useQuery({
     queryKey: ["team-data", fixture.id],
     queryFn: async () => {
+      // If there are no scores yet, create default scores
+      const { data: existingScores } = await supabase
+        .from('fixture_team_scores')
+        .select('*')
+        .eq('fixture_id', fixture.id);
+
+      if (!existingScores || existingScores.length === 0) {
+        // Create default scores for both teams
+        const defaultScores = [
+          { team_number: 1, score: 0, fixture_id: fixture.id },
+          { team_number: 2, score: 0, fixture_id: fixture.id }
+        ];
+        
+        const { error: insertError } = await supabase
+          .from('fixture_team_scores')
+          .insert(defaultScores);
+
+        if (insertError) {
+          console.error('Error creating default scores:', insertError);
+        }
+      }
+
       const [timesResponse, scoresResponse] = await Promise.all([
         supabase
           .from('fixture_team_times')
@@ -89,11 +111,16 @@ export const FixtureCard = ({
           <p className="font-semibold text-sm text-muted-foreground mb-4">
             Date: {format(parseISO(fixture.date), "MMMM do, yyyy")}
           </p>
-          {teamData && (
+          {!isLoading && teamData && (
             <TeamScores
               scores={teamData.scores}
               times={teamData.times}
               outcome={fixture.outcome}
+              fixture={{
+                opponent: fixture.opponent,
+                team_name: fixture.team_name,
+                is_home: fixture.is_home
+              }}
             />
           )}
           <div className="space-y-1 mt-4 text-sm text-muted-foreground">
