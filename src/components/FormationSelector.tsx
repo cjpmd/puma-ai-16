@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
-import { TeamSettingsHeader } from "./formation/TeamSettingsHeader";
 import { SubstitutesList } from "./formation/SubstitutesList";
 import { FormationView } from "@/components/fixtures/FormationView";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,6 @@ export const FormationSelector = ({
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
     initialSelections || {}
   );
-  const [duration, setDuration] = useState<string>("20");
   const [showFormation, setShowFormation] = useState(false);
   const [localPerformanceCategory, setLocalPerformanceCategory] = useState(performanceCategory);
 
@@ -149,10 +148,6 @@ export const FormationSelector = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
-        <TeamSettingsHeader 
-          duration={duration}
-          onDurationChange={setDuration}
-        />
         <div className="flex gap-4">
           <Button
             onClick={() => setShowFormation(!showFormation)}
@@ -177,7 +172,7 @@ export const FormationSelector = ({
             attributes: []
           }))}
           periodNumber={1}
-          duration={parseInt(duration)}
+          duration={20}
         />
       )}
 
