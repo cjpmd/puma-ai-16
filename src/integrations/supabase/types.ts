@@ -1937,25 +1937,28 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          email: string | null
           id: string
           name: string
-          role: string
+          role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
+          email?: string | null
           id?: string
           name: string
-          role: string
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
+          email?: string | null
           id?: string
           name?: string
-          role?: string
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -2905,6 +2908,7 @@ export type Database = {
     Enums: {
       attendance_status: "PENDING" | "CONFIRMED" | "DECLINED"
       coach_role: "Manager" | "Coach" | "Helper"
+      user_role: "admin" | "manager" | "coach" | "parent"
       video_processing_status: "pending" | "processing" | "completed" | "failed"
     }
     CompositeTypes: {
