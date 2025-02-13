@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings, Bell, Users } from "lucide-react";
+import { Settings, Bell, Users, Eye } from "lucide-react";
 import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
 import {
   Collapsible,
@@ -18,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const TeamSettings = () => {
   const [teamName, setTeamName] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [hideScoresFromParents, setHideScoresFromParents] = useState(false);
   const [format, setFormat] = useState("7-a-side");
   const [tempFormat, setTempFormat] = useState("7-a-side");
   const [categories, setCategories] = useState<{ id: string; name: string; description: string | null }[]>([]);
@@ -41,6 +43,7 @@ const TeamSettings = () => {
       if (error) throw error;
       setTeamName(data?.team_name ?? "");
       setNotificationsEnabled(data?.parent_notification_enabled ?? false);
+      setHideScoresFromParents(data?.hide_scores_from_parents ?? false);
       setFormat(data?.format ?? "7-a-side");
       setTempFormat(data?.format ?? "7-a-side");
     } catch (error) {
@@ -53,7 +56,11 @@ const TeamSettings = () => {
     }
   };
 
-  const updateTeamSettings = async (updates: { team_name?: string; format?: string }) => {
+  const updateTeamSettings = async (updates: { 
+    team_name?: string; 
+    format?: string;
+    hide_scores_from_parents?: boolean;
+  }) => {
     try {
       const { error } = await supabase
         .from('team_settings')
@@ -68,6 +75,9 @@ const TeamSettings = () => {
       if (updates.format) {
         setFormat(updates.format);
         setTempFormat(updates.format);
+      }
+      if (updates.hide_scores_from_parents !== undefined) {
+        setHideScoresFromParents(updates.hide_scores_from_parents);
       }
       
       toast({
@@ -254,6 +264,29 @@ const TeamSettings = () => {
               >
                 Save Format
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Score Visibility
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h4 className="text-sm font-medium">Hide Scores from Parents</h4>
+                <p className="text-sm text-muted-foreground">
+                  When enabled, match scores will be hidden from parent accounts
+                </p>
+              </div>
+              <Switch
+                checked={hideScoresFromParents}
+                onCheckedChange={(checked) => updateTeamSettings({ hide_scores_from_parents: checked })}
+              />
             </div>
           </CardContent>
         </Card>

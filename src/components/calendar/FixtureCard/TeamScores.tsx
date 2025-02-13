@@ -1,6 +1,10 @@
 
 import { Trophy, Minus, XCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+
 type TeamTime = Database['public']['Tables']['fixture_team_times']['Row'];
 type TeamScore = Database['public']['Tables']['fixture_team_scores']['Row'];
 
@@ -44,6 +48,22 @@ export const TeamScores = ({
   outcome,
   fixture
 }: TeamScoresProps) => {
+  const { profile } = useAuth();
+  
+  // Fetch team settings to check if scores should be hidden
+  const { data: teamSettings } = useQuery({
+    queryKey: ['team-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('team_settings')
+        .select('*')
+        .single();
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   if (!scores || scores.length === 0) {
     return <p className="text-muted-foreground">Score not yet recorded</p>;
   }
@@ -59,7 +79,8 @@ export const TeamScores = ({
   const performanceCategory = teamTime?.performance_category || 'MESSI';
   const ourTeamName = `Team 1 (${performanceCategory})`;
   
-  const displayScore = `${ourScore} - ${theirScore}`;
+  const shouldHideScores = teamSettings?.hide_scores_from_parents && profile?.role === 'parent';
+  const displayScore = shouldHideScores ? 'Score hidden' : `${ourScore} - ${theirScore}`;
   const teamOutcome = getTeamOutcome(ourScore, theirScore, fixture.is_home);
 
   return (
@@ -72,7 +93,7 @@ export const TeamScores = ({
               `${fixture.opponent}: ${displayScore} ${ourTeamName}`
             }
           </p>
-          {getOutcomeIcon(teamOutcome)}
+          {!shouldHideScores && getOutcomeIcon(teamOutcome)}
         </div>
         {teamTime && (
           <div className="text-sm text-muted-foreground">
