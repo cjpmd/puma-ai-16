@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 const formSchema = z.object({
   opponent: z.string().min(1, "Opponent name is required"),
@@ -28,9 +29,11 @@ const formSchema = z.object({
   home_score: z.array(z.string().optional()),
   away_score: z.array(z.string().optional()),
   motm_player_ids: z.array(z.string().optional()),
-  meeting_time: z.string().optional(),
-  start_time: z.string().optional(),
-  end_time: z.string().optional(),
+  team_times: z.array(z.object({
+    meeting_time: z.string().optional(),
+    start_time: z.string().optional(),
+    end_time: z.string().optional(),
+  })),
   is_home: z.boolean().default(true),
   format: z.string().default("7-a-side"),
   team_name: z.string().default("Broughty Pumas 2015s"),
@@ -65,9 +68,11 @@ export const FixtureForm = ({
       home_score: Array(editingFixture?.number_of_teams || 1).fill(""),
       away_score: Array(editingFixture?.number_of_teams || 1).fill(""),
       motm_player_ids: Array(editingFixture?.number_of_teams || 1).fill(""),
-      meeting_time: editingFixture?.meeting_time || "",
-      start_time: editingFixture?.start_time || "",
-      end_time: editingFixture?.end_time || "",
+      team_times: editingFixture?.team_times || [{ 
+        meeting_time: "", 
+        start_time: "", 
+        end_time: "" 
+      }],
       is_home: editingFixture?.is_home ?? true,
       team_name: editingFixture?.team_name || "Broughty Pumas 2015s",
     },
@@ -77,12 +82,22 @@ export const FixtureForm = ({
   const watchOpponent = form.watch("opponent");
   const watchIsHome = form.watch("is_home");
 
+  // Update team times array when number of teams changes
+  React.useEffect(() => {
+    const currentTimes = form.getValues("team_times");
+    if (currentTimes.length !== watchNumberOfTeams) {
+      const newTimes = Array(watchNumberOfTeams).fill(null).map((_, i) => 
+        currentTimes[i] || { meeting_time: "", start_time: "", end_time: "" }
+      );
+      form.setValue("team_times", newTimes);
+    }
+  }, [watchNumberOfTeams, form]);
+
   const getScoreLabel = (isHomeScore: boolean, teamIndex: number, teamCategory?: string) => {
     const homeTeam = watchIsHome ? "Broughty Pumas 2015s" : watchOpponent;
     const awayTeam = watchIsHome ? watchOpponent : "Broughty Pumas 2015s";
     const teamLabel = isHomeScore ? homeTeam : awayTeam;
 
-    // For Broughty teams, append team number and category if available
     if (teamLabel === "Broughty Pumas 2015s") {
       const categoryLabel = teamCategory ? ` ${teamCategory}` : '';
       return `Team ${teamIndex + 1}${categoryLabel} Score`;
@@ -198,50 +213,6 @@ export const FixtureForm = ({
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="meeting_time"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Meeting Time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="start_time"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Kick Off Time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="end_time"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>End Time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
         <FormField
           control={form.control}
           name="format"
@@ -268,63 +239,114 @@ export const FixtureForm = ({
         />
 
         {Array.from({ length: watchNumberOfTeams }).map((_, index) => (
-          <div key={index} className="grid grid-cols-2 gap-4 border p-4 rounded-lg">
-            <FormField
-              control={form.control}
-              name={`home_score.${index}`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{getScoreLabel(true, index, editingFixture?.performance_category || 'MESSI')}</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name={`away_score.${index}`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{getScoreLabel(false, index, editingFixture?.performance_category || 'MESSI')}</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {players && (
-              <FormField
-                control={form.control}
-                name={`motm_player_ids.${index}`}
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel>{getMotmLabel(index, editingFixture?.performance_category || 'MESSI')}</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
+          <Card key={index} className="p-4">
+            <CardContent className="space-y-4">
+              <div className="text-lg font-semibold">Team {index + 1} Times</div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name={`team_times.${index}.meeting_time`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Meeting Time</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select player" />
-                        </SelectTrigger>
+                        <Input type="time" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        {players.map((player) => (
-                          <SelectItem key={player.id} value={player.id}>
-                            {player.name} (#{player.squad_number})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-          </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name={`team_times.${index}.start_time`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kick Off Time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name={`team_times.${index}.end_time`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name={`home_score.${index}`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{getScoreLabel(true, index, editingFixture?.performance_category || 'MESSI')}</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`away_score.${index}`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{getScoreLabel(false, index, editingFixture?.performance_category || 'MESSI')}</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {players && (
+                <FormField
+                  control={form.control}
+                  name={`motm_player_ids.${index}`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{getMotmLabel(index, editingFixture?.performance_category || 'MESSI')}</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select player" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {players.map((player) => (
+                            <SelectItem key={player.id} value={player.id}>
+                              {player.name} (#{player.squad_number})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </CardContent>
+          </Card>
         ))}
         
         <Button 

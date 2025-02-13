@@ -1,4 +1,3 @@
-
 import {
   Card,
   CardContent,
@@ -43,24 +42,36 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
   const [motmName, setMotmName] = useState<string | null>(null);
   const hasScores = fixture.home_score !== null && fixture.away_score !== null;
 
-  // Fetch team selections to get performance categories
-  const { data: teamSelections } = useQuery({
-    queryKey: ["team-selections", fixture.id],
+  // Fetch team selections and times
+  const { data: teamData } = useQuery({
+    queryKey: ["team-data", fixture.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('team_selections')
-        .select('*')
-        .eq('event_id', fixture.id)
-        .eq('event_type', 'FIXTURE')
-        .eq('period_number', 1); // Get first period for display purposes
-      
-      if (error) throw error;
-      return data || [];
+      const [selectionsResponse, timesResponse] = await Promise.all([
+        supabase
+          .from('team_selections')
+          .select('*')
+          .eq('event_id', fixture.id)
+          .eq('event_type', 'FIXTURE')
+          .eq('period_number', 1),
+        supabase
+          .from('fixture_team_times')
+          .select('*')
+          .eq('fixture_id', fixture.id)
+          .order('team_number')
+      ]);
+
+      if (selectionsResponse.error) throw selectionsResponse.error;
+      if (timesResponse.error) throw timesResponse.error;
+
+      return {
+        selections: selectionsResponse.data || [],
+        times: timesResponse.data || []
+      };
     },
   });
 
   const getTeamName = (teamNumber: number) => {
-    const teamSelection = teamSelections?.find(s => s.team_number === teamNumber);
+    const teamSelection = teamData?.selections?.find(s => s.team_number === teamNumber);
     const performanceCategory = teamSelection?.performance_category || 'MESSI';
     return `Team ${teamNumber} ${performanceCategory}`;
   };
@@ -173,15 +184,23 @@ export const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: Fixture
           </div>
           <div className="space-y-1 mt-2 text-sm text-muted-foreground">
             <div className="space-y-1">
-              {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
-                <p key={index}>{getTeamName(index + 1)}</p>
+              {teamData?.times.map((teamTime, index) => (
+                <div key={index} className="space-y-1">
+                  <p className="font-medium">Team {index + 1} Times:</p>
+                  {teamTime.meeting_time && (
+                    <p>Meeting Time: {teamTime.meeting_time}</p>
+                  )}
+                  {teamTime.start_time && (
+                    <p>Kick Off Time: {teamTime.start_time}</p>
+                  )}
+                  {teamTime.end_time && (
+                    <p>End Time: {teamTime.end_time}</p>
+                  )}
+                </div>
               ))}
             </div>
             {fixture.location && (
               <p>Location: {fixture.location}</p>
-            )}
-            {fixture.time && (
-              <p>Time: {fixture.time}</p>
             )}
             <p>Date: {format(parseISO(fixture.date), "MMMM do, yyyy")}</p>
             {fixture.motm_player_id && motmName && (

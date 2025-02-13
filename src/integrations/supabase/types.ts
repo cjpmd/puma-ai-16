@@ -698,6 +698,47 @@ export type Database = {
           },
         ]
       }
+      fixture_team_times: {
+        Row: {
+          created_at: string | null
+          end_time: string | null
+          fixture_id: string | null
+          id: string
+          meeting_time: string | null
+          start_time: string | null
+          team_number: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_time?: string | null
+          fixture_id?: string | null
+          id?: string
+          meeting_time?: string | null
+          start_time?: string | null
+          team_number: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_time?: string | null
+          fixture_id?: string | null
+          id?: string
+          meeting_time?: string | null
+          start_time?: string | null
+          team_number?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixture_team_times_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fixtures: {
         Row: {
           away_score: number | null
