@@ -10,15 +10,19 @@ import { AuthError, AuthApiError } from "@supabase/supabase-js";
 export const Auth = () => {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     const initializeAuth = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         
+        if (!mounted) return;
+
         if (error) {
           if (error.message.includes("refresh_token_not_found")) {
-            // Clear the invalid session
             await supabase.auth.signOut();
             setErrorMessage("Your session has expired. Please sign in again.");
           } else {
@@ -31,46 +35,56 @@ export const Auth = () => {
           navigate("/home");
         }
       } catch (err) {
+        if (!mounted) return;
         console.error("Session initialization error:", err);
         setErrorMessage("An error occurred while checking your session.");
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
     
     initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
       console.log("Auth state changed:", event, session);
       
       if (event === "SIGNED_IN" && session) {
-        // Clear any existing error messages
         setErrorMessage("");
         
-        // Ensure profile exists before redirecting
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
 
-        if (profileError) {
-          console.error("Profile fetch error:", profileError);
+          if (!mounted) return;
+
+          if (profileError) {
+            console.error("Profile fetch error:", profileError);
+            setErrorMessage("Error fetching user profile");
+            return;
+          }
+
+          if (profile) {
+            navigate("/home");
+          }
+        } catch (err) {
+          if (!mounted) return;
+          console.error("Profile fetch error:", err);
           setErrorMessage("Error fetching user profile");
-          return;
-        }
-
-        if (profile) {
-          navigate("/home");
         }
       } else if (event === "SIGNED_OUT") {
         setErrorMessage("");
-      } else if (event === "TOKEN_REFRESHED") {
-        console.log("Token refreshed successfully");
-      } else if (event === "USER_UPDATED") {
-        console.log("User updated successfully");
       }
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [navigate]);
@@ -99,6 +113,14 @@ export const Auth = () => {
     }
     return error.message;
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
