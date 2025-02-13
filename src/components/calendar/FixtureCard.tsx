@@ -46,18 +46,23 @@ export const FixtureCard = ({
   const { data: teamData } = useQuery({
     queryKey: ["team-data", fixture.id],
     queryFn: async () => {
-      const [selectionsResponse, timesResponse, scoresResponse] = await Promise.all([
-        supabase.from('team_selections').select('*').eq('event_id', fixture.id).eq('event_type', 'FIXTURE').eq('period_number', 1),
-        supabase.from('fixture_team_times').select('*').eq('fixture_id', fixture.id).order('team_number'),
-        supabase.from('fixture_team_scores').select('*').eq('fixture_id', fixture.id).order('team_number')
+      const [timesResponse, scoresResponse] = await Promise.all([
+        supabase
+          .from('fixture_team_times')
+          .select('*')
+          .eq('fixture_id', fixture.id)
+          .order('team_number'),
+        supabase
+          .from('fixture_team_scores')
+          .select('*')
+          .eq('fixture_id', fixture.id)
+          .order('team_number')
       ]);
       
-      if (selectionsResponse.error) throw selectionsResponse.error;
       if (timesResponse.error) throw timesResponse.error;
       if (scoresResponse.error) throw scoresResponse.error;
       
       return {
-        selections: selectionsResponse.data || [],
         times: timesResponse.data || [],
         scores: scoresResponse.data || []
       };
@@ -65,9 +70,8 @@ export const FixtureCard = ({
   });
 
   const getTeamName = (teamNumber: number) => {
-    const teamSelection = teamData?.selections?.find(s => s.team_number === teamNumber);
-    const performanceCategory = teamSelection?.performance_category || 'MESSI';
-    return `Team ${teamNumber} ${performanceCategory}`;
+    const teamTime = teamData?.times?.find(t => t.team_number === teamNumber);
+    return `Team ${teamNumber} ${teamTime?.performance_category || 'MESSI'}`;
   };
 
   // Fetch MOTM player name when fixture.motm_player_id changes
@@ -167,7 +171,9 @@ export const FixtureCard = ({
             <div className="space-y-1">
               {teamData?.times.map((teamTime, index) => (
                 <div key={index} className="space-y-1">
-                  <p className="font-semibold">{getTeamName(teamTime.team_number)} Times:</p>
+                  <p className="font-semibold">
+                    {getTeamName(teamTime.team_number)} Times:
+                  </p>
                   {teamTime.meeting_time && <p>Meeting Time: {teamTime.meeting_time}</p>}
                   {teamTime.start_time && <p>Kick Off Time: {teamTime.start_time}</p>}
                   {teamTime.end_time && <p>End Time: {teamTime.end_time}</p>}
