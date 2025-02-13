@@ -35,20 +35,35 @@ export const TeamCard = ({
       const formValues = form.getValues();
       if (!formValues.id) return;
 
-      const { data: scores, error } = await supabase
-        .from('fixture_team_scores')
-        .select('*')
-        .eq('fixture_id', formValues.id)
-        .eq('team_number', index + 1)
-        .single();
+      try {
+        const { data: scores, error } = await supabase
+          .from('fixture_team_scores')
+          .select('*')
+          .eq('fixture_id', formValues.id)
+          .eq('team_number', index + 1)
+          .single();
 
-      if (error) {
-        console.error('Error loading scores:', error);
-        return;
-      }
+        if (error) {
+          console.error('Error loading scores:', error);
+          return;
+        }
 
-      if (scores) {
-        form.setValue(`home_score.${index}`, scores.score.toString());
+        if (scores) {
+          // Check if this is a home or away team based on the fixture's is_home value
+          const isHome = formValues.is_home;
+          if (index === 0) {
+            // First team
+            form.setValue(`home_score.${index}`, scores.score.toString());
+            form.setValue(`away_score.${index}`, isHome ? '' : scores.score.toString());
+          } else {
+            // Second team (opponent)
+            form.setValue(`away_score.${index}`, isHome ? scores.score.toString() : '');
+            form.setValue(`home_score.${index}`, isHome ? '' : scores.score.toString());
+          }
+        }
+
+      } catch (error) {
+        console.error('Error in loadExistingScores:', error);
       }
     };
 
@@ -135,7 +150,15 @@ export const TeamCard = ({
               <FormItem>
                 <FormLabel>{getScoreLabel(true, index)}</FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} />
+                  <Input 
+                    type="number" 
+                    {...field} 
+                    min="0"
+                    onChange={(e) => {
+                      field.onChange(e);
+                      console.log('Home score changed:', e.target.value);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -148,7 +171,15 @@ export const TeamCard = ({
               <FormItem>
                 <FormLabel>{getScoreLabel(false, index)}</FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} />
+                  <Input 
+                    type="number" 
+                    {...field} 
+                    min="0"
+                    onChange={(e) => {
+                      field.onChange(e);
+                      console.log('Away score changed:', e.target.value);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
