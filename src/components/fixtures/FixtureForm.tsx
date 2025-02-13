@@ -106,41 +106,84 @@ export const FixtureForm = ({
 
   const handleSubmit = async (data: FixtureFormData) => {
     try {
-      // Save fixture data through the onSubmit prop
-      await onSubmit(data);
+      // First, save or update the fixture
+      const fixtureData = {
+        opponent: data.opponent,
+        location: data.location,
+        team_name: data.team_name,
+        format: data.format,
+        number_of_teams: parseInt(data.number_of_teams || "1"),
+        is_home: data.is_home,
+        home_score: data.home_score ? parseInt(data.home_score) : null,
+        away_score: data.away_score ? parseInt(data.away_score) : null,
+        date: format(selectedDate || new Date(), "yyyy-MM-dd"),
+      };
 
-      // Update fixture_team_times for each team
+      let fixtureId = editingFixture?.id;
+
       if (editingFixture?.id) {
-        // First, delete existing team times for this fixture
-        const { error: deleteError } = await supabase
-          .from('fixture_team_times')
-          .delete()
-          .eq('fixture_id', editingFixture.id);
+        const { error: updateError } = await supabase
+          .from('fixtures')
+          .update(fixtureData)
+          .eq('id', editingFixture.id);
 
-        if (deleteError) {
-          console.error("Error deleting existing team times:", deleteError);
-          throw deleteError;
-        }
+        if (updateError) throw updateError;
+      } else {
+        const { data: insertedFixture, error: insertError } = await supabase
+          .from('fixtures')
+          .insert(fixtureData)
+          .select()
+          .single();
 
-        // Then insert the new team times
-        const { error: insertError } = await supabase
+        if (insertError) throw insertError;
+        fixtureId = insertedFixture.id;
+      }
+
+      // Then save team times
+      if (fixtureId) {
+        const { error: teamTimesError } = await supabase
           .from('fixture_team_times')
-          .insert(
+          .upsert(
             data.team_times.map((teamTime, index) => ({
-              fixture_id: editingFixture.id,
+              fixture_id: fixtureId,
               team_number: index + 1,
               meeting_time: teamTime.meeting_time || null,
               start_time: teamTime.start_time || null,
               end_time: teamTime.end_time || null,
               performance_category: teamTime.performance_category || "MESSI"
-            }))
+            })),
+            { onConflict: 'fixture_id,team_number' }
           );
 
-        if (insertError) {
-          console.error("Error inserting team times:", insertError);
-          throw insertError;
+        if (teamTimesError) {
+          console.error("Error inserting team times:", teamTimesError);
+          throw teamTimesError;
+        }
+
+        // Save team scores
+        const { error: scoresError } = await supabase
+          .from('fixture_team_scores')
+          .upsert([
+            {
+              fixture_id: fixtureId,
+              team_number: 1,
+              score: parseInt(data.home_score) || 0
+            },
+            {
+              fixture_id: fixtureId,
+              team_number: 2,
+              score: parseInt(data.away_score) || 0
+            }
+          ], { onConflict: 'fixture_id,team_number' });
+
+        if (scoresError) {
+          console.error("Error saving team scores:", scoresError);
+          throw scoresError;
         }
       }
+
+      // Call the onSubmit callback with the form data
+      await onSubmit(data);
 
       toast({
         title: "Success",
