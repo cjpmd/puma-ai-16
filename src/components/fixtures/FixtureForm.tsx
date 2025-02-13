@@ -38,8 +38,8 @@ export const FixtureForm = ({
       location: editingFixture?.location || "",
       number_of_teams: editingFixture?.number_of_teams?.toString() || "1",
       format: editingFixture?.format || "7-a-side",
-      home_score: Array(editingFixture?.number_of_teams || 1).fill(""),
-      away_score: Array(editingFixture?.number_of_teams || 1).fill(""),
+      home_score: editingFixture?.home_score?.toString() || "",
+      away_score: editingFixture?.away_score?.toString() || "",
       motm_player_ids: Array(editingFixture?.number_of_teams || 1).fill(""),
       team_times: editingFixture?.team_times || [{ 
         meeting_time: "", 
