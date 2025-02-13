@@ -10,7 +10,7 @@ export type UserRole = 'admin' | 'manager' | 'coach' | 'parent';
 interface UserProfile {
   id: string;
   role: UserRole;
-  email: string;
+  email: string | null;
 }
 
 export const useAuth = () => {
@@ -28,7 +28,7 @@ export const useAuth = () => {
 
         const { data, error } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, role, email')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -47,7 +47,7 @@ export const useAuth = () => {
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
             .insert([
-              { id: user.id, email: user.email, role: 'parent' }
+              { id: user.id, email: user.email, role: 'parent', name: user.email }
             ])
             .select()
             .single();
