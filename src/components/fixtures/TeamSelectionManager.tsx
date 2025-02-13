@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationSelector } from "@/components/FormationSelector";
 import { useQuery } from "@tanstack/react-query";
@@ -48,6 +48,35 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
     },
     staleTime: Infinity, // Keep the data cached
   });
+
+  // Fetch and set initial performance categories from fixture_team_times
+  useEffect(() => {
+    const fetchTeamTimes = async () => {
+      if (!fixture?.id) return;
+
+      const { data: teamTimes, error } = await supabase
+        .from('fixture_team_times')
+        .select('*')
+        .eq('fixture_id', fixture.id);
+
+      if (error) {
+        console.error("Error fetching team times:", error);
+        return;
+      }
+
+      if (teamTimes && teamTimes.length > 0) {
+        const newPerformanceCategories = { ...performanceCategories };
+        teamTimes.forEach(teamTime => {
+          const teamId = teamTime.team_number.toString();
+          // Set performance category for the first period of each team
+          newPerformanceCategories[`period-1-${teamId}`] = teamTime.performance_category || 'MESSI';
+        });
+        setPerformanceCategories(newPerformanceCategories);
+      }
+    };
+
+    fetchTeamTimes();
+  }, [fixture?.id]);
 
   const handleCaptainChange = (teamId: string, playerId: string) => {
     setTeamCaptains(prev => ({
@@ -174,7 +203,6 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
       [`${newPeriodId}-${teamId}`]: currentCategory
     }));
 
-    // Show toast notification
     toast({
       title: "Period Added",
       description: `Period ${maxPeriodNumber + 1} has been created with the previous period's selections.`,
