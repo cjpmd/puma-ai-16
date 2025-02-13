@@ -1,10 +1,10 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
 import { SubstitutesList } from "./formation/SubstitutesList";
 import { FormationView } from "@/components/fixtures/FormationView";
-import { Button } from "@/components/ui/button";
 
 interface FormationSelectorProps {
   format: "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
@@ -30,7 +30,6 @@ export const FormationSelector = ({
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
     initialSelections || {}
   );
-  const [showFormation, setShowFormation] = useState(false);
   const [localPerformanceCategory, setLocalPerformanceCategory] = useState(performanceCategory);
 
   const { data: fetchedPlayers } = useQuery({
@@ -167,35 +166,6 @@ export const FormationSelector = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex gap-4">
-          <Button
-            onClick={() => setShowFormation(!showFormation)}
-            variant="outline"
-            size="sm"
-          >
-            {showFormation ? 'Hide Formation' : 'Show Formation'}
-          </Button>
-        </div>
-      </div>
-      
-      {showFormation && (
-        <FormationView
-          positions={formatSelectionsForFormation()}
-          players={players.map(player => ({
-            id: player.id,
-            name: player.name,
-            squad_number: player.squad_number || 0,
-            age: 0,
-            dateOfBirth: new Date().toISOString(),
-            playerType: "OUTFIELD",
-            attributes: []
-          }))}
-          periodNumber={1}
-          duration={20}
-        />
-      )}
-
       <div className="grid grid-cols-2 gap-2">
         {getFormationSlots().map((slot) => (
           <PlayerPositionSelect
