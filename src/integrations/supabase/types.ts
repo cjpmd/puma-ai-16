@@ -1940,7 +1940,7 @@ export type Database = {
           email: string | null
           id: string
           name: string
-          role: Database["public"]["Enums"]["user_role"] | null
+          role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
           user_id: string | null
         }
@@ -1949,7 +1949,7 @@ export type Database = {
           email?: string | null
           id?: string
           name: string
-          role?: Database["public"]["Enums"]["user_role"] | null
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
           user_id?: string | null
         }
@@ -1958,7 +1958,7 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string
-          role?: Database["public"]["Enums"]["user_role"] | null
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
           user_id?: string | null
         }

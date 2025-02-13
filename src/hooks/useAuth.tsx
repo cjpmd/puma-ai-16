@@ -24,9 +24,11 @@ export const useAuth = () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         
-        if (!user) return null;
+        if (!user) {
+          setIsLoading(false);
+          return null;
+        }
 
-        // Changed to use select('*') instead of specific columns
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -51,7 +53,8 @@ export const useAuth = () => {
               { 
                 id: user.id, 
                 email: user.email, 
-                role: 'parent'
+                role: 'parent',
+                name: user.email // name is required by our schema
               }
             ])
             .select()
@@ -79,6 +82,8 @@ export const useAuth = () => {
           variant: "destructive"
         });
         return null;
+      } finally {
+        setIsLoading(false);
       }
     },
     retry: false
