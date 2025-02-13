@@ -58,11 +58,13 @@ export const TeamCard = ({
         }
 
         if (scores) {
+          // Check if this is a home or away team based on the fixture's is_home value
           const isHome = formValues.is_home;
-          // Set score based on team number and home/away status
-          if (isHome) {
+          if (index === 0) {
+            // First team is always the home team for scoring purposes
             form.setValue(`home_score.${index}`, scores.score.toString());
           } else {
+            // Second team is always the away team for scoring purposes
             form.setValue(`away_score.${index}`, scores.score.toString());
           }
         }
