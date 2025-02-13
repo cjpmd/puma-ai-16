@@ -26,9 +26,10 @@ export const useAuth = () => {
         
         if (!user) return null;
 
+        // Changed to use select('*') instead of specific columns
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, role, email')
+          .select('*')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -47,7 +48,11 @@ export const useAuth = () => {
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
             .insert([
-              { id: user.id, email: user.email, role: 'parent', name: user.email }
+              { 
+                id: user.id, 
+                email: user.email, 
+                role: 'parent'
+              }
             ])
             .select()
             .single();
