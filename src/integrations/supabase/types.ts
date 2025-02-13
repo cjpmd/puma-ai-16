@@ -705,6 +705,7 @@ export type Database = {
           fixture_id: string | null
           id: string
           meeting_time: string | null
+          performance_category: string | null
           start_time: string | null
           team_number: number
           updated_at: string | null
@@ -715,6 +716,7 @@ export type Database = {
           fixture_id?: string | null
           id?: string
           meeting_time?: string | null
+          performance_category?: string | null
           start_time?: string | null
           team_number: number
           updated_at?: string | null
@@ -725,6 +727,7 @@ export type Database = {
           fixture_id?: string | null
           id?: string
           meeting_time?: string | null
+          performance_category?: string | null
           start_time?: string | null
           team_number?: number
           updated_at?: string | null
