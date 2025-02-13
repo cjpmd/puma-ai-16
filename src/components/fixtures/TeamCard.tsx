@@ -36,30 +36,44 @@ export const TeamCard = ({
       if (!formValues.id) return;
 
       try {
-        const { data: scores, error } = await supabase
-          .from('fixture_team_scores')
-          .select('*')
-          .eq('fixture_id', formValues.id)
-          .eq('team_number', index + 1)
-          .single();
+        // Fetch both scores and team times
+        const [{ data: scores, error: scoresError }, { data: times, error: timesError }] = await Promise.all([
+          supabase
+            .from('fixture_team_scores')
+            .select('*')
+            .eq('fixture_id', formValues.id)
+            .eq('team_number', index + 1)
+            .single(),
+          supabase
+            .from('fixture_team_times')
+            .select('*')
+            .eq('fixture_id', formValues.id)
+            .eq('team_number', index + 1)
+            .single()
+        ]);
 
-        if (error) {
-          console.error('Error loading scores:', error);
+        if (scoresError) {
+          console.error('Error loading scores:', scoresError);
           return;
         }
 
         if (scores) {
-          // Check if this is a home or away team based on the fixture's is_home value
           const isHome = formValues.is_home;
-          if (index === 0) {
-            // First team
+          // Set score based on team number and home/away status
+          if (isHome) {
             form.setValue(`home_score.${index}`, scores.score.toString());
-            form.setValue(`away_score.${index}`, isHome ? '' : scores.score.toString());
           } else {
-            // Second team (opponent)
-            form.setValue(`away_score.${index}`, isHome ? scores.score.toString() : '');
-            form.setValue(`home_score.${index}`, isHome ? '' : scores.score.toString());
+            form.setValue(`away_score.${index}`, scores.score.toString());
           }
+        }
+
+        if (times) {
+          form.setValue(`team_times.${index}`, {
+            meeting_time: times.meeting_time || '',
+            start_time: times.start_time || '',
+            end_time: times.end_time || '',
+            performance_category: times.performance_category || 'MESSI'
+          });
         }
 
       } catch (error) {
