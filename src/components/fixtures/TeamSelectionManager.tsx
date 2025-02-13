@@ -15,9 +15,10 @@ import { saveTeamSelections } from "@/services/teamSelectionService";
 
 interface TeamSelectionManagerProps {
   fixture: any | null;
+  onSuccess?: () => void;
 }
 
-export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => {
+export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManagerProps) => {
   const { toast } = useToast();
   const [activeTeam, setActiveTeam] = useState<string>("1");
   const [isSaving, setIsSaving] = useState(false);
@@ -158,6 +159,8 @@ export const TeamSelectionManager = ({ fixture }: TeamSelectionManagerProps) => 
         title: "Success",
         description: "Team selections saved successfully",
       });
+
+      onSuccess?.();
     } catch (error) {
       console.error("Error saving team selections:", error);
       toast({
