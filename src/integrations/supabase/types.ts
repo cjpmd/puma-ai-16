@@ -9,6 +9,69 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      attendance_notification_settings: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          notification_type: string
+          player_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          notification_type: string
+          player_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          notification_type?: string
+          player_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_notification_settings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_notification_settings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "attendance_notification_settings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "attendance_notification_settings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_notification_settings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
       attribute_settings: {
         Row: {
           category: string
@@ -2357,6 +2420,7 @@ export type Database = {
       }
       team_settings: {
         Row: {
+          attendance_colors: Json | null
           created_at: string | null
           format: string | null
           hide_scores_from_parents: boolean | null
@@ -2366,6 +2430,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          attendance_colors?: Json | null
           created_at?: string | null
           format?: string | null
           hide_scores_from_parents?: boolean | null
@@ -2375,6 +2440,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          attendance_colors?: Json | null
           created_at?: string | null
           format?: string | null
           hide_scores_from_parents?: boolean | null
@@ -2882,6 +2948,12 @@ export type Database = {
       team_performance_categories: {
         Row: {
           performance_category: string | null
+        }
+        Relationships: []
+      }
+      valid_attendance_status: {
+        Row: {
+          enumlabel: unknown | null
         }
         Relationships: []
       }
