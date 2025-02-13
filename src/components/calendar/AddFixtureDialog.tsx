@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,7 +58,7 @@ export const AddFixtureDialog = ({
     try {
       setIsSubmitting(true);
       
-      if (!selectedDate) {
+      if (!selectedDate && !editingFixture?.date) {
         toast({
           variant: "destructive",
           title: "Error",
@@ -66,35 +67,34 @@ export const AddFixtureDialog = ({
         return;
       }
 
+      // Process scores and determine outcome
+      const homeScores = Array.isArray(data.home_score) ? data.home_score : [data.home_score];
+      const awayScores = Array.isArray(data.away_score) ? data.away_score : [data.away_score];
+      
       let outcome: string | null = null;
-      if (data.home_score && data.away_score) {
-        const homeScore = parseInt(data.home_score);
-        const awayScore = parseInt(data.away_score);
-        if (homeScore > awayScore) {
-          outcome = 'WIN';
-        } else if (homeScore === awayScore) {
-          outcome = 'DRAW';
-        } else {
-          outcome = 'LOSS';
-        }
+      const totalHomeScore = homeScores.reduce((sum: number, score: string) => sum + (parseInt(score) || 0), 0);
+      const totalAwayScore = awayScores.reduce((sum: number, score: string) => sum + (parseInt(score) || 0), 0);
+
+      if (totalHomeScore > totalAwayScore) {
+        outcome = 'WIN';
+      } else if (totalHomeScore === totalAwayScore) {
+        outcome = 'DRAW';
+      } else if (totalHomeScore < totalAwayScore) {
+        outcome = 'LOSS';
       }
 
       const fixtureData = {
         opponent: data.opponent,
         location: data.location,
-        team_name: "Broughty Pumas 2015s",
-        date: format(selectedDate, "yyyy-MM-dd"),
-        home_score: data.home_score ? parseInt(data.home_score) : null,
-        away_score: data.away_score ? parseInt(data.away_score) : null,
-        motm_player_id: data.motm_player_id || null,
-        time: data.time || null,
+        team_name: data.team_name || "Broughty Pumas 2015s",
+        date: format(selectedDate || parseISO(editingFixture!.date), "yyyy-MM-dd"),
+        home_score: totalHomeScore || null,
+        away_score: totalAwayScore || null,
+        motm_player_id: data.motm_player_ids?.[0] || null,
         outcome,
         format: data.format || "7-a-side",
         number_of_teams: parseInt(data.number_of_teams) || 1,
         is_home: data.is_home,
-        meeting_time: data.meeting_time || null,
-        start_time: data.start_time || null,
-        end_time: data.end_time || null,
       };
 
       let savedFixture: Fixture;
@@ -106,6 +106,29 @@ export const AddFixtureDialog = ({
           .eq("id", editingFixture.id);
           
         if (error) throw error;
+
+        // Handle team times for each team
+        const teamTimesPromises = data.team_times.map(async (teamTime: any, index: number) => {
+          const teamTimeData = {
+            fixture_id: editingFixture.id,
+            team_number: index + 1,
+            meeting_time: teamTime.meeting_time || null,
+            start_time: teamTime.start_time || null,
+            end_time: teamTime.end_time || null,
+            performance_category: teamTime.performance_category || 'MESSI'
+          };
+
+          const { error: teamTimeError } = await supabase
+            .from('fixture_team_times')
+            .upsert(teamTimeData)
+            .eq('fixture_id', editingFixture.id)
+            .eq('team_number', index + 1);
+
+          if (teamTimeError) throw teamTimeError;
+        });
+
+        await Promise.all(teamTimesPromises);
+        
         savedFixture = { ...editingFixture, ...fixtureData } as Fixture;
       } else {
         const { data: insertedFixture, error } = await supabase
@@ -118,10 +141,30 @@ export const AddFixtureDialog = ({
         savedFixture = insertedFixture;
         setNewFixture(savedFixture);
 
+        // Insert team times for each team
+        const teamTimesPromises = data.team_times.map(async (teamTime: any, index: number) => {
+          const teamTimeData = {
+            fixture_id: savedFixture.id,
+            team_number: index + 1,
+            meeting_time: teamTime.meeting_time || null,
+            start_time: teamTime.start_time || null,
+            end_time: teamTime.end_time || null,
+            performance_category: teamTime.performance_category || 'MESSI'
+          };
+
+          const { error: teamTimeError } = await supabase
+            .from('fixture_team_times')
+            .insert(teamTimeData);
+
+          if (teamTimeError) throw teamTimeError;
+        });
+
+        await Promise.all(teamTimesPromises);
+
         try {
           await sendFixtureNotification({
             type: 'FIXTURE',
-            date: format(selectedDate, "dd/MM/yyyy"),
+            date: format(selectedDate || parseISO(editingFixture!.date), "dd/MM/yyyy"),
             time: data.time,
             opponent: data.opponent,
             location: data.location,
