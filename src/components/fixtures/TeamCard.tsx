@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +12,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { UseFormReturn } from "react-hook-form";
 import { FixtureFormData } from "./schemas/fixtureFormSchema";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TeamCardProps {
   index: number;
@@ -28,6 +29,32 @@ export const TeamCard = ({
   getScoreLabel,
   getMotmLabel
 }: TeamCardProps) => {
+  // Load existing scores when the component mounts
+  useEffect(() => {
+    const loadExistingScores = async () => {
+      const fixtureId = form.getValues("id");
+      if (!fixtureId) return;
+
+      const { data: scores, error } = await supabase
+        .from('fixture_team_scores')
+        .select('*')
+        .eq('fixture_id', fixtureId)
+        .eq('team_number', index + 1)
+        .single();
+
+      if (error) {
+        console.error('Error loading scores:', error);
+        return;
+      }
+
+      if (scores) {
+        form.setValue(`home_score.${index}`, scores.score.toString());
+      }
+    };
+
+    loadExistingScores();
+  }, [form, index]);
+
   return (
     <Card className="p-4">
       <CardContent className="space-y-4">

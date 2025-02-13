@@ -46,29 +46,33 @@ export const TeamScores = ({ scores, times, outcome, fixture }: TeamScoresProps)
     <div className="space-y-4">
       {scores.map((score, index) => {
         const isHomeTeam = fixture.is_home ? index === 0 : index === 1;
+        const teamName = getTeamName(score.team_number, times, fixture);
+        const teamTime = times.find(t => t.team_number === score.team_number);
+        const performanceCategory = teamTime?.performance_category || 'MESSI';
+        
         return (
           <div key={index} className="space-y-2">
             <div className="flex items-center gap-2">
               <p className="text-xl font-bold">
-                {getTeamName(score.team_number, times, fixture)}: {score.score}
+                {teamName} ({performanceCategory}): {score.score} {isHomeTeam ? 'vs' : ''} {isHomeTeam && fixture.opponent}
               </p>
               {isHomeTeam && getOutcomeIcon(outcome)}
             </div>
-            {times[index] && (
+            {teamTime && (
               <div className="text-sm text-muted-foreground">
-                {times[index].meeting_time && (
-                  <p>Meeting: {times[index].meeting_time}</p>
+                {teamTime.meeting_time && (
+                  <p>Meeting: {teamTime.meeting_time}</p>
                 )}
-                {times[index].start_time && (
-                  <p>Start: {times[index].start_time}</p>
+                {teamTime.start_time && (
+                  <p>Start: {teamTime.start_time}</p>
                 )}
-                {times[index].end_time && (
-                  <p>End: {times[index].end_time}</p>
+                {teamTime.end_time && (
+                  <p>End: {teamTime.end_time}</p>
                 )}
               </div>
             )}
           </div>
-        )
+        );
       })}
     </div>
   );
