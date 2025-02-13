@@ -160,7 +160,7 @@ export const TeamCard = ({
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name={index === 0 ? 'home_score' : `home_score.${index}`}
+            name={'home_score'}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{getScoreLabel(true, index)}</FormLabel>
@@ -181,7 +181,7 @@ export const TeamCard = ({
           />
           <FormField
             control={form.control}
-            name={index === 1 ? 'away_score' : `away_score.${index}`}
+            name={'away_score'}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{getScoreLabel(false, index)}</FormLabel>
