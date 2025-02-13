@@ -70,91 +70,20 @@ export const AddFixtureDialog = ({
         return;
       }
 
-      // Process scores and determine outcome
-      const homeScores = Array.isArray(data.home_score) ? data.home_score : [data.home_score];
-      const awayScores = Array.isArray(data.away_score) ? data.away_score : [data.away_score];
-      
+      // Determine outcome
       let outcome: string | null = null;
-      const totalHomeScore = homeScores.reduce((sum: number, score: string) => sum + (parseInt(score) || 0), 0);
-      const totalAwayScore = awayScores.reduce((sum: number, score: string) => sum + (parseInt(score) || 0), 0);
+      const homeScore = parseInt(data.home_score) || 0;
+      const awayScore = parseInt(data.away_score) || 0;
 
-      if (totalHomeScore > totalAwayScore) {
+      if (homeScore > awayScore) {
         outcome = 'WIN';
-      } else if (totalHomeScore === totalAwayScore) {
+      } else if (homeScore === awayScore) {
         outcome = 'DRAW';
-      } else if (totalHomeScore < totalAwayScore) {
+      } else if (homeScore < awayScore) {
         outcome = 'LOSS';
       }
 
-      const fixtureData = {
-        opponent: data.opponent,
-        location: data.location,
-        team_name: data.team_name || "Broughty Pumas 2015s",
-        date: format(selectedDate || parseISO(editingFixture!.date), "yyyy-MM-dd"),
-        outcome,
-        format: data.format || "7-a-side",
-        number_of_teams: parseInt(data.number_of_teams) || 1,
-        is_home: data.is_home,
-      };
-
-      let savedFixture: Fixture;
-      
-      if (editingFixture) {
-        const { error } = await supabase
-          .from("fixtures")
-          .update(fixtureData)
-          .eq("id", editingFixture.id);
-          
-        if (error) throw error;
-        savedFixture = { ...editingFixture, ...fixtureData } as Fixture;
-      } else {
-        const { data: insertedFixture, error } = await supabase
-          .from("fixtures")
-          .insert(fixtureData)
-          .select()
-          .single();
-          
-        if (error) throw error;
-        savedFixture = insertedFixture;
-        setNewFixture(savedFixture);
-      }
-
-      // Handle team scores and times sequentially to avoid conflicts
-      for (let index = 0; index < data.team_times.length; index++) {
-        const teamTime = data.team_times[index];
-        const teamNumber = index + 1;
-        const score = parseInt(data.home_score[index]) || 0;
-
-        // Update score
-        const { error: scoreError } = await supabase
-          .from('fixture_team_scores')
-          .upsert({
-            fixture_id: savedFixture.id,
-            team_number: teamNumber,
-            score
-          }, {
-            onConflict: 'fixture_id,team_number'
-          });
-
-        if (scoreError) throw scoreError;
-
-        // Update team time
-        const { error: teamTimeError } = await supabase
-          .from('fixture_team_times')
-          .upsert({
-            fixture_id: savedFixture.id,
-            team_number: teamNumber,
-            meeting_time: teamTime.meeting_time || null,
-            start_time: teamTime.start_time || null,
-            end_time: teamTime.end_time || null,
-            performance_category: teamTime.performance_category || 'MESSI'
-          }, {
-            onConflict: 'fixture_id,team_number'
-          });
-
-        if (teamTimeError) throw teamTimeError;
-      }
-
+      // We'll let the FixtureForm handle the data saving now
       if (!editingFixture) {
         try {
           await sendFixtureNotification({
