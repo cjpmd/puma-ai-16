@@ -133,7 +133,10 @@ const Fixtures = () => {
         title: "Success",
         description: "Fixture deleted successfully",
       });
-      refetch();
+      
+      // Immediately refetch the data after deletion
+      await refetch();
+      
     } catch (error) {
       console.error("Error deleting fixture:", error);
       toast({

@@ -74,6 +74,25 @@ export const TeamCard = ({
             )}
           />
 
+          {/* Opponent Score */}
+          <FormField
+            control={form.control}
+            name={`opponent_${index + 1}_score`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{getScoreLabel(false, index)}</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number"
+                    min={0}
+                    {...field}
+                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
           {/* Meeting Time */}
           <FormField
             control={form.control}
