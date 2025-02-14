@@ -58,7 +58,7 @@ export const AddFixtureDialog = ({
     enabled: isOpen,
   });
 
-  const onSubmit = async (data: FixtureFormData): Promise<FixtureFormData> => {
+  const onSubmit = async (data: FixtureFormData) => {
     try {
       setIsSubmitting(true);
       
@@ -71,23 +71,9 @@ export const AddFixtureDialog = ({
         throw new Error("Date is required");
       }
 
-      // Determine outcome
-      let outcome: string | null = null;
-      const homeScore = parseInt(data.home_score) || 0;
-      const awayScore = parseInt(data.away_score) || 0;
+      const savedData = await data;
+      console.log("Fixture saved:", savedData);
 
-      if (homeScore > awayScore) {
-        outcome = 'WIN';
-      } else if (homeScore === awayScore) {
-        outcome = 'DRAW';
-      } else if (homeScore < awayScore) {
-        outcome = 'LOSS';
-      }
-
-      // We'll let the FixtureForm handle the data saving now
-      const savedData = { ...data, id: editingFixture?.id };
-
-      // Send notification for new fixtures only
       if (!editingFixture) {
         try {
           await sendFixtureNotification({
@@ -101,17 +87,16 @@ export const AddFixtureDialog = ({
           });
         } catch (notificationError) {
           console.error('Error sending notification:', notificationError);
-          // Continue with the save even if notification fails
         }
       }
 
-      // Invalidate queries to refresh the data
-      await queryClient.invalidateQueries({ queryKey: ["team-data"] });
-      
+      await queryClient.invalidateQueries({ queryKey: ["fixtures"] });
       onSuccess();
+      
       if (!showTeamSelection) {
         onOpenChange(false);
       }
+      
       toast({
         title: "Success",
         description: editingFixture 
@@ -121,7 +106,7 @@ export const AddFixtureDialog = ({
 
       return savedData;
     } catch (error) {
-      console.error("Error saving fixture:", error);
+      console.error("Error in onSubmit:", error);
       toast({
         variant: "destructive",
         title: "Error",

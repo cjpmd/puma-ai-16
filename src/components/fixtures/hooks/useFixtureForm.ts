@@ -31,6 +31,8 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         potm_player_id: data.motm_player_ids?.[0] || null
       };
 
+      console.log("Saving fixture with data:", fixtureData);
+
       let fixtureResult;
       
       if (editingFixture?.id) {
@@ -53,6 +55,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
       const fixtureId = fixtureResult.data.id;
 
       if (fixtureId) {
+        // Insert team times if provided
         if (data.team_times && data.team_times.length > 0) {
           const { error: teamTimesError } = await supabase
             .from('fixture_team_times')
@@ -71,6 +74,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           if (teamTimesError) throw teamTimesError;
         }
 
+        // Insert scores if provided
         if (data.home_score || data.away_score) {
           const { error: scoresError } = await supabase
             .from('fixture_team_scores')
@@ -88,6 +92,20 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
             ], { onConflict: 'fixture_id,team_number' });
 
           if (scoresError) throw scoresError;
+        }
+
+        // Create default event attendance entries for all players
+        const { error: attendanceError } = await supabase
+          .from('event_attendance')
+          .insert({
+            event_id: fixtureId,
+            event_type: 'FIXTURE',
+            status: 'PENDING'
+          });
+
+        if (attendanceError) {
+          console.error("Error creating attendance:", attendanceError);
+          throw attendanceError;
         }
 
         const savedFixture = {
