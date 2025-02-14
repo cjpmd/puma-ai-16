@@ -78,7 +78,7 @@ export const AddFixtureDialog = ({
         location: data.location,
         team_name: data.team_name,
         format: data.format,
-        number_of_teams: parseInt(data.number_of_times || "1"),
+        number_of_teams: parseInt(data.number_of_teams || "1"),
         is_home: data.is_home,
         home_score: data.home_score ? parseInt(data.home_score) : null,
         away_score: data.away_score ? parseInt(data.away_score) : null,
