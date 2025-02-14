@@ -96,13 +96,18 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         }
 
         // Insert or update team scores
-        const scoresData = data.team_times?.map((_, index) => ({
-          fixture_id: fixtureId,
-          team_number: index + 1,
-          score: data[`team_${index + 1}_score`] || 0
-        })) || [];
+        const teamScoresData = Array.from({ length: parseInt(data.number_of_teams || "1") }).map((_, index) => {
+          const teamScore = data[`team_${index + 1}_score`] || 0;
+          const opponentScore = data[`opponent_${index + 1}_score`] || 0;
+          return {
+            fixture_id: fixtureId,
+            team_number: index + 1,
+            score: teamScore,
+            opponent_score: opponentScore
+          };
+        });
 
-        console.log("Saving team scores:", scoresData);
+        console.log("Saving team scores:", teamScoresData);
 
         // Delete existing scores first if editing
         if (editingFixture?.id) {
@@ -112,10 +117,10 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
             .eq('fixture_id', fixtureId);
         }
 
-        if (scoresData.length > 0) {
+        if (teamScoresData.length > 0) {
           const { data: scoresResult, error: scoresError } = await supabase
             .from('fixture_team_scores')
-            .upsert(scoresData)
+            .upsert(teamScoresData)
             .select();
 
           if (scoresError) {
@@ -127,21 +132,23 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         }
 
         // Create default event attendance entries for all players
-        const { data: attendanceResult, error: attendanceError } = await supabase
-          .from('event_attendance')
-          .insert({
-            event_id: fixtureId,
-            event_type: 'FIXTURE',
-            status: 'PENDING'
-          })
-          .select();
+        if (!editingFixture?.id) {
+          const { data: attendanceResult, error: attendanceError } = await supabase
+            .from('event_attendance')
+            .insert({
+              event_id: fixtureId,
+              event_type: 'FIXTURE',
+              status: 'PENDING'
+            })
+            .select();
 
-        if (attendanceError) {
-          console.error("Error creating attendance:", attendanceError);
-          throw attendanceError;
+          if (attendanceError) {
+            console.error("Error creating attendance:", attendanceError);
+            throw attendanceError;
+          }
+
+          console.log("Attendance created:", attendanceResult);
         }
-
-        console.log("Attendance created:", attendanceResult);
 
         const savedFixture = {
           ...fixtureResult.data,
