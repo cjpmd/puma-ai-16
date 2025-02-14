@@ -21,6 +21,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
       const dateToUse = selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
       console.log("Using date:", dateToUse);
 
+      // Only include fields that exist in the fixtures table
       const fixtureData = {
         opponent: data.opponent,
         location: data.location,
