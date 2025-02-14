@@ -40,8 +40,8 @@ export const FixtureForm = ({
       opponent_1_score: editingFixture?.opponent_1_score || 0,
       team_2_score: editingFixture?.team_2_score || 0,
       opponent_2_score: editingFixture?.opponent_2_score || 0,
-      motm_player_ids: editingFixture?.potm_player_id 
-        ? [editingFixture.potm_player_id]
+      motm_player_ids: editingFixture?.motm_player_id 
+        ? [editingFixture.motm_player_id]
         : Array(editingFixture?.number_of_teams || 1).fill(""),
       team_times: editingFixture?.team_times || [{ 
         meeting_time: "", 
