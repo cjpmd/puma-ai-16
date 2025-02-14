@@ -140,13 +140,13 @@ export const FixtureCard = ({
   }, [fixture.motm_player_id]);
 
   // Merge fixture data with team data for editing
-  const getEditingFixture = () => {
-    const editData = { ...fixture };
+  const getEditingFixture = (): Fixture => {
+    const editData: Fixture = { ...fixture };
     
     if (teamData) {
       teamData.scores.forEach((score, index) => {
-        editData[`team_${index + 1}_score`] = score.score;
-        editData[`opponent_${index + 1}_score`] = score.opponent_score;
+        editData[`team_${index + 1}_score` as keyof Fixture] = score.score;
+        editData[`opponent_${index + 1}_score` as keyof Fixture] = score.opponent_score;
       });
       
       editData.team_times = teamData.times;

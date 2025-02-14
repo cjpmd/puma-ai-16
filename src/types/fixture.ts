@@ -19,4 +19,14 @@ export interface Fixture {
   is_home?: boolean;
   number_of_teams?: number;
   performance_category?: string;
+  team_times?: Array<{
+    meeting_time?: string | null;
+    start_time?: string | null;
+    end_time?: string | null;
+    performance_category?: string;
+  }>;
+  team_1_score?: number;
+  opponent_1_score?: number;
+  team_2_score?: number;
+  opponent_2_score?: number;
 }
