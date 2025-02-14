@@ -1,8 +1,8 @@
-import { CalendarView } from "./CalendarView";
+
+import { useAuth } from "@/hooks/useAuth";
 import { DailyEvents } from "./DailyEvents";
-import { ObjectivesList } from "./ObjectivesList";
-import { useCalendarEventHandlers } from "./CalendarEventHandlers";
-import type { Fixture } from "@/types/fixture";
+import { useCalendarEventHandlers } from "./hooks/useCalendarEventHandlers";
+import { TrainingCalendar } from "@/components/training/TrainingCalendar";
 
 interface CalendarContentProps {
   date: Date;
@@ -13,7 +13,7 @@ interface CalendarContentProps {
   tournaments: any[];
   objectives: any[];
   fileUrls: Record<string, string>;
-  onEditFixture: (fixture: Fixture) => void;
+  onEditFixture: (fixture: any) => void;
   onEditFestival: (festival: any) => void;
   onTeamSelectionFestival: (festival: any) => void;
   onRefetchFixtures: () => void;
@@ -37,6 +37,7 @@ export const CalendarContent = ({
   onRefetchSessions,
   onRefetchFestivals,
 }: CalendarContentProps) => {
+  const { profile } = useAuth();
   const {
     handleDeleteFixture,
     handleUpdateFixtureDate,
@@ -44,25 +45,14 @@ export const CalendarContent = ({
     handleUpdateFestivalDate,
   } = useCalendarEventHandlers();
 
-  const handleAddDrill = (sessionId: string) => {
-    console.log("Adding drill to session:", sessionId);
-  };
-
-  const handleEditDrill = (sessionId: string, drill: any) => {
-    console.log("Editing drill:", drill, "in session:", sessionId);
-  };
+  if (!profile) {
+    console.log("No profile found in CalendarContent");
+    return null;
+  }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <CalendarView
-        date={date}
-        onDateSelect={(newDate) => newDate && setDate(newDate)}
-        sessions={sessions}
-        fixtures={fixtures}
-        festivals={festivals}
-        tournaments={tournaments}
-      />
-
+    <div className="grid md:grid-cols-[300px,1fr] gap-8">
+      <TrainingCalendar date={date} onDateSelect={setDate} />
       <DailyEvents
         date={date}
         fixtures={fixtures}
@@ -71,35 +61,18 @@ export const CalendarContent = ({
         tournaments={tournaments}
         fileUrls={fileUrls}
         onEditFixture={onEditFixture}
-        onDeleteFixture={async (fixtureId) => {
-          const success = await handleDeleteFixture(fixtureId);
-          if (success) onRefetchFixtures();
+        onDeleteFixture={handleDeleteFixture}
+        onUpdateFixtureDate={handleUpdateFixtureDate}
+        onAddDrill={(sessionId) => {
+          console.log("Add drill to session:", sessionId);
         }}
-        onUpdateFixtureDate={async (fixtureId, newDate) => {
-          const success = await handleUpdateFixtureDate(fixtureId, newDate);
-          if (success) onRefetchFixtures();
+        onEditDrill={(sessionId, drill) => {
+          console.log("Edit drill:", sessionId, drill);
         }}
-        onAddDrill={handleAddDrill}
-        onEditDrill={handleEditDrill}
-        onDeleteSession={async (sessionId) => {
-          const success = await handleDeleteSession(sessionId);
-          if (success) onRefetchSessions();
-        }}
+        onDeleteSession={handleDeleteSession}
         onEditFestival={onEditFestival}
-        onDeleteFestival={async () => {
-          onRefetchFestivals();
-        }}
         onTeamSelectionFestival={onTeamSelectionFestival}
-        onUpdateFestivalDate={async (festivalId, newDate) => {
-          const success = await handleUpdateFestivalDate(festivalId, newDate);
-          if (success) onRefetchFestivals();
-        }}
-      />
-
-      <ObjectivesList
-        date={date}
-        objectives={objectives}
-        onEditObjective={() => {}}
+        onUpdateFestivalDate={handleUpdateFestivalDate}
       />
     </div>
   );
