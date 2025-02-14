@@ -65,7 +65,8 @@ export const FixtureCard = ({
           { length: fixture.number_of_teams || 1 },
           (_, index) => ({
             team_number: index + 1,
-            score: fixture.home_score || 0,
+            score: 0,
+            opponent_score: 0,
             fixture_id: fixture.id
           })
         );
@@ -138,6 +139,22 @@ export const FixtureCard = ({
     fetchMotmName();
   }, [fixture.motm_player_id]);
 
+  // Merge fixture data with team data for editing
+  const getEditingFixture = () => {
+    const editData = { ...fixture };
+    
+    if (teamData) {
+      teamData.scores.forEach((score, index) => {
+        editData[`team_${index + 1}_score`] = score.score;
+        editData[`opponent_${index + 1}_score`] = score.opponent_score;
+      });
+      
+      editData.team_times = teamData.times;
+    }
+    
+    return editData;
+  };
+
   return (
     <>
       <Card className="hover:bg-accent/50 transition-colors">
@@ -145,12 +162,12 @@ export const FixtureCard = ({
           fixture={fixture}
           isCalendarOpen={isCalendarOpen}
           setIsCalendarOpen={setIsCalendarOpen}
-          onEdit={onEdit}
+          onEdit={() => onEdit(getEditingFixture())}
           onDelete={onDelete}
           onTeamSelection={() => setIsTeamSelectionOpen(true)}
           onDateChange={onDateChange}
         />
-        <CardContent onClick={() => onEdit(fixture)} className="cursor-pointer">
+        <CardContent onClick={() => onEdit(getEditingFixture())} className="cursor-pointer">
           <p className="font-semibold text-muted-foreground mb-4 text-sm">
             Date: {format(parseISO(fixture.date), "MMMM do, yyyy")}
           </p>
