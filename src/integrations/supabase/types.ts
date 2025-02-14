@@ -1071,9 +1071,13 @@ export type Database = {
           motm_player_id: string | null
           number_of_teams: number | null
           opponent: string
+          opponent_1_score: number | null
+          opponent_2_score: number | null
           outcome: string | null
           performance_category: string | null
           start_time: string | null
+          team_1_score: number | null
+          team_2_score: number | null
           team_name: string
           time: string | null
           updated_at: string | null
@@ -1094,9 +1098,13 @@ export type Database = {
           motm_player_id?: string | null
           number_of_teams?: number | null
           opponent: string
+          opponent_1_score?: number | null
+          opponent_2_score?: number | null
           outcome?: string | null
           performance_category?: string | null
           start_time?: string | null
+          team_1_score?: number | null
+          team_2_score?: number | null
           team_name: string
           time?: string | null
           updated_at?: string | null
@@ -1117,9 +1125,13 @@ export type Database = {
           motm_player_id?: string | null
           number_of_teams?: number | null
           opponent?: string
+          opponent_1_score?: number | null
+          opponent_2_score?: number | null
           outcome?: string | null
           performance_category?: string | null
           start_time?: string | null
+          team_1_score?: number | null
+          team_2_score?: number | null
           team_name?: string
           time?: string | null
           updated_at?: string | null
