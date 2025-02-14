@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,16 +16,15 @@ interface UserProfile {
 export const useAuth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true);
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          setIsLoading(false);
           return null;
         }
 
@@ -81,18 +81,36 @@ export const useAuth = () => {
           variant: "destructive"
         });
         return null;
-      } finally {
-        setIsLoading(false);
       }
     },
-    retry: false
+    retry: false,
+    enabled: !isInitializing // Only start querying once we've checked the initial session
   });
 
   useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          navigate('/auth');
+        }
+      } catch (error) {
+        console.error('Session initialization error:', error);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initializeAuth();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session);
+        
         if (event === 'SIGNED_OUT') {
           navigate('/auth');
+        } else if (event === 'SIGNED_IN') {
+          refetchProfile();
         }
       }
     );
@@ -100,7 +118,7 @@ export const useAuth = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, refetchProfile]);
 
   const hasPermission = (requiredRole: UserRole[]): boolean => {
     if (!profile) return false;
@@ -117,7 +135,7 @@ export const useAuth = () => {
 
   return {
     profile,
-    isLoading: isLoading || profileLoading,
+    isLoading: isInitializing || profileLoading,
     hasPermission,
   };
 };

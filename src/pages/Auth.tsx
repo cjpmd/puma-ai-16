@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AuthError, AuthApiError } from "@supabase/supabase-js";
+import { Loader2 } from "lucide-react";
 
 export const Auth = () => {
   const navigate = useNavigate();
@@ -54,30 +55,7 @@ export const Auth = () => {
       
       if (event === "SIGNED_IN" && session) {
         setErrorMessage("");
-        
-        try {
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .single();
-
-          if (!mounted) return;
-
-          if (profileError) {
-            console.error("Profile fetch error:", profileError);
-            setErrorMessage("Error fetching user profile");
-            return;
-          }
-
-          if (profile) {
-            navigate("/home");
-          }
-        } catch (err) {
-          if (!mounted) return;
-          console.error("Profile fetch error:", err);
-          setErrorMessage("Error fetching user profile");
-        }
+        navigate("/home");
       } else if (event === "SIGNED_OUT") {
         setErrorMessage("");
       }
@@ -117,7 +95,10 @@ export const Auth = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <div>Loading...</div>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
       </div>
     );
   }
