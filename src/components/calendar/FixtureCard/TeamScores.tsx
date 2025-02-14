@@ -19,13 +19,9 @@ interface TeamScoresProps {
   };
 }
 
-const getTeamOutcome = (ourScore: number, theirScore: number, isHome: boolean) => {
-  // When we're away, we need to swap the scores for the outcome calculation
-  const finalOurScore = isHome ? ourScore : theirScore;
-  const finalTheirScore = isHome ? theirScore : ourScore;
-  
-  if (finalOurScore > finalTheirScore) return 'WIN';
-  if (finalOurScore < finalTheirScore) return 'LOSS';
+const getTeamOutcome = (ourScore: number, theirScore: number) => {
+  if (ourScore > theirScore) return 'WIN';
+  if (ourScore < theirScore) return 'LOSS';
   return 'DRAW';
 };
 
@@ -45,12 +41,10 @@ const getOutcomeIcon = (outcome: string | null | undefined) => {
 export const TeamScores = ({
   scores,
   times,
-  outcome,
   fixture
 }: TeamScoresProps) => {
   const { profile } = useAuth();
   
-  // Fetch team settings to check if scores should be hidden
   const { data: teamSettings } = useQuery({
     queryKey: ['team-settings'],
     queryFn: async () => {
@@ -68,41 +62,44 @@ export const TeamScores = ({
     return <p className="text-muted-foreground">Score not yet recorded</p>;
   }
 
-  // Only show Team 1 score
-  const team1Score = scores.find(s => s.team_number === 1);
-  if (!team1Score) return null;
-
-  const ourScore = fixture.is_home ? team1Score.score : (scores.find(s => s.team_number === 2)?.score || 0);
-  const theirScore = fixture.is_home ? (scores.find(s => s.team_number === 2)?.score || 0) : team1Score.score;
-  
-  const teamTime = times.find(t => t.team_number === 1);
-  const performanceCategory = teamTime?.performance_category || 'MESSI';
-  const ourTeamName = `Team 1 (${performanceCategory})`;
-  
   const shouldHideScores = teamSettings?.hide_scores_from_parents && profile?.role === 'parent';
-  const displayScore = shouldHideScores ? 'Score hidden' : `${ourScore} - ${theirScore}`;
-  const teamOutcome = getTeamOutcome(ourScore, theirScore, fixture.is_home);
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <p className="font-semibold text-base">
-            {fixture.is_home ? 
-              `${ourTeamName}: ${displayScore} ${fixture.opponent}` :
-              `${fixture.opponent}: ${displayScore} ${ourTeamName}`
-            }
-          </p>
-          {!shouldHideScores && getOutcomeIcon(teamOutcome)}
-        </div>
-        {teamTime && (
-          <div className="text-sm text-muted-foreground">
-            {teamTime.meeting_time && <p>Meeting: {teamTime.meeting_time}</p>}
-            {teamTime.start_time && <p>Start: {teamTime.start_time}</p>}
-            {teamTime.end_time && <p>End: {teamTime.end_time}</p>}
+      {scores.map((teamScore, index) => {
+        const teamTime = times.find(t => t.team_number === teamScore.team_number);
+        const performanceCategory = teamTime?.performance_category || 'MESSI';
+        const ourTeamName = `Team ${teamScore.team_number} (${performanceCategory})`;
+        const theirScore = scores.find(s => s.team_number === teamScore.team_number + 1)?.score || 0;
+
+        const displayScore = shouldHideScores 
+          ? 'Score hidden' 
+          : `${teamScore.score} - ${theirScore}`;
+
+        const outcome = !shouldHideScores ? getTeamOutcome(teamScore.score, theirScore) : null;
+
+        return (
+          <div key={teamScore.team_number} className="space-y-2">
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-base">
+                {fixture.is_home 
+                  ? `${ourTeamName}: ${displayScore} ${fixture.opponent}`
+                  : `${fixture.opponent}: ${displayScore} ${ourTeamName}`
+                }
+              </p>
+              {!shouldHideScores && getOutcomeIcon(outcome)}
+            </div>
+
+            {teamTime && (
+              <div className="text-sm text-muted-foreground">
+                {teamTime.meeting_time && <p>Meeting: {teamTime.meeting_time}</p>}
+                {teamTime.start_time && <p>Start: {teamTime.start_time}</p>}
+                {teamTime.end_time && <p>End: {teamTime.end_time}</p>}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        );
+      })}
     </div>
   );
 };
