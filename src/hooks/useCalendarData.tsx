@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -59,8 +60,8 @@ export const useCalendarData = (date: Date) => {
           .from("fixtures")
           .select(`
             *,
-            fixture_team_times(*),
-            fixture_team_scores(*)
+            fixture_team_times!fixture_team_times_fixture_id_fkey(*),
+            fixture_team_scores!fixture_team_scores_fixture_id_fkey(*)
           `)
           .eq("date", formattedDate);
         
