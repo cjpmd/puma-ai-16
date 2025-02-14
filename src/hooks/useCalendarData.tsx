@@ -50,14 +50,19 @@ export const useCalendarData = (date: Date) => {
   } = useQuery({
     queryKey: ["fixtures", formattedDate],
     queryFn: async () => {
-      console.log("Fetching fixtures...");
+      console.log("Fetching fixtures for date:", formattedDate);
       try {
         const { data: fixturesData, error: fixturesError } = await supabase
           .from("fixtures")
-          .select("*")
+          .select("*, fixture_team_times(*), fixture_team_scores(*)")
           .eq("date", formattedDate);
         
-        if (fixturesError) throw fixturesError;
+        if (fixturesError) {
+          console.error("Error in fixtures query:", fixturesError);
+          throw fixturesError;
+        }
+        
+        console.log("Fixtures fetched:", fixturesData);
         
         if (!fixturesData?.length) return [];
 
@@ -68,12 +73,18 @@ export const useCalendarData = (date: Date) => {
           .eq("event_type", "FIXTURE")
           .in("event_id", fixtureIds);
 
-        if (attendanceError) throw attendanceError;
+        if (attendanceError) {
+          console.error("Error fetching attendance:", attendanceError);
+          throw attendanceError;
+        }
         
-        return fixturesData.map(fixture => ({
+        const fixturesWithAttendance = fixturesData.map(fixture => ({
           ...fixture,
           event_attendance: (attendanceData || []).filter(a => a.event_id === fixture.id)
         }));
+
+        console.log("Fixtures with attendance:", fixturesWithAttendance);
+        return fixturesWithAttendance;
       } catch (error) {
         console.error("Error fetching fixtures:", error);
         toast({
