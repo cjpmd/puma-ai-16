@@ -72,7 +72,53 @@ export const TeamCard = ({
               </FormItem>
             )}
           />
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name={`team_times.${index}.meeting_time`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Meeting Time</FormLabel>
+                <FormControl>
+                  <Input type="time" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name={`team_times.${index}.start_time`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Start Time</FormLabel>
+                <FormControl>
+                  <Input type="time" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name={`team_times.${index}.end_time`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>End Time</FormLabel>
+                <FormControl>
+                  <Input type="time" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name={`team_times.${index}.performance_category`}
@@ -95,34 +141,34 @@ export const TeamCard = ({
               </FormItem>
             )}
           />
-        </div>
 
-        {players && (
-          <FormField
-            control={form.control}
-            name={`motm_player_ids.${index}`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{getMotmLabel(index)}</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select player" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {players.map((player) => (
-                      <SelectItem key={player.id} value={player.id}>
-                        {player.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
+          {players && (
+            <FormField
+              control={form.control}
+              name={`motm_player_ids.${index}`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{getMotmLabel(index)}</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select player" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {players.map((player) => (
+                        <SelectItem key={player.id} value={player.id}>
+                          {player.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+        </div>
       </CardContent>
     </Card>
   );
