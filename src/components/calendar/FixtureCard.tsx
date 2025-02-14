@@ -33,6 +33,7 @@ export const FixtureCard = ({
   } = useQuery({
     queryKey: ["team-data", fixture.id],
     queryFn: async () => {
+      console.log("Fetching team data for fixture:", fixture.id);
       const [scoresResponse, timesResponse] = await Promise.all([
         supabase
           .from('fixture_team_scores')
@@ -46,8 +47,17 @@ export const FixtureCard = ({
           .order('team_number')
       ]);
 
-      if (scoresResponse.error) throw scoresResponse.error;
-      if (timesResponse.error) throw timesResponse.error;
+      if (scoresResponse.error) {
+        console.error("Error fetching scores:", scoresResponse.error);
+        throw scoresResponse.error;
+      }
+      if (timesResponse.error) {
+        console.error("Error fetching times:", timesResponse.error);
+        throw timesResponse.error;
+      }
+
+      console.log("Got scores:", scoresResponse.data);
+      console.log("Got times:", timesResponse.data);
 
       // If there are no scores yet, create default scores
       if (!scoresResponse.data || scoresResponse.data.length === 0) {
@@ -55,10 +65,12 @@ export const FixtureCard = ({
           { length: fixture.number_of_teams || 1 },
           (_, index) => ({
             team_number: index + 1,
-            score: 0,
+            score: fixture.home_score || 0,
             fixture_id: fixture.id
           })
         );
+
+        console.log("Creating default scores:", defaultScores);
 
         const { error: insertError } = await supabase
           .from('fixture_team_scores')
@@ -79,7 +91,12 @@ export const FixtureCard = ({
           .eq('fixture_id', fixture.id)
           .order('team_number');
 
-        if (refetchError) throw refetchError;
+        if (refetchError) {
+          console.error("Error refetching scores:", refetchError);
+          throw refetchError;
+        }
+
+        console.log("Updated scores:", updatedScores);
 
         return {
           scores: updatedScores,
@@ -96,7 +113,7 @@ export const FixtureCard = ({
 
   useEffect(() => {
     const fetchPotmName = async () => {
-      if (!fixture.motm_player_id) {
+      if (!fixture.potm_player_id) {
         setPotmName(null);
         return;
       }
@@ -104,7 +121,7 @@ export const FixtureCard = ({
       const { data, error } = await supabase
         .from('players')
         .select('name')
-        .eq('id', fixture.motm_player_id)
+        .eq('id', fixture.potm_player_id)
         .single();
 
       if (error) {
@@ -119,7 +136,7 @@ export const FixtureCard = ({
     };
 
     fetchPotmName();
-  }, [fixture.motm_player_id]);
+  }, [fixture.potm_player_id]);
 
   return (
     <>
@@ -142,7 +159,6 @@ export const FixtureCard = ({
             <TeamScores
               scores={teamData.scores}
               times={teamData.times}
-              outcome={fixture.outcome}
               fixture={{
                 opponent: fixture.opponent,
                 team_name: fixture.team_name,
@@ -153,7 +169,7 @@ export const FixtureCard = ({
 
           <div className="space-y-1 mt-4 text-sm text-muted-foreground">
             {fixture.location && <p>Location: {fixture.location}</p>}
-            {fixture.motm_player_id && potmName && (
+            {fixture.potm_player_id && potmName && (
               <p>Player of the Match: {potmName}</p>
             )}
           </div>

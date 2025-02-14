@@ -11,7 +11,6 @@ type TeamScore = Database['public']['Tables']['fixture_team_scores']['Row'];
 interface TeamScoresProps {
   scores: TeamScore[];
   times: TeamTime[];
-  outcome: string | null | undefined;
   fixture: {
     opponent: string;
     team_name: string;
@@ -19,9 +18,9 @@ interface TeamScoresProps {
   };
 }
 
-const getTeamOutcome = (ourScore: number, theirScore: number) => {
-  if (ourScore > theirScore) return 'WIN';
-  if (ourScore < theirScore) return 'LOSS';
+const getTeamOutcome = (ourScore: number, opponentScore: number) => {
+  if (ourScore > opponentScore) return 'WIN';
+  if (ourScore < opponentScore) return 'LOSS';
   return 'DRAW';
 };
 
@@ -66,20 +65,21 @@ export const TeamScores = ({
 
   return (
     <div className="space-y-4">
-      {scores.map((teamScore, index) => {
-        const teamTime = times.find(t => t.team_number === teamScore.team_number);
+      {scores.map((score) => {
+        const teamTime = times.find(t => t.team_number === score.team_number);
         const performanceCategory = teamTime?.performance_category || 'MESSI';
-        const ourTeamName = `Team ${teamScore.team_number} (${performanceCategory})`;
-        const theirScore = scores.find(s => s.team_number === teamScore.team_number + 1)?.score || 0;
-
+        const ourTeamName = `Team ${score.team_number} (${performanceCategory})`;
+        
         const displayScore = shouldHideScores 
           ? 'Score hidden' 
-          : `${teamScore.score} - ${theirScore}`;
+          : fixture.is_home 
+            ? `${score.score} - ${scores.find(s => s.team_number === score.team_number + 1)?.score || 0}`
+            : `${scores.find(s => s.team_number === score.team_number + 1)?.score || 0} - ${score.score}`;
 
-        const outcome = !shouldHideScores ? getTeamOutcome(teamScore.score, theirScore) : null;
+        const outcome = !shouldHideScores ? getTeamOutcome(score.score, scores.find(s => s.team_number === score.team_number + 1)?.score || 0) : null;
 
         return (
-          <div key={teamScore.team_number} className="space-y-2">
+          <div key={score.team_number} className="space-y-2">
             <div className="flex items-center gap-2">
               <p className="font-semibold text-base">
                 {fixture.is_home 
