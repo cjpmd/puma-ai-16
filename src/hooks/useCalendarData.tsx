@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -52,8 +51,8 @@ export const useCalendarData = (date: Date) => {
     queryFn: async () => {
       console.log("Fetching fixtures for date:", formattedDate);
       try {
-        // Log the raw SQL that would be executed
-        const query = supabase
+        console.log("Executing fixtures query for date:", formattedDate);
+        const { data: fixturesData, error: fixturesError } = await supabase
           .from("fixtures")
           .select(`
             *,
@@ -61,10 +60,6 @@ export const useCalendarData = (date: Date) => {
             fixture_team_scores!fixture_team_scores_fixture_id_fkey(*)
           `)
           .eq("date", formattedDate);
-
-        console.log("Query:", query.toSQL());
-
-        const { data: fixturesData, error: fixturesError } = await query;
         
         if (fixturesError) {
           console.error("Error in fixtures query:", fixturesError);
@@ -111,7 +106,7 @@ export const useCalendarData = (date: Date) => {
     },
     retry: false,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0  // Don't cache the results
+    gcTime: 0     // Don't keep data in cache (formerly cacheTime)
   });
 
   const { 
