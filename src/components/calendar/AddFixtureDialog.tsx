@@ -88,6 +88,18 @@ export const AddFixtureDialog = ({
         } catch (notificationError) {
           console.error('Error sending notification:', notificationError);
         }
+
+        // Show success toast for new fixture
+        toast({
+          title: "Success",
+          description: `New fixture against ${data.opponent} has been added to the calendar`,
+        });
+      } else {
+        // Show success toast for edited fixture
+        toast({
+          title: "Success",
+          description: `Fixture against ${data.opponent} has been updated`,
+        });
       }
 
       // Force refetch with the specific date
@@ -106,13 +118,6 @@ export const AddFixtureDialog = ({
       if (!showTeamSelection) {
         onOpenChange(false);
       }
-      
-      toast({
-        title: "Success",
-        description: editingFixture 
-          ? "Fixture updated successfully" 
-          : "Fixture added successfully",
-      });
 
       return savedData;
     } catch (error) {
