@@ -90,8 +90,17 @@ export const AddFixtureDialog = ({
         }
       }
 
-      // Force refetch the fixtures data
-      await queryClient.invalidateQueries({ queryKey: ["fixtures"] });
+      // Force refetch with the specific date
+      const formattedDate = format(selectedDate || new Date(), "yyyy-MM-dd");
+      await queryClient.invalidateQueries({ 
+        queryKey: ["fixtures", formattedDate]
+      });
+      
+      // Also invalidate any potential date-specific queries
+      await queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "fixtures"
+      });
+      
       await onSuccess();
       
       if (!showTeamSelection) {
