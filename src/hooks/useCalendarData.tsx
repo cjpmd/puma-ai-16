@@ -52,7 +52,8 @@ export const useCalendarData = (date: Date) => {
     queryFn: async () => {
       console.log("Fetching fixtures for date:", formattedDate);
       try {
-        const { data: fixturesData, error: fixturesError } = await supabase
+        // Log the raw SQL that would be executed
+        const query = supabase
           .from("fixtures")
           .select(`
             *,
@@ -60,17 +61,26 @@ export const useCalendarData = (date: Date) => {
             fixture_team_scores!fixture_team_scores_fixture_id_fkey(*)
           `)
           .eq("date", formattedDate);
+
+        console.log("Query:", query.toSQL());
+
+        const { data: fixturesData, error: fixturesError } = await query;
         
         if (fixturesError) {
           console.error("Error in fixtures query:", fixturesError);
           throw fixturesError;
         }
         
-        console.log("Fixtures fetched:", fixturesData);
+        console.log("Raw fixtures data:", fixturesData);
         
-        if (!fixturesData?.length) return [];
+        if (!fixturesData?.length) {
+          console.log("No fixtures found for date:", formattedDate);
+          return [];
+        }
 
         const fixtureIds = fixturesData.map(f => f.id);
+        console.log("Fetching attendance for fixture IDs:", fixtureIds);
+
         const { data: attendanceData, error: attendanceError } = await supabase
           .from("event_attendance")
           .select("status, player_id, responded_by, event_id")
@@ -87,7 +97,7 @@ export const useCalendarData = (date: Date) => {
           event_attendance: (attendanceData || []).filter(a => a.event_id === fixture.id)
         }));
 
-        console.log("Fixtures with attendance:", fixturesWithAttendance);
+        console.log("Final fixtures data:", fixturesWithAttendance);
         return fixturesWithAttendance;
       } catch (error) {
         console.error("Error fetching fixtures:", error);
@@ -99,7 +109,9 @@ export const useCalendarData = (date: Date) => {
         return [];
       }
     },
-    retry: false
+    retry: false,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0  // Don't cache the results
   });
 
   const { 
