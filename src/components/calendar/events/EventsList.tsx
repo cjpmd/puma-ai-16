@@ -113,7 +113,7 @@ export const EventsList = ({
           ))}
           
           {!hasEvents && (
-            <div className="text-center py-16 text-muted-foreground min-h-[200px] flex items-center justify-center border border-dashed rounded-lg">
+            <div className="text-center py-16 text-muted-foreground min-h-[200px] flex items-center justify-center">
               No events scheduled for this date
             </div>
           )}

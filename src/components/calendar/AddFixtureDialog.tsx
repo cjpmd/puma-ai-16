@@ -71,10 +71,45 @@ export const AddFixtureDialog = ({
         throw new Error("Date is required");
       }
 
-      const savedData = await data;
-      console.log("Fixture saved:", savedData);
+      const dateToUse = selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+      
+      const fixtureData = {
+        opponent: data.opponent,
+        location: data.location,
+        team_name: data.team_name,
+        format: data.format,
+        number_of_teams: parseInt(data.number_of_teams || "1"),
+        is_home: data.is_home,
+        home_score: data.home_score ? parseInt(data.home_score) : null,
+        away_score: data.away_score ? parseInt(data.away_score) : null,
+        date: dateToUse,
+        potm_player_id: data.motm_player_ids?.[0] || null
+      };
 
-      if (!editingFixture) {
+      let savedFixture;
+      
+      if (editingFixture?.id) {
+        const { data: updated, error } = await supabase
+          .from('fixtures')
+          .update(fixtureData)
+          .eq('id', editingFixture.id)
+          .select('*')
+          .single();
+          
+        if (error) throw error;
+        savedFixture = updated;
+      } else {
+        const { data: created, error } = await supabase
+          .from('fixtures')
+          .insert(fixtureData)
+          .select('*')
+          .single();
+          
+        if (error) throw error;
+        savedFixture = created;
+      }
+
+      if (!editingFixture && savedFixture) {
         try {
           await sendFixtureNotification({
             type: 'FIXTURE',
@@ -83,7 +118,7 @@ export const AddFixtureDialog = ({
             opponent: data.opponent,
             location: data.location,
             category: data.team_name,
-            eventId: savedData.id
+            eventId: savedFixture.id
           });
         } catch (notificationError) {
           console.error('Error sending notification:', notificationError);
@@ -103,9 +138,8 @@ export const AddFixtureDialog = ({
       }
 
       // Force refetch with the specific date
-      const formattedDate = format(selectedDate || new Date(), "yyyy-MM-dd");
       await queryClient.invalidateQueries({ 
-        queryKey: ["fixtures", formattedDate]
+        queryKey: ["fixtures", dateToUse]
       });
       
       // Also invalidate any potential date-specific queries
@@ -119,7 +153,7 @@ export const AddFixtureDialog = ({
         onOpenChange(false);
       }
 
-      return savedData;
+      return savedFixture;
     } catch (error) {
       console.error("Error in onSubmit:", error);
       toast({
