@@ -45,35 +45,44 @@ export const CalendarContent = ({
     handleUpdateFestivalDate,
   } = useCalendarEventHandlers();
 
-  if (!profile) {
-    console.log("No profile found in CalendarContent");
-    return null;
-  }
+  console.log("Calendar Content Rendering:", {
+    date,
+    sessions,
+    fixtures,
+    festivals,
+    tournaments,
+    objectives,
+    profile
+  });
 
   return (
     <div className="grid md:grid-cols-[300px,1fr] gap-8">
-      <TrainingCalendar date={date} onDateSelect={setDate} />
-      <DailyEvents
-        date={date}
-        fixtures={fixtures}
-        sessions={sessions}
-        festivals={festivals}
-        tournaments={tournaments}
-        fileUrls={fileUrls}
-        onEditFixture={onEditFixture}
-        onDeleteFixture={handleDeleteFixture}
-        onUpdateFixtureDate={handleUpdateFixtureDate}
-        onAddDrill={(sessionId) => {
-          console.log("Add drill to session:", sessionId);
-        }}
-        onEditDrill={(sessionId, drill) => {
-          console.log("Edit drill:", sessionId, drill);
-        }}
-        onDeleteSession={handleDeleteSession}
-        onEditFestival={onEditFestival}
-        onTeamSelectionFestival={onTeamSelectionFestival}
-        onUpdateFestivalDate={handleUpdateFestivalDate}
-      />
+      <div className="bg-white rounded-lg shadow">
+        <TrainingCalendar date={date} onDateSelect={setDate} />
+      </div>
+      <div className="bg-white rounded-lg shadow">
+        <DailyEvents
+          date={date}
+          fixtures={fixtures}
+          sessions={sessions}
+          festivals={festivals}
+          tournaments={tournaments}
+          fileUrls={fileUrls}
+          onEditFixture={onEditFixture}
+          onDeleteFixture={handleDeleteFixture}
+          onUpdateFixtureDate={handleUpdateFixtureDate}
+          onAddDrill={(sessionId) => {
+            console.log("Add drill to session:", sessionId);
+          }}
+          onEditDrill={(sessionId, drill) => {
+            console.log("Edit drill:", sessionId, drill);
+          }}
+          onDeleteSession={handleDeleteSession}
+          onEditFestival={onEditFestival}
+          onTeamSelectionFestival={onTeamSelectionFestival}
+          onUpdateFestivalDate={handleUpdateFestivalDate}
+        />
+      </div>
     </div>
   );
 };
