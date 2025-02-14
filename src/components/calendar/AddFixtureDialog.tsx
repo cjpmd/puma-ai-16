@@ -78,7 +78,7 @@ export const AddFixtureDialog = ({
         location: data.location,
         team_name: data.team_name,
         format: data.format,
-        number_of_teams: parseInt(data.number_of_teams || "1"),
+        number_of_teams: parseInt(data.number_of_times || "1"),
         is_home: data.is_home,
         home_score: data.home_score ? parseInt(data.home_score) : null,
         away_score: data.away_score ? parseInt(data.away_score) : null,
@@ -111,18 +111,24 @@ export const AddFixtureDialog = ({
         if (error) throw error;
         savedFixture = updated;
 
-        // Update team times
+        // Upsert team times
         if (data.team_times?.length > 0) {
           const { error: teamTimesError } = await supabase
             .from('fixture_team_times')
-            .upsert(data.team_times.map((teamTime, index) => ({
-              fixture_id: editingFixture.id,
-              team_number: index + 1,
-              meeting_time: teamTime.meeting_time || null,
-              start_time: teamTime.start_time || null,
-              end_time: teamTime.end_time || null,
-              performance_category: teamTime.performance_category || "MESSI"
-            })));
+            .upsert(
+              data.team_times.map((teamTime, index) => ({
+                fixture_id: editingFixture.id,
+                team_number: index + 1,
+                meeting_time: teamTime.meeting_time || null,
+                start_time: teamTime.start_time || null,
+                end_time: teamTime.end_time || null,
+                performance_category: teamTime.performance_category || "MESSI"
+              })),
+              { 
+                onConflict: 'fixture_id,team_number',
+                ignoreDuplicates: false
+              }
+            );
 
           if (teamTimesError) throw teamTimesError;
         }
@@ -149,14 +155,16 @@ export const AddFixtureDialog = ({
         if (data.team_times?.length > 0 && savedFixture.id) {
           const { error: teamTimesError } = await supabase
             .from('fixture_team_times')
-            .insert(data.team_times.map((teamTime, index) => ({
-              fixture_id: savedFixture.id,
-              team_number: index + 1,
-              meeting_time: teamTime.meeting_time || null,
-              start_time: teamTime.start_time || null,
-              end_time: teamTime.end_time || null,
-              performance_category: teamTime.performance_category || "MESSI"
-            })));
+            .insert(
+              data.team_times.map((teamTime, index) => ({
+                fixture_id: savedFixture.id,
+                team_number: index + 1,
+                meeting_time: teamTime.meeting_time || null,
+                start_time: teamTime.start_time || null,
+                end_time: teamTime.end_time || null,
+                performance_category: teamTime.performance_category || "MESSI"
+              }))
+            );
 
           if (teamTimesError) throw teamTimesError;
         }
