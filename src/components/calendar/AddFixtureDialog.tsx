@@ -83,7 +83,10 @@ export const AddFixtureDialog = ({
         home_score: data.home_score ? parseInt(data.home_score) : null,
         away_score: data.away_score ? parseInt(data.away_score) : null,
         date: dateToUse,
-        potm_player_id: data.motm_player_ids?.[0] || null
+        potm_player_id: data.motm_player_ids?.[0] || null,
+        meeting_time: data.team_times?.[0]?.meeting_time || null,
+        start_time: data.team_times?.[0]?.start_time || null,
+        end_time: data.team_times?.[0]?.end_time || null
       };
 
       let savedFixture;
@@ -93,20 +96,70 @@ export const AddFixtureDialog = ({
           .from('fixtures')
           .update(fixtureData)
           .eq('id', editingFixture.id)
-          .select('*')
+          .select(`
+            *,
+            fixture_team_times (
+              meeting_time,
+              start_time,
+              end_time,
+              performance_category,
+              team_number
+            )
+          `)
           .single();
           
         if (error) throw error;
         savedFixture = updated;
+
+        // Update team times
+        if (data.team_times?.length > 0) {
+          const { error: teamTimesError } = await supabase
+            .from('fixture_team_times')
+            .upsert(data.team_times.map((teamTime, index) => ({
+              fixture_id: editingFixture.id,
+              team_number: index + 1,
+              meeting_time: teamTime.meeting_time || null,
+              start_time: teamTime.start_time || null,
+              end_time: teamTime.end_time || null,
+              performance_category: teamTime.performance_category || "MESSI"
+            })));
+
+          if (teamTimesError) throw teamTimesError;
+        }
       } else {
         const { data: created, error } = await supabase
           .from('fixtures')
           .insert(fixtureData)
-          .select('*')
+          .select(`
+            *,
+            fixture_team_times (
+              meeting_time,
+              start_time,
+              end_time,
+              performance_category,
+              team_number
+            )
+          `)
           .single();
           
         if (error) throw error;
         savedFixture = created;
+
+        // Insert team times for new fixture
+        if (data.team_times?.length > 0 && savedFixture.id) {
+          const { error: teamTimesError } = await supabase
+            .from('fixture_team_times')
+            .insert(data.team_times.map((teamTime, index) => ({
+              fixture_id: savedFixture.id,
+              team_number: index + 1,
+              meeting_time: teamTime.meeting_time || null,
+              start_time: teamTime.start_time || null,
+              end_time: teamTime.end_time || null,
+              performance_category: teamTime.performance_category || "MESSI"
+            })));
+
+          if (teamTimesError) throw teamTimesError;
+        }
       }
 
       if (!editingFixture && savedFixture) {
@@ -124,25 +177,21 @@ export const AddFixtureDialog = ({
           console.error('Error sending notification:', notificationError);
         }
 
-        // Show success toast for new fixture
         toast({
           title: "Success",
           description: `New fixture against ${data.opponent} has been added to the calendar`,
         });
       } else {
-        // Show success toast for edited fixture
         toast({
           title: "Success",
           description: `Fixture against ${data.opponent} has been updated`,
         });
       }
 
-      // Force refetch with the specific date
       await queryClient.invalidateQueries({ 
         queryKey: ["fixtures", dateToUse]
       });
       
-      // Also invalidate any potential date-specific queries
       await queryClient.invalidateQueries({
         predicate: (query) => query.queryKey[0] === "fixtures"
       });
