@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -91,10 +92,39 @@ export const useCalendarEventHandlers = () => {
     }
   };
 
+  const handleUpdateFestivalDate = async (festivalId: string, newDate: Date) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase
+        .from("festivals")
+        .update({ date: format(newDate, "yyyy-MM-dd") })
+        .eq("id", festivalId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Festival date updated successfully",
+      });
+      return true;
+    } catch (error) {
+      console.error("Error updating festival date:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update festival date",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     handleDeleteFixture,
     handleUpdateFixtureDate,
     handleDeleteSession,
+    handleUpdateFestivalDate,
     isLoading,
   };
 };
