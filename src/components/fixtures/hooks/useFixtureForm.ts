@@ -131,23 +131,38 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           console.log("Team scores saved:", scoresResult);
         }
 
-        // Create default event attendance entries for all players
+        // Create default event attendance entries for all players in the team
         if (!editingFixture?.id) {
-          const { data: attendanceResult, error: attendanceError } = await supabase
-            .from('event_attendance')
-            .insert({
-              event_id: fixtureId,
-              event_type: 'FIXTURE',
-              status: 'PENDING'
-            })
-            .select();
+          // First get all players in the team category
+          const { data: teamPlayers, error: playersError } = await supabase
+            .from('players')
+            .select('id')
+            .eq('team_category', data.team_name);
 
-          if (attendanceError) {
-            console.error("Error creating attendance:", attendanceError);
-            throw attendanceError;
+          if (playersError) {
+            console.error("Error fetching team players:", playersError);
+            throw playersError;
           }
 
-          console.log("Attendance created:", attendanceResult);
+          if (teamPlayers && teamPlayers.length > 0) {
+            const attendanceData = teamPlayers.map(player => ({
+              event_id: fixtureId,
+              event_type: 'FIXTURE',
+              status: 'PENDING',
+              player_id: player.id
+            }));
+
+            const { error: attendanceError } = await supabase
+              .from('event_attendance')
+              .insert(attendanceData);
+
+            if (attendanceError) {
+              console.error("Error creating attendance:", attendanceError);
+              throw attendanceError;
+            }
+
+            console.log("Attendance created for all team players");
+          }
         }
 
         const savedFixture = {
