@@ -18,9 +18,9 @@ interface TeamScoresProps {
   };
 }
 
-const getTeamOutcome = (ourScore: number, opponentScore: number) => {
-  if (ourScore > opponentScore) return 'WIN';
-  if (ourScore < opponentScore) return 'LOSS';
+const getTeamOutcome = (ourScore: number, theirScore: number) => {
+  if (ourScore > theirScore) return 'WIN';
+  if (ourScore < theirScore) return 'LOSS';
   return 'DRAW';
 };
 
@@ -65,18 +65,18 @@ export const TeamScores = ({
 
   return (
     <div className="space-y-4">
-      {scores.map((score) => {
+      {scores.map((score, index) => {
         const teamTime = times.find(t => t.team_number === score.team_number);
         const performanceCategory = teamTime?.performance_category || 'MESSI';
         const ourTeamName = `Team ${score.team_number} (${performanceCategory})`;
+        const opponentScore = shouldHideScores ? 'hidden' : (scores.length > index + 1 ? scores[index + 1].score : 0);
+        const ourScore = shouldHideScores ? 'hidden' : score.score;
         
-        const displayScore = shouldHideScores 
-          ? 'Score hidden' 
-          : fixture.is_home 
-            ? `${score.score} - ${scores.find(s => s.team_number === score.team_number + 1)?.score || 0}`
-            : `${scores.find(s => s.team_number === score.team_number + 1)?.score || 0} - ${score.score}`;
+        const displayScore = fixture.is_home 
+          ? `${ourScore} - ${opponentScore}`
+          : `${opponentScore} - ${ourScore}`;
 
-        const outcome = !shouldHideScores ? getTeamOutcome(score.score, scores.find(s => s.team_number === score.team_number + 1)?.score || 0) : null;
+        const outcome = !shouldHideScores ? getTeamOutcome(score.score, scores.length > index + 1 ? scores[index + 1].score : 0) : null;
 
         return (
           <div key={score.team_number} className="space-y-2">
