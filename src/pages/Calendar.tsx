@@ -13,11 +13,11 @@ export const CalendarPage = () => {
   const { profile, isLoading: authLoading } = useAuth();
   const calendarState = useCalendarState();
   const {
-    sessions,
-    fixtures,
-    festivals,
-    tournaments,
-    objectives,
+    sessions = [],
+    fixtures = [],
+    festivals = [],
+    tournaments = [],
+    objectives = [],
     refetchSessions,
     refetchFixtures,
     refetchFestivals,
@@ -49,7 +49,13 @@ export const CalendarPage = () => {
   }
 
   if (!profile) {
-    return null;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-muted-foreground">Please log in to view the calendar.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -66,11 +72,11 @@ export const CalendarPage = () => {
       <CalendarContent
         date={calendarState.date}
         setDate={calendarState.setDate}
-        sessions={sessions || []}
-        fixtures={fixtures || []}
-        festivals={festivals || []}
-        tournaments={tournaments || []}
-        objectives={objectives || []}
+        sessions={sessions}
+        fixtures={fixtures}
+        festivals={festivals}
+        tournaments={tournaments}
+        objectives={objectives}
         fileUrls={calendarState.fileUrls}
         onEditFixture={(fixture) => {
           calendarState.setEditingFixture(fixture);

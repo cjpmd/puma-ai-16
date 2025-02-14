@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
@@ -18,8 +17,10 @@ export const Auth = () => {
 
     const initializeAuth = async () => {
       try {
-        // First, check if we have an invalid session
-        const { error: sessionError } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
         if (sessionError) {
           if (sessionError.message.includes('refresh_token_not_found')) {
             await supabase.auth.signOut();
@@ -27,20 +28,9 @@ export const Auth = () => {
           throw sessionError;
         }
 
-        // Then check if we're already signed in
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (!mounted) return;
-
-        if (userError) {
-          if (userError.message.includes('refresh_token_not_found')) {
-            await supabase.auth.signOut();
-          }
-          throw userError;
-        }
-
-        if (user) {
-          navigate("/home");
+        if (session) {
+          navigate("/calendar");
+          return;
         }
       } catch (err) {
         if (!mounted) return;
@@ -66,7 +56,7 @@ export const Auth = () => {
       
       if (event === "SIGNED_IN" && session) {
         setErrorMessage("");
-        navigate("/home");
+        navigate("/calendar");
       } else if (event === "SIGNED_OUT") {
         setErrorMessage("");
       }
