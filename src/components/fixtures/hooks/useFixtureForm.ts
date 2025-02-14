@@ -28,10 +28,8 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         format: data.format,
         number_of_teams: parseInt(data.number_of_teams || "1"),
         is_home: data.is_home,
-        home_score: data.home_score ? parseInt(data.home_score) : null,
-        away_score: data.away_score ? parseInt(data.away_score) : null,
         date: dateToUse,
-        potm_player_id: data.motm_player_ids?.[0] || null
+        motm_player_id: data.motm_player_ids?.[0] || null
       };
 
       console.log("Saving fixture with data:", fixtureData);
@@ -63,7 +61,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
       const fixtureId = fixtureResult.data.id;
 
       if (fixtureId) {
-        // Insert team times if provided
+        // Insert or update team times with performance categories
         if (data.team_times && data.team_times.length > 0) {
           const teamTimesData = data.team_times.map((teamTime, index) => ({
             fixture_id: fixtureId,
@@ -75,6 +73,14 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           }));
 
           console.log("Saving team times:", teamTimesData);
+
+          // Delete existing team times first
+          if (editingFixture?.id) {
+            await supabase
+              .from('fixture_team_times')
+              .delete()
+              .eq('fixture_id', fixtureId);
+          }
 
           const { data: teamTimesResult, error: teamTimesError } = await supabase
             .from('fixture_team_times')
@@ -89,23 +95,24 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           console.log("Team times saved:", teamTimesResult);
         }
 
-        // Insert scores if provided
-        if (data.home_score || data.away_score) {
-          const scoresData = [
-            {
-              fixture_id: fixtureId,
-              team_number: 1,
-              score: parseInt(data.home_score) || 0
-            },
-            {
-              fixture_id: fixtureId,
-              team_number: 2,
-              score: parseInt(data.away_score) || 0
-            }
-          ];
+        // Insert or update team scores
+        const scoresData = data.team_times?.map((_, index) => ({
+          fixture_id: fixtureId,
+          team_number: index + 1,
+          score: data[`team_${index + 1}_score`] || 0
+        })) || [];
 
-          console.log("Saving team scores:", scoresData);
+        console.log("Saving team scores:", scoresData);
 
+        // Delete existing scores first if editing
+        if (editingFixture?.id) {
+          await supabase
+            .from('fixture_team_scores')
+            .delete()
+            .eq('fixture_id', fixtureId);
+        }
+
+        if (scoresData.length > 0) {
           const { data: scoresResult, error: scoresError } = await supabase
             .from('fixture_team_scores')
             .upsert(scoresData)
