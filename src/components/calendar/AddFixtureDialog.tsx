@@ -90,8 +90,9 @@ export const AddFixtureDialog = ({
         }
       }
 
+      // Force refetch the fixtures data
       await queryClient.invalidateQueries({ queryKey: ["fixtures"] });
-      onSuccess();
+      await onSuccess();
       
       if (!showTeamSelection) {
         onOpenChange(false);
