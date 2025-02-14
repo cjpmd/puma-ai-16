@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { FestivalEvent } from "./FestivalEvent";
@@ -112,7 +113,7 @@ export const EventsList = ({
           ))}
           
           {!hasEvents && (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-16 text-muted-foreground min-h-[200px] flex items-center justify-center border border-dashed rounded-lg">
               No events scheduled for this date
             </div>
           )}
