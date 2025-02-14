@@ -12,8 +12,6 @@ import { TeamCard } from "./TeamCard";
 import { fixtureFormSchema, FixtureFormData } from "./schemas/fixtureFormSchema";
 import { useFixtureForm } from "./hooks/useFixtureForm";
 import { useTeamTimes } from "./hooks/useTeamTimes";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 interface FixtureFormProps {
   onSubmit: (data: FixtureFormData) => Promise<FixtureFormData>;
@@ -31,7 +29,6 @@ export const FixtureForm = ({
   players,
   showDateSelector = false
 }: FixtureFormProps) => {
-  const { toast } = useToast();
   const form = useForm<FixtureFormData>({
     resolver: zodResolver(fixtureFormSchema),
     defaultValues: {
@@ -39,8 +36,10 @@ export const FixtureForm = ({
       location: editingFixture?.location || "",
       number_of_teams: editingFixture?.number_of_teams?.toString() || "1",
       format: editingFixture?.format || "7-a-side",
-      home_score: editingFixture?.home_score?.toString() || "",
-      away_score: editingFixture?.away_score?.toString() || "",
+      team_1_score: editingFixture?.team_1_score || 0,
+      opponent_1_score: editingFixture?.opponent_1_score || 0,
+      team_2_score: editingFixture?.team_2_score || 0,
+      opponent_2_score: editingFixture?.opponent_2_score || 0,
       motm_player_ids: editingFixture?.potm_player_id 
         ? [editingFixture.potm_player_id]
         : Array(editingFixture?.number_of_teams || 1).fill(""),
@@ -55,44 +54,7 @@ export const FixtureForm = ({
     },
   });
 
-  const handleSubmit = async (data: FixtureFormData) => {
-    try {
-      // First submit the form data
-      const savedData = await onSubmit(data);
-      
-      if (savedData && savedData.id) {
-        // Send WhatsApp notification
-        const { error: notificationError } = await supabase.functions.invoke('send-whatsapp-notification', {
-          body: {
-            type: 'FIXTURE',
-            date: format(selectedDate || new Date(), 'dd/MM/yyyy'),
-            time: data.team_times[0]?.meeting_time || null,
-            opponent: data.opponent,
-            location: data.location,
-            category: data.team_name,
-            eventId: savedData.id
-          }
-        });
-
-        if (notificationError) {
-          console.error('Error sending notifications:', notificationError);
-          toast({
-            title: "Warning",
-            description: "Fixture saved but there was an error sending notifications",
-            variant: "destructive",
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error handling form submission:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save fixture and send notifications",
-        variant: "destructive",
-      });
-    }
-  };
-
+  const { handleSubmit } = useFixtureForm({ onSubmit, editingFixture, selectedDate });
   const watchNumberOfTeams = parseInt(form.watch("number_of_teams") || "1");
   const watchOpponent = form.watch("opponent");
   const watchIsHome = form.watch("is_home");

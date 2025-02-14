@@ -891,6 +891,7 @@ export type Database = {
           created_at: string | null
           fixture_id: string | null
           id: string
+          opponent_score: number | null
           score: number
           team_number: number
           updated_at: string | null
@@ -899,6 +900,7 @@ export type Database = {
           created_at?: string | null
           fixture_id?: string | null
           id?: string
+          opponent_score?: number | null
           score: number
           team_number: number
           updated_at?: string | null
@@ -907,6 +909,7 @@ export type Database = {
           created_at?: string | null
           fixture_id?: string | null
           id?: string
+          opponent_score?: number | null
           score?: number
           team_number?: number
           updated_at?: string | null
