@@ -2,7 +2,6 @@
 import { z } from "zod";
 
 export const fixtureFormSchema = z.object({
-  id: z.string().optional(),
   opponent: z.string().min(1, "Opponent name is required"),
   location: z.string().optional(),
   number_of_teams: z.string().optional(),
@@ -20,6 +19,7 @@ export const fixtureFormSchema = z.object({
   is_home: z.boolean().default(true),
   format: z.string().default("7-a-side"),
   team_name: z.string().default("Broughty Pumas 2015s"),
+  date: z.string(),
 });
 
 export type FixtureFormData = z.infer<typeof fixtureFormSchema>;

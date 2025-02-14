@@ -51,6 +51,7 @@ export const FixtureForm = ({
       }],
       is_home: editingFixture?.is_home ?? true,
       team_name: editingFixture?.team_name || "Broughty Pumas 2015s",
+      date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
     },
   });
 
@@ -86,9 +87,10 @@ export const FixtureForm = ({
             <FormLabel>Date *</FormLabel>
             <Input 
               type="date" 
-              value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''} 
+              value={format(selectedDate || new Date(), 'yyyy-MM-dd')}
               onChange={(e) => {
                 const date = e.target.value ? new Date(e.target.value) : undefined;
+                form.setValue('date', format(date || new Date(), 'yyyy-MM-dd'));
               }}
             />
           </div>
