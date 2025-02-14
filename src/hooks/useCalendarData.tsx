@@ -51,13 +51,16 @@ export const useCalendarData = (date: Date) => {
     queryFn: async () => {
       console.log("Fetching fixtures for date:", formattedDate);
       try {
+        const session = await supabase.auth.getSession();
+        console.log("Current auth session:", session);
+
         console.log("Executing fixtures query for date:", formattedDate);
         const { data: fixturesData, error: fixturesError } = await supabase
           .from("fixtures")
           .select(`
             *,
-            fixture_team_times!fixture_team_times_fixture_id_fkey(*),
-            fixture_team_scores!fixture_team_scores_fixture_id_fkey(*)
+            fixture_team_times(*),
+            fixture_team_scores(*)
           `)
           .eq("date", formattedDate);
         
@@ -104,9 +107,8 @@ export const useCalendarData = (date: Date) => {
         return [];
       }
     },
-    retry: false,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0     // Don't keep data in cache (formerly cacheTime)
+    retry: 1,
+    staleTime: 1000
   });
 
   const { 
