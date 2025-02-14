@@ -30,7 +30,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         number_of_teams: parseInt(data.number_of_teams || "1"),
         is_home: data.is_home,
         date: dateToUse,
-        motm_player_id: data.motm_player_ids?.[0] || null
+        potm_player_id: data.motm_player_ids?.[0] || null
       };
 
       console.log("Saving fixture with data:", fixtureData);
