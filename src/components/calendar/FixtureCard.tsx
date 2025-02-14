@@ -2,7 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { format, parseISO } from "date-fns";
 import { useState, useEffect } from "react";
-import type { Fixture } from "@/types/fixture";
+import type { Fixture, FixtureTeamScore, FixtureTeamTime } from "@/types/fixture";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FixtureCardHeader } from "./FixtureCard/FixtureCardHeader";
@@ -14,6 +14,11 @@ interface FixtureCardProps {
   onEdit: (fixture: Fixture) => void;
   onDelete: (fixtureId: string) => void;
   onDateChange: (newDate: Date) => void;
+}
+
+interface TeamData {
+  scores: FixtureTeamScore[];
+  times: FixtureTeamTime[];
 }
 
 export const FixtureCard = ({
@@ -145,8 +150,10 @@ export const FixtureCard = ({
     
     if (teamData) {
       teamData.scores.forEach((score, index) => {
-        editData[`team_${index + 1}_score` as keyof Fixture] = score.score;
-        editData[`opponent_${index + 1}_score` as keyof Fixture] = score.opponent_score;
+        const teamKey = `team_${index + 1}_score`;
+        const opponentKey = `opponent_${index + 1}_score`;
+        editData[teamKey] = score.score;
+        editData[opponentKey] = score.opponent_score;
       });
       
       editData.team_times = teamData.times;
