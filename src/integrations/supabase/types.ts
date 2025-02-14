@@ -919,13 +919,6 @@ export type Database = {
             referencedRelation: "fixtures"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_fixture_team_scores_fixture"
-            columns: ["fixture_id"]
-            isOneToOne: false
-            referencedRelation: "fixtures"
-            referencedColumns: ["id"]
-          },
         ]
       }
       fixture_team_selections: {
