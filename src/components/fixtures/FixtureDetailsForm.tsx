@@ -48,8 +48,6 @@ export const FixtureDetailsForm = ({ form }: FixtureDetailsFormProps) => {
                   onChange={(e) => {
                     field.onChange(e.target.value);
                     const newLength = parseInt(e.target.value) || 1;
-                    form.setValue('home_score', '');
-                    form.setValue('away_score', '');
                     form.setValue('motm_player_ids', Array(newLength).fill(""));
                   }}
                 />
