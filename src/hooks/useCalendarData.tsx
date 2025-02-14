@@ -54,7 +54,11 @@ export const useCalendarData = (date: Date) => {
       try {
         const { data: fixturesData, error: fixturesError } = await supabase
           .from("fixtures")
-          .select("*, fixture_team_times(*), fixture_team_scores(*)")
+          .select(`
+            *,
+            fixture_team_times!fixture_team_times_fixture_id_fkey(*),
+            fixture_team_scores!fixture_team_scores_fixture_id_fkey(*)
+          `)
           .eq("date", formattedDate);
         
         if (fixturesError) {
