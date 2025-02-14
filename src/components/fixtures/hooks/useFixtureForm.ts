@@ -18,6 +18,9 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
   const handleSubmit = async (data: FixtureFormData) => {
     setIsSubmitting(true);
     try {
+      const dateToUse = selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+      console.log("Using date:", dateToUse);
+
       const fixtureData = {
         opponent: data.opponent,
         location: data.location,
@@ -27,7 +30,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         is_home: data.is_home,
         home_score: data.home_score ? parseInt(data.home_score) : null,
         away_score: data.away_score ? parseInt(data.away_score) : null,
-        date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
+        date: dateToUse,
         potm_player_id: data.motm_player_ids?.[0] || null
       };
 
@@ -40,75 +43,101 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           .from('fixtures')
           .update(fixtureData)
           .eq('id', editingFixture.id)
-          .select()
+          .select('*')
           .single();
       } else {
         fixtureResult = await supabase
           .from('fixtures')
           .insert(fixtureData)
-          .select()
+          .select('*')
           .single();
       }
 
-      if (fixtureResult.error) throw fixtureResult.error;
+      if (fixtureResult.error) {
+        console.error("Error saving fixture:", fixtureResult.error);
+        throw fixtureResult.error;
+      }
+
+      console.log("Fixture saved successfully:", fixtureResult.data);
       
       const fixtureId = fixtureResult.data.id;
 
       if (fixtureId) {
         // Insert team times if provided
         if (data.team_times && data.team_times.length > 0) {
-          const { error: teamTimesError } = await supabase
-            .from('fixture_team_times')
-            .upsert(
-              data.team_times.map((teamTime, index) => ({
-                fixture_id: fixtureId,
-                team_number: index + 1,
-                meeting_time: teamTime.meeting_time || null,
-                start_time: teamTime.start_time || null,
-                end_time: teamTime.end_time || null,
-                performance_category: teamTime.performance_category || "MESSI"
-              })),
-              { onConflict: 'fixture_id,team_number' }
-            );
+          const teamTimesData = data.team_times.map((teamTime, index) => ({
+            fixture_id: fixtureId,
+            team_number: index + 1,
+            meeting_time: teamTime.meeting_time || null,
+            start_time: teamTime.start_time || null,
+            end_time: teamTime.end_time || null,
+            performance_category: teamTime.performance_category || "MESSI"
+          }));
 
-          if (teamTimesError) throw teamTimesError;
+          console.log("Saving team times:", teamTimesData);
+
+          const { data: teamTimesResult, error: teamTimesError } = await supabase
+            .from('fixture_team_times')
+            .upsert(teamTimesData)
+            .select();
+
+          if (teamTimesError) {
+            console.error("Error saving team times:", teamTimesError);
+            throw teamTimesError;
+          }
+
+          console.log("Team times saved:", teamTimesResult);
         }
 
         // Insert scores if provided
         if (data.home_score || data.away_score) {
-          const { error: scoresError } = await supabase
-            .from('fixture_team_scores')
-            .upsert([
-              {
-                fixture_id: fixtureId,
-                team_number: 1,
-                score: parseInt(data.home_score) || 0
-              },
-              {
-                fixture_id: fixtureId,
-                team_number: 2,
-                score: parseInt(data.away_score) || 0
-              }
-            ], { onConflict: 'fixture_id,team_number' });
+          const scoresData = [
+            {
+              fixture_id: fixtureId,
+              team_number: 1,
+              score: parseInt(data.home_score) || 0
+            },
+            {
+              fixture_id: fixtureId,
+              team_number: 2,
+              score: parseInt(data.away_score) || 0
+            }
+          ];
 
-          if (scoresError) throw scoresError;
+          console.log("Saving team scores:", scoresData);
+
+          const { data: scoresResult, error: scoresError } = await supabase
+            .from('fixture_team_scores')
+            .upsert(scoresData)
+            .select();
+
+          if (scoresError) {
+            console.error("Error saving team scores:", scoresError);
+            throw scoresError;
+          }
+
+          console.log("Team scores saved:", scoresResult);
         }
 
         // Create default event attendance entries for all players
-        const { error: attendanceError } = await supabase
+        const { data: attendanceResult, error: attendanceError } = await supabase
           .from('event_attendance')
           .insert({
             event_id: fixtureId,
             event_type: 'FIXTURE',
             status: 'PENDING'
-          });
+          })
+          .select();
 
         if (attendanceError) {
           console.error("Error creating attendance:", attendanceError);
           throw attendanceError;
         }
 
+        console.log("Attendance created:", attendanceResult);
+
         const savedFixture = {
+          ...fixtureResult.data,
           ...data,
           id: fixtureId
         };
