@@ -18,27 +18,38 @@ export const Auth = () => {
 
     const initializeAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // First, check if we have an invalid session
+        const { error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          if (sessionError.message.includes('refresh_token_not_found')) {
+            await supabase.auth.signOut();
+          }
+          throw sessionError;
+        }
+
+        // Then check if we're already signed in
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
         
         if (!mounted) return;
 
-        if (error) {
-          if (error.message.includes("refresh_token_not_found")) {
+        if (userError) {
+          if (userError.message.includes('refresh_token_not_found')) {
             await supabase.auth.signOut();
-            setErrorMessage("Your session has expired. Please sign in again.");
-          } else {
-            setErrorMessage(getErrorMessage(error));
           }
-          return;
+          throw userError;
         }
 
-        if (session?.user) {
+        if (user) {
           navigate("/home");
         }
       } catch (err) {
         if (!mounted) return;
-        console.error("Session initialization error:", err);
-        setErrorMessage("An error occurred while checking your session.");
+        console.error("Auth initialization error:", err);
+        if (err instanceof Error) {
+          setErrorMessage(getErrorMessage(err as AuthError));
+        } else {
+          setErrorMessage("An error occurred while checking your session.");
+        }
       } finally {
         if (mounted) {
           setIsLoading(false);
