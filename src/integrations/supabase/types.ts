@@ -3161,7 +3161,12 @@ export type Database = {
       }
     }
     Enums: {
-      attendance_status: "PENDING" | "CONFIRMED" | "DECLINED" | "NOT_CONFIRMED"
+      attendance_status:
+        | "PENDING"
+        | "CONFIRMED"
+        | "DECLINED"
+        | "NOT_CONFIRMED"
+        | "MAYBE"
       coach_role: "Manager" | "Coach" | "Helper"
       user_role: "admin" | "manager" | "coach" | "parent"
       video_processing_status: "pending" | "processing" | "completed" | "failed"
