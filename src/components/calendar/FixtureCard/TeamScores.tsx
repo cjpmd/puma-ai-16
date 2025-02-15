@@ -6,7 +6,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 type TeamTime = Database['public']['Tables']['fixture_team_times']['Row'];
-type TeamScore = Database['public']['Tables']['fixture_team_scores']['Row'];
+type TeamScore = {
+  id: string;
+  fixture_id: string;
+  team_number: number;
+  score: number;
+  opponent_score: number;
+  created_at: string;
+  updated_at: string;
+};
 
 interface TeamScoresProps {
   scores: TeamScore[];
