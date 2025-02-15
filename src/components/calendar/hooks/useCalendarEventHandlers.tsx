@@ -11,6 +11,25 @@ export const useCalendarEventHandlers = () => {
   const handleDeleteFixture = async (fixtureId: string) => {
     try {
       setIsLoading(true);
+      
+      // First delete related records
+      await supabase
+        .from("fixture_team_times")
+        .delete()
+        .eq("fixture_id", fixtureId);
+
+      await supabase
+        .from("fixture_team_scores")
+        .delete()
+        .eq("fixture_id", fixtureId);
+
+      await supabase
+        .from("event_attendance")
+        .delete()
+        .eq("event_id", fixtureId)
+        .eq("event_type", "FIXTURE");
+
+      // Finally delete the fixture
       const { error } = await supabase
         .from("fixtures")
         .delete()
@@ -22,6 +41,7 @@ export const useCalendarEventHandlers = () => {
         title: "Success",
         description: "Fixture deleted successfully",
       });
+      
       return true;
     } catch (error) {
       console.error("Error deleting fixture:", error);
