@@ -22,7 +22,7 @@ interface TeamScoresProps {
   fixture: {
     opponent: string;
     team_name: string;
-    is_home?: boolean; // Made optional to match Fixture type
+    is_home?: boolean;
     team_1_score?: number | null;
     opponent_1_score?: number | null;
     team_2_score?: number | null;
@@ -78,6 +78,10 @@ export const TeamScores = ({
 
   const shouldHideScores = teamSettings?.hide_scores_from_parents && profile?.role === 'parent';
 
+  // Take only the first score since we're filtering by team number in the parent component
+  const score = scores[0];
+  const teamTime = times[0];
+
   return (
     <div className="space-y-4">
       {hasDirectScores ? (
@@ -107,38 +111,25 @@ export const TeamScores = ({
         </div>
       ) : (
         // Display scores from scores array
-        scores.map((score, index) => {
-          const teamTime = times.find(t => t.team_number === score.team_number);
-          const performanceCategory = teamTime?.performance_category || 'MESSI';
-          const ourTeamName = `Team ${score.team_number} (${performanceCategory})`;
-          const displayScore = fixture.is_home 
-            ? `${shouldHideScores ? 'hidden' : score.score} - ${shouldHideScores ? 'hidden' : score.opponent_score}`
-            : `${shouldHideScores ? 'hidden' : score.opponent_score} - ${shouldHideScores ? 'hidden' : score.score}`;
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-base">
+              {fixture.is_home 
+                ? `${fixture.team_name}: ${shouldHideScores ? 'hidden' : score.score} - ${shouldHideScores ? 'hidden' : score.opponent_score} ${fixture.opponent}`
+                : `${fixture.opponent}: ${shouldHideScores ? 'hidden' : score.opponent_score} - ${shouldHideScores ? 'hidden' : score.score} ${fixture.team_name}`
+              }
+            </p>
+            {!shouldHideScores && getOutcomeIcon(getTeamOutcome(score.score, score.opponent_score))}
+          </div>
 
-          const outcome = !shouldHideScores ? getTeamOutcome(score.score, score.opponent_score) : null;
-
-          return (
-            <div key={score.team_number} className="space-y-2">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold text-base">
-                  {fixture.is_home 
-                    ? `${ourTeamName}: ${displayScore} ${fixture.opponent}`
-                    : `${fixture.opponent}: ${displayScore} ${ourTeamName}`
-                  }
-                </p>
-                {!shouldHideScores && getOutcomeIcon(outcome)}
-              </div>
-
-              {teamTime && (
-                <div className="text-sm text-muted-foreground">
-                  {teamTime.meeting_time && <p>Meeting: {teamTime.meeting_time}</p>}
-                  {teamTime.start_time && <p>Start: {teamTime.start_time}</p>}
-                  {teamTime.end_time && <p>End: {teamTime.end_time}</p>}
-                </div>
-              )}
+          {teamTime && (
+            <div className="text-sm text-muted-foreground">
+              {teamTime.meeting_time && <p>Meeting: {teamTime.meeting_time}</p>}
+              {teamTime.start_time && <p>Start: {teamTime.start_time}</p>}
+              {teamTime.end_time && <p>End: {teamTime.end_time}</p>}
             </div>
-          );
-        })
+          )}
+        </div>
       )}
     </div>
   );
