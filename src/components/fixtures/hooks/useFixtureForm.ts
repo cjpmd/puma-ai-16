@@ -30,7 +30,15 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         number_of_teams: parseInt(data.number_of_teams || "1"),
         is_home: data.is_home,
         date: dateToUse,
-        motm_player_id: data.motm_player_ids?.[0] || null
+        motm_player_id: data.motm_player_ids?.[0] || null,
+        team_1_score: data.team_1_score || null,
+        opponent_1_score: data.opponent_1_score || null,
+        team_2_score: data.team_2_score || null,
+        opponent_2_score: data.opponent_2_score || null,
+        // Include meeting time from team_times if available
+        meeting_time: data.team_times?.[0]?.meeting_time || null,
+        start_time: data.team_times?.[0]?.start_time || null,
+        end_time: data.team_times?.[0]?.end_time || null
       };
 
       console.log("Saving fixture with data:", fixtureData);
@@ -42,14 +50,14 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           .from('fixtures')
           .update(fixtureData)
           .eq('id', editingFixture.id)
-          .select('*')
-          .single();
+          .select('*, fixture_team_times(*), fixture_team_scores(*)')
+          .maybeSingle();
       } else {
         fixtureResult = await supabase
           .from('fixtures')
           .insert(fixtureData)
-          .select('*')
-          .single();
+          .select('*, fixture_team_times(*), fixture_team_scores(*)')
+          .maybeSingle();
       }
 
       if (fixtureResult.error) {
