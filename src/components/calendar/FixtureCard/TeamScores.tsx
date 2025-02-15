@@ -22,7 +22,7 @@ interface TeamScoresProps {
   fixture: {
     opponent: string;
     team_name: string;
-    is_home: boolean;
+    is_home?: boolean; // Made optional to match Fixture type
     team_1_score?: number | null;
     opponent_1_score?: number | null;
     team_2_score?: number | null;

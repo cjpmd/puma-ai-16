@@ -2,7 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { format, parseISO } from "date-fns";
 import { useState, useEffect } from "react";
-import type { Fixture, FixtureTeamScore, FixtureTeamTime } from "@/types/fixture";
+import type { Fixture } from "@/types/fixture";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FixtureCardHeader } from "./FixtureCard/FixtureCardHeader";
@@ -159,6 +159,16 @@ export const FixtureCard = ({
     return editData;
   };
 
+  const fixtureScoreProps = {
+    opponent: fixture.opponent,
+    team_name: fixture.team_name,
+    is_home: fixture.is_home ?? true, // Provide default value
+    team_1_score: fixture.team_1_score,
+    opponent_1_score: fixture.opponent_1_score,
+    team_2_score: fixture.team_2_score,
+    opponent_2_score: fixture.opponent_2_score
+  };
+
   return (
     <>
       <Card className="hover:bg-accent/50 transition-colors">
@@ -184,14 +194,14 @@ export const FixtureCard = ({
                   <TeamScores
                     scores={teamData.scores.filter(s => s.team_number === 1)}
                     times={teamData.times.filter(t => t.team_number === 1)}
-                    fixture={fixture}
+                    fixture={fixtureScoreProps}
                   />
                   
                   <h3 className="font-semibold mt-6">Team 2</h3>
                   <TeamScores
                     scores={teamData.scores.filter(s => s.team_number === 2)}
                     times={teamData.times.filter(t => t.team_number === 2)}
-                    fixture={fixture}
+                    fixture={fixtureScoreProps}
                   />
                 </div>
               )}
@@ -200,7 +210,7 @@ export const FixtureCard = ({
                 <TeamScores
                   scores={teamData.scores}
                   times={teamData.times}
-                  fixture={fixture}
+                  fixture={fixtureScoreProps}
                 />
               )}
             </>
@@ -221,7 +231,7 @@ export const FixtureCard = ({
         fixture={fixture}
         onSuccess={() => {
           refetchTeamData();
-          queryClient.invalidateQueries(["team-data", fixture.id]);
+          queryClient.invalidateQueries({ queryKey: ["team-data", fixture.id] });
         }}
       />
     </>
