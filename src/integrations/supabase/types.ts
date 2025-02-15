@@ -1068,6 +1068,7 @@ export type Database = {
           is_home: boolean | null
           location: string | null
           meeting_time: string | null
+          motm_player_id: string | null
           number_of_teams: number | null
           opponent: string
           opponent_1_score: number | null
@@ -1095,6 +1096,7 @@ export type Database = {
           is_home?: boolean | null
           location?: string | null
           meeting_time?: string | null
+          motm_player_id?: string | null
           number_of_teams?: number | null
           opponent: string
           opponent_1_score?: number | null
@@ -1122,6 +1124,7 @@ export type Database = {
           is_home?: boolean | null
           location?: string | null
           meeting_time?: string | null
+          motm_player_id?: string | null
           number_of_teams?: number | null
           opponent?: string
           opponent_1_score?: number | null
@@ -1175,6 +1178,48 @@ export type Database = {
           {
             foreignKeyName: "fixtures_motm_player_id_fkey"
             columns: ["potm_player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fixtures_motm_player_id_fkey1"
+            columns: ["motm_player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixtures_motm_player_id_fkey1"
+            columns: ["motm_player_id"]
+            isOneToOne: false
+            referencedRelation: "player_attendance_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fixtures_motm_player_id_fkey1"
+            columns: ["motm_player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fixtures_motm_player_id_fkey1"
+            columns: ["motm_player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fixtures_motm_player_id_fkey1"
+            columns: ["motm_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixtures_motm_player_id_fkey1"
+            columns: ["motm_player_id"]
             isOneToOne: false
             referencedRelation: "position_rankings"
             referencedColumns: ["player_id"]
