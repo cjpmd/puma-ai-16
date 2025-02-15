@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FixtureCardHeader } from "./FixtureCard/FixtureCardHeader";
 import { TeamScores } from "./FixtureCard/TeamScores";
 import { TeamSelectionDialog } from "./FixtureCard/TeamSelectionDialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface FixtureCardProps {
   fixture: Fixture;
@@ -26,6 +27,7 @@ export const FixtureCard = ({
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [motmName, setMotmName] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const {
     data: teamData,
@@ -35,6 +37,19 @@ export const FixtureCard = ({
     queryKey: ["team-data", fixture.id],
     queryFn: async () => {
       console.log("Fetching team data for fixture:", fixture.id);
+      
+      // First verify the fixture exists
+      const { data: fixtureExists, error: fixtureError } = await supabase
+        .from('fixtures')
+        .select('id')
+        .eq('id', fixture.id)
+        .single();
+
+      if (fixtureError || !fixtureExists) {
+        console.error("Fixture not found:", fixtureError);
+        throw new Error("Fixture not found");
+      }
+
       const [scoresResponse, timesResponse] = await Promise.all([
         supabase
           .from('fixture_team_scores')
@@ -74,36 +89,32 @@ export const FixtureCard = ({
 
         console.log("Creating default scores:", defaultScores);
 
-        const { error: insertError } = await supabase
-          .from('fixture_team_scores')
-          .insert(defaultScores);
+        try {
+          const { data: insertedScores, error: insertError } = await supabase
+            .from('fixture_team_scores')
+            .insert(defaultScores)
+            .select();
 
-        if (insertError) {
-          console.error('Error creating default scores:', insertError);
+          if (insertError) throw insertError;
+
+          console.log("Created default scores:", insertedScores);
+          
+          return {
+            scores: insertedScores,
+            times: timesResponse.data || []
+          };
+        } catch (error) {
+          console.error('Error creating default scores:', error);
+          toast({
+            title: "Error",
+            description: "Failed to create default scores",
+            variant: "destructive"
+          });
           return {
             scores: defaultScores,
             times: timesResponse.data || []
           };
         }
-
-        // Refetch scores after inserting defaults
-        const { data: updatedScores, error: refetchError } = await supabase
-          .from('fixture_team_scores')
-          .select('*')
-          .eq('fixture_id', fixture.id)
-          .order('team_number');
-
-        if (refetchError) {
-          console.error("Error refetching scores:", refetchError);
-          throw refetchError;
-        }
-
-        console.log("Updated scores:", updatedScores);
-
-        return {
-          scores: updatedScores,
-          times: timesResponse.data || []
-        };
       }
 
       return {
@@ -111,7 +122,8 @@ export const FixtureCard = ({
         times: timesResponse.data || []
       };
     },
-    enabled: !!fixture.id
+    enabled: !!fixture.id,
+    retry: false
   });
 
   useEffect(() => {
@@ -162,7 +174,7 @@ export const FixtureCard = ({
   const fixtureScoreProps = {
     opponent: fixture.opponent,
     team_name: fixture.team_name,
-    is_home: fixture.is_home ?? true, // Provide default value
+    is_home: fixture.is_home ?? true,
     team_1_score: fixture.team_1_score,
     opponent_1_score: fixture.opponent_1_score,
     team_2_score: fixture.team_2_score,
