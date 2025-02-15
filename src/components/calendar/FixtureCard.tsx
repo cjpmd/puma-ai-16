@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { format, parseISO } from "date-fns";
 import { useState, useEffect } from "react";
 import type { Fixture, FixtureTeamScore, FixtureTeamTime } from "@/types/fixture";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FixtureCardHeader } from "./FixtureCard/FixtureCardHeader";
 import { TeamScores } from "./FixtureCard/TeamScores";
@@ -16,11 +16,6 @@ interface FixtureCardProps {
   onDateChange: (newDate: Date) => void;
 }
 
-interface TeamData {
-  scores: FixtureTeamScore[];
-  times: FixtureTeamTime[];
-}
-
 export const FixtureCard = ({
   fixture,
   onEdit,
@@ -30,6 +25,7 @@ export const FixtureCard = ({
   const [isTeamSelectionOpen, setIsTeamSelectionOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [motmName, setMotmName] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const {
     data: teamData,
@@ -114,7 +110,8 @@ export const FixtureCard = ({
         scores: scoresResponse.data,
         times: timesResponse.data || []
       };
-    }
+    },
+    enabled: !!fixture.id
   });
 
   useEffect(() => {
@@ -180,15 +177,33 @@ export const FixtureCard = ({
           </p>
 
           {!isLoading && teamData && (
-            <TeamScores
-              scores={teamData.scores}
-              times={teamData.times}
-              fixture={{
-                opponent: fixture.opponent,
-                team_name: fixture.team_name,
-                is_home: fixture.is_home
-              }}
-            />
+            <>
+              {fixture.number_of_teams > 1 && (
+                <div className="mb-4 space-y-4">
+                  <h3 className="font-semibold">Team 1</h3>
+                  <TeamScores
+                    scores={teamData.scores.filter(s => s.team_number === 1)}
+                    times={teamData.times.filter(t => t.team_number === 1)}
+                    fixture={fixture}
+                  />
+                  
+                  <h3 className="font-semibold mt-6">Team 2</h3>
+                  <TeamScores
+                    scores={teamData.scores.filter(s => s.team_number === 2)}
+                    times={teamData.times.filter(t => t.team_number === 2)}
+                    fixture={fixture}
+                  />
+                </div>
+              )}
+              
+              {fixture.number_of_teams === 1 && (
+                <TeamScores
+                  scores={teamData.scores}
+                  times={teamData.times}
+                  fixture={fixture}
+                />
+              )}
+            </>
           )}
 
           <div className="space-y-1 mt-4 text-sm text-muted-foreground">
@@ -206,6 +221,7 @@ export const FixtureCard = ({
         fixture={fixture}
         onSuccess={() => {
           refetchTeamData();
+          queryClient.invalidateQueries(["team-data", fixture.id]);
         }}
       />
     </>
