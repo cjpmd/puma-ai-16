@@ -124,7 +124,9 @@ export const FixtureCard = ({
 
   const handleEdit = () => {
     console.log("Edit button clicked for fixture:", fixture.id);
-    onEdit();
+    if (fixture.id) {
+      onEdit(); // Call the parent component's onEdit handler
+    }
   };
 
   return (

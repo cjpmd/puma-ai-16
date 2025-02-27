@@ -1,211 +1,156 @@
 
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage
-} from "@/components/ui/form";
+import React from "react";
+import { UseFormReturn } from "react-hook-form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEffect } from "react";
+import { FixtureFormData } from "./schemas/fixtureFormSchema";
 
 interface TeamCardProps {
   index: number;
-  form: any;
+  form: UseFormReturn<FixtureFormData>;
   players?: any[];
   getScoreLabel: (isHomeScore: boolean, teamIndex: number) => string;
   getMotmLabel: (teamIndex: number) => string;
 }
 
-export const TeamCard = ({
-  index,
-  form,
-  players,
+export const TeamCard = ({ 
+  index, 
+  form, 
+  players = [],
   getScoreLabel,
   getMotmLabel
 }: TeamCardProps) => {
   const performanceCategory = form.watch(`team_times.${index}.performance_category`) || "MESSI";
-  const motmPlayerId = form.watch(`motm_player_ids.${index}`);
   
-  // Log for debugging
-  useEffect(() => {
-    console.log(`Team ${index + 1} performance category:`, performanceCategory);
-    console.log(`Team ${index + 1} MOTM player ID:`, motmPlayerId);
-    console.log("Form values:", form.getValues());
-  }, [performanceCategory, motmPlayerId, index, form]);
-
-  // Find the selected player name for the SelectValue display
-  const getSelectedPlayerName = () => {
-    if (!motmPlayerId || !players) return undefined;
-    const player = players.find(p => p.id === motmPlayerId);
-    return player?.name;
-  };
-
   return (
     <Card>
-      <CardContent className="space-y-4 pt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <CardContent className="pt-6">
+        <h3 className="text-lg font-semibold mb-2">Team {index + 1} ({performanceCategory})</h3>
+        
+        <div className="space-y-4">
           {/* Performance Category */}
-          <FormField
-            control={form.control}
-            name={`team_times.${index}.performance_category`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Performance Category</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value || "MESSI"}
-                  defaultValue="MESSI"
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select performance category">
-                        {field.value === "MESSI" ? "Messi" : 
-                         field.value === "RONALDO" ? "Ronaldo" : 
-                         field.value === "JAGS" ? "Jags" : "Select category"}
-                      </SelectValue>
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="MESSI">Messi</SelectItem>
-                    <SelectItem value="RONALDO">Ronaldo</SelectItem>
-                    <SelectItem value="JAGS">Jags</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Team Score */}
-          <FormField
-            control={form.control}
-            name={`team_${index + 1}_score`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{getScoreLabel(true, index)}</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number"
-                    min={0}
-                    {...field}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          {/* Opponent Score */}
-          <FormField
-            control={form.control}
-            name={`opponent_${index + 1}_score`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{getScoreLabel(false, index)}</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number"
-                    min={0}
-                    {...field}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          {/* Meeting Time */}
-          <FormField
-            control={form.control}
-            name={`team_times.${index}.meeting_time`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Meeting Time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          {/* Start Time */}
-          <FormField
-            control={form.control}
-            name={`team_times.${index}.start_time`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Start Time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          {/* End Time */}
-          <FormField
-            control={form.control}
-            name={`team_times.${index}.end_time`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>End Time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          {/* Player of the Match */}
-          {players && (
+          <div className="space-y-2">
+            <Label htmlFor={`team_times.${index}.performance_category`}>Performance Category</Label>
+            <Select
+              value={performanceCategory}
+              onValueChange={(value) => {
+                form.setValue(`team_times.${index}.performance_category`, value);
+              }}
+            >
+              <SelectTrigger id={`team_times.${index}.performance_category`}>
+                <SelectValue placeholder="Select performance category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MESSI">MESSI</SelectItem>
+                <SelectItem value="RONALDO">RONALDO</SelectItem>
+                <SelectItem value="NEYMAR">NEYMAR</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        
+          {/* Time Inputs */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor={`team_times.${index}.meeting_time`}>Meeting Time</Label>
+              <Input
+                id={`team_times.${index}.meeting_time`}
+                type="time"
+                value={form.watch(`team_times.${index}.meeting_time`) || ""}
+                onChange={(e) => {
+                  form.setValue(`team_times.${index}.meeting_time`, e.target.value);
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`team_times.${index}.start_time`}>Start Time</Label>
+              <Input
+                id={`team_times.${index}.start_time`}
+                type="time"
+                value={form.watch(`team_times.${index}.start_time`) || ""}
+                onChange={(e) => {
+                  form.setValue(`team_times.${index}.start_time`, e.target.value);
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`team_times.${index}.end_time`}>End Time</Label>
+              <Input
+                id={`team_times.${index}.end_time`}
+                type="time"
+                value={form.watch(`team_times.${index}.end_time`) || ""}
+                onChange={(e) => {
+                  form.setValue(`team_times.${index}.end_time`, e.target.value);
+                }}
+              />
+            </div>
+          </div>
+          
+          {/* Scores */}
+          <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
-              name={`motm_player_ids.${index}`}
-              render={({ field }) => {
-                // Important: Ensure the player value is properly loaded
-                const selectedPlayerName = getSelectedPlayerName();
-                return (
-                  <FormItem>
-                    <FormLabel>{getMotmLabel(index)}</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        console.log(`Setting MOTM player for team ${index + 1} to:`, value);
-                        field.onChange(value);
-                        
-                        // Force update form values to ensure other parts of the form see this change
-                        const currentValues = form.getValues();
-                        const motmPlayerIds = [...(currentValues.motm_player_ids || [])];
-                        motmPlayerIds[index] = value;
-                        form.setValue('motm_player_ids', motmPlayerIds, { shouldDirty: true });
-                      }}
-                      value={field.value || ""}
-                      defaultValue=""
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select player">
-                            {selectedPlayerName || "Select player"}
-                          </SelectValue>
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="">Select player</SelectItem>
-                        {players.map((player) => (
-                          <SelectItem key={player.id} value={player.id}>
-                            {player.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
+              name={`team_${index + 1}_score` as any}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{getScoreLabel(true, index)}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      {...field}
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          )}
+
+            <FormField
+              control={form.control}
+              name={`opponent_${index + 1}_score` as any}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{getScoreLabel(false, index)}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      {...field}
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          
+          {/* Player of the Match */}
+          <div className="space-y-2">
+            <Label htmlFor={`motm_player_ids.${index}`}>{getMotmLabel(index)}</Label>
+            <Select
+              value={form.watch(`motm_player_ids.${index}`) || "none"}
+              onValueChange={(value) => {
+                form.setValue(`motm_player_ids.${index}`, value === "none" ? "" : value);
+              }}
+            >
+              <SelectTrigger id={`motm_player_ids.${index}`}>
+                <SelectValue placeholder="Select player" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {players.map((player) => (
+                  <SelectItem key={player.id} value={player.id}>
+                    {player.name} {player.squad_number ? `(${player.squad_number})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardContent>
     </Card>

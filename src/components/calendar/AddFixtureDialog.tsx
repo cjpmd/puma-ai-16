@@ -44,7 +44,14 @@ export const AddFixtureDialog = ({
   // Log when component mounts and when editing fixture changes
   useEffect(() => {
     console.log("AddFixtureDialog mounted/updated with editingFixture:", editingFixture);
-  }, [editingFixture, isOpen]);
+    
+    // Initialize selectedDate when editingFixture changes
+    if (editingFixture?.date) {
+      setSelectedDate(new Date(editingFixture.date));
+    } else if (initialSelectedDate) {
+      setSelectedDate(initialSelectedDate);
+    }
+  }, [editingFixture, initialSelectedDate, isOpen]);
 
   // Fetch fixture details with team times if editing
   const { data: fixtureDetails, isLoading: isLoadingFixtureDetails } = useQuery({
@@ -54,25 +61,31 @@ export const AddFixtureDialog = ({
       
       console.log("Fetching fixture details for ID:", editingFixture.id);
       
-      const { data, error } = await supabase
-        .from("fixtures")
-        .select(`
-          *,
-          fixture_team_times(*),
-          fixture_team_scores(*)
-        `)
-        .eq("id", editingFixture.id)
-        .single();
-      
-      if (error) {
-        console.error("Error fetching fixture details:", error);
+      try {
+        const { data, error } = await supabase
+          .from("fixtures")
+          .select(`
+            *,
+            fixture_team_times(*),
+            fixture_team_scores(*)
+          `)
+          .eq("id", editingFixture.id)
+          .single();
+        
+        if (error) {
+          console.error("Error fetching fixture details:", error);
+          return null;
+        }
+        
+        console.log("Fetched fixture details:", data);
+        return data;
+      } catch (err) {
+        console.error("Exception fetching fixture details:", err);
         return null;
       }
-      
-      console.log("Fetched fixture details:", data);
-      return data;
     },
     enabled: !!editingFixture?.id && isOpen,
+    retry: 1
   });
 
   // Merge fetched fixture details with the editingFixture prop
@@ -88,18 +101,26 @@ export const AddFixtureDialog = ({
   const { data: players, isLoading: isLoadingPlayers } = useQuery({
     queryKey: ["players"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("players")
-        .select("id, name, squad_number")
-        .order('name');
-      
-      if (error) {
-        console.error("Error fetching players:", error);
+      try {
+        const { data, error } = await supabase
+          .from("players")
+          .select("id, name, squad_number")
+          .order('name');
+        
+        if (error) {
+          console.error("Error fetching players:", error);
+          return [];
+        }
+        console.log("Fetched players:", data?.length || 0);
+        return data || [];
+      } catch (err) {
+        console.error("Exception fetching players:", err);
         return [];
       }
-      return data || [];
     },
     enabled: isOpen,
+    retry: 1,
+    staleTime: 5 * 60 * 1000 // 5 minutes
   });
 
   const onSubmit = async (data: FixtureFormData) => {
@@ -132,7 +153,7 @@ export const AddFixtureDialog = ({
         number_of_teams: parseInt(data.number_of_teams || "1"),
         is_home: data.is_home,
         date: dateToUse,
-        potm_player_id: data.motm_player_ids?.[0] || null,
+        motm_player_id: data.motm_player_ids?.[0] || null,
         team_1_score: data.team_1_score,
         opponent_1_score: data.opponent_1_score,
         team_2_score: data.team_2_score,
@@ -209,6 +230,48 @@ export const AddFixtureDialog = ({
         console.log("Saved team times with performance categories");
       }
 
+      // Save team scores with MOTM player IDs
+      if (savedFixture && data.motm_player_ids) {
+        // Delete existing scores first if editing
+        if (editingFixture?.id) {
+          const { error: deleteScoresError } = await supabase
+            .from('fixture_team_scores')
+            .delete()
+            .eq('fixture_id', savedFixture.id);
+            
+          if (deleteScoresError) {
+            console.error("Error deleting existing team scores:", deleteScoresError);
+          }
+        }
+
+        const teamScoresData = Array.from({ length: parseInt(data.number_of_teams || "1") }).map((_, index) => {
+          const teamScore = data[`team_${index + 1}_score` as keyof typeof data] as number || 0;
+          const opponentScore = data[`opponent_${index + 1}_score` as keyof typeof data] as number || 0;
+          const motmPlayerId = data.motm_player_ids?.[index] || null;
+          
+          return {
+            fixture_id: savedFixture.id,
+            team_number: index + 1,
+            score: teamScore,
+            opponent_score: opponentScore,
+            motm_player_id: motmPlayerId === "" ? null : motmPlayerId
+          };
+        });
+
+        if (teamScoresData.length > 0) {
+          const { data: scoresResult, error: scoresError } = await supabase
+            .from('fixture_team_scores')
+            .upsert(teamScoresData)
+            .select();
+
+          if (scoresError) {
+            console.error("Error saving team scores:", scoresError);
+          } else {
+            console.log("Team scores saved with MOTM player IDs:", scoresResult);
+          }
+        }
+      }
+
       console.log("Fixture saved successfully:", savedFixture);
       
       // Invalidate all fixture queries to ensure calendar is updated
@@ -216,10 +279,6 @@ export const AddFixtureDialog = ({
         queryKey: ["fixtures"]
       });
       
-      await queryClient.invalidateQueries({
-        predicate: (query) => query.queryKey[0] === "fixtures"
-      });
-
       // Add team times data to savedFixture
       const enhancedFixture = {
         ...savedFixture,
@@ -276,7 +335,7 @@ export const AddFixtureDialog = ({
             onSubmit={onSubmit}
             selectedDate={selectedDate}
             editingFixture={completeFixture}
-            players={players}
+            players={players || []}
             isSubmitting={isSubmitting}
             showDateSelector={showDateSelector}
           />
