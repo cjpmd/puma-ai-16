@@ -355,7 +355,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     }));
   };
 
-  // Simplified save function that tries different approaches
+  // Use only the columns that definitely exist in your database
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -377,9 +377,10 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
         throw deleteError;
       }
       
-      // Try to identify which column names work in your database
+      // Use a very minimal approach that should work with most database schemas
       const teamSelectionsToSave = [];
       
+      // Process each team and each period
       for (const teamId of Object.keys(periodsPerTeam)) {
         const teamPeriods = periodsPerTeam[teamId] || [];
         
@@ -387,15 +388,24 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
           const periodId = period.id;
           const teamSelections = selections[periodId]?.[teamId] || {};
           
-          // Try a simplified approach with only fixture_id and fixture_positions
-          teamSelectionsToSave.push({
-            fixture_id: fixture.id,
-            fixture_positions: JSON.stringify(teamSelections)
+          // Process each player selection for this team/period
+          Object.entries(teamSelections).forEach(([slotId, selection]) => {
+            if (selection.playerId && selection.playerId !== "unassigned") {
+              // Create a record with only the most basic columns
+              teamSelectionsToSave.push({
+                fixture_id: fixture.id,
+                player_id: selection.playerId,
+                position: selection.position,
+                performance_category: selection.performanceCategory || "MESSI",
+                team_number: parseInt(teamId),
+                is_captain: teamCaptains[teamId] === selection.playerId
+              });
+            }
           });
         }
       }
       
-      console.log("Saving team selections:", teamSelectionsToSave);
+      console.log("Saving player selections:", teamSelectionsToSave);
       
       if (teamSelectionsToSave.length > 0) {
         const { data, error } = await supabase
