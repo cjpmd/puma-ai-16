@@ -54,6 +54,12 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
       
       newPeriodsPerTeam[teamId] = [{ id: periodId, duration: 20 }];
       
+      // Initialize empty selections for this period/team
+      if (!newSelections[periodId]) {
+        newSelections[periodId] = {};
+      }
+      newSelections[periodId][teamId] = {};
+      
       // Set initial performance category for the period
       newPerformanceCategories[`${periodId}-${teamId}`] = 'MESSI';
     }
@@ -71,15 +77,21 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
   };
 
   const handleDeletePeriod = (teamId: string, periodId: string) => {
-    setPeriodsPerTeam(prev => ({
-      ...prev,
-      [teamId]: prev[teamId].filter(p => p.id !== periodId)
-    }));
+    setPeriodsPerTeam(prev => {
+      const newPeriodsPerTeam = { ...prev };
+      newPeriodsPerTeam[teamId] = prev[teamId].filter(p => p.id !== periodId);
+      return newPeriodsPerTeam;
+    });
     
     // Clean up selections for deleted period
     setSelections(prev => {
       const newSelections = { ...prev };
-      delete newSelections[periodId];
+      if (newSelections[periodId]) {
+        delete newSelections[periodId][teamId];
+        if (Object.keys(newSelections[periodId]).length === 0) {
+          delete newSelections[periodId];
+        }
+      }
       return newSelections;
     });
 
@@ -97,8 +109,15 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     const newPeriodId = `period-${newPeriodNumber}`;
     
     // Get the last period's selections to duplicate
-    const lastPeriodId = currentPeriods[currentPeriods.length - 1]?.id;
-    const lastPeriodSelections = lastPeriodId ? selections[lastPeriodId]?.[teamId] : {};
+    let lastPeriodSelections = {};
+    if (currentPeriods.length > 0) {
+      const lastPeriodId = currentPeriods[currentPeriods.length - 1].id;
+      if (selections[lastPeriodId] && selections[lastPeriodId][teamId]) {
+        // Deep clone to avoid reference issues
+        lastPeriodSelections = JSON.parse(JSON.stringify(selections[lastPeriodId][teamId]));
+        console.log(`Duplicating selections from ${lastPeriodId} to ${newPeriodId}:`, lastPeriodSelections);
+      }
+    }
     
     // Add new period
     setPeriodsPerTeam(prev => ({
@@ -107,22 +126,29 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     }));
 
     // Duplicate the selections from the last period
-    if (lastPeriodSelections) {
-      setSelections(prev => ({
-        ...prev,
-        [newPeriodId]: {
-          ...prev[newPeriodId],
-          [teamId]: { ...lastPeriodSelections }
-        }
-      }));
-    }
+    setSelections(prev => {
+      const newSelections = { ...prev };
+      if (!newSelections[newPeriodId]) {
+        newSelections[newPeriodId] = {};
+      }
+      newSelections[newPeriodId][teamId] = lastPeriodSelections;
+      return newSelections;
+    });
 
     // Copy performance category from the last period
-    const lastCategory = performanceCategories[`${lastPeriodId}-${teamId}`] || 'MESSI';
-    setPerformanceCategories(prev => ({
-      ...prev,
-      [`${newPeriodId}-${teamId}`]: lastCategory
-    }));
+    if (currentPeriods.length > 0) {
+      const lastPeriodId = currentPeriods[currentPeriods.length - 1].id;
+      const lastCategory = performanceCategories[`${lastPeriodId}-${teamId}`] || 'MESSI';
+      setPerformanceCategories(prev => ({
+        ...prev,
+        [`${newPeriodId}-${teamId}`]: lastCategory
+      }));
+    } else {
+      setPerformanceCategories(prev => ({
+        ...prev,
+        [`${newPeriodId}-${teamId}`]: 'MESSI'
+      }));
+    }
 
     toast({
       title: "Period Added",
@@ -131,32 +157,38 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
   };
 
   const handleTeamSelectionChange = (periodId: string, teamId: string, teamSelections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
-    setSelections(prev => ({
-      ...prev,
-      [periodId]: {
-        ...prev[periodId],
-        [teamId]: teamSelections
+    console.log(`TeamSelectionManager: Received selection change for period ${periodId}, team ${teamId}:`, JSON.stringify(teamSelections));
+    
+    // Update selections with a deep clone to ensure no reference issues
+    setSelections(prev => {
+      const newSelections = { ...prev };
+      if (!newSelections[periodId]) {
+        newSelections[periodId] = {};
       }
-    }));
+      // Deep clone to ensure no reference issues
+      newSelections[periodId][teamId] = JSON.parse(JSON.stringify(teamSelections));
+      return newSelections;
+    });
 
-    // Update selected players
+    // Update selected players across all periods and teams
+    updateSelectedPlayers();
+  };
+
+  // Utility function to update the set of selected players
+  const updateSelectedPlayers = () => {
     const newSelectedPlayers = new Set<string>();
+    
+    // Iterate through all periods and teams to collect selected players
     Object.values(selections).forEach(periodSelections => {
       Object.values(periodSelections).forEach(teamSelections => {
         Object.values(teamSelections).forEach(selection => {
-          if (selection.playerId !== "unassigned") {
+          if (selection.playerId && selection.playerId !== "unassigned") {
             newSelectedPlayers.add(selection.playerId);
           }
         });
       });
     });
-
-    Object.values(teamSelections).forEach(selection => {
-      if (selection.playerId !== "unassigned") {
-        newSelectedPlayers.add(selection.playerId);
-      }
-    });
-
+    
     setSelectedPlayers(newSelectedPlayers);
   };
 
@@ -169,11 +201,20 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     }));
   };
 
+  // Save team selections to database
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      // Save team selections logic...
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+      console.log("Saving team selections to database:", selections);
+      
+      // Here you would implement the actual save to database
+      // For example:
+      // const { error } = await supabase
+      //   .from('fixture_team_selections')
+      //   .upsert(formattedSelections);
+      
+      // Simulate API call for now
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       toast({
         title: "Success",
@@ -251,7 +292,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
               <div className="flex flex-col space-y-6">
                 {teamPeriods.map((period, index) => (
                   <TeamPeriodCard
-                    key={period.id}
+                    key={`${period.id}-${teamId}-${performanceCategories[`${period.id}-${teamId}`] || 'MESSI'}`}
                     periodId={period.id}
                     periodNumber={index + 1}
                     teamId={teamId}
