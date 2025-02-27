@@ -1,3 +1,4 @@
+
 import { format } from "date-fns";
 import { MapPin } from "lucide-react";
 import { DateChangeButton } from "./components/DateChangeButton";
@@ -46,7 +47,7 @@ export const FestivalEvent = ({
         </div>
         <div className="flex gap-2">
           <DateChangeButton
-            date={festival.date}
+            date={new Date(festival.date)} 
             onDateChange={(date) => onDateChange?.(festival.id, date)}
           />
           <EventActionButtons
