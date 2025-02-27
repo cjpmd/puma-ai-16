@@ -2,7 +2,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 interface PlayerPositionSelectProps {
   position: string;
@@ -30,48 +30,16 @@ export const PlayerPositionSelect = ({
   onSelectionChange,
   selectedPlayers,
 }: PlayerPositionSelectProps) => {
-  // Using refs to track previous values
-  const prevPositionRef = useRef(position);
-  const prevPlayerIdRef = useRef(playerId);
-  
-  // Internal state
-  const [currentPosition, setCurrentPosition] = useState(position || "GK");
-  const [currentPlayerId, setCurrentPlayerId] = useState(playerId || "unassigned");
-  
-  // Log initial props for debugging
-  useEffect(() => {
-    console.log("PlayerPositionSelect initialized with:", { position, playerId });
-  }, []);
+  // We're only using controlled inputs now - no internal state
 
-  // Update internal state when props change
-  useEffect(() => {
-    if (position !== prevPositionRef.current) {
-      console.log(`Position prop changed from ${prevPositionRef.current} to ${position}`);
-      setCurrentPosition(position || "GK");
-      prevPositionRef.current = position;
-    }
-    
-    if (playerId !== prevPlayerIdRef.current) {
-      console.log(`Player ID prop changed from ${prevPlayerIdRef.current} to ${playerId}`);
-      setCurrentPlayerId(playerId || "unassigned");
-      prevPlayerIdRef.current = playerId;
-    }
-  }, [position, playerId]);
-
-  // Handle position selection
   const handlePositionChange = (newPosition: string) => {
-    console.log(`Position changed to: ${newPosition}`);
-    setCurrentPosition(newPosition);
-    // Propagate change to parent
-    onSelectionChange(currentPlayerId, newPosition);
+    console.log(`Position selection changed to: ${newPosition}`);
+    onSelectionChange(playerId, newPosition);
   };
 
-  // Handle player selection
   const handlePlayerChange = (newPlayerId: string) => {
-    console.log(`Player changed to: ${newPlayerId}`);
-    setCurrentPlayerId(newPlayerId);
-    // Propagate change to parent
-    onSelectionChange(newPlayerId, currentPosition);
+    console.log(`Player selection changed to: ${newPlayerId}`);
+    onSelectionChange(newPlayerId, position);
   };
 
   return (
@@ -79,13 +47,12 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Position</Label>
         <Select 
-          value={currentPosition}
-          defaultValue={currentPosition}
+          value={position}
           onValueChange={handlePositionChange}
         >
           <SelectTrigger className="h-8 text-left">
             <SelectValue placeholder="Select position">
-              {currentPosition}
+              {position}
             </SelectValue>
           </SelectTrigger>
           <SelectContent className="bg-white z-50 max-h-60">
@@ -101,8 +68,7 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Player</Label>
         <Select 
-          value={currentPlayerId}
-          defaultValue={currentPlayerId}
+          value={playerId}
           onValueChange={handlePlayerChange}
         >
           <SelectTrigger className="h-8 text-left">
@@ -118,7 +84,7 @@ export const PlayerPositionSelect = ({
                 value={player.id}
                 className={cn(
                   "text-sm",
-                  selectedPlayers.has(player.id) && player.id !== currentPlayerId && "text-gray-500"
+                  selectedPlayers.has(player.id) && player.id !== playerId && "text-gray-500"
                 )}
               >
                 {getPlayerDisplay(player)}

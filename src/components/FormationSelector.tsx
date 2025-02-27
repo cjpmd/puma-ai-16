@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
@@ -32,7 +32,7 @@ export const FormationSelector = ({
   periodNumber = 1
 }: FormationSelectorProps) => {
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
-    initialSelections || {}
+    {}
   );
   const [localPerformanceCategory, setLocalPerformanceCategory] = useState(performanceCategory);
 
@@ -52,9 +52,10 @@ export const FormationSelector = ({
 
   const players = initialPlayers || fetchedPlayers || [];
   
-  // Update local state when initialSelections change
+  // Update local state when initialSelections change - this is a critical fix
   useEffect(() => {
     if (initialSelections) {
+      console.log("FormationSelector: Setting initialSelections", initialSelections);
       setSelections(initialSelections);
     }
   }, [initialSelections]);
@@ -65,25 +66,25 @@ export const FormationSelector = ({
   }, [performanceCategory]);
 
   // Handle player selection changes
-  const handlePlayerSelection = useCallback((slotId: string, playerId: string, position: string) => {
-    console.log(`Selection change - SlotID: ${slotId}, PlayerID: ${playerId}, Position: ${position}`);
+  const handlePlayerSelection = (slotId: string, playerId: string, position: string) => {
+    console.log(`FormationSelector: Selection change - SlotID: ${slotId}, PlayerID: ${playerId}, Position: ${position}`);
     
-    setSelections(prev => {
-      const newSelections = {
-        ...prev,
-        [slotId]: {
-          playerId,
-          position,
-          performanceCategory: localPerformanceCategory
-        }
-      };
-      
-      // Notify parent component about changes
-      onSelectionChange(newSelections);
-      
-      return newSelections;
-    });
-  }, [localPerformanceCategory, onSelectionChange]);
+    // Create a new selections object with the updated values
+    const newSelections = {
+      ...selections,
+      [slotId]: {
+        playerId,
+        position,
+        performanceCategory: localPerformanceCategory
+      }
+    };
+    
+    // Update local state
+    setSelections(newSelections);
+    
+    // Notify parent component about changes
+    onSelectionChange(newSelections);
+  };
 
   // Update performance categories when they change
   useEffect(() => {
@@ -189,12 +190,13 @@ export const FormationSelector = ({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-2">
         {getFormationSlots().map((slot) => {
-          // Get the current selection for this slot
+          // Get the current selection for this slot or use default values
           const selection = selections[slot.id] || { playerId: "unassigned", position: slot.label };
           
+          // Important: We're extracting position from the selection, not using the slot label
           return (
             <PlayerPositionSelect
-              key={slot.id}
+              key={`${slot.id}-${selection.position}-${selection.playerId}`}
               position={selection.position}
               playerId={selection.playerId}
               availablePlayers={players}
