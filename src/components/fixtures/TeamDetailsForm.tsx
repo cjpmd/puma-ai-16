@@ -8,9 +8,10 @@ import { FixtureFormData } from "./schemas/fixtureFormSchema";
 
 interface TeamDetailsFormProps {
   form: UseFormReturn<FixtureFormData>;
+  players?: any[];
 }
 
-export const TeamDetailsForm = ({ form }: TeamDetailsFormProps) => {
+export const TeamDetailsForm = ({ form, players }: TeamDetailsFormProps) => {
   return (
     <>
       <div className="text-lg font-semibold mb-2">Team: Broughty Pumas 2015s</div>

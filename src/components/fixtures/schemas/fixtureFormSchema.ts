@@ -19,7 +19,7 @@ export const fixtureFormSchema = z.object({
   is_home: z.boolean().default(true),
   format: z.string().default("7-a-side"),
   team_name: z.string().default("Broughty Pumas 2015s"),
-  date: z.string(),
+  date: z.union([z.string(), z.date()]).optional(),
 });
 
 export type FixtureFormData = z.infer<typeof fixtureFormSchema>;
