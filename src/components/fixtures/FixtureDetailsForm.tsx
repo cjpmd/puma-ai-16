@@ -14,10 +14,9 @@ import { FixtureFormData } from "./schemas/fixtureFormSchema";
 
 interface FixtureDetailsFormProps {
   form: UseFormReturn<FixtureFormData>;
-  showDateSelector?: boolean;
 }
 
-export const FixtureDetailsForm = ({ form, showDateSelector }: FixtureDetailsFormProps) => {
+export const FixtureDetailsForm = ({ form }: FixtureDetailsFormProps) => {
   return (
     <>
       <div className="grid grid-cols-2 gap-4">
