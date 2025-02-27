@@ -1,149 +1,120 @@
 
-import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CardTitle } from "@/components/ui/card";
+import { Trophy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
 import { TeamScores } from "./FixtureCard/TeamScores";
+import { FixtureCardHeader } from "./FixtureCard/FixtureCardHeader";
+import { DateChangeButton } from "./events/components/DateChangeButton";
+import { EventActionButtons } from "./events/components/EventActionButtons";
 import { Fixture } from "@/types/fixture";
-import { Trophy, MapPin, Calendar, Clock, Users } from "lucide-react";
+import { TeamSelectionDialog } from "./FixtureCard/TeamSelectionDialog";
+import { useState } from "react";
 
 interface FixtureCardProps {
   fixture: Fixture;
-  onClick?: () => void;
-  onEdit?: (fixture: Fixture) => void;
-  onDelete?: (fixtureId: string) => void;
-  onDateChange?: (fixtureId: string, newDate: Date) => void;
+  onEdit: () => void;
+  onDelete: (fixtureId: string) => void;
+  onDateChange: (fixtureId: string, newDate: Date) => void;
 }
 
-export const FixtureCard = ({ 
-  fixture, 
-  onClick, 
-  onEdit, 
-  onDelete, 
-  onDateChange 
+export const FixtureCard = ({
+  fixture,
+  onEdit,
+  onDelete,
+  onDateChange,
 }: FixtureCardProps) => {
+  const [showTeamSelection, setShowTeamSelection] = useState(false);
+
   // Format date for display
-  const formattedDate = fixture.date 
+  const formattedDate = fixture.date
     ? format(new Date(fixture.date), "MMMM do, yyyy")
-    : "TBD";
+    : "Date TBD";
 
-  // Determine badge color and text based on outcome
-  const getBadgeVariant = () => {
-    if (!fixture.outcome) return "secondary";
-    
-    switch (fixture.outcome) {
-      case "WIN":
-        return "success";
-      case "LOSS":
-        return "destructive";
-      case "DRAW":
-        return "warning";
-      default:
-        return "secondary";
-    }
-  };
+  // Get team and opponent names
+  const teamName = fixture.team_name || "Broughty Pumas 2015s";
+  
+  // Ensure we have the right display title
+  const vsTitle = fixture.is_home
+    ? `${teamName} vs ${fixture.opponent}`
+    : `${fixture.opponent} vs ${teamName}`;
 
-  const getBadgeText = () => {
-    if (!fixture.outcome) return "Upcoming";
-    
-    switch (fixture.outcome) {
-      case "WIN":
-        return "Win";
-      case "LOSS":
-        return "Loss";
-      case "DRAW":
-        return "Draw";
-      default:
-        return "Upcoming";
-    }
-  };
+  // Get format
+  const formatText = fixture.format ? `${fixture.format} Format` : "";
 
-  // Handle the edit click
-  const handleEdit = () => {
-    if (onEdit) {
-      onEdit(fixture);
-    }
-  };
+  console.log("Rendering fixture:", fixture.id, fixture.opponent);
 
-  // Handle the delete click
   const handleDelete = () => {
-    if (onDelete) {
+    if (window.confirm(`Are you sure you want to delete this fixture against ${fixture.opponent}?`)) {
       onDelete(fixture.id);
     }
   };
 
-  // Handle date change
-  const handleDateChange = (newDate: Date) => {
-    if (onDateChange) {
-      onDateChange(fixture.id, newDate);
-    }
+  const handleTeamSelection = () => {
+    setShowTeamSelection(true);
   };
 
   return (
-    <Card className="shadow-sm hover:shadow-md transition-shadow">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <div className="space-y-1">
-            <Badge variant={getBadgeVariant()}>
-              {getBadgeText()}
-            </Badge>
-            <CardTitle className="text-xl font-bold">
-              {fixture.team_name} vs {fixture.opponent}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {fixture.format || "Standard"} Format
-            </p>
+    <>
+      <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <CardHeader className="pb-2">
+          <div className="flex justify-between items-start">
+            <div className="space-y-1">
+              <Badge>
+                Upcoming
+              </Badge>
+              <CardTitle className="text-xl font-bold">
+                {vsTitle}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {formatText}
+              </p>
+            </div>
+            <Trophy className="h-6 w-6 text-blue-500" />
           </div>
-          <Trophy className={`h-6 w-6 ${fixture.is_friendly ? 'text-amber-400' : 'text-blue-500'}`} />
-        </div>
-      </CardHeader>
-      
-      <CardContent className="cursor-pointer" onClick={onClick || handleEdit}>
-        <p className="font-semibold text-muted-foreground mb-4 text-sm">
-          Date: {formattedDate}
-        </p>
-        
-        {(fixture.number_of_teams || 0) > 0 && (
-          <div className="mb-4 space-y-4">
-            <h3 className="font-semibold">Team 1</h3>
-            <TeamScores
-              teamName={fixture.team_name || "Broughty Pumas"}
-              opponent={fixture.opponent || "Opposition"}
-              teamScore={fixture.team_1_score}
-              opponentScore={fixture.opponent_1_score}
-              isHome={fixture.is_home || false}
-              fixtureDate={fixture.date}
+        </CardHeader>
+
+        <CardContent className="cursor-pointer">
+          <p className="font-semibold text-muted-foreground mb-4 text-sm">
+            Date: {formattedDate}
+          </p>
+
+          {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
+            <div key={index} className="mb-4 space-y-4">
+              <h3 className="font-semibold">Team {index + 1}</h3>
+              <TeamScores 
+                fixture={fixture} 
+                teamIndex={index} 
+              />
+            </div>
+          ))}
+
+          <div className="space-y-1 mt-4 text-sm text-muted-foreground">
+            <p>Location: {fixture.location || "TBD"}</p>
+          </div>
+
+          <div className="flex justify-end items-center gap-2 mt-4">
+            <DateChangeButton 
+              date={fixture.date ? new Date(fixture.date) : new Date()} 
+              onDateChange={(newDate) => onDateChange(fixture.id, newDate)}
             />
-            
-            {(fixture.number_of_teams || 0) > 1 && (
-              <>
-                <h3 className="font-semibold mt-6">Team 2</h3>
-                <TeamScores
-                  teamName={fixture.team_name || "Broughty Pumas"}
-                  opponent={fixture.opponent || "Opposition"}
-                  teamScore={fixture.team_2_score}
-                  opponentScore={fixture.opponent_2_score}
-                  isHome={fixture.is_home || false}
-                  fixtureDate={fixture.date}
-                />
-              </>
-            )}
+            <EventActionButtons 
+              onEdit={onEdit} 
+              onTeamSelection={handleTeamSelection} 
+              onDelete={handleDelete} 
+            />
           </div>
-        )}
-        
-        <div className="space-y-1 mt-4 text-sm text-muted-foreground">
-          <p>Location: {fixture.location || "TBD"}</p>
-          {fixture.meeting_time && (
-            <p className="flex items-center gap-1">
-              <Clock className="h-3 w-3" /> Meet: {fixture.meeting_time}
-            </p>
-          )}
-          {fixture.start_time && (
-            <p className="flex items-center gap-1">
-              <Clock className="h-3 w-3" /> Start: {fixture.start_time}
-            </p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Team Selection Dialog */}
+      <TeamSelectionDialog 
+        fixture={fixture}
+        isOpen={showTeamSelection}
+        onOpenChange={setShowTeamSelection}
+      />
+    </>
   );
 };

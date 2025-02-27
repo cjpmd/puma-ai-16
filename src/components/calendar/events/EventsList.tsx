@@ -52,6 +52,8 @@ export const EventsList = ({
 }: EventsListProps) => {
   const hasEvents = festivals?.length || tournaments?.length || fixtures?.length || sessions?.length;
 
+  console.log("EventsList rendering fixtures:", fixtures?.map(f => f.id));
+
   // Convert string dates to Date objects
   const handleFixtureDateChange = (fixtureId: string, newDate: Date) => {
     onUpdateFixtureDate(fixtureId, newDate);
@@ -87,6 +89,7 @@ export const EventsList = ({
             />
           ))}
 
+          {/* Add debugging to ensure fixtures are unique */}
           {fixtures?.map((fixture) => (
             <FixtureCard 
               key={fixture.id} 
