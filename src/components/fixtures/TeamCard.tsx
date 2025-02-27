@@ -24,7 +24,18 @@ export const TeamCard = ({
   getMotmLabel
 }: TeamCardProps) => {
   const performanceCategory = form.watch(`team_times.${index}.performance_category`) || "MESSI";
+  const motmPlayerId = form.watch(`motm_player_ids.${index}`);
   
+  // For debugging
+  React.useEffect(() => {
+    console.log(`Team ${index + 1} MOTM Player ID:`, motmPlayerId);
+    console.log(`Team ${index + 1} MOTM player array:`, form.getValues().motm_player_ids);
+  }, [index, motmPlayerId, form]);
+
+  // Find selected player name for display
+  const selectedPlayer = players.find(p => p.id === motmPlayerId);
+  const selectedPlayerName = selectedPlayer ? selectedPlayer.name : "None";
+
   return (
     <Card>
       <CardContent className="pt-6">
@@ -133,13 +144,30 @@ export const TeamCard = ({
           <div className="space-y-2">
             <Label htmlFor={`motm_player_ids.${index}`}>{getMotmLabel(index)}</Label>
             <Select
-              value={form.watch(`motm_player_ids.${index}`) || "none"}
+              value={motmPlayerId || "none"}
               onValueChange={(value) => {
-                form.setValue(`motm_player_ids.${index}`, value === "none" ? "" : value);
+                const newValue = value === "none" ? "" : value;
+                console.log(`Setting MOTM for team ${index + 1} to:`, newValue);
+                
+                // Get current array of MOTM player IDs
+                const currentMotmIds = [...(form.getValues().motm_player_ids || [])];
+                
+                // Ensure the array is long enough
+                while (currentMotmIds.length <= index) {
+                  currentMotmIds.push("");
+                }
+                
+                // Update the value at the specific index
+                currentMotmIds[index] = newValue;
+                
+                // Set the entire array
+                form.setValue('motm_player_ids', currentMotmIds, { shouldDirty: true });
               }}
             >
               <SelectTrigger id={`motm_player_ids.${index}`}>
-                <SelectValue placeholder="Select player" />
+                <SelectValue placeholder="Select player">
+                  {selectedPlayerName}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">None</SelectItem>
