@@ -1,207 +1,164 @@
 
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
-import { Form, FormLabel } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { TeamDetailsForm } from "./TeamDetailsForm";
-import { FixtureDetailsForm } from "./FixtureDetailsForm";
-import { TeamCard } from "./TeamCard";
 import { fixtureFormSchema, FixtureFormData } from "./schemas/fixtureFormSchema";
+import { FixtureDetailsForm } from "./FixtureDetailsForm";
+import { TeamDetailsForm } from "./TeamDetailsForm";
+import { Fixture } from "@/types/fixture";
 import { useFixtureForm } from "./hooks/useFixtureForm";
-import { useTeamTimes } from "./hooks/useTeamTimes";
-import { Loader2 } from "lucide-react";
 
 interface FixtureFormProps {
-  onSubmit: (data: FixtureFormData) => Promise<FixtureFormData>;
+  onSubmit: (data: FixtureFormData) => Promise<any>;
   selectedDate?: Date;
-  editingFixture?: any;
+  editingFixture?: Fixture | null;
   players?: any[];
   isSubmitting?: boolean;
   showDateSelector?: boolean;
 }
 
-export const FixtureForm = ({ 
-  onSubmit, 
-  selectedDate, 
+export const FixtureForm = ({
+  onSubmit,
+  selectedDate,
   editingFixture,
-  players,
-  isSubmitting: externalIsSubmitting,
-  showDateSelector = false
+  players = [],
+  isSubmitting = false,
+  showDateSelector = false,
 }: FixtureFormProps) => {
-  // Initialize the form with the editing fixture data if available
-  const getInitialTeamTimes = () => {
-    if (editingFixture?.fixture_team_times && editingFixture?.fixture_team_times.length > 0) {
-      return editingFixture.fixture_team_times.map((time: any) => ({
-        meeting_time: time.meeting_time || "",
-        start_time: time.start_time || "",
-        end_time: time.end_time || "",
-        performance_category: time.performance_category || "MESSI"
-      }));
-    }
-    return Array(editingFixture?.number_of_teams || 1).fill({
-      meeting_time: "",
-      start_time: "",
-      end_time: "",
-      performance_category: "MESSI"
-    });
-  };
-
-  // Get initial MOTM player IDs, handling both single and multiple team cases
-  const getInitialMotmPlayerIds = () => {
-    // If we have multiple teams with potentially different MOTM players
-    if (editingFixture?.fixture_team_scores && editingFixture?.fixture_team_scores.length > 0) {
-      // Extract MOTM player IDs from team scores if available
-      const motmPlayerIds = editingFixture.fixture_team_scores.map((score: any) => 
-        score.motm_player_id || ""
-      );
-      
-      // If we have at least one MOTM player, use that array
-      if (motmPlayerIds.length > 0) {
-        console.log("Using MOTM player IDs from team scores:", motmPlayerIds);
-        return motmPlayerIds;
-      }
-    }
-    
-    // If we have a single MOTM player for the whole fixture
-    if (editingFixture?.motm_player_id || editingFixture?.potm_player_id) {
-      const playerId = editingFixture?.motm_player_id || editingFixture?.potm_player_id;
-      console.log("Using single MOTM player ID:", playerId);
-      return Array(editingFixture?.number_of_teams || 1).fill("").map((_, i) => 
-        i === 0 ? playerId : ""
-      );
-    }
-    
-    // Default empty array of appropriate length
-    const emptyIds = Array(editingFixture?.number_of_teams || 1).fill("");
-    console.log("Using default empty MOTM player IDs:", emptyIds);
-    return emptyIds;
-  };
+  console.log("FixtureForm - editingFixture:", editingFixture);
+  console.log("FixtureForm - fixture_team_scores:", editingFixture?.fixture_team_scores);
 
   const form = useForm<FixtureFormData>({
     resolver: zodResolver(fixtureFormSchema),
     defaultValues: {
-      opponent: editingFixture?.opponent || "",
-      location: editingFixture?.location || "",
-      number_of_teams: editingFixture?.number_of_teams?.toString() || "1",
-      format: editingFixture?.format || "7-a-side",
-      team_1_score: editingFixture?.team_1_score || 0,
-      opponent_1_score: editingFixture?.opponent_1_score || 0,
-      team_2_score: editingFixture?.team_2_score || 0,
-      opponent_2_score: editingFixture?.opponent_2_score || 0,
-      motm_player_ids: getInitialMotmPlayerIds(),
-      team_times: getInitialTeamTimes(),
-      is_home: editingFixture?.is_home ?? true,
-      team_name: editingFixture?.team_name || "Broughty Pumas 2015s",
-      date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
+      opponent: "",
+      location: "",
+      team_name: "Broughty Pumas 2015s",
+      format: "7-a-side",
+      number_of_teams: "1",
+      is_home: true,
+      date: selectedDate,
+      motm_player_ids: ["", ""],
+      team_1_score: 0,
+      opponent_1_score: 0,
+      team_2_score: 0,
+      opponent_2_score: 0,
+      team_times: [
+        {
+          meeting_time: "",
+          start_time: "",
+          end_time: "",
+          performance_category: "MESSI"
+        },
+        {
+          meeting_time: "",
+          start_time: "",
+          end_time: "",
+          performance_category: "MESSI"
+        }
+      ]
     },
   });
 
-  const { handleSubmit, isSubmitting: localIsSubmitting } = useFixtureForm({ onSubmit, editingFixture, selectedDate });
-  const watchNumberOfTeams = parseInt(form.watch("number_of_teams") || "1");
-  const watchOpponent = form.watch("opponent");
-  const watchIsHome = form.watch("is_home");
-  const watchMotmPlayerIds = form.watch("motm_player_ids");
+  // Initialize form with editing fixture data when it changes
+  useEffect(() => {
+    if (editingFixture) {
+      console.log("Initializing form with fixture:", editingFixture);
+      
+      // Extract team scores
+      const team1Score = editingFixture.team_1_score !== undefined 
+        ? editingFixture.team_1_score 
+        : editingFixture.fixture_team_scores?.find(s => s.team_number === 1)?.score || 0;
+      
+      const opponent1Score = editingFixture.opponent_1_score !== undefined 
+        ? editingFixture.opponent_1_score 
+        : editingFixture.fixture_team_scores?.find(s => s.team_number === 1)?.opponent_score || 0;
+      
+      const team2Score = editingFixture.team_2_score !== undefined 
+        ? editingFixture.team_2_score 
+        : editingFixture.fixture_team_scores?.find(s => s.team_number === 2)?.score || 0;
+      
+      const opponent2Score = editingFixture.opponent_2_score !== undefined 
+        ? editingFixture.opponent_2_score 
+        : editingFixture.fixture_team_scores?.find(s => s.team_number === 2)?.opponent_score || 0;
+      
+      // Extract MOTM player IDs for all teams
+      const motmPlayerIds = [];
+      
+      // Get main MOTM for team 1
+      const team1Motm = editingFixture.fixture_team_scores?.find(s => s.team_number === 1)?.motm_player_id || editingFixture.motm_player_id || "";
+      motmPlayerIds.push(team1Motm);
+      
+      // Get MOTM for team 2
+      const team2Motm = editingFixture.fixture_team_scores?.find(s => s.team_number === 2)?.motm_player_id || "";
+      motmPlayerIds.push(team2Motm);
+      
+      console.log("MOTM player IDs:", motmPlayerIds);
+      
+      // Extract team times with performance categories
+      const teamTimes = [];
+      
+      // Get team 1 times and performance
+      const team1Times = editingFixture.fixture_team_times?.find(t => t.team_number === 1) || {};
+      teamTimes.push({
+        meeting_time: team1Times.meeting_time || editingFixture.meeting_time || "",
+        start_time: team1Times.start_time || editingFixture.start_time || "",
+        end_time: team1Times.end_time || editingFixture.end_time || "",
+        performance_category: team1Times.performance_category || "MESSI"
+      });
+      
+      // Get team 2 times and performance
+      const team2Times = editingFixture.fixture_team_times?.find(t => t.team_number === 2) || {};
+      teamTimes.push({
+        meeting_time: team2Times.meeting_time || "",
+        start_time: team2Times.start_time || "",
+        end_time: team2Times.end_time || "",
+        performance_category: team2Times.performance_category || "MESSI"
+      });
+      
+      // Set form values
+      form.reset({
+        opponent: editingFixture.opponent || "",
+        location: editingFixture.location || "",
+        team_name: editingFixture.team_name || "Broughty Pumas 2015s",
+        format: editingFixture.format || "7-a-side",
+        number_of_teams: editingFixture.number_of_teams?.toString() || "1",
+        is_home: editingFixture.is_home !== undefined ? editingFixture.is_home : true,
+        date: editingFixture.date ? new Date(editingFixture.date) : selectedDate,
+        motm_player_ids: motmPlayerIds,
+        team_1_score: team1Score,
+        opponent_1_score: opponent1Score,
+        team_2_score: team2Score,
+        opponent_2_score: opponent2Score,
+        team_times: teamTimes
+      });
+    }
+  }, [editingFixture, selectedDate, form]);
   
-  // Combine both local and external isSubmitting state for better feedback
-  const isSubmitting = localIsSubmitting || externalIsSubmitting;
-
-  // Update MOTM player IDs when number of teams changes
-  useEffect(() => {
-    const currentMotmIds = form.getValues().motm_player_ids || [];
-    const newTeamsCount = watchNumberOfTeams;
-    
-    if (currentMotmIds.length !== newTeamsCount) {
-      // Resize the motm_player_ids array to match the number of teams
-      const newMotmIds = [...currentMotmIds];
-      
-      // If we're adding teams, fill with empty strings
-      while (newMotmIds.length < newTeamsCount) {
-        newMotmIds.push("");
-      }
-      
-      // If we're removing teams, truncate the array
-      if (newMotmIds.length > newTeamsCount) {
-        newMotmIds.length = newTeamsCount;
-      }
-      
-      console.log("Updating MOTM player IDs array size:", newMotmIds);
-      form.setValue('motm_player_ids', newMotmIds, { shouldDirty: true });
+  const handleSubmit = async (data: FixtureFormData) => {
+    console.log("Form data being submitted:", data);
+    try {
+      await onSubmit(data);
+    } catch (error) {
+      console.error("Error submitting form:", error);
     }
-  }, [watchNumberOfTeams, form]);
-
-  // Log form values when they change
-  useEffect(() => {
-    console.log("Current form values:", form.getValues());
-    console.log("MOTM player IDs:", watchMotmPlayerIds);
-  }, [form, watchNumberOfTeams, watchMotmPlayerIds]);
-
-  useTeamTimes(form, editingFixture, watchNumberOfTeams);
-
-  const getScoreLabel = (isHomeScore: boolean, teamIndex: number) => {
-    const homeTeam = watchIsHome ? "Broughty Pumas 2015s" : watchOpponent;
-    const awayTeam = watchIsHome ? watchOpponent : "Broughty Pumas 2015s";
-    const teamLabel = isHomeScore ? homeTeam : awayTeam;
-    const performanceCategory = form.watch(`team_times.${teamIndex}.performance_category`) || "MESSI";
-
-    if (teamLabel === "Broughty Pumas 2015s") {
-      return `Team ${teamIndex + 1} ${performanceCategory} Score`;
-    }
-    return `${teamLabel} Score`;
-  };
-
-  const getMotmLabel = (teamIndex: number) => {
-    const performanceCategory = form.watch(`team_times.${teamIndex}.performance_category`) || "MESSI";
-    return `Team ${teamIndex + 1} ${performanceCategory} Player of the Match`;
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        {showDateSelector && (
-          <div className="space-y-2">
-            <FormLabel>Date *</FormLabel>
-            <Input 
-              type="date" 
-              value={format(selectedDate || new Date(), 'yyyy-MM-dd')}
-              onChange={(e) => {
-                const date = e.target.value ? new Date(e.target.value) : undefined;
-                form.setValue('date', format(date || new Date(), 'yyyy-MM-dd'));
-              }}
-            />
-          </div>
-        )}
-
-        <TeamDetailsForm form={form} />
-        <FixtureDetailsForm form={form} />
-
-        {Array.from({ length: watchNumberOfTeams }).map((_, index) => (
-          <TeamCard
-            key={index}
-            index={index}
-            form={form}
-            players={players}
-            getScoreLabel={getScoreLabel}
-            getMotmLabel={getMotmLabel}
-          />
-        ))}
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+        <FixtureDetailsForm form={form} showDateSelector={showDateSelector} />
         
-        <Button 
-          type="submit" 
-          className="w-full"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {editingFixture ? "Saving Changes..." : "Adding Fixture..."}
-            </>
-          ) : (
-            editingFixture ? "Save Changes" : "Add Fixture"
-          )}
-        </Button>
+        <TeamDetailsForm form={form} players={players} />
+        
+        <div className="flex justify-end">
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : (editingFixture ? "Update Fixture" : "Create Fixture")}
+          </Button>
+        </div>
       </form>
     </Form>
   );

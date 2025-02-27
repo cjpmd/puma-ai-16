@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,13 @@ export const TeamCard = ({
   getMotmLabel
 }: TeamCardProps) => {
   const performanceCategory = form.watch(`team_times.${index}.performance_category`) || "MESSI";
+  const motmPlayerId = form.watch(`motm_player_ids.${index}`);
   
+  // For debugging
+  useEffect(() => {
+    console.log(`Team ${index + 1} MOTM Player ID:`, motmPlayerId);
+  }, [index, motmPlayerId]);
+
   return (
     <Card>
       <CardContent className="pt-6">
@@ -132,24 +138,36 @@ export const TeamCard = ({
           {/* Player of the Match */}
           <div className="space-y-2">
             <Label htmlFor={`motm_player_ids.${index}`}>{getMotmLabel(index)}</Label>
-            <Select
-              value={form.watch(`motm_player_ids.${index}`) || "none"}
-              onValueChange={(value) => {
-                form.setValue(`motm_player_ids.${index}`, value === "none" ? "" : value);
-              }}
-            >
-              <SelectTrigger id={`motm_player_ids.${index}`}>
-                <SelectValue placeholder="Select player" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {players.map((player) => (
-                  <SelectItem key={player.id} value={player.id}>
-                    {player.name} {player.squad_number ? `(${player.squad_number})` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FormField
+              control={form.control}
+              name={`motm_player_ids.${index}`}
+              render={({ field }) => (
+                <Select
+                  value={field.value || "none"}
+                  onValueChange={(value) => {
+                    const newValue = value === "none" ? "" : value;
+                    console.log(`Setting MOTM for team ${index + 1} to:`, newValue);
+                    field.onChange(newValue);
+                  }}
+                >
+                  <SelectTrigger id={`motm_player_ids.${index}`}>
+                    <SelectValue placeholder="Select player">
+                      {field.value && players.find(p => p.id === field.value)?.name 
+                        ? players.find(p => p.id === field.value)?.name 
+                        : "None"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {players.map((player) => (
+                      <SelectItem key={player.id} value={player.id}>
+                        {player.name} {player.squad_number ? `(${player.squad_number})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
         </div>
       </CardContent>
