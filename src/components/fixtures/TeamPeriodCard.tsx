@@ -40,32 +40,35 @@ export const TeamPeriodCard = ({
   onDurationChange
 }: TeamPeriodCardProps) => {
   const [localSelections, setLocalSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
-    initialSelections || {}
+    {}
   );
   const [view, setView] = useState<"team-sheet" | "formation">("team-sheet");
 
+  // This is the key useEffect that needs fixing - deep clone initialSelections to prevent reference issues
   useEffect(() => {
     if (initialSelections) {
-      setLocalSelections(initialSelections);
+      console.log(`TeamPeriodCard (${periodId}): Setting initialSelections`, JSON.stringify(initialSelections));
+      // Use a deep clone to ensure no reference issues
+      const deepClonedSelections = JSON.parse(JSON.stringify(initialSelections));
+      setLocalSelections(deepClonedSelections);
     }
-  }, [initialSelections]);
+  }, [initialSelections, periodId]);
 
   const handleSelectionChange = (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
-    const updatedSelections = Object.entries(selections).reduce((acc, [position, selection]) => {
-      if (selection.playerId === "unassigned") {
-        const { [position]: removed, ...rest } = acc;
-        return rest;
-      }
-      
-      acc[position] = {
-        ...selection,
-        performanceCategory
-      };
-      
-      return acc;
-    }, { ...localSelections });
+    console.log(`TeamPeriodCard (${periodId}): Selections changed`, JSON.stringify(selections));
     
+    // Create a deep clone of the selections to prevent reference issues
+    const updatedSelections = JSON.parse(JSON.stringify(selections));
+    
+    // Apply performance category to all selections
+    Object.keys(updatedSelections).forEach(key => {
+      updatedSelections[key].performanceCategory = performanceCategory;
+    });
+    
+    // Update local state
     setLocalSelections(updatedSelections);
+    
+    // Notify parent
     onSelectionChange(periodId, teamId, updatedSelections);
   };
 
@@ -112,7 +115,7 @@ export const TeamPeriodCard = ({
       <CardContent>
         <div className="min-h-[500px]">
           <FormationSelector
-            key={`${periodId}-${teamId}-${JSON.stringify(localSelections)}`}
+            key={`formation-${periodId}-${teamId}-${Object.keys(localSelections).length}`}
             format={format as "7-a-side"}
             teamName={teamName}
             onSelectionChange={handleSelectionChange}
