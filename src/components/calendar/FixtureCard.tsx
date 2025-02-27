@@ -50,6 +50,25 @@ export const FixtureCard = ({
   console.log("Fixture MOTM player ID:", fixture.motm_player_id);
   console.log("Fixture team scores:", fixture.fixture_team_scores);
 
+  // Format time for display, handling nullable times
+  const formatTime = (timeString?: string | null) => {
+    if (!timeString) return null;
+    
+    // Try to split the time in HH:MM:SS format
+    const timeParts = timeString.split(':');
+    if (timeParts.length >= 2) {
+      // Convert to 12-hour format
+      let hours = parseInt(timeParts[0]);
+      const minutes = timeParts[1];
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // Convert '0' to '12'
+      return `${hours}:${minutes} ${ampm}`;
+    }
+    
+    return timeString; // Return the original format if parsing fails
+  };
+
   // Fetch player names for MOTM
   useEffect(() => {
     const fetchPlayerNames = async () => {
@@ -141,15 +160,22 @@ export const FixtureCard = ({
               (index === 0 ? fixture.motm_player_id : null);
             const motmPlayerName = motmPlayerId ? playerNames[motmPlayerId] : null;
             
-            // Get the team's performance category
+            // Get the team's performance category and start time
             const teamTime = fixture.fixture_team_times?.find(
               time => time.team_number === index + 1
             );
             const performanceCategory = teamTime?.performance_category || "MESSI";
+            const startTime = teamTime?.start_time || fixture.start_time;
+            const formattedStartTime = formatTime(startTime);
             
             return (
               <div key={index} className="mb-4 space-y-4">
                 <h3 className="font-semibold">Team {index + 1} {performanceCategory}</h3>
+                {formattedStartTime && (
+                  <p className="text-sm text-muted-foreground">
+                    Start Time: {formattedStartTime}
+                  </p>
+                )}
                 <TeamScores 
                   fixture={fixture} 
                   teamIndex={index} 

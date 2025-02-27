@@ -12,6 +12,7 @@ import { TeamCard } from "./TeamCard";
 import { fixtureFormSchema, FixtureFormData } from "./schemas/fixtureFormSchema";
 import { useFixtureForm } from "./hooks/useFixtureForm";
 import { useTeamTimes } from "./hooks/useTeamTimes";
+import { Loader2 } from "lucide-react";
 
 interface FixtureFormProps {
   onSubmit: (data: FixtureFormData) => Promise<FixtureFormData>;
@@ -27,6 +28,7 @@ export const FixtureForm = ({
   selectedDate, 
   editingFixture,
   players,
+  isSubmitting: externalIsSubmitting,
   showDateSelector = false
 }: FixtureFormProps) => {
   // Initialize the form with the editing fixture data if available
@@ -97,11 +99,14 @@ export const FixtureForm = ({
     },
   });
 
-  const { handleSubmit } = useFixtureForm({ onSubmit, editingFixture, selectedDate });
+  const { handleSubmit, isSubmitting: localIsSubmitting } = useFixtureForm({ onSubmit, editingFixture, selectedDate });
   const watchNumberOfTeams = parseInt(form.watch("number_of_teams") || "1");
   const watchOpponent = form.watch("opponent");
   const watchIsHome = form.watch("is_home");
   const watchMotmPlayerIds = form.watch("motm_player_ids");
+  
+  // Combine both local and external isSubmitting state for better feedback
+  const isSubmitting = localIsSubmitting || externalIsSubmitting;
 
   // Log form values when they change
   useEffect(() => {
@@ -162,8 +167,16 @@ export const FixtureForm = ({
         <Button 
           type="submit" 
           className="w-full"
+          disabled={isSubmitting}
         >
-          {editingFixture ? "Save Changes" : "Add Fixture"}
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              {editingFixture ? "Saving Changes..." : "Adding Fixture..."}
+            </>
+          ) : (
+            editingFixture ? "Save Changes" : "Add Fixture"
+          )}
         </Button>
       </form>
     </Form>
