@@ -114,6 +114,7 @@ export const CalendarDialogs = ({
           onSuccess={() => {
             setIsTeamSelectionOpen(false);
             setEditingFestival(null);
+            onRefetchFestivals();
           }}
         />
       )}
@@ -127,6 +128,7 @@ export const CalendarDialogs = ({
           onSuccess={() => {
             setIsTeamSelectionOpen(false);
             setEditingTournament(null);
+            onRefetchTournaments();
           }}
         />
       )}
