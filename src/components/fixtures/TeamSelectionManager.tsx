@@ -26,7 +26,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
   const [isSaving, setIsSaving] = useState(false);
 
   // Fetch available players
-  const { data: availablePlayers = [], isLoading } = useQuery({
+  const { data: availablePlayers = [], isLoading: isLoadingPlayers } = useQuery({
     queryKey: ["players"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -39,6 +39,29 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     },
   });
 
+  // Fetch existing team selections when fixture is loaded
+  const { data: existingSelections, isLoading: isLoadingSelections } = useQuery({
+    queryKey: ["fixture-team-selections", fixture?.id],
+    queryFn: async () => {
+      if (!fixture?.id) return null;
+      
+      console.log("Fetching existing team selections for fixture:", fixture.id);
+      const { data, error } = await supabase
+        .from("fixture_team_selections")
+        .select("*")
+        .eq("fixture_id", fixture.id);
+      
+      if (error) {
+        console.error("Error fetching team selections:", error);
+        throw error;
+      }
+      
+      console.log("Existing team selections:", data);
+      return data || [];
+    },
+    enabled: !!fixture?.id,
+  });
+
   // Initialize periods for each team when fixture loads
   useEffect(() => {
     if (!fixture) return;
@@ -46,6 +69,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     const newPeriodsPerTeam: Record<string, Array<{ id: string; duration: number }>> = {};
     const newSelections: Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>> = {};
     const newPerformanceCategories: Record<string, string> = {};
+    const newTeamCaptains: Record<string, string> = {};
 
     // Initialize one period for each team
     for (let i = 1; i <= (fixture.number_of_teams || 1); i++) {
@@ -67,7 +91,100 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     setPeriodsPerTeam(newPeriodsPerTeam);
     setSelections(newSelections);
     setPerformanceCategories(newPerformanceCategories);
+    setTeamCaptains(newTeamCaptains);
   }, [fixture]);
+
+  // Load existing selections when they're fetched
+  useEffect(() => {
+    if (!existingSelections || existingSelections.length === 0) return;
+    
+    console.log("Processing existing team selections to restore state");
+    
+    try {
+      const loadedPeriodsPerTeam: Record<string, Array<{ id: string; duration: number }>> = {};
+      const loadedSelections: Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>> = {};
+      const loadedPerformanceCategories: Record<string, string> = {};
+      const loadedTeamCaptains: Record<string, string> = {};
+      
+      // Process all selections from the database
+      existingSelections.forEach(selection => {
+        const { team_id, period_id, duration, selections_data, performance_category, captain_id } = selection;
+        
+        // Parse the selections data from JSON
+        const parsedSelections = selections_data ? JSON.parse(selections_data) : {};
+        
+        // Initialize period for this team if not exist
+        if (!loadedPeriodsPerTeam[team_id]) {
+          loadedPeriodsPerTeam[team_id] = [];
+        }
+        
+        // Add period if it doesn't exist
+        if (!loadedPeriodsPerTeam[team_id].some(p => p.id === period_id)) {
+          loadedPeriodsPerTeam[team_id].push({ id: period_id, duration: duration || 20 });
+        }
+        
+        // Initialize selections structure if needed
+        if (!loadedSelections[period_id]) {
+          loadedSelections[period_id] = {};
+        }
+        if (!loadedSelections[period_id][team_id]) {
+          loadedSelections[period_id][team_id] = {};
+        }
+        
+        // Set the selections for this period and team
+        loadedSelections[period_id][team_id] = parsedSelections;
+        
+        // Set performance category
+        loadedPerformanceCategories[`${period_id}-${team_id}`] = performance_category || 'MESSI';
+        
+        // Set team captain if it exists
+        if (captain_id) {
+          loadedTeamCaptains[team_id] = captain_id;
+        }
+      });
+      
+      console.log("Restored state from database:", {
+        loadedPeriodsPerTeam,
+        loadedSelections,
+        loadedPerformanceCategories,
+        loadedTeamCaptains
+      });
+      
+      // Only update state if there's data to restore
+      if (Object.keys(loadedPeriodsPerTeam).length > 0) {
+        setPeriodsPerTeam(loadedPeriodsPerTeam);
+        setSelections(loadedSelections);
+        setPerformanceCategories(loadedPerformanceCategories);
+        setTeamCaptains(loadedTeamCaptains);
+        
+        // Update selectedPlayers based on loaded selections
+        updateSelectedPlayersFromSelections(loadedSelections);
+      }
+    } catch (error) {
+      console.error("Error processing existing team selections:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load saved team selections",
+      });
+    }
+  }, [existingSelections, toast]);
+
+  const updateSelectedPlayersFromSelections = (selectionsData: Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>) => {
+    const newSelectedPlayers = new Set<string>();
+    
+    Object.values(selectionsData).forEach(periodSelections => {
+      Object.values(periodSelections).forEach(teamSelections => {
+        Object.values(teamSelections).forEach(selection => {
+          if (selection.playerId && selection.playerId !== "unassigned") {
+            newSelectedPlayers.add(selection.playerId);
+          }
+        });
+      });
+    });
+    
+    setSelectedPlayers(newSelectedPlayers);
+  };
 
   const handleCaptainChange = (teamId: string, playerId: string) => {
     setTeamCaptains(prev => ({
@@ -207,14 +324,61 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
       setIsSaving(true);
       console.log("Saving team selections to database:", selections);
       
-      // Here you would implement the actual save to database
-      // For example:
-      // const { error } = await supabase
-      //   .from('fixture_team_selections')
-      //   .upsert(formattedSelections);
+      if (!fixture?.id) {
+        throw new Error("Missing fixture ID");
+      }
       
-      // Simulate API call for now
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // First delete existing selections for this fixture
+      const { error: deleteError } = await supabase
+        .from("fixture_team_selections")
+        .delete()
+        .eq("fixture_id", fixture.id);
+        
+      if (deleteError) {
+        console.error("Error deleting existing selections:", deleteError);
+        throw deleteError;
+      }
+      
+      // Format the data for database insertion
+      const selectionsToSave = [];
+      
+      for (const teamId of Object.keys(periodsPerTeam)) {
+        const teamPeriods = periodsPerTeam[teamId] || [];
+        
+        for (const period of teamPeriods) {
+          const periodId = period.id;
+          const duration = period.duration;
+          const performanceCategory = performanceCategories[`${periodId}-${teamId}`] || 'MESSI';
+          const teamSelections = selections[periodId]?.[teamId] || {};
+          
+          selectionsToSave.push({
+            fixture_id: fixture.id,
+            team_id: teamId,
+            period_id: periodId,
+            duration: duration,
+            performance_category: performanceCategory,
+            selections_data: JSON.stringify(teamSelections),
+            captain_id: teamCaptains[teamId] || null
+          });
+        }
+      }
+      
+      console.log("Selections formatted for database:", selectionsToSave);
+      
+      // Insert all selections
+      if (selectionsToSave.length > 0) {
+        const { data, error } = await supabase
+          .from("fixture_team_selections")
+          .upsert(selectionsToSave)
+          .select();
+          
+        if (error) {
+          console.error("Error saving team selections:", error);
+          throw error;
+        }
+        
+        console.log("Team selections saved successfully:", data);
+      }
       
       toast({
         title: "Success",
@@ -234,7 +398,9 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     }
   };
 
-  if (isLoading || !fixture) {
+  const isLoading = isLoadingPlayers || isLoadingSelections || !fixture;
+
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 
