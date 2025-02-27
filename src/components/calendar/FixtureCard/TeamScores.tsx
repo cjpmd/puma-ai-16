@@ -1,136 +1,111 @@
 
-import { Trophy, Minus, XCircle } from "lucide-react";
-import type { Database } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-
-type TeamTime = Database['public']['Tables']['fixture_team_times']['Row'];
-type TeamScore = {
-  id: string;
-  fixture_id: string;
-  team_number: number;
-  score: number;
-  opponent_score: number;
-  created_at: string;
-  updated_at: string;
-};
+import { Minus } from "lucide-react";
+import { format } from "date-fns";
 
 interface TeamScoresProps {
-  scores: TeamScore[];
-  times: TeamTime[];
-  fixture: {
-    opponent: string;
-    team_name: string;
-    is_home?: boolean;
-    team_1_score?: number | null;
-    opponent_1_score?: number | null;
-    team_2_score?: number | null;
-    opponent_2_score?: number | null;
-  };
+  teamName: string;
+  opponent: string;
+  teamScore?: number | null;
+  opponentScore?: number | null;
+  isHome: boolean;
+  fixtureDate?: string;
 }
 
-const getTeamOutcome = (ourScore: number, theirScore: number) => {
-  if (ourScore > theirScore) return 'WIN';
-  if (ourScore < theirScore) return 'LOSS';
-  return 'DRAW';
-};
-
-const getOutcomeIcon = (outcome: string | null | undefined) => {
-  switch (outcome) {
-    case 'WIN':
-      return <Trophy className="h-4 w-4 text-green-500" />;
-    case 'DRAW':
-      return <Minus className="h-4 w-4 text-amber-500" />;
-    case 'LOSS':
-      return <XCircle className="h-4 w-4 text-red-500" />;
-    default:
-      return null;
-  }
-};
-
 export const TeamScores = ({
-  scores,
-  times,
-  fixture
+  teamName,
+  opponent,
+  teamScore,
+  opponentScore,
+  isHome,
+  fixtureDate,
 }: TeamScoresProps) => {
-  const { profile } = useAuth();
+  const isScoreAvailable = teamScore !== undefined && opponentScore !== undefined;
   
-  const { data: teamSettings } = useQuery({
-    queryKey: ['team-settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('team_settings')
-        .select('*')
-        .single();
-      
-      if (error) throw error;
-      return data;
+  const getStatusIcon = () => {
+    if (!isScoreAvailable) {
+      return <Minus className="h-4 w-4 text-amber-500" />;
     }
-  });
 
-  // Check if we have direct scores on the fixture first
-  const hasDirectScores = fixture.team_1_score !== undefined && fixture.opponent_1_score !== undefined;
+    if (teamScore === null || opponentScore === null) {
+      return <Minus className="h-4 w-4 text-amber-500" />;
+    }
 
-  if (!hasDirectScores && (!scores || scores.length === 0)) {
-    return <p className="text-muted-foreground">Score not yet recorded</p>;
-  }
+    if (teamScore > opponentScore) {
+      return (
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="24" 
+          height="24" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className="h-4 w-4 text-green-500"
+        >
+          <path d="m5 12 5 5 10-10"></path>
+        </svg>
+      );
+    } else if (teamScore < opponentScore) {
+      return (
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="24" 
+          height="24" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className="h-4 w-4 text-red-500"
+        >
+          <path d="M18 6 6 18"></path>
+          <path d="m6 6 12 12"></path>
+        </svg>
+      );
+    } else {
+      return (
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="24" 
+          height="24" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className="h-4 w-4 text-amber-500"
+        >
+          <path d="M5 12h14"></path>
+        </svg>
+      );
+    }
+  };
 
-  const shouldHideScores = teamSettings?.hide_scores_from_parents && profile?.role === 'parent';
+  // Format score display
+  const getScoreDisplay = () => {
+    const homeTeam = isHome ? teamName : opponent;
+    const awayTeam = isHome ? opponent : teamName;
+    const homeScore = isHome ? teamScore : opponentScore;
+    const awayScore = isHome ? opponentScore : teamScore;
 
-  // Take only the first score since we're filtering by team number in the parent component
-  const score = scores[0];
-  const teamTime = times[0];
+    const formattedHomeScore = homeScore === null || homeScore === undefined ? '0' : homeScore;
+    const formattedAwayScore = awayScore === null || awayScore === undefined ? '0' : awayScore;
+
+    return `${homeTeam}: ${formattedHomeScore} - ${formattedAwayScore} ${awayTeam}`;
+  };
 
   return (
     <div className="space-y-4">
-      {hasDirectScores ? (
-        // Display scores directly from fixture object
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-base">
-              {fixture.is_home 
-                ? `${fixture.team_name}: ${shouldHideScores ? 'hidden' : fixture.team_1_score} - ${shouldHideScores ? 'hidden' : fixture.opponent_1_score} ${fixture.opponent}`
-                : `${fixture.opponent}: ${shouldHideScores ? 'hidden' : fixture.opponent_1_score} - ${shouldHideScores ? 'hidden' : fixture.team_1_score} ${fixture.team_name}`
-              }
-            </p>
-            {!shouldHideScores && getOutcomeIcon(getTeamOutcome(fixture.team_1_score || 0, fixture.opponent_1_score || 0))}
-          </div>
-
-          {fixture.team_2_score !== null && fixture.opponent_2_score !== null && (
-            <div className="flex items-center gap-2">
-              <p className="font-semibold text-base">
-                {fixture.is_home 
-                  ? `${fixture.team_name}: ${shouldHideScores ? 'hidden' : fixture.team_2_score} - ${shouldHideScores ? 'hidden' : fixture.opponent_2_score} ${fixture.opponent}`
-                  : `${fixture.opponent}: ${shouldHideScores ? 'hidden' : fixture.opponent_2_score} - ${shouldHideScores ? 'hidden' : fixture.team_2_score} ${fixture.team_name}`
-                }
-              </p>
-              {!shouldHideScores && getOutcomeIcon(getTeamOutcome(fixture.team_2_score || 0, fixture.opponent_2_score || 0))}
-            </div>
-          )}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-base">{getScoreDisplay()}</p>
+          {getStatusIcon()}
         </div>
-      ) : (
-        // Display scores from scores array
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-base">
-              {fixture.is_home 
-                ? `${fixture.team_name}: ${shouldHideScores ? 'hidden' : score.score} - ${shouldHideScores ? 'hidden' : score.opponent_score} ${fixture.opponent}`
-                : `${fixture.opponent}: ${shouldHideScores ? 'hidden' : score.opponent_score} - ${shouldHideScores ? 'hidden' : score.score} ${fixture.team_name}`
-              }
-            </p>
-            {!shouldHideScores && getOutcomeIcon(getTeamOutcome(score.score, score.opponent_score))}
-          </div>
-
-          {teamTime && (
-            <div className="text-sm text-muted-foreground">
-              {teamTime.meeting_time && <p>Meeting: {teamTime.meeting_time}</p>}
-              {teamTime.start_time && <p>Start: {teamTime.start_time}</p>}
-              {teamTime.end_time && <p>End: {teamTime.end_time}</p>}
-            </div>
-          )}
-        </div>
-      )}
+      </div>
     </div>
   );
 };
