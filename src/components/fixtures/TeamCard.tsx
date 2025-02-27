@@ -5,9 +5,11 @@ import {
   FormItem,
   FormLabel,
   FormControl,
+  FormMessage
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect } from "react";
 
 interface TeamCardProps {
   index: number;
@@ -24,6 +26,14 @@ export const TeamCard = ({
   getScoreLabel,
   getMotmLabel
 }: TeamCardProps) => {
+  const performanceCategory = form.watch(`team_times.${index}.performance_category`) || "MESSI";
+  
+  // Log for debugging
+  useEffect(() => {
+    console.log(`Team ${index + 1} performance category:`, performanceCategory);
+    console.log("Form values:", form.getValues());
+  }, [performanceCategory, index, form]);
+
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
@@ -32,17 +42,21 @@ export const TeamCard = ({
           <FormField
             control={form.control}
             name={`team_times.${index}.performance_category`}
-            defaultValue="MESSI"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Performance Category</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value || "MESSI"}
+                  defaultValue="MESSI"
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select performance category" />
+                      <SelectValue placeholder="Select performance category">
+                        {field.value === "MESSI" ? "Messi" : 
+                         field.value === "RONALDO" ? "Ronaldo" : 
+                         field.value === "JAGS" ? "Jags" : "Select category"}
+                      </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -51,6 +65,7 @@ export const TeamCard = ({
                     <SelectItem value="JAGS">Jags</SelectItem>
                   </SelectContent>
                 </Select>
+                <FormMessage />
               </FormItem>
             )}
           />

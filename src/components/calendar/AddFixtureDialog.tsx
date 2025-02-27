@@ -41,6 +41,42 @@ export const AddFixtureDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialSelectedDate);
   const [newFixture, setNewFixture] = useState<Fixture | null>(null);
 
+  // Fetch fixture details with team times if editing
+  const { data: fixtureDetails } = useQuery({
+    queryKey: ["fixture-details", editingFixture?.id],
+    queryFn: async () => {
+      if (!editingFixture?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("fixtures")
+        .select(`
+          *,
+          fixture_team_times(*),
+          fixture_team_scores(*)
+        `)
+        .eq("id", editingFixture.id)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching fixture details:", error);
+        return null;
+      }
+      
+      return data;
+    },
+    enabled: !!editingFixture?.id && isOpen,
+  });
+
+  // Merge fetched fixture details with the editingFixture prop
+  const completeFixture = fixtureDetails ? {
+    ...editingFixture,
+    ...fixtureDetails,
+    fixture_team_times: fixtureDetails.fixture_team_times,
+    fixture_team_scores: fixtureDetails.fixture_team_scores
+  } : editingFixture;
+
+  console.log("Complete fixture for editing:", completeFixture);
+
   const { data: players } = useQuery({
     queryKey: ["players"],
     queryFn: async () => {
@@ -78,6 +114,7 @@ export const AddFixtureDialog = ({
           : format(new Date(), "yyyy-MM-dd");
       
       console.log("Creating fixture with date:", dateToUse);
+      console.log("Form data:", data);
       
       const fixtureData = {
         opponent: data.opponent,
@@ -136,6 +173,34 @@ export const AddFixtureDialog = ({
         }
       }
 
+      // Save team times with performance categories
+      if (savedFixture && data.team_times) {
+        // Delete existing team times
+        if (editingFixture?.id) {
+          await supabase
+            .from('fixture_team_times')
+            .delete()
+            .eq('fixture_id', savedFixture.id);
+        }
+          
+        // Insert new team times
+        const teamTimesPromises = data.team_times.map((teamTime, index) => {
+          return supabase
+            .from('fixture_team_times')
+            .insert({
+              fixture_id: savedFixture.id,
+              team_number: index + 1,
+              meeting_time: teamTime.meeting_time || null,
+              start_time: teamTime.start_time || null,
+              end_time: teamTime.end_time || null,
+              performance_category: teamTime.performance_category || "MESSI"
+            });
+        });
+        
+        await Promise.all(teamTimesPromises);
+        console.log("Saved team times with performance categories");
+      }
+
       console.log("Fixture saved successfully:", savedFixture);
       
       // Invalidate all fixture queries to ensure calendar is updated
@@ -147,7 +212,13 @@ export const AddFixtureDialog = ({
         predicate: (query) => query.queryKey[0] === "fixtures"
       });
 
-      setNewFixture(savedFixture);
+      // Add team times data to savedFixture
+      const enhancedFixture = {
+        ...savedFixture,
+        team_times: data.team_times
+      };
+      
+      setNewFixture(enhancedFixture);
       
       await onSuccess();
       
@@ -160,7 +231,7 @@ export const AddFixtureDialog = ({
         description: editingFixture ? "Fixture updated successfully" : "New fixture has been added to the calendar",
       });
 
-      return savedFixture;
+      return enhancedFixture;
     } catch (error) {
       console.error("Error in onSubmit:", error);
       toast({
@@ -188,7 +259,7 @@ export const AddFixtureDialog = ({
           <FixtureForm
             onSubmit={onSubmit}
             selectedDate={selectedDate}
-            editingFixture={editingFixture}
+            editingFixture={completeFixture}
             players={players}
             isSubmitting={isSubmitting}
             showDateSelector={showDateSelector}

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
@@ -29,6 +29,24 @@ export const FixtureForm = ({
   players,
   showDateSelector = false
 }: FixtureFormProps) => {
+  // Initialize the form with the editing fixture data if available
+  const getInitialTeamTimes = () => {
+    if (editingFixture?.fixture_team_times && editingFixture?.fixture_team_times.length > 0) {
+      return editingFixture.fixture_team_times.map((time: any) => ({
+        meeting_time: time.meeting_time || "",
+        start_time: time.start_time || "",
+        end_time: time.end_time || "",
+        performance_category: time.performance_category || "MESSI"
+      }));
+    }
+    return Array(editingFixture?.number_of_teams || 1).fill({
+      meeting_time: "",
+      start_time: "",
+      end_time: "",
+      performance_category: "MESSI"
+    });
+  };
+
   const form = useForm<FixtureFormData>({
     resolver: zodResolver(fixtureFormSchema),
     defaultValues: {
@@ -43,12 +61,7 @@ export const FixtureForm = ({
       motm_player_ids: editingFixture?.motm_player_id 
         ? [editingFixture.motm_player_id]
         : Array(editingFixture?.number_of_teams || 1).fill(""),
-      team_times: editingFixture?.team_times || [{ 
-        meeting_time: "", 
-        start_time: "", 
-        end_time: "",
-        performance_category: "MESSI"
-      }],
+      team_times: getInitialTeamTimes(),
       is_home: editingFixture?.is_home ?? true,
       team_name: editingFixture?.team_name || "Broughty Pumas 2015s",
       date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
@@ -60,13 +73,18 @@ export const FixtureForm = ({
   const watchOpponent = form.watch("opponent");
   const watchIsHome = form.watch("is_home");
 
+  // Log form values when they change
+  useEffect(() => {
+    console.log("Current form values:", form.getValues());
+  }, [form, watchNumberOfTeams]);
+
   useTeamTimes(form, editingFixture, watchNumberOfTeams);
 
   const getScoreLabel = (isHomeScore: boolean, teamIndex: number) => {
     const homeTeam = watchIsHome ? "Broughty Pumas 2015s" : watchOpponent;
     const awayTeam = watchIsHome ? watchOpponent : "Broughty Pumas 2015s";
     const teamLabel = isHomeScore ? homeTeam : awayTeam;
-    const performanceCategory = form.watch(`team_times.${teamIndex}.performance_category`);
+    const performanceCategory = form.watch(`team_times.${teamIndex}.performance_category`) || "MESSI";
 
     if (teamLabel === "Broughty Pumas 2015s") {
       return `Team ${teamIndex + 1} ${performanceCategory} Score`;
@@ -75,7 +93,7 @@ export const FixtureForm = ({
   };
 
   const getMotmLabel = (teamIndex: number) => {
-    const performanceCategory = form.watch(`team_times.${teamIndex}.performance_category`);
+    const performanceCategory = form.watch(`team_times.${teamIndex}.performance_category`) || "MESSI";
     return `Team ${teamIndex + 1} ${performanceCategory} Player of the Match`;
   };
 

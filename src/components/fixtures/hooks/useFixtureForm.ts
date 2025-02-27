@@ -26,6 +26,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           : format(new Date(), "yyyy-MM-dd");
 
       console.log("Using date for fixture:", dateToUse);
+      console.log("Form data with performance categories:", data);
 
       // Only include fields that exist in the fixtures table
       const fixtureData = {
@@ -87,14 +88,18 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
             performance_category: teamTime.performance_category || "MESSI"
           }));
 
-          console.log("Saving team times:", teamTimesData);
+          console.log("Saving team times with performance categories:", teamTimesData);
 
           // Delete existing team times first
           if (editingFixture?.id) {
-            await supabase
+            const { error: deleteError } = await supabase
               .from('fixture_team_times')
               .delete()
               .eq('fixture_id', fixtureId);
+              
+            if (deleteError) {
+              console.error("Error deleting existing team times:", deleteError);
+            }
           }
 
           const { data: teamTimesResult, error: teamTimesError } = await supabase
@@ -126,10 +131,14 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
 
         // Delete existing scores first if editing
         if (editingFixture?.id) {
-          await supabase
+          const { error: deleteScoresError } = await supabase
             .from('fixture_team_scores')
             .delete()
             .eq('fixture_id', fixtureId);
+            
+          if (deleteScoresError) {
+            console.error("Error deleting existing team scores:", deleteScoresError);
+          }
         }
 
         if (teamScoresData.length > 0) {
@@ -180,12 +189,16 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           }
         }
 
+        // Include the team times and performance categories in the returned fixture
         const savedFixture = {
           ...fixtureResult.data,
           ...data,
-          id: fixtureId
+          id: fixtureId,
+          team_times: data.team_times
         };
 
+        console.log("Final fixture data with performance categories:", savedFixture);
+        
         await onSubmit(savedFixture);
         
         toast({
