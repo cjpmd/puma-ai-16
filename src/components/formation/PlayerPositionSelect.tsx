@@ -2,7 +2,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface PlayerPositionSelectProps {
   position: string;
@@ -30,17 +30,28 @@ export const PlayerPositionSelect = ({
   onSelectionChange,
   selectedPlayers,
 }: PlayerPositionSelectProps) => {
-  const [currentPosition, setCurrentPosition] = useState(position);
+  // State to track the current position
+  const [currentPosition, setCurrentPosition] = useState(position || ALL_POSITIONS[0]);
 
-  // Ensure position state is updated if prop changes
+  // Update the local state when the prop changes
   useEffect(() => {
-    setCurrentPosition(position);
+    if (position && position !== currentPosition) {
+      setCurrentPosition(position);
+    }
   }, [position]);
 
-  const handlePositionChange = (newPosition: string) => {
+  // Memoized handler to avoid recreating on every render
+  const handlePositionChange = useCallback((newPosition: string) => {
     setCurrentPosition(newPosition);
+    // Notify parent about the position change with the current player
     onSelectionChange(playerId, newPosition);
-  };
+  }, [playerId, onSelectionChange]);
+
+  // Handler for player changes
+  const handlePlayerChange = useCallback((newPlayerId: string) => {
+    // Notify parent about the player change with the current position
+    onSelectionChange(newPlayerId, currentPosition);
+  }, [currentPosition, onSelectionChange]);
 
   return (
     <div className="flex gap-3 p-2">
@@ -49,13 +60,14 @@ export const PlayerPositionSelect = ({
         <Select 
           value={currentPosition}
           onValueChange={handlePositionChange}
+          defaultValue={currentPosition}
         >
           <SelectTrigger className="h-8 text-left">
             <SelectValue placeholder="Select position">
               {currentPosition}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white z-50">
             {ALL_POSITIONS.map((pos) => (
               <SelectItem key={pos} value={pos} className="text-sm">
                 {pos}
@@ -69,9 +81,8 @@ export const PlayerPositionSelect = ({
         <Label className="text-xs text-muted-foreground mb-1 block">Player</Label>
         <Select 
           value={playerId || "unassigned"}
-          onValueChange={(value) => {
-            onSelectionChange(value, currentPosition);
-          }}
+          onValueChange={handlePlayerChange}
+          defaultValue={playerId || "unassigned"}
         >
           <SelectTrigger className="h-8 text-left">
             <SelectValue placeholder="Select player" />

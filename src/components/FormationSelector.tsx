@@ -51,37 +51,54 @@ export const FormationSelector = ({
   });
 
   const players = initialPlayers || fetchedPlayers || [];
-
+  
+  // Update local state when initialSelections change
   useEffect(() => {
     if (initialSelections) {
       setSelections(initialSelections);
     }
   }, [initialSelections]);
 
-  const handlePlayerSelection = useCallback((slotId: string, playerId: string, position: string) => {
-    const newSelections = {
-      ...selections,
-      [slotId]: {
-        playerId,
-        position,
-        performanceCategory: localPerformanceCategory
-      }
-    };
-    setSelections(newSelections);
-    onSelectionChange(newSelections);
-  }, [selections, localPerformanceCategory, onSelectionChange]);
-
+  // Update local state when performanceCategory changes
   useEffect(() => {
-    const updatedSelections = Object.fromEntries(
-      Object.entries(selections).map(([key, value]) => [
-        key,
-        { ...value, performanceCategory: localPerformanceCategory }
-      ])
-    );
+    setLocalPerformanceCategory(performanceCategory);
+  }, [performanceCategory]);
+
+  // Handle player selection changes
+  const handlePlayerSelection = useCallback((slotId: string, playerId: string, position: string) => {
+    console.log(`Selection change - SlotID: ${slotId}, PlayerID: ${playerId}, Position: ${position}`);
     
-    if (JSON.stringify(selections) !== JSON.stringify(updatedSelections)) {
-      setSelections(updatedSelections);
-      onSelectionChange(updatedSelections);
+    setSelections(prev => {
+      const newSelections = {
+        ...prev,
+        [slotId]: {
+          playerId,
+          position,
+          performanceCategory: localPerformanceCategory
+        }
+      };
+      
+      // Notify parent component about changes
+      onSelectionChange(newSelections);
+      
+      return newSelections;
+    });
+  }, [localPerformanceCategory, onSelectionChange]);
+
+  // Update performance categories when they change
+  useEffect(() => {
+    if (Object.keys(selections).length > 0) {
+      const updatedSelections = Object.fromEntries(
+        Object.entries(selections).map(([key, value]) => [
+          key,
+          { ...value, performanceCategory: localPerformanceCategory }
+        ])
+      );
+      
+      if (JSON.stringify(selections) !== JSON.stringify(updatedSelections)) {
+        setSelections(updatedSelections);
+        onSelectionChange(updatedSelections);
+      }
     }
   }, [localPerformanceCategory, onSelectionChange]);
 
@@ -171,16 +188,21 @@ export const FormationSelector = ({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-2">
-        {getFormationSlots().map((slot) => (
-          <PlayerPositionSelect
-            key={slot.id}
-            position={selections[slot.id]?.position || slot.label}
-            playerId={selections[slot.id]?.playerId || "unassigned"}
-            availablePlayers={players}
-            onSelectionChange={(playerId, position) => handlePlayerSelection(slot.id, playerId, position)}
-            selectedPlayers={selectedPlayers}
-          />
-        ))}
+        {getFormationSlots().map((slot) => {
+          // Get the current selection for this slot
+          const selection = selections[slot.id] || { playerId: "unassigned", position: slot.label };
+          
+          return (
+            <PlayerPositionSelect
+              key={slot.id}
+              position={selection.position}
+              playerId={selection.playerId}
+              availablePlayers={players}
+              onSelectionChange={(playerId, position) => handlePlayerSelection(slot.id, playerId, position)}
+              selectedPlayers={selectedPlayers}
+            />
+          );
+        })}
       </div>
 
       <SubstitutesList
