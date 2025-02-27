@@ -71,7 +71,13 @@ export const AddFixtureDialog = ({
         throw new Error("Date is required");
       }
 
-      const dateToUse = selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+      const dateToUse = selectedDate 
+        ? format(selectedDate, "yyyy-MM-dd") 
+        : editingFixture?.date 
+          ? format(new Date(editingFixture.date), "yyyy-MM-dd")
+          : format(new Date(), "yyyy-MM-dd");
+      
+      console.log("Creating fixture with date:", dateToUse);
       
       const fixtureData = {
         opponent: data.opponent,
@@ -85,7 +91,10 @@ export const AddFixtureDialog = ({
         team_1_score: data.team_1_score,
         opponent_1_score: data.opponent_1_score,
         team_2_score: data.team_2_score,
-        opponent_2_score: data.opponent_2_score
+        opponent_2_score: data.opponent_2_score,
+        meeting_time: data.team_times?.[0]?.meeting_time || null,
+        start_time: data.team_times?.[0]?.start_time || null,
+        end_time: data.team_times?.[0]?.end_time || null
       };
 
       let savedFixture;
@@ -127,13 +136,18 @@ export const AddFixtureDialog = ({
         }
       }
 
+      console.log("Fixture saved successfully:", savedFixture);
+      
+      // Invalidate all fixture queries to ensure calendar is updated
       await queryClient.invalidateQueries({ 
-        queryKey: ["fixtures", dateToUse]
+        queryKey: ["fixtures"]
       });
       
       await queryClient.invalidateQueries({
         predicate: (query) => query.queryKey[0] === "fixtures"
       });
+
+      setNewFixture(savedFixture);
       
       await onSuccess();
       

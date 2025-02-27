@@ -18,8 +18,14 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
   const handleSubmit = async (data: FixtureFormData) => {
     setIsSubmitting(true);
     try {
-      const dateToUse = selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
-      console.log("Using date:", dateToUse);
+      // Determine the correct date to use
+      const dateToUse = selectedDate 
+        ? format(selectedDate, "yyyy-MM-dd") 
+        : data.date 
+          ? data.date 
+          : format(new Date(), "yyyy-MM-dd");
+
+      console.log("Using date for fixture:", dateToUse);
 
       // Only include fields that exist in the fixtures table
       const fixtureData = {
