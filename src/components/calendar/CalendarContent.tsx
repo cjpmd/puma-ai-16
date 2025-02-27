@@ -1,8 +1,10 @@
 
-import { useAuth } from "@/hooks/useAuth";
-import { DailyEvents } from "./DailyEvents";
-import { useCalendarEventHandlers } from "./hooks/useCalendarEventHandlers";
-import { TrainingCalendar } from "@/components/training/TrainingCalendar";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { EventsList } from "@/components/calendar/events/EventsList";
+import { ObjectivesList } from "@/components/calendar/ObjectivesList";
+import { useCalendarEventHandlers } from "@/components/calendar/hooks/useCalendarEventHandlers";
+import { useState, useEffect } from "react";
 
 interface CalendarContentProps {
   date: Date;
@@ -19,6 +21,9 @@ interface CalendarContentProps {
   onRefetchFixtures: () => void;
   onRefetchSessions: () => void;
   onRefetchFestivals: () => void;
+  onEditTournament?: (tournament: any) => void;
+  onTeamSelectionTournament?: (tournament: any) => void;
+  onRefetchTournaments?: () => void;
 }
 
 export const CalendarContent = ({
@@ -36,53 +41,118 @@ export const CalendarContent = ({
   onRefetchFixtures,
   onRefetchSessions,
   onRefetchFestivals,
+  onEditTournament,
+  onTeamSelectionTournament,
+  onRefetchTournaments
 }: CalendarContentProps) => {
-  const { profile } = useAuth();
   const {
     handleDeleteFixture,
     handleUpdateFixtureDate,
     handleDeleteSession,
     handleUpdateFestivalDate,
+    handleDeleteFestival,
+    handleDeleteTournament,
+    handleUpdateTournamentDate
   } = useCalendarEventHandlers();
+  
+  // Add a local state to ensure we can force updates
+  const [localFixtures, setLocalFixtures] = useState(fixtures);
+  const [localFestivals, setLocalFestivals] = useState(festivals);
+  const [localTournaments, setLocalTournaments] = useState(tournaments);
+  
+  // Update local state when props change
+  useEffect(() => {
+    setLocalFixtures(fixtures);
+    setLocalFestivals(festivals);
+    setLocalTournaments(tournaments);
+  }, [fixtures, festivals, tournaments]);
 
-  console.log("Calendar Content Rendering:", {
-    date,
-    sessions,
-    fixtures,
-    festivals,
-    tournaments,
-    objectives,
-    profile
-  });
+  const handleFixtureDelete = async (fixtureId: string) => {
+    // Optimistic UI update - remove the fixture immediately
+    setLocalFixtures((prevFixtures) => 
+      prevFixtures.filter((fixture) => fixture.id !== fixtureId)
+    );
+    
+    const success = await handleDeleteFixture(fixtureId);
+    if (success) {
+      // Refetch to ensure data is up to date
+      onRefetchFixtures();
+    } else {
+      // If failed, revert the optimistic update
+      setLocalFixtures(fixtures);
+    }
+  };
+
+  const handleFestivalDelete = async (festivalId: string) => {
+    // Optimistic UI update
+    setLocalFestivals((prevFestivals) => 
+      prevFestivals.filter((festival) => festival.id !== festivalId)
+    );
+    
+    const success = await handleDeleteFestival(festivalId);
+    if (success) {
+      onRefetchFestivals();
+    } else {
+      setLocalFestivals(festivals);
+    }
+  };
+
+  const handleTournamentDelete = async (tournamentId: string) => {
+    // Optimistic UI update
+    setLocalTournaments((prevTournaments) => 
+      prevTournaments.filter((tournament) => tournament.id !== tournamentId)
+    );
+    
+    const success = await handleDeleteTournament(tournamentId);
+    if (success && onRefetchTournaments) {
+      onRefetchTournaments();
+    } else {
+      setLocalTournaments(tournaments);
+    }
+  };
 
   return (
-    <div className="grid md:grid-cols-[300px,1fr] gap-8">
-      <div className="bg-white rounded-lg shadow">
-        <TrainingCalendar date={date} onDateSelect={setDate} />
-      </div>
-      <div className="bg-white rounded-lg shadow">
-        <DailyEvents
-          date={date}
-          fixtures={fixtures}
-          sessions={sessions}
-          festivals={festivals}
-          tournaments={tournaments}
-          fileUrls={fileUrls}
-          onEditFixture={onEditFixture}
-          onDeleteFixture={handleDeleteFixture}
-          onUpdateFixtureDate={handleUpdateFixtureDate}
-          onAddDrill={(sessionId) => {
-            console.log("Add drill to session:", sessionId);
-          }}
-          onEditDrill={(sessionId, drill) => {
-            console.log("Edit drill:", sessionId, drill);
-          }}
-          onDeleteSession={handleDeleteSession}
-          onEditFestival={onEditFestival}
-          onTeamSelectionFestival={onTeamSelectionFestival}
-          onUpdateFestivalDate={handleUpdateFestivalDate}
+    <div className="grid md:grid-cols-3 gap-6">
+      <div>
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={(newDate) => newDate && setDate(newDate)}
+          className="rounded-md border shadow"
         />
+        <ObjectivesList objectives={objectives} />
       </div>
+
+      <EventsList
+        date={date}
+        festivals={localFestivals}
+        tournaments={localTournaments}
+        fixtures={localFixtures}
+        sessions={sessions}
+        fileUrls={fileUrls}
+        onEditFixture={onEditFixture}
+        onDeleteFixture={handleFixtureDelete}
+        onUpdateFixtureDate={handleUpdateFixtureDate}
+        onAddDrill={(sessionId) => {
+          // Handle add drill logic
+        }}
+        onEditDrill={(sessionId, drill) => {
+          // Handle edit drill logic
+        }}
+        onDeleteSession={async (sessionId) => {
+          const success = await handleDeleteSession(sessionId);
+          if (success) {
+            onRefetchSessions();
+          }
+        }}
+        onEditFestival={onEditFestival}
+        onDeleteFestival={handleFestivalDelete}
+        onTeamSelectionFestival={onTeamSelectionFestival}
+        onEditTournament={onEditTournament}
+        onDeleteTournament={handleTournamentDelete}
+        onTeamSelectionTournament={onTeamSelectionTournament}
+        onUpdateTournamentDate={handleUpdateTournamentDate}
+      />
     </div>
   );
 };

@@ -3,10 +3,12 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const useCalendarEventHandlers = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleDeleteFixture = async (fixtureId: string) => {
     try {
@@ -37,6 +39,11 @@ export const useCalendarEventHandlers = () => {
 
       if (error) throw error;
 
+      // Immediately invalidate and refetch fixtures queries
+      await queryClient.invalidateQueries({ 
+        queryKey: ["fixtures"] 
+      });
+      
       toast({
         title: "Success",
         description: "Fixture deleted successfully",
@@ -59,12 +66,19 @@ export const useCalendarEventHandlers = () => {
   const handleUpdateFixtureDate = async (fixtureId: string, newDate: Date) => {
     try {
       setIsLoading(true);
+      const formattedDate = format(newDate, "yyyy-MM-dd");
+      
       const { error } = await supabase
         .from("fixtures")
-        .update({ date: format(newDate, "yyyy-MM-dd") })
+        .update({ date: formattedDate })
         .eq("id", fixtureId);
 
       if (error) throw error;
+
+      // Immediately invalidate fixture queries for both the old and new dates
+      await queryClient.invalidateQueries({ 
+        queryKey: ["fixtures"] 
+      });
 
       toast({
         title: "Success",
@@ -94,6 +108,11 @@ export const useCalendarEventHandlers = () => {
 
       if (error) throw error;
 
+      // Immediately invalidate session queries
+      await queryClient.invalidateQueries({ 
+        queryKey: ["training-sessions"] 
+      });
+
       toast({
         title: "Success",
         description: "Session deleted successfully",
@@ -112,15 +131,143 @@ export const useCalendarEventHandlers = () => {
     }
   };
 
-  const handleUpdateFestivalDate = async (festivalId: string, newDate: Date) => {
+  const handleDeleteTournament = async (tournamentId: string) => {
     try {
       setIsLoading(true);
+      
+      // First delete related records
+      await supabase
+        .from("event_attendance")
+        .delete()
+        .eq("event_id", tournamentId)
+        .eq("event_type", "TOURNAMENT");
+
+      // Delete the tournament
+      const { error } = await supabase
+        .from("tournaments")
+        .delete()
+        .eq("id", tournamentId);
+
+      if (error) throw error;
+
+      // Immediately invalidate tournament queries
+      await queryClient.invalidateQueries({ 
+        queryKey: ["tournaments"] 
+      });
+
+      toast({
+        title: "Success",
+        description: "Tournament deleted successfully",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error deleting tournament:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete tournament",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateTournamentDate = async (tournamentId: string, newDate: Date) => {
+    try {
+      setIsLoading(true);
+      const formattedDate = format(newDate, "yyyy-MM-dd");
+      
+      const { error } = await supabase
+        .from("tournaments")
+        .update({ date: formattedDate })
+        .eq("id", tournamentId);
+
+      if (error) throw error;
+
+      // Immediately invalidate tournament queries
+      await queryClient.invalidateQueries({ 
+        queryKey: ["tournaments"] 
+      });
+
+      toast({
+        title: "Success",
+        description: "Tournament date updated successfully",
+      });
+      return true;
+    } catch (error) {
+      console.error("Error updating tournament date:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update tournament date",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteFestival = async (festivalId: string) => {
+    try {
+      setIsLoading(true);
+      
+      // First delete related records
+      await supabase
+        .from("event_attendance")
+        .delete()
+        .eq("event_id", festivalId)
+        .eq("event_type", "FESTIVAL");
+
+      // Delete the festival
       const { error } = await supabase
         .from("festivals")
-        .update({ date: format(newDate, "yyyy-MM-dd") })
+        .delete()
         .eq("id", festivalId);
 
       if (error) throw error;
+
+      // Immediately invalidate festival queries
+      await queryClient.invalidateQueries({ 
+        queryKey: ["festivals"] 
+      });
+
+      toast({
+        title: "Success",
+        description: "Festival deleted successfully",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error deleting festival:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete festival",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateFestivalDate = async (festivalId: string, newDate: Date) => {
+    try {
+      setIsLoading(true);
+      const formattedDate = format(newDate, "yyyy-MM-dd");
+      
+      const { error } = await supabase
+        .from("festivals")
+        .update({ date: formattedDate })
+        .eq("id", festivalId);
+
+      if (error) throw error;
+
+      // Immediately invalidate festival queries
+      await queryClient.invalidateQueries({ 
+        queryKey: ["festivals"] 
+      });
 
       toast({
         title: "Success",
@@ -145,6 +292,9 @@ export const useCalendarEventHandlers = () => {
     handleUpdateFixtureDate,
     handleDeleteSession,
     handleUpdateFestivalDate,
+    handleDeleteFestival,
+    handleDeleteTournament,
+    handleUpdateTournamentDate,
     isLoading,
   };
 };

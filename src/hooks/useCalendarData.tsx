@@ -1,14 +1,66 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 
 export const useCalendarData = (date: Date) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const formattedDate = format(date, "yyyy-MM-dd");
 
   console.log("Starting to fetch calendar data for date:", formattedDate);
+
+  // Subscribe to database changes and invalidate queries
+  useEffect(() => {
+    // Set up Supabase realtime subscriptions
+    const fixturesSubscription = supabase
+      .channel('fixtures-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'fixtures',
+        filter: `date=eq.${formattedDate}`
+      }, (payload) => {
+        console.log('Fixtures changed:', payload);
+        queryClient.invalidateQueries({ queryKey: ["fixtures", formattedDate] });
+      })
+      .subscribe();
+
+    const festivalsSubscription = supabase
+      .channel('festivals-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'festivals',
+        filter: `date=eq.${formattedDate}`
+      }, (payload) => {
+        console.log('Festivals changed:', payload);
+        queryClient.invalidateQueries({ queryKey: ["festivals", formattedDate] });
+      })
+      .subscribe();
+
+    const tournamentsSubscription = supabase
+      .channel('tournaments-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'tournaments',
+        filter: `date=eq.${formattedDate}`
+      }, (payload) => {
+        console.log('Tournaments changed:', payload);
+        queryClient.invalidateQueries({ queryKey: ["tournaments", formattedDate] });
+      })
+      .subscribe();
+
+    // Cleanup subscriptions on unmount or date change
+    return () => {
+      fixturesSubscription.unsubscribe();
+      festivalsSubscription.unsubscribe();
+      tournamentsSubscription.unsubscribe();
+    };
+  }, [formattedDate, queryClient]);
 
   const { 
     data: sessions = [], 
@@ -67,14 +119,24 @@ export const useCalendarData = (date: Date) => {
           throw fixturesError;
         }
         
-        console.log("Raw fixtures data:", fixturesData);
+        console.log("Raw fixtures data:", fixturesData?.length, "items");
         
         if (!fixturesData?.length) {
           console.log("No fixtures found for date:", formattedDate);
           return [];
         }
 
-        const fixtureIds = fixturesData.map(f => f.id);
+        // Use seen IDs to prevent duplicates
+        const seen = new Set();
+        const uniqueFixtures = fixturesData.filter(fixture => {
+          const duplicate = seen.has(fixture.id);
+          seen.add(fixture.id);
+          return !duplicate;
+        });
+
+        console.log("Unique fixtures after deduplication:", uniqueFixtures.length, "items");
+
+        const fixtureIds = uniqueFixtures.map(f => f.id);
         console.log("Fetching attendance for fixture IDs:", fixtureIds);
 
         const { data: attendanceData, error: attendanceError } = await supabase
@@ -88,20 +150,13 @@ export const useCalendarData = (date: Date) => {
           throw attendanceError;
         }
         
-        // Ensure we're not duplicating fixtures by using a Map with fixture IDs as keys
-        const fixturesMap = new Map();
-        fixturesData.forEach(fixture => {
-          if (!fixturesMap.has(fixture.id)) {
-            fixturesMap.set(fixture.id, {
-              ...fixture,
-              event_attendance: (attendanceData || []).filter(a => a.event_id === fixture.id)
-            });
-          }
-        });
+        const result = uniqueFixtures.map(fixture => ({
+          ...fixture,
+          event_attendance: (attendanceData || []).filter(a => a.event_id === fixture.id)
+        }));
 
-        const uniqueFixtures = Array.from(fixturesMap.values());
-        console.log("Final unique fixtures data:", uniqueFixtures);
-        return uniqueFixtures;
+        console.log("Final fixtures data:", result.length, "items");
+        return result;
       } catch (error) {
         console.error("Error fetching fixtures:", error);
         toast({
@@ -112,10 +167,11 @@ export const useCalendarData = (date: Date) => {
         return [];
       }
     },
-    retry: 1,
-    staleTime: 60000, // 1 minute stale time
-    gcTime: 120000, // 2 minutes garbage collection time (formerly cacheTime)
-    refetchOnWindowFocus: false // Prevent duplicate fetches on window focus
+    staleTime: 0, // Always refetch when requested
+    gcTime: 60000, // 1 minute garbage collection time
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnReconnect: true
   });
 
   const { 
@@ -159,7 +215,8 @@ export const useCalendarData = (date: Date) => {
         return [];
       }
     },
-    retry: false
+    staleTime: 0,
+    refetchOnMount: true
   });
 
   const { 
@@ -203,7 +260,8 @@ export const useCalendarData = (date: Date) => {
         return [];
       }
     },
-    retry: false
+    staleTime: 0,
+    refetchOnMount: true
   });
 
   const { 
