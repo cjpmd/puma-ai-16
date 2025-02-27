@@ -26,7 +26,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           : format(new Date(), "yyyy-MM-dd");
 
       console.log("Using date for fixture:", dateToUse);
-      console.log("Form data with performance categories:", data);
+      console.log("Form data with MOTM player IDs:", data.motm_player_ids);
 
       // Only include fields that exist in the fixtures table
       const fixtureData = {
@@ -37,7 +37,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         number_of_teams: parseInt(data.number_of_teams || "1"),
         is_home: data.is_home,
         date: dateToUse,
-        motm_player_id: data.motm_player_ids?.[0] || null,
+        motm_player_id: data.motm_player_ids?.[0] || null, // Store the first team's MOTM in the main table
         team_1_score: data.team_1_score || null,
         opponent_1_score: data.opponent_1_score || null,
         team_2_score: data.team_2_score || null,
@@ -115,19 +115,22 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           console.log("Team times saved:", teamTimesResult);
         }
 
-        // Insert or update team scores
+        // Insert or update team scores with MOTM player IDs
         const teamScoresData = Array.from({ length: parseInt(data.number_of_teams || "1") }).map((_, index) => {
           const teamScore = data[`team_${index + 1}_score`] || 0;
           const opponentScore = data[`opponent_${index + 1}_score`] || 0;
+          const motmPlayerId = data.motm_player_ids?.[index] || null;
+          
           return {
             fixture_id: fixtureId,
             team_number: index + 1,
             score: teamScore,
-            opponent_score: opponentScore
+            opponent_score: opponentScore,
+            motm_player_id: motmPlayerId
           };
         });
 
-        console.log("Saving team scores:", teamScoresData);
+        console.log("Saving team scores with MOTM player IDs:", teamScoresData);
 
         // Delete existing scores first if editing
         if (editingFixture?.id) {
@@ -152,7 +155,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
             throw scoresError;
           }
 
-          console.log("Team scores saved:", scoresResult);
+          console.log("Team scores saved with MOTM player IDs:", scoresResult);
         }
 
         // Create default event attendance entries for all players in the team
@@ -189,15 +192,16 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           }
         }
 
-        // Include the team times and performance categories in the returned fixture
+        // Include the team times and MOTM player IDs in the returned fixture
         const savedFixture = {
           ...fixtureResult.data,
           ...data,
           id: fixtureId,
-          team_times: data.team_times
+          team_times: data.team_times,
+          motm_player_ids: data.motm_player_ids
         };
 
-        console.log("Final fixture data with performance categories:", savedFixture);
+        console.log("Final fixture data with MOTM player IDs:", savedFixture);
         
         await onSubmit(savedFixture);
         

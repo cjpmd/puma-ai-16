@@ -27,12 +27,21 @@ export const TeamCard = ({
   getMotmLabel
 }: TeamCardProps) => {
   const performanceCategory = form.watch(`team_times.${index}.performance_category`) || "MESSI";
+  const motmPlayerId = form.watch(`motm_player_ids.${index}`);
   
   // Log for debugging
   useEffect(() => {
     console.log(`Team ${index + 1} performance category:`, performanceCategory);
+    console.log(`Team ${index + 1} MOTM player ID:`, motmPlayerId);
     console.log("Form values:", form.getValues());
-  }, [performanceCategory, index, form]);
+  }, [performanceCategory, motmPlayerId, index, form]);
+
+  // Find the selected player name for the SelectValue display
+  const getSelectedPlayerName = () => {
+    if (!motmPlayerId || !players) return undefined;
+    const player = players.find(p => p.id === motmPlayerId);
+    return player?.name;
+  };
 
   return (
     <Card>
@@ -160,11 +169,14 @@ export const TeamCard = ({
                   <FormLabel>{getMotmLabel(index)}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value}
+                    value={field.value || ""}
+                    defaultValue=""
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select player" />
+                        <SelectValue placeholder="Select player">
+                          {getSelectedPlayerName() || "Select player"}
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -175,6 +187,7 @@ export const TeamCard = ({
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />

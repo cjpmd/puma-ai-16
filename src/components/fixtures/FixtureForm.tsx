@@ -47,6 +47,37 @@ export const FixtureForm = ({
     });
   };
 
+  // Get initial MOTM player IDs, handling both single and multiple team cases
+  const getInitialMotmPlayerIds = () => {
+    // If we have multiple teams with potentially different MOTM players
+    if (editingFixture?.fixture_team_scores && editingFixture?.fixture_team_scores.length > 0) {
+      // Extract MOTM player IDs from team scores if available
+      const motmPlayerIds = editingFixture.fixture_team_scores.map((score: any) => 
+        score.motm_player_id || ""
+      );
+      
+      // If we have at least one MOTM player, use that array
+      if (motmPlayerIds.length > 0) {
+        console.log("Using MOTM player IDs from team scores:", motmPlayerIds);
+        return motmPlayerIds;
+      }
+    }
+    
+    // If we have a single MOTM player for the whole fixture
+    if (editingFixture?.motm_player_id || editingFixture?.potm_player_id) {
+      const playerId = editingFixture?.motm_player_id || editingFixture?.potm_player_id;
+      console.log("Using single MOTM player ID:", playerId);
+      return Array(editingFixture?.number_of_teams || 1).fill("").map((_, i) => 
+        i === 0 ? playerId : ""
+      );
+    }
+    
+    // Default empty array of appropriate length
+    const emptyIds = Array(editingFixture?.number_of_teams || 1).fill("");
+    console.log("Using default empty MOTM player IDs:", emptyIds);
+    return emptyIds;
+  };
+
   const form = useForm<FixtureFormData>({
     resolver: zodResolver(fixtureFormSchema),
     defaultValues: {
@@ -58,9 +89,7 @@ export const FixtureForm = ({
       opponent_1_score: editingFixture?.opponent_1_score || 0,
       team_2_score: editingFixture?.team_2_score || 0,
       opponent_2_score: editingFixture?.opponent_2_score || 0,
-      motm_player_ids: editingFixture?.motm_player_id 
-        ? [editingFixture.motm_player_id]
-        : Array(editingFixture?.number_of_teams || 1).fill(""),
+      motm_player_ids: getInitialMotmPlayerIds(),
       team_times: getInitialTeamTimes(),
       is_home: editingFixture?.is_home ?? true,
       team_name: editingFixture?.team_name || "Broughty Pumas 2015s",
@@ -72,11 +101,13 @@ export const FixtureForm = ({
   const watchNumberOfTeams = parseInt(form.watch("number_of_teams") || "1");
   const watchOpponent = form.watch("opponent");
   const watchIsHome = form.watch("is_home");
+  const watchMotmPlayerIds = form.watch("motm_player_ids");
 
   // Log form values when they change
   useEffect(() => {
     console.log("Current form values:", form.getValues());
-  }, [form, watchNumberOfTeams]);
+    console.log("MOTM player IDs:", watchMotmPlayerIds);
+  }, [form, watchNumberOfTeams, watchMotmPlayerIds]);
 
   useTeamTimes(form, editingFixture, watchNumberOfTeams);
 

@@ -11,7 +11,8 @@ import { DateChangeButton } from "./events/components/DateChangeButton";
 import { EventActionButtons } from "./events/components/EventActionButtons";
 import { Fixture } from "@/types/fixture";
 import { TeamSelectionDialog } from "./FixtureCard/TeamSelectionDialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FixtureCardProps {
   fixture: Fixture;
@@ -27,6 +28,7 @@ export const FixtureCard = ({
   onDateChange,
 }: FixtureCardProps) => {
   const [showTeamSelection, setShowTeamSelection] = useState(false);
+  const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
 
   // Format date for display
   const formattedDate = fixture.date
@@ -45,6 +47,53 @@ export const FixtureCard = ({
   const formatText = fixture.format ? `${fixture.format} Format` : "";
 
   console.log("Rendering fixture:", fixture.id, fixture.opponent);
+  console.log("Fixture MOTM player ID:", fixture.motm_player_id);
+  console.log("Fixture team scores:", fixture.fixture_team_scores);
+
+  // Fetch player names for MOTM
+  useEffect(() => {
+    const fetchPlayerNames = async () => {
+      // Collect all player IDs to fetch
+      const playerIds: string[] = [];
+      
+      // Add the main fixture MOTM if it exists
+      if (fixture.motm_player_id) {
+        playerIds.push(fixture.motm_player_id);
+      }
+      
+      // Add team-specific MOTM player IDs if they exist
+      if (fixture.fixture_team_scores && fixture.fixture_team_scores.length > 0) {
+        fixture.fixture_team_scores.forEach(score => {
+          if (score.motm_player_id) {
+            playerIds.push(score.motm_player_id);
+          }
+        });
+      }
+      
+      // Only fetch if we have player IDs
+      if (playerIds.length > 0) {
+        const { data, error } = await supabase
+          .from('players')
+          .select('id, name')
+          .in('id', playerIds);
+          
+        if (error) {
+          console.error("Error fetching player names:", error);
+          return;
+        }
+        
+        // Create a map of player IDs to names
+        const playerMap: Record<string, string> = {};
+        data?.forEach(player => {
+          playerMap[player.id] = player.name;
+        });
+        
+        setPlayerNames(playerMap);
+      }
+    };
+    
+    fetchPlayerNames();
+  }, [fixture.motm_player_id, fixture.fixture_team_scores]);
 
   const handleDelete = () => {
     if (window.confirm(`Are you sure you want to delete this fixture against ${fixture.opponent}?`)) {
@@ -81,15 +130,39 @@ export const FixtureCard = ({
             Date: {formattedDate}
           </p>
 
-          {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
-            <div key={index} className="mb-4 space-y-4">
-              <h3 className="font-semibold">Team {index + 1}</h3>
-              <TeamScores 
-                fixture={fixture} 
-                teamIndex={index} 
-              />
-            </div>
-          ))}
+          {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => {
+            // Find the team score for this team index
+            const teamScore = fixture.fixture_team_scores?.find(
+              score => score.team_number === index + 1
+            );
+            
+            // Get the MOTM player ID and name for this team
+            const motmPlayerId = teamScore?.motm_player_id || 
+              (index === 0 ? fixture.motm_player_id : null);
+            const motmPlayerName = motmPlayerId ? playerNames[motmPlayerId] : null;
+            
+            // Get the team's performance category
+            const teamTime = fixture.fixture_team_times?.find(
+              time => time.team_number === index + 1
+            );
+            const performanceCategory = teamTime?.performance_category || "MESSI";
+            
+            return (
+              <div key={index} className="mb-4 space-y-4">
+                <h3 className="font-semibold">Team {index + 1} {performanceCategory}</h3>
+                <TeamScores 
+                  fixture={fixture} 
+                  teamIndex={index} 
+                />
+                {motmPlayerName && (
+                  <p className="text-sm text-muted-foreground flex items-center">
+                    <Trophy className="h-4 w-4 mr-1 inline-block text-yellow-500" />
+                    Player of the Match: {motmPlayerName}
+                  </p>
+                )}
+              </div>
+            );
+          })}
 
           <div className="space-y-1 mt-4 text-sm text-muted-foreground">
             <p>Location: {fixture.location || "TBD"}</p>
