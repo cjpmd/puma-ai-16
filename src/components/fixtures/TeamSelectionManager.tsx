@@ -24,7 +24,62 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
   const [teamCaptains, setTeamCaptains] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [isTableInitialized, setIsTableInitialized] = useState(false);
+  const [databaseStructure, setDatabaseStructure] = useState<{
+    hasFixtureTeamSelections: boolean;
+    hasFixturePlayingPositions: boolean;
+    hasFixturePlayingDurations: boolean;
+  } | null>(null);
+
+  // Fetch database structure to determine which tables to use
+  useEffect(() => {
+    const checkDatabaseStructure = async () => {
+      try {
+        console.log("Checking database structure...");
+        
+        // Check fixture_team_selections table
+        const { data: teamSelectionsCheck, error: teamSelectionsError } = await supabase
+          .from('fixture_team_selections')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+        
+        // Check fixture_playing_positions table
+        const { data: playingPositionsCheck, error: playingPositionsError } = await supabase
+          .from('fixture_playing_positions')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+          
+        // Check fixture_playing_durations table  
+        const { data: playingDurationsCheck, error: playingDurationsError } = await supabase
+          .from('fixture_playing_durations')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+          
+        console.log("Database check results:", {
+          teamSelectionsExists: !teamSelectionsError,
+          playingPositionsExists: !playingPositionsError,
+          playingDurationsExists: !playingDurationsError
+        });
+        
+        setDatabaseStructure({
+          hasFixtureTeamSelections: !teamSelectionsError,
+          hasFixturePlayingPositions: !playingPositionsError,
+          hasFixturePlayingDurations: !playingDurationsError
+        });
+      } catch (error) {
+        console.error("Error checking database structure:", error);
+        toast({
+          variant: "destructive",
+          title: "Database Error",
+          description: "Could not determine database structure. Please contact support.",
+        });
+      }
+    };
+    
+    checkDatabaseStructure();
+  }, [toast]);
 
   // Fetch available players
   const { data: availablePlayers = [], isLoading: isLoadingPlayers } = useQuery({
@@ -40,67 +95,67 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     },
   });
 
-  // Check and update table structure if needed
-  useEffect(() => {
-    const checkAndUpdateTable = async () => {
+  // Fetch existing team selections when fixture is loaded
+  const { data: existingData, isLoading: isLoadingSelections } = useQuery({
+    queryKey: ["fixture-selections-data", fixture?.id, databaseStructure],
+    queryFn: async () => {
+      if (!fixture?.id || !databaseStructure) return null;
+      
+      console.log("Fetching existing selections for fixture:", fixture.id);
+      
       try {
-        // First check if we can query the table with all expected columns
-        const { data, error } = await supabase
-          .from('fixture_team_selections')
-          .select('fixture_id, team_id, period_id, duration, performance_category, selections_data, captain_id')
-          .limit(1);
+        const result: any = {
+          selections: [],
+          positions: [],
+          durations: []
+        };
         
-        if (error) {
-          console.log("Need to update table structure:", error.message);
+        // Fetch from fixture_team_selections if it exists
+        if (databaseStructure.hasFixtureTeamSelections) {
+          const { data, error } = await supabase
+            .from("fixture_team_selections")
+            .select("*")
+            .eq("fixture_id", fixture.id);
           
-          // Run SQL to add missing columns
-          const { error: sqlError } = await supabase.rpc('add_missing_columns_to_fixture_team_selections');
-          
-          if (sqlError) {
-            console.error("Error updating table structure:", sqlError);
-            throw sqlError;
-          } else {
-            console.log("Table structure updated successfully");
+          if (!error && data) {
+            result.selections = data;
+            console.log("Fetched from fixture_team_selections:", data);
           }
-        } else {
-          console.log("Table structure already has required columns");
         }
         
-        setIsTableInitialized(true);
+        // Fetch from fixture_playing_positions if it exists
+        if (databaseStructure.hasFixturePlayingPositions) {
+          const { data, error } = await supabase
+            .from("fixture_playing_positions")
+            .select("*")
+            .eq("fixture_id", fixture.id);
+          
+          if (!error && data) {
+            result.positions = data;
+            console.log("Fetched from fixture_playing_positions:", data);
+          }
+        }
+        
+        // Fetch from fixture_playing_durations if it exists
+        if (databaseStructure.hasFixturePlayingDurations) {
+          const { data, error } = await supabase
+            .from("fixture_playing_durations")
+            .select("*")
+            .eq("fixture_id", fixture.id);
+          
+          if (!error && data) {
+            result.durations = data;
+            console.log("Fetched from fixture_playing_durations:", data);
+          }
+        }
+        
+        return result;
       } catch (error) {
-        console.error("Error checking/updating table structure:", error);
-        toast({
-          variant: "destructive",
-          title: "Database Error",
-          description: "There was an error with the database structure. Please contact support.",
-        });
-      }
-    };
-    
-    checkAndUpdateTable();
-  }, [toast]);
-
-  // Fetch existing team selections when fixture is loaded
-  const { data: existingSelections, isLoading: isLoadingSelections } = useQuery({
-    queryKey: ["fixture-team-selections", fixture?.id],
-    queryFn: async () => {
-      if (!fixture?.id || !isTableInitialized) return null;
-      
-      console.log("Fetching existing team selections for fixture:", fixture.id);
-      const { data, error } = await supabase
-        .from("fixture_team_selections")
-        .select("*")
-        .eq("fixture_id", fixture.id);
-      
-      if (error) {
-        console.error("Error fetching team selections:", error);
+        console.error("Error fetching selections data:", error);
         throw error;
       }
-      
-      console.log("Existing team selections:", data);
-      return data || [];
     },
-    enabled: !!fixture?.id && isTableInitialized,
+    enabled: !!fixture?.id && !!databaseStructure,
   });
 
   // Initialize periods for each team when fixture loads
@@ -137,9 +192,9 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
 
   // Load existing selections when they're fetched
   useEffect(() => {
-    if (!existingSelections || existingSelections.length === 0) return;
+    if (!existingData) return;
     
-    console.log("Processing existing team selections to restore state");
+    console.log("Processing existing data to restore state:", existingData);
     
     try {
       const loadedPeriodsPerTeam: Record<string, Array<{ id: string; duration: number }>> = {};
@@ -147,42 +202,124 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
       const loadedPerformanceCategories: Record<string, string> = {};
       const loadedTeamCaptains: Record<string, string> = {};
       
-      // Process all selections from the database
-      existingSelections.forEach(selection => {
-        const { team_id, period_id, duration, selections_data, performance_category, captain_id } = selection;
+      // Process fixture_team_selections data
+      if (existingData.selections && existingData.selections.length > 0) {
+        existingData.selections.forEach((selection: any) => {
+          const { team_id, period_id, duration, selections_data, performance_category, captain_id } = selection;
+          
+          // Parse the selections data if it exists
+          const parsedSelections = selections_data ? JSON.parse(selections_data) : {};
+          
+          // Initialize period for this team if not exist
+          if (!loadedPeriodsPerTeam[team_id]) {
+            loadedPeriodsPerTeam[team_id] = [];
+          }
+          
+          // Add period if it doesn't exist
+          if (!loadedPeriodsPerTeam[team_id].some(p => p.id === period_id)) {
+            loadedPeriodsPerTeam[team_id].push({ id: period_id, duration: duration || 20 });
+          }
+          
+          // Initialize selections structure if needed
+          if (!loadedSelections[period_id]) {
+            loadedSelections[period_id] = {};
+          }
+          if (!loadedSelections[period_id][team_id]) {
+            loadedSelections[period_id][team_id] = {};
+          }
+          
+          // Set the selections for this period and team
+          loadedSelections[period_id][team_id] = parsedSelections;
+          
+          // Set performance category
+          loadedPerformanceCategories[`${period_id}-${team_id}`] = performance_category || 'MESSI';
+          
+          // Set team captain if it exists
+          if (captain_id) {
+            loadedTeamCaptains[team_id] = captain_id;
+          }
+        });
+      }
+      
+      // Process fixture_playing_positions data
+      if (existingData.positions && existingData.positions.length > 0) {
+        // Group positions by period and team
+        const positionsByPeriodAndTeam: Record<string, Record<string, Array<any>>> = {};
         
-        // Parse the selections data from JSON
-        const parsedSelections = selections_data ? JSON.parse(selections_data) : {};
+        existingData.positions.forEach((position: any) => {
+          const { team_id, period_id, player_id, position: positionValue } = position;
+          
+          if (!positionsByPeriodAndTeam[period_id]) {
+            positionsByPeriodAndTeam[period_id] = {};
+          }
+          
+          if (!positionsByPeriodAndTeam[period_id][team_id]) {
+            positionsByPeriodAndTeam[period_id][team_id] = [];
+          }
+          
+          positionsByPeriodAndTeam[period_id][team_id].push({
+            playerId: player_id,
+            position: positionValue
+          });
+        });
         
-        // Initialize period for this team if not exist
-        if (!loadedPeriodsPerTeam[team_id]) {
-          loadedPeriodsPerTeam[team_id] = [];
-        }
-        
-        // Add period if it doesn't exist
-        if (!loadedPeriodsPerTeam[team_id].some(p => p.id === period_id)) {
-          loadedPeriodsPerTeam[team_id].push({ id: period_id, duration: duration || 20 });
-        }
-        
-        // Initialize selections structure if needed
-        if (!loadedSelections[period_id]) {
-          loadedSelections[period_id] = {};
-        }
-        if (!loadedSelections[period_id][team_id]) {
-          loadedSelections[period_id][team_id] = {};
-        }
-        
-        // Set the selections for this period and team
-        loadedSelections[period_id][team_id] = parsedSelections;
-        
-        // Set performance category
-        loadedPerformanceCategories[`${period_id}-${team_id}`] = performance_category || 'MESSI';
-        
-        // Set team captain if it exists
-        if (captain_id) {
-          loadedTeamCaptains[team_id] = captain_id;
-        }
-      });
+        // Convert to selections format
+        Object.entries(positionsByPeriodAndTeam).forEach(([periodId, teamData]) => {
+          Object.entries(teamData).forEach(([teamId, positions]) => {
+            // Initialize period for this team if not exist
+            if (!loadedPeriodsPerTeam[teamId]) {
+              loadedPeriodsPerTeam[teamId] = [];
+            }
+            
+            // Add period if it doesn't exist
+            if (!loadedPeriodsPerTeam[teamId].some(p => p.id === periodId)) {
+              loadedPeriodsPerTeam[teamId].push({ id: periodId, duration: 20 });
+            }
+            
+            // Initialize selections structure if needed
+            if (!loadedSelections[periodId]) {
+              loadedSelections[periodId] = {};
+            }
+            if (!loadedSelections[periodId][teamId]) {
+              loadedSelections[periodId][teamId] = {};
+            }
+            
+            // Convert positions array to selections object
+            positions.forEach((pos, index) => {
+              loadedSelections[periodId][teamId][`pos-${index}`] = {
+                playerId: pos.playerId,
+                position: pos.position,
+                performanceCategory: 'MESSI'
+              };
+            });
+          });
+        });
+      }
+      
+      // Process fixture_playing_durations data
+      if (existingData.durations && existingData.durations.length > 0) {
+        existingData.durations.forEach((durationData: any) => {
+          const { team_id, period_id, duration } = durationData;
+          
+          // Update period duration if it exists
+          const teamPeriods = loadedPeriodsPerTeam[team_id] || [];
+          const periodIndex = teamPeriods.findIndex(p => p.id === period_id);
+          
+          if (periodIndex >= 0) {
+            teamPeriods[periodIndex].duration = duration;
+          } else {
+            // Create the period if it doesn't exist
+            if (!loadedPeriodsPerTeam[team_id]) {
+              loadedPeriodsPerTeam[team_id] = [];
+            }
+            
+            loadedPeriodsPerTeam[team_id].push({
+              id: period_id,
+              duration: duration || 20
+            });
+          }
+        });
+      }
       
       console.log("Restored state from database:", {
         loadedPeriodsPerTeam,
@@ -202,14 +339,14 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
         updateSelectedPlayersFromSelections(loadedSelections);
       }
     } catch (error) {
-      console.error("Error processing existing team selections:", error);
+      console.error("Error processing existing selections:", error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to load saved team selections",
       });
     }
-  }, [existingSelections, toast]);
+  }, [existingData, toast]);
 
   const updateSelectedPlayersFromSelections = (selectionsData: Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>) => {
     const newSelectedPlayers = new Set<string>();
@@ -359,7 +496,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     }));
   };
 
-  // Save team selections to database with compatibility for existing table structure
+  // Save team selections to database based on available tables
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -368,84 +505,171 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
         throw new Error("Missing fixture ID");
       }
       
-      // Check if table has been initialized
-      if (!isTableInitialized) {
+      if (!databaseStructure) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Database is not ready yet. Please try again.",
+          description: "Database structure not determined. Please try again.",
         });
         return;
       }
       
-      console.log("Saving team selections to database:", selections);
+      console.log("Saving team selections to database with structure:", databaseStructure);
       
-      // First delete existing selections for this fixture
-      const { error: deleteError } = await supabase
-        .from("fixture_team_selections")
-        .delete()
-        .eq("fixture_id", fixture.id);
-        
-      if (deleteError) {
-        console.error("Error deleting existing selections:", deleteError);
-        throw deleteError;
-      }
-      
-      // Format the data for database insertion
-      const selectionsToSave = [];
-      
-      for (const teamId of Object.keys(periodsPerTeam)) {
-        const teamPeriods = periodsPerTeam[teamId] || [];
-        
-        for (const period of teamPeriods) {
-          const periodId = period.id;
-          const duration = period.duration;
-          const performanceCategory = performanceCategories[`${periodId}-${teamId}`] || 'MESSI';
-          const teamSelections = selections[periodId]?.[teamId] || {};
-          
-          // Create a record with the necessary fields for the database
-          const record: any = {
-            fixture_id: fixture.id,
-            team_id: teamId,
-            period_id: periodId,
-          };
-          
-          // Add optional fields if they exist in the table
-          if (duration !== undefined) {
-            record.duration = duration;
-          }
-          
-          if (performanceCategory) {
-            record.performance_category = performanceCategory;
-          }
-          
-          if (Object.keys(teamSelections).length > 0) {
-            record.selections_data = JSON.stringify(teamSelections);
-          }
-          
-          if (teamCaptains[teamId]) {
-            record.captain_id = teamCaptains[teamId];
-          }
-          
-          selectionsToSave.push(record);
-        }
-      }
-      
-      console.log("Selections formatted for database:", selectionsToSave);
-      
-      // Insert all selections
-      if (selectionsToSave.length > 0) {
-        const { data, error } = await supabase
+      // Save to fixture_team_selections if it exists
+      if (databaseStructure.hasFixtureTeamSelections) {
+        // First delete existing selections for this fixture
+        const { error: deleteError } = await supabase
           .from("fixture_team_selections")
-          .upsert(selectionsToSave)
-          .select();
+          .delete()
+          .eq("fixture_id", fixture.id);
           
-        if (error) {
-          console.error("Error saving team selections:", error);
-          throw error;
+        if (deleteError) {
+          console.error("Error deleting existing selections:", deleteError);
+          throw deleteError;
         }
         
-        console.log("Team selections saved successfully:", data);
+        // Format the data for database insertion
+        const selectionsToSave = [];
+        
+        for (const teamId of Object.keys(periodsPerTeam)) {
+          const teamPeriods = periodsPerTeam[teamId] || [];
+          
+          for (const period of teamPeriods) {
+            const periodId = period.id;
+            const duration = period.duration;
+            const performanceCategory = performanceCategories[`${periodId}-${teamId}`] || 'MESSI';
+            const teamSelections = selections[periodId]?.[teamId] || {};
+            
+            selectionsToSave.push({
+              fixture_id: fixture.id,
+              team_id: teamId,
+              period_id: periodId,
+              duration: duration,
+              performance_category: performanceCategory,
+              selections_data: JSON.stringify(teamSelections),
+              captain_id: teamCaptains[teamId] || null
+            });
+          }
+        }
+        
+        console.log("Selections formatted for fixture_team_selections:", selectionsToSave);
+        
+        // Insert all selections
+        if (selectionsToSave.length > 0) {
+          const { data, error } = await supabase
+            .from("fixture_team_selections")
+            .upsert(selectionsToSave)
+            .select();
+            
+          if (error) {
+            console.error("Error saving to fixture_team_selections:", error);
+            throw error;
+          }
+          
+          console.log("Team selections saved to fixture_team_selections:", data);
+        }
+      }
+      
+      // Save to fixture_playing_positions and fixture_playing_durations if they exist
+      if (databaseStructure.hasFixturePlayingPositions || databaseStructure.hasFixturePlayingDurations) {
+        // Handle fixture_playing_positions
+        if (databaseStructure.hasFixturePlayingPositions) {
+          // Delete existing positions
+          const { error: deletePositionsError } = await supabase
+            .from("fixture_playing_positions")
+            .delete()
+            .eq("fixture_id", fixture.id);
+            
+          if (deletePositionsError) {
+            console.error("Error deleting existing positions:", deletePositionsError);
+            throw deletePositionsError;
+          }
+          
+          // Format positions data
+          const positionsToSave = [];
+          
+          for (const periodId in selections) {
+            for (const teamId in selections[periodId]) {
+              for (const slotId in selections[periodId][teamId]) {
+                const selection = selections[periodId][teamId][slotId];
+                if (selection.playerId && selection.playerId !== "unassigned") {
+                  positionsToSave.push({
+                    fixture_id: fixture.id,
+                    team_id: teamId,
+                    period_id: periodId,
+                    player_id: selection.playerId,
+                    position: selection.position,
+                    slot_id: slotId
+                  });
+                }
+              }
+            }
+          }
+          
+          console.log("Positions formatted for fixture_playing_positions:", positionsToSave);
+          
+          // Insert positions
+          if (positionsToSave.length > 0) {
+            const { data: positionsData, error: positionsError } = await supabase
+              .from("fixture_playing_positions")
+              .upsert(positionsToSave)
+              .select();
+              
+            if (positionsError) {
+              console.error("Error saving to fixture_playing_positions:", positionsError);
+              throw positionsError;
+            }
+            
+            console.log("Positions saved to fixture_playing_positions:", positionsData);
+          }
+        }
+        
+        // Handle fixture_playing_durations
+        if (databaseStructure.hasFixturePlayingDurations) {
+          // Delete existing durations
+          const { error: deleteDurationsError } = await supabase
+            .from("fixture_playing_durations")
+            .delete()
+            .eq("fixture_id", fixture.id);
+            
+          if (deleteDurationsError) {
+            console.error("Error deleting existing durations:", deleteDurationsError);
+            throw deleteDurationsError;
+          }
+          
+          // Format durations data
+          const durationsToSave = [];
+          
+          for (const teamId in periodsPerTeam) {
+            const teamPeriods = periodsPerTeam[teamId] || [];
+            for (const period of teamPeriods) {
+              durationsToSave.push({
+                fixture_id: fixture.id,
+                team_id: teamId,
+                period_id: period.id,
+                duration: period.duration
+              });
+            }
+          }
+          
+          console.log("Durations formatted for fixture_playing_durations:", durationsToSave);
+          
+          // Insert durations
+          if (durationsToSave.length > 0) {
+            const { data: durationsData, error: durationsError } = await supabase
+              .from("fixture_playing_durations")
+              .upsert(durationsToSave)
+              .select();
+              
+            if (durationsError) {
+              console.error("Error saving to fixture_playing_durations:", durationsError);
+              throw durationsError;
+            }
+            
+            console.log("Durations saved to fixture_playing_durations:", durationsData);
+          }
+        }
       }
       
       toast({
@@ -466,10 +690,13 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     }
   };
 
-  const isLoading = isLoadingPlayers || isLoadingSelections || !fixture || !isTableInitialized;
+  const isLoading = isLoadingPlayers || isLoadingSelections || !fixture || databaseStructure === null;
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="flex items-center justify-center h-40">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <span className="ml-2">Loading team selection data...</span>
+    </div>;
   }
 
   return (
