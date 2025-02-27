@@ -1,14 +1,17 @@
 
 import { Minus } from "lucide-react";
 import { format } from "date-fns";
+import { Fixture } from "@/types/fixture";
 
 interface TeamScoresProps {
-  teamName: string;
-  opponent: string;
+  teamName?: string;
+  opponent?: string;
   teamScore?: number | null;
   opponentScore?: number | null;
-  isHome: boolean;
+  isHome?: boolean;
   fixtureDate?: string;
+  fixture?: Fixture;
+  teamIndex?: number;
 }
 
 export const TeamScores = ({
@@ -18,7 +21,26 @@ export const TeamScores = ({
   opponentScore,
   isHome,
   fixtureDate,
+  fixture,
+  teamIndex = 0
 }: TeamScoresProps) => {
+  // If we receive a fixture object, extract properties from it
+  if (fixture) {
+    teamName = fixture.team_name || "Broughty Pumas 2015s";
+    opponent = fixture.opponent;
+    isHome = fixture.is_home;
+    fixtureDate = fixture.date;
+    
+    // Get scores from the fixture based on teamIndex
+    if (teamIndex === 0) {
+      teamScore = fixture.team_1_score !== undefined ? fixture.team_1_score : null;
+      opponentScore = fixture.opponent_1_score !== undefined ? fixture.opponent_1_score : null;
+    } else if (teamIndex === 1) {
+      teamScore = fixture.team_2_score !== undefined ? fixture.team_2_score : null;
+      opponentScore = fixture.opponent_2_score !== undefined ? fixture.opponent_2_score : null;
+    }
+  }
+  
   const isScoreAvailable = teamScore !== undefined && opponentScore !== undefined;
   
   const getStatusIcon = () => {
@@ -87,6 +109,10 @@ export const TeamScores = ({
 
   // Format score display
   const getScoreDisplay = () => {
+    if (!teamName || !opponent) {
+      return "Score not available";
+    }
+    
     const homeTeam = isHome ? teamName : opponent;
     const awayTeam = isHome ? opponent : teamName;
     const homeScore = isHome ? teamScore : opponentScore;

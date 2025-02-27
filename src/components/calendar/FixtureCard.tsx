@@ -98,7 +98,10 @@ export const FixtureCard = ({
           <div className="flex justify-end items-center gap-2 mt-4">
             <DateChangeButton 
               date={fixture.date ? new Date(fixture.date) : new Date()} 
-              onDateChange={(newDate) => onDateChange(fixture.id, newDate)}
+              onDateChange={(newDate) => {
+                // Convert Date to string format before passing to parent component
+                onDateChange(fixture.id, newDate);
+              }}
             />
             <EventActionButtons 
               onEdit={onEdit} 

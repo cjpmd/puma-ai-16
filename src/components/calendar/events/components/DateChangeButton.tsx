@@ -1,31 +1,45 @@
+
+import { useState } from "react";
 import { format } from "date-fns";
-import { Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 
 interface DateChangeButtonProps {
-  date: string;
+  date: Date;
   onDateChange: (date: Date) => void;
 }
 
-export const DateChangeButton = ({ date, onDateChange }: DateChangeButtonProps) => {
+export const DateChangeButton = ({
+  date,
+  onDateChange,
+}: DateChangeButtonProps) => {
+  const [open, setOpen] = useState(false);
+
+  const handleSelect = (date: Date | undefined) => {
+    if (date) {
+      onDateChange(date);
+      setOpen(false);
+    }
+  };
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <Calendar className="h-4 w-4" />
+        <Button
+          variant="ghost"
+          size="sm"
+          className="flex items-center gap-1"
+        >
+          <CalendarIcon className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="end">
-        <CalendarComponent
+        <Calendar
           mode="single"
-          selected={new Date(date)}
-          onSelect={(date) => {
-            if (date) {
-              onDateChange(date);
-            }
-          }}
+          selected={date}
+          onSelect={handleSelect}
           initialFocus
         />
       </PopoverContent>
