@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -27,10 +27,27 @@ export const TeamCard = ({
   const motmPlayerId = form.watch(`motm_player_ids.${index}`);
   
   // For debugging
-  React.useEffect(() => {
+  useEffect(() => {
     console.log(`Team ${index + 1} MOTM Player ID:`, motmPlayerId);
     console.log(`Team ${index + 1} MOTM player array:`, form.getValues().motm_player_ids);
   }, [index, motmPlayerId, form]);
+
+  // Ensure motm_player_ids array is properly initialized for this index
+  useEffect(() => {
+    // Get current MOTM player IDs array
+    const currentMotmIds = [...(form.getValues().motm_player_ids || [])];
+    
+    // Make sure the array is long enough to hold the current team's MOTM
+    if (currentMotmIds.length <= index || currentMotmIds[index] === undefined) {
+      // Ensure array has enough elements
+      while (currentMotmIds.length <= index) {
+        currentMotmIds.push("");
+      }
+      
+      // Update the form value with the padded array
+      form.setValue('motm_player_ids', currentMotmIds, { shouldDirty: false });
+    }
+  }, [form, index]);
 
   // Find selected player name for display
   const selectedPlayer = players.find(p => p.id === motmPlayerId);

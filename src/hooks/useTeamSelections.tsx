@@ -66,6 +66,17 @@ export const useTeamSelections = (fixture: any | null) => {
         return;
       }
 
+      const { data: teamScores, error: teamScoresError } = await supabase
+        .from('fixture_team_scores')
+        .select('*')
+        .eq('fixture_id', fixture.id)
+        .order('team_number');
+
+      if (teamScoresError) {
+        console.error("Error fetching team scores:", teamScoresError);
+        return;
+      }
+
       // Process team captains
       const captains: Record<string, string> = {};
       teamSelections?.forEach(selection => {
