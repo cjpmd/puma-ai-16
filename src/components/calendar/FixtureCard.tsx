@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CardTitle } from "@/components/ui/card";
 import { Trophy } from "lucide-react";
-import { format } from "date-fns";
+import { format, isAfter, isBefore, parseISO } from "date-fns";
 import { TeamScores } from "./FixtureCard/TeamScores";
 import { DateChangeButton } from "./events/components/DateChangeButton";
 import { EventActionButtons } from "./events/components/EventActionButtons";
@@ -27,6 +27,92 @@ export const FixtureCard = ({
 }: FixtureCardProps) => {
   const [showTeamSelection, setShowTeamSelection] = useState(false);
   const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
+  const [status, setStatus] = useState<"upcoming" | "live" | "completed">("upcoming");
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update current time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  // Calculate fixture status based on current time and fixture times
+  useEffect(() => {
+    const determineFixtureStatus = () => {
+      const now = new Date();
+      
+      // If fixture has no team times, use the main time fields
+      if (!fixture.fixture_team_times || fixture.fixture_team_times.length === 0) {
+        // Default status logic if no team times available
+        return "upcoming";
+      }
+      
+      // Get the latest end time from all teams
+      const lastTeamToFinish = [...fixture.fixture_team_times].sort((a, b) => {
+        // Default parsing for comparison, handling null values
+        const endTimeA = a.end_time ? parseISO(`2000-01-01T${a.end_time}`) : new Date(0);
+        const endTimeB = b.end_time ? parseISO(`2000-01-01T${b.end_time}`) : new Date(0);
+        return endTimeB.getTime() - endTimeA.getTime(); // Sort descending
+      })[0];
+      
+      // Get the earliest start time from all teams
+      const firstTeamToStart = [...fixture.fixture_team_times].sort((a, b) => {
+        // Default parsing for comparison, handling null values
+        const startTimeA = a.start_time ? parseISO(`2000-01-01T${a.start_time}`) : new Date(0);
+        const startTimeB = b.start_time ? parseISO(`2000-01-01T${b.start_time}`) : new Date(0);
+        return startTimeA.getTime() - startTimeB.getTime(); // Sort ascending
+      })[0];
+      
+      if (!lastTeamToFinish.end_time || !firstTeamToStart.start_time) {
+        return "upcoming"; // Default to upcoming if times are missing
+      }
+      
+      // Parse fixture date and times
+      const fixtureDate = fixture.date ? new Date(fixture.date) : new Date();
+      const todayDate = new Date();
+      
+      // Check if the fixture is today
+      const isSameDay = 
+        fixtureDate.getDate() === todayDate.getDate() &&
+        fixtureDate.getMonth() === todayDate.getMonth() &&
+        fixtureDate.getFullYear() === todayDate.getFullYear();
+      
+      if (!isSameDay) {
+        // If fixture is in the past, mark as completed
+        if (isBefore(fixtureDate, todayDate)) {
+          return "completed";
+        }
+        // If fixture is in the future, mark as upcoming
+        return "upcoming";
+      }
+      
+      // For fixtures today, use the time to determine status
+      // Extract hours and minutes for comparison
+      const [startHours, startMinutes] = firstTeamToStart.start_time.split(':').map(Number);
+      const [endHours, endMinutes] = lastTeamToFinish.end_time.split(':').map(Number);
+      
+      // Create Date objects for start and end times today
+      const startTime = new Date();
+      startTime.setHours(startHours, startMinutes, 0);
+      
+      const endTime = new Date();
+      endTime.setHours(endHours, endMinutes, 0);
+      
+      // Compare current time with start and end times
+      if (isBefore(now, startTime)) {
+        return "upcoming";
+      } else if (isAfter(now, endTime)) {
+        return "completed";
+      } else {
+        return "live";
+      }
+    };
+    
+    setStatus(determineFixtureStatus());
+  }, [fixture, currentTime]);
 
   // Format date for display
   const formattedDate = fixture.date
@@ -129,14 +215,29 @@ export const FixtureCard = ({
     }
   };
 
+  // Get badge color and text based on status
+  const getBadgeVariant = () => {
+    switch (status) {
+      case "live":
+        return { variant: "success" as const, text: "Live" };
+      case "completed":
+        return { variant: "secondary" as const, text: "Completed" };
+      case "upcoming":
+      default:
+        return { variant: "default" as const, text: "Upcoming" };
+    }
+  };
+
+  const { variant, text } = getBadgeVariant();
+
   return (
     <>
       <Card className="shadow-sm hover:shadow-md transition-shadow">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
             <div className="space-y-1">
-              <Badge>
-                Upcoming
+              <Badge variant={variant}>
+                {text}
               </Badge>
               <CardTitle className="text-xl font-bold">
                 {vsTitle}
