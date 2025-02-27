@@ -24,6 +24,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
   const [teamCaptains, setTeamCaptains] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isTableInitialized, setIsTableInitialized] = useState(false);
 
   // Fetch available players
   const { data: availablePlayers = [], isLoading: isLoadingPlayers } = useQuery({
@@ -39,11 +40,51 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     },
   });
 
+  // Check and update table structure if needed
+  useEffect(() => {
+    const checkAndUpdateTable = async () => {
+      try {
+        // First check if we can query the table with all expected columns
+        const { data, error } = await supabase
+          .from('fixture_team_selections')
+          .select('fixture_id, team_id, period_id, duration, performance_category, selections_data, captain_id')
+          .limit(1);
+        
+        if (error) {
+          console.log("Need to update table structure:", error.message);
+          
+          // Run SQL to add missing columns
+          const { error: sqlError } = await supabase.rpc('add_missing_columns_to_fixture_team_selections');
+          
+          if (sqlError) {
+            console.error("Error updating table structure:", sqlError);
+            throw sqlError;
+          } else {
+            console.log("Table structure updated successfully");
+          }
+        } else {
+          console.log("Table structure already has required columns");
+        }
+        
+        setIsTableInitialized(true);
+      } catch (error) {
+        console.error("Error checking/updating table structure:", error);
+        toast({
+          variant: "destructive",
+          title: "Database Error",
+          description: "There was an error with the database structure. Please contact support.",
+        });
+      }
+    };
+    
+    checkAndUpdateTable();
+  }, [toast]);
+
   // Fetch existing team selections when fixture is loaded
   const { data: existingSelections, isLoading: isLoadingSelections } = useQuery({
     queryKey: ["fixture-team-selections", fixture?.id],
     queryFn: async () => {
-      if (!fixture?.id) return null;
+      if (!fixture?.id || !isTableInitialized) return null;
       
       console.log("Fetching existing team selections for fixture:", fixture.id);
       const { data, error } = await supabase
@@ -59,7 +100,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
       console.log("Existing team selections:", data);
       return data || [];
     },
-    enabled: !!fixture?.id,
+    enabled: !!fixture?.id && isTableInitialized,
   });
 
   // Initialize periods for each team when fixture loads
@@ -318,15 +359,26 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     }));
   };
 
-  // Save team selections to database
+  // Save team selections to database with compatibility for existing table structure
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      console.log("Saving team selections to database:", selections);
       
       if (!fixture?.id) {
         throw new Error("Missing fixture ID");
       }
+      
+      // Check if table has been initialized
+      if (!isTableInitialized) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Database is not ready yet. Please try again.",
+        });
+        return;
+      }
+      
+      console.log("Saving team selections to database:", selections);
       
       // First delete existing selections for this fixture
       const { error: deleteError } = await supabase
@@ -351,15 +403,31 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
           const performanceCategory = performanceCategories[`${periodId}-${teamId}`] || 'MESSI';
           const teamSelections = selections[periodId]?.[teamId] || {};
           
-          selectionsToSave.push({
+          // Create a record with the necessary fields for the database
+          const record: any = {
             fixture_id: fixture.id,
             team_id: teamId,
             period_id: periodId,
-            duration: duration,
-            performance_category: performanceCategory,
-            selections_data: JSON.stringify(teamSelections),
-            captain_id: teamCaptains[teamId] || null
-          });
+          };
+          
+          // Add optional fields if they exist in the table
+          if (duration !== undefined) {
+            record.duration = duration;
+          }
+          
+          if (performanceCategory) {
+            record.performance_category = performanceCategory;
+          }
+          
+          if (Object.keys(teamSelections).length > 0) {
+            record.selections_data = JSON.stringify(teamSelections);
+          }
+          
+          if (teamCaptains[teamId]) {
+            record.captain_id = teamCaptains[teamId];
+          }
+          
+          selectionsToSave.push(record);
         }
       }
       
@@ -398,7 +466,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     }
   };
 
-  const isLoading = isLoadingPlayers || isLoadingSelections || !fixture;
+  const isLoading = isLoadingPlayers || isLoadingSelections || !fixture || !isTableInitialized;
 
   if (isLoading) {
     return <div>Loading...</div>;
