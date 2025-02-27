@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -51,9 +52,6 @@ export const useCalendarData = (date: Date) => {
     queryFn: async () => {
       console.log("Fetching fixtures for date:", formattedDate);
       try {
-        const session = await supabase.auth.getSession();
-        console.log("Current auth session:", session);
-
         console.log("Executing fixtures query for date:", formattedDate);
         const { data: fixturesData, error: fixturesError } = await supabase
           .from("fixtures")
@@ -90,13 +88,20 @@ export const useCalendarData = (date: Date) => {
           throw attendanceError;
         }
         
-        const fixturesWithAttendance = fixturesData.map(fixture => ({
-          ...fixture,
-          event_attendance: (attendanceData || []).filter(a => a.event_id === fixture.id)
-        }));
+        // Ensure we're not duplicating fixtures by using a Map with fixture IDs as keys
+        const fixturesMap = new Map();
+        fixturesData.forEach(fixture => {
+          if (!fixturesMap.has(fixture.id)) {
+            fixturesMap.set(fixture.id, {
+              ...fixture,
+              event_attendance: (attendanceData || []).filter(a => a.event_id === fixture.id)
+            });
+          }
+        });
 
-        console.log("Final fixtures data:", fixturesWithAttendance);
-        return fixturesWithAttendance;
+        const uniqueFixtures = Array.from(fixturesMap.values());
+        console.log("Final unique fixtures data:", uniqueFixtures);
+        return uniqueFixtures;
       } catch (error) {
         console.error("Error fetching fixtures:", error);
         toast({
@@ -108,7 +113,9 @@ export const useCalendarData = (date: Date) => {
       }
     },
     retry: 1,
-    staleTime: 60000 // Reduce stale time to 1 minute to refresh more frequently
+    staleTime: 60000, // 1 minute stale time
+    cacheTime: 120000, // 2 minutes cache time
+    refetchOnWindowFocus: false // Prevent duplicate fetches on window focus
   });
 
   const { 
