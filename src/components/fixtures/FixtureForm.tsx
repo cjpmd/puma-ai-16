@@ -108,6 +108,30 @@ export const FixtureForm = ({
   // Combine both local and external isSubmitting state for better feedback
   const isSubmitting = localIsSubmitting || externalIsSubmitting;
 
+  // Update MOTM player IDs when number of teams changes
+  useEffect(() => {
+    const currentMotmIds = form.getValues().motm_player_ids || [];
+    const newTeamsCount = watchNumberOfTeams;
+    
+    if (currentMotmIds.length !== newTeamsCount) {
+      // Resize the motm_player_ids array to match the number of teams
+      const newMotmIds = [...currentMotmIds];
+      
+      // If we're adding teams, fill with empty strings
+      while (newMotmIds.length < newTeamsCount) {
+        newMotmIds.push("");
+      }
+      
+      // If we're removing teams, truncate the array
+      if (newMotmIds.length > newTeamsCount) {
+        newMotmIds.length = newTeamsCount;
+      }
+      
+      console.log("Updating MOTM player IDs array size:", newMotmIds);
+      form.setValue('motm_player_ids', newMotmIds, { shouldDirty: true });
+    }
+  }, [watchNumberOfTeams, form]);
+
   // Log form values when they change
   useEffect(() => {
     console.log("Current form values:", form.getValues());
