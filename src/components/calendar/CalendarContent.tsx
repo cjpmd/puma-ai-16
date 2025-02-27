@@ -24,6 +24,7 @@ interface CalendarContentProps {
   onEditTournament?: (tournament: any) => void;
   onTeamSelectionTournament?: (tournament: any) => void;
   onRefetchTournaments?: () => void;
+  onEditObjective?: (objective: any) => void;
 }
 
 export const CalendarContent = ({
@@ -43,7 +44,8 @@ export const CalendarContent = ({
   onRefetchFestivals,
   onEditTournament,
   onTeamSelectionTournament,
-  onRefetchTournaments
+  onRefetchTournaments,
+  onEditObjective
 }: CalendarContentProps) => {
   const {
     handleDeleteFixture,
@@ -111,6 +113,15 @@ export const CalendarContent = ({
     }
   };
 
+  // Default handler for objective editing if none is provided
+  const handleEditObjective = (objective: any) => {
+    if (onEditObjective) {
+      onEditObjective(objective);
+    } else {
+      console.log("Edit objective handler not provided", objective);
+    }
+  };
+
   return (
     <div className="grid md:grid-cols-3 gap-6">
       <div>
@@ -120,7 +131,11 @@ export const CalendarContent = ({
           onSelect={(newDate) => newDate && setDate(newDate)}
           className="rounded-md border shadow"
         />
-        <ObjectivesList objectives={objectives} />
+        <ObjectivesList 
+          date={date}
+          objectives={objectives} 
+          onEditObjective={handleEditObjective} 
+        />
       </div>
 
       <EventsList
