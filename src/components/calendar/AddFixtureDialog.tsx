@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -41,11 +41,18 @@ export const AddFixtureDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialSelectedDate);
   const [newFixture, setNewFixture] = useState<Fixture | null>(null);
 
+  // Log when component mounts and when editing fixture changes
+  useEffect(() => {
+    console.log("AddFixtureDialog mounted/updated with editingFixture:", editingFixture);
+  }, [editingFixture, isOpen]);
+
   // Fetch fixture details with team times if editing
-  const { data: fixtureDetails } = useQuery({
+  const { data: fixtureDetails, isLoading: isLoadingFixtureDetails } = useQuery({
     queryKey: ["fixture-details", editingFixture?.id],
     queryFn: async () => {
       if (!editingFixture?.id) return null;
+      
+      console.log("Fetching fixture details for ID:", editingFixture.id);
       
       const { data, error } = await supabase
         .from("fixtures")
@@ -62,6 +69,7 @@ export const AddFixtureDialog = ({
         return null;
       }
       
+      console.log("Fetched fixture details:", data);
       return data;
     },
     enabled: !!editingFixture?.id && isOpen,
@@ -77,7 +85,7 @@ export const AddFixtureDialog = ({
 
   console.log("Complete fixture for editing:", completeFixture);
 
-  const { data: players } = useQuery({
+  const { data: players, isLoading: isLoadingPlayers } = useQuery({
     queryKey: ["players"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -245,6 +253,9 @@ export const AddFixtureDialog = ({
     }
   };
 
+  // Loading state
+  const isLoading = isLoadingFixtureDetails || isLoadingPlayers;
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -255,7 +266,12 @@ export const AddFixtureDialog = ({
           </DialogDescription>
         </DialogHeader>
         
-        {!showTeamSelection ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-40">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <span className="ml-2">Loading fixture data...</span>
+          </div>
+        ) : !showTeamSelection ? (
           <FixtureForm
             onSubmit={onSubmit}
             selectedDate={selectedDate}
