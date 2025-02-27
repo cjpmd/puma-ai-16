@@ -30,16 +30,27 @@ export const PlayerPositionSelect = ({
   onSelectionChange,
   selectedPlayers,
 }: PlayerPositionSelectProps) => {
-  // We're only using controlled inputs now - no internal state
+  // Track internal state to ensure component renders correctly
+  const [currentPosition, setCurrentPosition] = useState(position);
+  const [currentPlayerId, setCurrentPlayerId] = useState(playerId);
+  
+  // Update internal state when props change
+  useEffect(() => {
+    console.log(`PlayerPositionSelect: Props changed - position: ${position}, playerId: ${playerId}`);
+    setCurrentPosition(position);
+    setCurrentPlayerId(playerId);
+  }, [position, playerId]);
 
   const handlePositionChange = (newPosition: string) => {
-    console.log(`Position selection changed to: ${newPosition}`);
-    onSelectionChange(playerId, newPosition);
+    console.log(`Position selection changed from ${currentPosition} to: ${newPosition}`);
+    setCurrentPosition(newPosition);
+    onSelectionChange(currentPlayerId, newPosition);
   };
 
   const handlePlayerChange = (newPlayerId: string) => {
-    console.log(`Player selection changed to: ${newPlayerId}`);
-    onSelectionChange(newPlayerId, position);
+    console.log(`Player selection changed from ${currentPlayerId} to: ${newPlayerId}`);
+    setCurrentPlayerId(newPlayerId);
+    onSelectionChange(newPlayerId, currentPosition);
   };
 
   return (
@@ -47,12 +58,13 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Position</Label>
         <Select 
-          value={position}
+          value={currentPosition}
           onValueChange={handlePositionChange}
+          defaultValue={position}
         >
           <SelectTrigger className="h-8 text-left">
             <SelectValue placeholder="Select position">
-              {position}
+              {currentPosition}
             </SelectValue>
           </SelectTrigger>
           <SelectContent className="bg-white z-50 max-h-60">
@@ -68,8 +80,9 @@ export const PlayerPositionSelect = ({
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Player</Label>
         <Select 
-          value={playerId}
+          value={currentPlayerId}
           onValueChange={handlePlayerChange}
+          defaultValue={playerId}
         >
           <SelectTrigger className="h-8 text-left">
             <SelectValue placeholder="Select player" />
@@ -84,7 +97,7 @@ export const PlayerPositionSelect = ({
                 value={player.id}
                 className={cn(
                   "text-sm",
-                  selectedPlayers.has(player.id) && player.id !== playerId && "text-gray-500"
+                  selectedPlayers.has(player.id) && player.id !== currentPlayerId && "text-gray-500"
                 )}
               >
                 {getPlayerDisplay(player)}
