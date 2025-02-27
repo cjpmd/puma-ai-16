@@ -52,6 +52,11 @@ export const EventsList = ({
 }: EventsListProps) => {
   const hasEvents = festivals?.length || tournaments?.length || fixtures?.length || sessions?.length;
 
+  // Convert string dates to Date objects
+  const handleFixtureDateChange = (fixtureId: string, newDate: Date) => {
+    onUpdateFixtureDate(fixtureId, newDate);
+  };
+
   return (
     <Card className="md:col-span-2">
       <CardHeader>
@@ -88,7 +93,7 @@ export const EventsList = ({
               fixture={fixture}
               onEdit={() => onEditFixture(fixture)}
               onDelete={onDeleteFixture}
-              onDateChange={(newDate) => onUpdateFixtureDate(fixture.id, newDate)}
+              onDateChange={handleFixtureDateChange}
             />
           ))}
           
