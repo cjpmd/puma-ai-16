@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,6 +30,32 @@ export const FixtureForm = ({
   isSubmitting: externalIsSubmitting,
   showDateSelector = false
 }: FixtureFormProps) => {
+  // Get initial MOTM player IDs from fixture_team_scores
+  const getInitialMotmPlayerIds = () => {
+    if (editingFixture?.fixture_team_scores && editingFixture.fixture_team_scores.length > 0) {
+      // Map the MOTM player IDs from team scores, maintaining the team order
+      const sortedScores = [...editingFixture.fixture_team_scores].sort((a, b) => a.team_number - b.team_number);
+      const motmPlayerIds = sortedScores.map(score => score.motm_player_id || "");
+      console.log("Initial MOTM player IDs from team scores:", motmPlayerIds);
+      return motmPlayerIds;
+    }
+
+    // If we don't have team scores but have a single MOTM/POTM player
+    if (editingFixture?.motm_player_id || editingFixture?.potm_player_id) {
+      const playerId = editingFixture?.motm_player_id || editingFixture?.potm_player_id;
+      const numberOfTeams = editingFixture?.number_of_teams || 1;
+      const motmPlayerIds = Array(numberOfTeams).fill("");
+      motmPlayerIds[0] = playerId; // Set for first team only
+      console.log("Initial MOTM player IDs from single MOTM:", motmPlayerIds);
+      return motmPlayerIds;
+    }
+
+    // Default to empty array with correct length
+    const emptyIds = Array(editingFixture?.number_of_teams || 1).fill("");
+    console.log("Default empty MOTM player IDs:", emptyIds);
+    return emptyIds;
+  };
+
   // Initialize the form with the editing fixture data if available
   const getInitialTeamTimes = () => {
     if (editingFixture?.fixture_team_times && editingFixture?.fixture_team_times.length > 0) {
@@ -47,37 +72,6 @@ export const FixtureForm = ({
       end_time: "",
       performance_category: "MESSI"
     });
-  };
-
-  // Get initial MOTM player IDs, handling both single and multiple team cases
-  const getInitialMotmPlayerIds = () => {
-    // If we have multiple teams with potentially different MOTM players
-    if (editingFixture?.fixture_team_scores && editingFixture?.fixture_team_scores.length > 0) {
-      // Extract MOTM player IDs from team scores if available
-      const motmPlayerIds = editingFixture.fixture_team_scores.map((score: any) => 
-        score.motm_player_id || ""
-      );
-      
-      // If we have at least one MOTM player, use that array
-      if (motmPlayerIds.length > 0) {
-        console.log("Using MOTM player IDs from team scores:", motmPlayerIds);
-        return motmPlayerIds;
-      }
-    }
-    
-    // If we have a single MOTM player for the whole fixture
-    if (editingFixture?.motm_player_id || editingFixture?.potm_player_id) {
-      const playerId = editingFixture?.motm_player_id || editingFixture?.potm_player_id;
-      console.log("Using single MOTM player ID:", playerId);
-      return Array(editingFixture?.number_of_teams || 1).fill("").map((_, i) => 
-        i === 0 ? playerId : ""
-      );
-    }
-    
-    // Default empty array of appropriate length
-    const emptyIds = Array(editingFixture?.number_of_teams || 1).fill("");
-    console.log("Using default empty MOTM player IDs:", emptyIds);
-    return emptyIds;
   };
 
   const form = useForm<FixtureFormData>({
@@ -108,31 +102,7 @@ export const FixtureForm = ({
   // Combine both local and external isSubmitting state for better feedback
   const isSubmitting = localIsSubmitting || externalIsSubmitting;
 
-  // Update MOTM player IDs when number of teams changes
-  useEffect(() => {
-    const currentMotmIds = form.getValues().motm_player_ids || [];
-    const newTeamsCount = watchNumberOfTeams;
-    
-    if (currentMotmIds.length !== newTeamsCount) {
-      // Resize the motm_player_ids array to match the number of teams
-      const newMotmIds = [...currentMotmIds];
-      
-      // If we're adding teams, fill with empty strings
-      while (newMotmIds.length < newTeamsCount) {
-        newMotmIds.push("");
-      }
-      
-      // If we're removing teams, truncate the array
-      if (newMotmIds.length > newTeamsCount) {
-        newMotmIds.length = newTeamsCount;
-      }
-      
-      console.log("Updating MOTM player IDs array size:", newMotmIds);
-      form.setValue('motm_player_ids', newMotmIds, { shouldDirty: true });
-    }
-  }, [watchNumberOfTeams, form]);
-
-  // Log form values when they change
+  // Log form values when they change for debugging
   useEffect(() => {
     console.log("Current form values:", form.getValues());
     console.log("MOTM player IDs:", watchMotmPlayerIds);
