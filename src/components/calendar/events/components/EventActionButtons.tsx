@@ -18,21 +18,31 @@ export const EventActionButtons = ({
       <Button 
         variant="ghost" 
         size="sm"
-        onClick={onEdit}
+        onClick={(e) => {
+          e.stopPropagation();
+          console.log("Edit button clicked in EventActionButtons");
+          onEdit();
+        }}
       >
         <Pencil className="h-4 w-4" />
       </Button>
       <Button 
         variant="ghost" 
         size="sm"
-        onClick={onTeamSelection}
+        onClick={(e) => {
+          e.stopPropagation();
+          onTeamSelection();
+        }}
       >
         <Users className="h-4 w-4" />
       </Button>
       <Button 
         variant="ghost" 
         size="sm"
-        onClick={onDelete}
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+        }}
       >
         <Trash2 className="h-4 w-4 text-destructive" />
       </Button>

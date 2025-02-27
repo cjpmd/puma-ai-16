@@ -89,12 +89,14 @@ export const EventsList = ({
             />
           ))}
 
-          {/* Add debugging to ensure fixtures are unique */}
           {fixtures?.map((fixture) => (
             <FixtureCard 
               key={fixture.id} 
               fixture={fixture}
-              onEdit={() => onEditFixture(fixture)}
+              onEdit={() => {
+                console.log("Calling onEditFixture for fixture:", fixture.id);
+                onEditFixture(fixture);
+              }}
               onDelete={onDeleteFixture}
               onDateChange={handleFixtureDateChange}
             />

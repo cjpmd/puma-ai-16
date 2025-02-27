@@ -3,10 +3,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CardTitle } from "@/components/ui/card";
 import { Trophy } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { TeamScores } from "./FixtureCard/TeamScores";
-import { FixtureCardHeader } from "./FixtureCard/FixtureCardHeader";
 import { DateChangeButton } from "./events/components/DateChangeButton";
 import { EventActionButtons } from "./events/components/EventActionButtons";
 import { Fixture } from "@/types/fixture";
@@ -124,6 +122,11 @@ export const FixtureCard = ({
     setShowTeamSelection(true);
   };
 
+  const handleEdit = () => {
+    console.log("Edit button clicked for fixture:", fixture.id);
+    onEdit();
+  };
+
   return (
     <>
       <Card className="shadow-sm hover:shadow-md transition-shadow">
@@ -144,7 +147,7 @@ export const FixtureCard = ({
           </div>
         </CardHeader>
 
-        <CardContent className="cursor-pointer">
+        <CardContent>
           <p className="font-semibold text-muted-foreground mb-4 text-sm">
             Date: {formattedDate}
           </p>
@@ -203,7 +206,7 @@ export const FixtureCard = ({
               }}
             />
             <EventActionButtons 
-              onEdit={onEdit} 
+              onEdit={handleEdit}
               onTeamSelection={handleTeamSelection} 
               onDelete={handleDelete} 
             />

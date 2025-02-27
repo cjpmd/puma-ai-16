@@ -85,6 +85,11 @@ export const CalendarContent = ({
     }
   };
 
+  const handleFixtureEdit = (fixture: any) => {
+    console.log("Handling fixture edit in CalendarContent for fixture:", fixture.id);
+    onEditFixture(fixture);
+  };
+
   const handleFestivalDelete = async (festivalId: string) => {
     // Optimistic UI update
     setLocalFestivals((prevFestivals) => 
@@ -145,7 +150,7 @@ export const CalendarContent = ({
         fixtures={localFixtures}
         sessions={sessions}
         fileUrls={fileUrls}
-        onEditFixture={onEditFixture}
+        onEditFixture={handleFixtureEdit}
         onDeleteFixture={handleFixtureDelete}
         onUpdateFixtureDate={handleUpdateFixtureDate}
         onAddDrill={(sessionId) => {
