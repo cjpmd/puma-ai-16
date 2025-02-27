@@ -39,6 +39,24 @@ BEGIN
     ) THEN
         ALTER TABLE fixture_team_selections ADD COLUMN captain_id UUID REFERENCES players(id);
     END IF;
+    
+    -- Check and add period_id column if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'fixture_team_selections' AND column_name = 'period_id'
+    ) THEN
+        ALTER TABLE fixture_team_selections ADD COLUMN period_id TEXT;
+    END IF;
+    
+    -- Check and add team_id column if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'fixture_team_selections' AND column_name = 'team_id'
+    ) THEN
+        ALTER TABLE fixture_team_selections ADD COLUMN team_id TEXT;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
