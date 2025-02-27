@@ -9,9 +9,18 @@ import { Trophy, MapPin, Calendar, Clock, Users } from "lucide-react";
 interface FixtureCardProps {
   fixture: Fixture;
   onClick?: () => void;
+  onEdit?: (fixture: Fixture) => void;
+  onDelete?: (fixtureId: string) => void;
+  onDateChange?: (fixtureId: string, newDate: Date) => void;
 }
 
-export const FixtureCard = ({ fixture, onClick }: FixtureCardProps) => {
+export const FixtureCard = ({ 
+  fixture, 
+  onClick, 
+  onEdit, 
+  onDelete, 
+  onDateChange 
+}: FixtureCardProps) => {
   // Format date for display
   const formattedDate = fixture.date 
     ? format(new Date(fixture.date), "MMMM do, yyyy")
@@ -48,6 +57,27 @@ export const FixtureCard = ({ fixture, onClick }: FixtureCardProps) => {
     }
   };
 
+  // Handle the edit click
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(fixture);
+    }
+  };
+
+  // Handle the delete click
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(fixture.id);
+    }
+  };
+
+  // Handle date change
+  const handleDateChange = (newDate: Date) => {
+    if (onDateChange) {
+      onDateChange(fixture.id, newDate);
+    }
+  };
+
   return (
     <Card className="shadow-sm hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
@@ -67,7 +97,7 @@ export const FixtureCard = ({ fixture, onClick }: FixtureCardProps) => {
         </div>
       </CardHeader>
       
-      <CardContent className="cursor-pointer" onClick={onClick}>
+      <CardContent className="cursor-pointer" onClick={onClick || handleEdit}>
         <p className="font-semibold text-muted-foreground mb-4 text-sm">
           Date: {formattedDate}
         </p>
