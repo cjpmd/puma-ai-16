@@ -114,7 +114,7 @@ export const useCalendarData = (date: Date) => {
     },
     retry: 1,
     staleTime: 60000, // 1 minute stale time
-    cacheTime: 120000, // 2 minutes cache time
+    gcTime: 120000, // 2 minutes garbage collection time (formerly cacheTime)
     refetchOnWindowFocus: false // Prevent duplicate fetches on window focus
   });
 
