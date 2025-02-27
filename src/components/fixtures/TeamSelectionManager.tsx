@@ -24,41 +24,6 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
   const [teamCaptains, setTeamCaptains] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [columnsInfo, setColumnsInfo] = useState<string[]>([]);
-
-  // Fetch available columns from the fixture_team_selections table
-  useEffect(() => {
-    const fetchTableColumns = async () => {
-      try {
-        console.log("Checking available columns in fixture_team_selections table");
-        
-        const { data, error } = await supabase
-          .rpc('get_table_columns', { table_name: 'fixture_team_selections' });
-        
-        if (error) {
-          console.error("Error fetching table columns:", error);
-          // If the RPC function doesn't exist, we'll use a fallback approach
-          // Set basic columns that should exist in any table
-          setColumnsInfo(['fixture_id', 'selections_data']);
-          return;
-        }
-        
-        if (data && Array.isArray(data)) {
-          console.log("Available columns in fixture_team_selections:", data);
-          setColumnsInfo(data);
-        } else {
-          // Fallback to basic columns
-          setColumnsInfo(['fixture_id', 'selections_data']);
-        }
-      } catch (error) {
-        console.error("Exception fetching table columns:", error);
-        // Fallback to basic columns
-        setColumnsInfo(['fixture_id', 'selections_data']);
-      }
-    };
-    
-    fetchTableColumns();
-  }, []);
 
   // Fetch available players
   const { data: availablePlayers = [], isLoading: isLoadingPlayers } = useQuery({
@@ -76,9 +41,9 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
 
   // Fetch existing team selections when fixture is loaded
   const { data: existingSelections = [], isLoading: isLoadingSelections } = useQuery({
-    queryKey: ["fixture-selections", fixture?.id, columnsInfo],
+    queryKey: ["fixture-selections", fixture?.id],
     queryFn: async () => {
-      if (!fixture?.id || columnsInfo.length === 0) return [];
+      if (!fixture?.id) return [];
       
       console.log("Fetching existing selections for fixture:", fixture.id);
       
@@ -100,7 +65,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
         return [];
       }
     },
-    enabled: !!fixture?.id && columnsInfo.length > 0,
+    enabled: !!fixture?.id,
   });
 
   // Initialize periods for each team when fixture loads
@@ -148,88 +113,61 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
       const loadedPerformanceCategories = {};
       
       existingSelections.forEach(selection => {
-        // Extract data differently based on what columns are available
-        const fixtureId = selection.fixture_id;
-        const selectionsData = selection.selections_data ? 
-          (typeof selection.selections_data === 'string' ? 
-            JSON.parse(selection.selections_data) : 
-            selection.selections_data) : 
-          {};
-        
-        // If we have simple JSON selections_data only, we'll store one entry per fixture
-        if (!columnsInfo.includes('team_id') && !columnsInfo.includes('period_id')) {
-          // Initialize default periods and teams
-          const teamId = "1";
-          const periodId = "period-1";
-          
-          if (!loadedPeriodsPerTeam[teamId]) {
-            loadedPeriodsPerTeam[teamId] = [];
-          }
-          
-          if (!loadedPeriodsPerTeam[teamId].some(p => p.id === periodId)) {
-            loadedPeriodsPerTeam[teamId].push({ 
-              id: periodId, 
-              duration: selection.duration || 20 
+        // Try to extract data from any format of saved data
+        try {
+          // Try to parse fixture_positions if it exists
+          if (selection.fixture_positions) {
+            const positions = typeof selection.fixture_positions === 'string' 
+              ? JSON.parse(selection.fixture_positions) 
+              : selection.fixture_positions;
+            
+            // Initialize default period and team
+            const teamId = selection.team_id || "1";
+            const periodId = selection.period_id || "period-1";
+            
+            if (!loadedPeriodsPerTeam[teamId]) {
+              loadedPeriodsPerTeam[teamId] = [];
+            }
+            
+            if (!loadedPeriodsPerTeam[teamId].some(p => p.id === periodId)) {
+              loadedPeriodsPerTeam[teamId].push({ 
+                id: periodId, 
+                duration: selection.duration || 20 
+              });
+            }
+            
+            if (!loadedSelections[periodId]) {
+              loadedSelections[periodId] = {};
+            }
+            
+            if (!loadedSelections[periodId][teamId]) {
+              loadedSelections[periodId][teamId] = {};
+            }
+            
+            // Map the positions to the expected format
+            Object.entries(positions).forEach(([slotId, data]: [string, any]) => {
+              loadedSelections[periodId][teamId][slotId] = {
+                playerId: data.player_id || data.playerId || "unassigned",
+                position: data.position,
+                performanceCategory: data.performance_category || "MESSI"
+              };
             });
           }
           
-          if (!loadedSelections[periodId]) {
-            loadedSelections[periodId] = {};
-          }
-          
-          if (!loadedSelections[periodId][teamId]) {
-            loadedSelections[periodId][teamId] = {};
-          }
-          
-          // Store the selections for this team/period
-          loadedSelections[periodId][teamId] = selectionsData;
-          
-          // Set performance category
+          // If we have performance_category directly in the selection
           if (selection.performance_category) {
+            const teamId = selection.team_id || "1";
+            const periodId = selection.period_id || "period-1";
             loadedPerformanceCategories[`${periodId}-${teamId}`] = selection.performance_category;
           }
           
-          // Set team captain
+          // If we have captain_id directly in the selection
           if (selection.captain_id) {
+            const teamId = selection.team_id || "1";
             loadedTeamCaptains[teamId] = selection.captain_id;
           }
-        } 
-        // If we have team_id and period_id columns, process with those
-        else if (columnsInfo.includes('team_id') && columnsInfo.includes('period_id')) {
-          const teamId = selection.team_id || "1";
-          const periodId = selection.period_id || "period-1";
-          
-          if (!loadedPeriodsPerTeam[teamId]) {
-            loadedPeriodsPerTeam[teamId] = [];
-          }
-          
-          if (!loadedPeriodsPerTeam[teamId].some(p => p.id === periodId)) {
-            loadedPeriodsPerTeam[teamId].push({ 
-              id: periodId, 
-              duration: selection.duration || 20 
-            });
-          }
-          
-          if (!loadedSelections[periodId]) {
-            loadedSelections[periodId] = {};
-          }
-          
-          if (!loadedSelections[periodId][teamId]) {
-            loadedSelections[periodId][teamId] = {};
-          }
-          
-          // Store the selections for this team/period
-          loadedSelections[periodId][teamId] = selectionsData;
-          
-          // Set performance category
-          if (selection.performance_category) {
-            loadedPerformanceCategories[`${periodId}-${teamId}`] = selection.performance_category;
-          }
-          
-          // Set team captain
-          if (selection.captain_id) {
-            loadedTeamCaptains[teamId] = selection.captain_id;
-          }
+        } catch (err) {
+          console.error("Error processing individual selection:", err);
         }
       });
       
@@ -243,7 +181,10 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
       // Only update state if we have data
       if (Object.keys(loadedSelections).length > 0) {
         setSelections(loadedSelections);
-        setTeamCaptains(loadedTeamCaptains);
+        
+        if (Object.keys(loadedTeamCaptains).length > 0) {
+          setTeamCaptains(loadedTeamCaptains);
+        }
         
         if (Object.keys(loadedPeriodsPerTeam).length > 0) {
           setPeriodsPerTeam(loadedPeriodsPerTeam);
@@ -264,7 +205,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
         description: "Failed to load saved team selections",
       });
     }
-  }, [existingSelections, columnsInfo, toast]);
+  }, [existingSelections, toast]);
 
   const updateSelectedPlayersFromSelections = (selectionsData: Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>) => {
     const newSelectedPlayers = new Set<string>();
@@ -414,7 +355,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     }));
   };
 
-  // Save team selections to database based on available columns
+  // Simplified save function that tries different approaches
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -423,7 +364,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
         throw new Error("Missing fixture ID");
       }
       
-      console.log("Saving team selections to database using columns:", columnsInfo);
+      console.log("Saving team selections to database...");
       
       // First delete existing selections for this fixture
       const { error: deleteError } = await supabase
@@ -436,90 +377,38 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
         throw deleteError;
       }
       
-      // We need to adapt our save logic based on the available columns
-      if (columnsInfo.includes('team_id') && columnsInfo.includes('period_id')) {
-        // We can save with team_id and period_id
-        const selectionsToSave = [];
+      // Try to identify which column names work in your database
+      const teamSelectionsToSave = [];
+      
+      for (const teamId of Object.keys(periodsPerTeam)) {
+        const teamPeriods = periodsPerTeam[teamId] || [];
         
-        for (const teamId of Object.keys(periodsPerTeam)) {
-          const teamPeriods = periodsPerTeam[teamId] || [];
+        for (const period of teamPeriods) {
+          const periodId = period.id;
+          const teamSelections = selections[periodId]?.[teamId] || {};
           
-          for (const period of teamPeriods) {
-            const periodId = period.id;
-            const teamSelections = selections[periodId]?.[teamId] || {};
-            
-            // Prepare the record with only the columns we know exist
-            const record: any = {
-              fixture_id: fixture.id,
-              team_id: teamId,
-              period_id: periodId,
-              selections_data: JSON.stringify(teamSelections)
-            };
-            
-            // Add optional columns if they exist
-            if (columnsInfo.includes('duration')) {
-              record.duration = period.duration;
-            }
-            
-            if (columnsInfo.includes('performance_category')) {
-              record.performance_category = performanceCategories[`${periodId}-${teamId}`] || 'MESSI';
-            }
-            
-            if (columnsInfo.includes('captain_id')) {
-              record.captain_id = teamCaptains[teamId] || null;
-            }
-            
-            selectionsToSave.push(record);
-          }
-        }
-        
-        console.log("Saving selections with multiple records:", selectionsToSave);
-        
-        if (selectionsToSave.length > 0) {
-          const { data, error } = await supabase
-            .from("fixture_team_selections")
-            .insert(selectionsToSave)
-            .select();
-            
-          if (error) {
-            console.error("Error saving selections:", error);
-            throw error;
-          }
-          
-          console.log("Selections saved successfully:", data);
-        }
-      } else {
-        // Fallback: Save one record per fixture with all selections in the JSON
-        const allSelectionsData = {};
-        
-        // Combine all selections into a single JSON object
-        Object.entries(selections).forEach(([periodId, periodData]) => {
-          allSelectionsData[periodId] = {};
-          
-          Object.entries(periodData).forEach(([teamId, teamSelections]) => {
-            allSelectionsData[periodId][teamId] = teamSelections;
+          // Try a simplified approach with only fixture_id and fixture_positions
+          teamSelectionsToSave.push({
+            fixture_id: fixture.id,
+            fixture_positions: JSON.stringify(teamSelections)
           });
-        });
-        
-        // Create a single record with minimal columns
-        const record: any = {
-          fixture_id: fixture.id,
-          selections_data: allSelectionsData
-        };
-        
-        console.log("Saving selections with single record:", record);
-        
+        }
+      }
+      
+      console.log("Saving team selections:", teamSelectionsToSave);
+      
+      if (teamSelectionsToSave.length > 0) {
         const { data, error } = await supabase
           .from("fixture_team_selections")
-          .insert(record)
+          .insert(teamSelectionsToSave)
           .select();
           
         if (error) {
-          console.error("Error saving selections:", error);
+          console.error("Error saving team selections:", error);
           throw error;
         }
         
-        console.log("Selections saved successfully:", data);
+        console.log("Team selections saved successfully:", data);
       }
       
       toast({
@@ -540,7 +429,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     }
   };
 
-  const isLoading = isLoadingPlayers || isLoadingSelections || !fixture || columnsInfo.length === 0;
+  const isLoading = isLoadingPlayers || isLoadingSelections || !fixture;
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-40">
