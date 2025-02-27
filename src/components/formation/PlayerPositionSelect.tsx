@@ -2,6 +2,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 interface PlayerPositionSelectProps {
   position: string;
@@ -11,6 +12,17 @@ interface PlayerPositionSelectProps {
   selectedPlayers: Set<string>;
 }
 
+// List of all available positions
+const ALL_POSITIONS = [
+  "GK", // Goalkeeper
+  "DL", "DCL", "DC", "DCR", "DR", // Defenders
+  "WBL", "WBR", // Wing Backs
+  "DM", // Defensive Midfielder
+  "ML", "MCL", "MC", "MCR", "MR", // Midfielders
+  "AML", "AMC", "AMR", // Attacking Midfielders
+  "STC", "STL", "STR" // Strikers
+];
+
 export const PlayerPositionSelect = ({
   position,
   playerId,
@@ -18,27 +30,37 @@ export const PlayerPositionSelect = ({
   onSelectionChange,
   selectedPlayers,
 }: PlayerPositionSelectProps) => {
+  const [currentPosition, setCurrentPosition] = useState(position);
+
+  // Ensure position state is updated if prop changes
+  useEffect(() => {
+    setCurrentPosition(position);
+  }, [position]);
+
+  const handlePositionChange = (newPosition: string) => {
+    setCurrentPosition(newPosition);
+    onSelectionChange(playerId, newPosition);
+  };
+
   return (
     <div className="flex gap-3 p-2">
       <div className="flex-1">
         <Label className="text-xs text-muted-foreground mb-1 block">Position</Label>
         <Select 
-          value={position}
-          onValueChange={(newPosition) => {
-            onSelectionChange(playerId, newPosition);
-          }}
+          value={currentPosition}
+          onValueChange={handlePositionChange}
         >
           <SelectTrigger className="h-8 text-left">
             <SelectValue placeholder="Select position">
-              {position}
+              {currentPosition}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {position && (
-              <SelectItem value={position} className="text-sm">
-                {position}
+            {ALL_POSITIONS.map((pos) => (
+              <SelectItem key={pos} value={pos} className="text-sm">
+                {pos}
               </SelectItem>
-            )}
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -48,7 +70,7 @@ export const PlayerPositionSelect = ({
         <Select 
           value={playerId || "unassigned"}
           onValueChange={(value) => {
-            onSelectionChange(value, position);
+            onSelectionChange(value, currentPosition);
           }}
         >
           <SelectTrigger className="h-8 text-left">
@@ -80,4 +102,3 @@ export const PlayerPositionSelect = ({
 const getPlayerDisplay = (player: { name: string; squad_number?: number }) => {
   return player ? `${player.name}${player.squad_number ? ` (${player.squad_number})` : ''}` : 'None';
 };
-
