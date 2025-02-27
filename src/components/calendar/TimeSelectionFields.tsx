@@ -1,3 +1,4 @@
+
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
@@ -15,7 +16,7 @@ export const TimeSelectionFields = ({ form }: TimeSelectionFieldsProps) => {
         name="startTime"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Start Time</FormLabel>
+            <FormLabel>Kick Off</FormLabel>
             <FormControl>
               <Input type="time" {...field} />
             </FormControl>

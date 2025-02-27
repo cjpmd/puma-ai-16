@@ -93,7 +93,7 @@ export const TeamCard = ({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`team_times.${index}.start_time`}>Start Time</Label>
+              <Label htmlFor={`team_times.${index}.start_time`}>Kick Off</Label>
               <Input
                 id={`team_times.${index}.start_time`}
                 type="time"

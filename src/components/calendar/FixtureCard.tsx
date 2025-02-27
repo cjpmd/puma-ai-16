@@ -279,7 +279,7 @@ export const FixtureCard = ({
                 <h3 className="font-semibold">Team {index + 1} {performanceCategory}</h3>
                 {formattedStartTime && (
                   <p className="text-sm text-muted-foreground">
-                    Start Time: {formattedStartTime}
+                    Kick Off: {formattedStartTime}
                   </p>
                 )}
                 <TeamScores 
