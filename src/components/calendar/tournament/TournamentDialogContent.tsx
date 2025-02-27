@@ -1,3 +1,4 @@
+
 import { DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { TournamentForm } from "./TournamentForm";
 import { TournamentTeamSelection } from "./TournamentTeamSelection";
@@ -48,9 +49,16 @@ export const TournamentDialogContent = ({
         />
       ) : (
         <TournamentTeamSelection
-          teams={teams}
-          format={format}
-          onTeamSelectionsChange={onTeamSelectionsChange}
+          isOpen={showTeamSelection}
+          onOpenChange={() => {}} // This will be handled by the parent
+          tournament={{
+            id: editingTournament?.id || '',
+            teams: teams,
+            format: format
+          }}
+          onSuccess={() => {
+            onTeamSelectionsChange({});
+          }}
         />
       )}
     </DialogContent>
