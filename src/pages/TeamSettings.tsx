@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings, Bell, Users, Eye } from "lucide-react";
+import { Settings, Bell, Users, Eye, Check, Loader2 } from "lucide-react";
 import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
 import {
   Collapsible,
@@ -28,6 +28,8 @@ const TeamSettings = () => {
   const [newCategory, setNewCategory] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [isSavingWhatsapp, setIsSavingWhatsapp] = useState(false);
+  const [whatsappSaveSuccess, setWhatsappSaveSuccess] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -108,11 +110,17 @@ const TeamSettings = () => {
         updates.whatsapp_group_id = groupId;
       }
       
+      console.log('Updating notification settings with:', updates);
+      
       const { error } = await supabase
         .from('team_settings')
         .upsert(updates);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
       setNotificationsEnabled(enabled);
       if (groupId !== undefined) {
         setWhatsappGroupId(groupId);
@@ -122,13 +130,16 @@ const TeamSettings = () => {
         title: "Success",
         description: "Notification settings updated successfully",
       });
+      
+      return true;
     } catch (error) {
       console.error('Error updating notification settings:', error);
       toast({
         title: "Error",
-        description: "Failed to update notification settings",
+        description: `Failed to update notification settings: ${error.message}`,
         variant: "destructive",
       });
+      return false;
     }
   };
 
@@ -227,7 +238,61 @@ const TeamSettings = () => {
   };
 
   const handleSaveWhatsappGroupId = async () => {
-    await updateNotificationSettings(notificationsEnabled, whatsappGroupId);
+    setIsSavingWhatsapp(true);
+    setWhatsappSaveSuccess(false);
+    
+    try {
+      // First check if the column exists in the table
+      const { data: columnCheck, error: columnError } = await supabase
+        .rpc('get_table_columns', { table_name: 'team_settings' });
+      
+      console.log('Table columns:', columnCheck);
+      
+      if (columnError) {
+        console.error('Error checking columns:', columnError);
+        throw new Error(`Column check failed: ${columnError.message}`);
+      }
+      
+      // Check if the whatsapp_group_id column exists
+      const hasWhatsappColumn = columnCheck && columnCheck.some(
+        (col: { column_name: string }) => col.column_name === 'whatsapp_group_id'
+      );
+      
+      if (!hasWhatsappColumn) {
+        console.log('Adding whatsapp_group_id column to team_settings table');
+        // Alter table to add the column if it doesn't exist
+        const { error: alterError } = await supabase
+          .rpc('add_column_if_not_exists', { 
+            p_table: 'team_settings', 
+            p_column: 'whatsapp_group_id', 
+            p_type: 'text' 
+          });
+          
+        if (alterError) {
+          console.error('Error adding column:', alterError);
+          throw new Error(`Unable to add whatsapp_group_id column: ${alterError.message}`);
+        }
+      }
+      
+      // Now update with the group ID
+      const success = await updateNotificationSettings(notificationsEnabled, whatsappGroupId);
+      if (success) {
+        setWhatsappSaveSuccess(true);
+        // Reset success indicator after 3 seconds
+        setTimeout(() => {
+          setWhatsappSaveSuccess(false);
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Error in handleSaveWhatsappGroupId:', error);
+      toast({
+        title: "Error",
+        description: `Failed to save WhatsApp Group ID: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingWhatsapp(false);
+    }
   };
 
   return (
@@ -345,8 +410,25 @@ const TeamSettings = () => {
                         placeholder="Enter WhatsApp Group ID"
                         className="max-w-md"
                       />
-                      <Button onClick={handleSaveWhatsappGroupId}>
-                        Save
+                      <Button 
+                        onClick={handleSaveWhatsappGroupId}
+                        disabled={isSavingWhatsapp}
+                        className="min-w-[80px]"
+                        variant={whatsappSaveSuccess ? "outline" : "default"}
+                      >
+                        {isSavingWhatsapp ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : whatsappSaveSuccess ? (
+                          <>
+                            <Check className="h-4 w-4 mr-2 text-green-500" />
+                            Saved
+                          </>
+                        ) : (
+                          "Save"
+                        )}
                       </Button>
                     </div>
                   </div>
