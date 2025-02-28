@@ -65,11 +65,12 @@ const TeamSettings = () => {
 
   const fetchWebhookBaseUrl = async () => {
     try {
-      // This would normally come from an environment variable or config
-      // For now we'll construct it from the Supabase URL
-      const url = supabase.supabaseUrl;
+      // Use the environment variable or the constant from the client initialization
+      // Instead of accessing the protected supabaseUrl property directly
+      const supabaseUrlValue = import.meta.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qaecjlqraydbprsjfjdg.supabase.co';
+      
       // Convert URL from https://project-ref.supabase.co to https://project-ref.supabase.co/functions/v1/whatsapp-webhook
-      const baseUrl = url.replace('.co', '.co/functions/v1/whatsapp-webhook');
+      const baseUrl = supabaseUrlValue.replace('.co', '.co/functions/v1/whatsapp-webhook');
       setWebhookBaseUrl(baseUrl);
     } catch (error) {
       console.error('Error determining webhook URL:', error);
