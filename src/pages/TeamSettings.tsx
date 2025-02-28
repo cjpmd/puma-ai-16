@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings, Bell, Users, Eye, Check, Loader2, Edit, Webhook, Lock } from "lucide-react";
+import { Settings, Bell, Users, Eye, Check, Loader2, Edit, Webhook, Lock, RefreshCcw, AlertCircle } from "lucide-react";
 import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
 import {
   Collapsible,
@@ -17,6 +17,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 // Interface for WhatsApp settings
 interface WhatsAppSettings {
@@ -24,6 +26,13 @@ interface WhatsAppSettings {
   api_key: string;
   phone_number_id: string;
   access_token: string;
+}
+
+// Interface for Edge Function status
+interface EdgeFunctionStatus {
+  name: string;
+  status: 'active' | 'inactive' | 'unknown' | 'checking';
+  lastChecked: Date | null;
 }
 
 const TeamSettings = () => {
@@ -53,6 +62,15 @@ const TeamSettings = () => {
   const [isSavingWebhookSettings, setIsSavingWebhookSettings] = useState(false);
   const [webhookSaveSuccess, setWebhookSaveSuccess] = useState(false);
   const [webhookBaseUrl, setWebhookBaseUrl] = useState("");
+  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
+  const [webhookTestResult, setWebhookTestResult] = useState<{success: boolean; message: string} | null>(null);
+  
+  // Edge function status tracking
+  const [edgeFunctions, setEdgeFunctions] = useState<EdgeFunctionStatus[]>([
+    { name: 'whatsapp-webhook', status: 'unknown', lastChecked: null },
+    { name: 'send-whatsapp-notification', status: 'unknown', lastChecked: null }
+  ]);
+  const [isCheckingFunctions, setIsCheckingFunctions] = useState(false);
   
   const { toast } = useToast();
 
@@ -61,6 +79,7 @@ const TeamSettings = () => {
     fetchCategories();
     fetchWhatsAppSettings();
     fetchWebhookBaseUrl();
+    checkEdgeFunctions();
   }, []);
 
   const fetchWebhookBaseUrl = async () => {
@@ -74,6 +93,63 @@ const TeamSettings = () => {
       setWebhookBaseUrl(baseUrl);
     } catch (error) {
       console.error('Error determining webhook URL:', error);
+    }
+  };
+
+  const checkEdgeFunctions = async () => {
+    setIsCheckingFunctions(true);
+    
+    try {
+      // Set all functions to checking state
+      setEdgeFunctions(prev => prev.map(fn => ({
+        ...fn,
+        status: 'checking',
+        lastChecked: new Date()
+      })));
+      
+      // Check each function by making a simple OPTIONS request
+      for (const func of edgeFunctions) {
+        try {
+          // Get the base URL
+          const supabaseUrlValue = import.meta.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qaecjlqraydbprsjfjdg.supabase.co';
+          const functionUrl = `${supabaseUrlValue}/functions/v1/${func.name}`;
+          
+          // Make an OPTIONS request which should work if the function is deployed
+          const response = await fetch(functionUrl, {
+            method: 'OPTIONS',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          // Update the status based on response
+          setEdgeFunctions(prev => 
+            prev.map(f => 
+              f.name === func.name 
+                ? { ...f, status: response.ok ? 'active' : 'inactive', lastChecked: new Date() }
+                : f
+            )
+          );
+        } catch (error) {
+          console.error(`Error checking function ${func.name}:`, error);
+          setEdgeFunctions(prev => 
+            prev.map(f => 
+              f.name === func.name 
+                ? { ...f, status: 'inactive', lastChecked: new Date() }
+                : f
+            )
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error checking edge functions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to check edge function status",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCheckingFunctions(false);
     }
   };
 
@@ -225,6 +301,26 @@ const TeamSettings = () => {
       setIsSavingWebhookSettings(true);
       setWebhookSaveSuccess(false);
       
+      // First check if values are valid
+      if (!whatsappSettings.verification_token) {
+        throw new Error("Verification token is required");
+      }
+      
+      // Check if we can create the necessary tables
+      try {
+        // Try to create the debug logs table if it doesn't exist
+        const { error: tableError } = await supabase.rpc('create_table_if_not_exists', {
+          p_table_name: 'webhook_debug_logs',
+          p_columns: 'id uuid PRIMARY KEY DEFAULT gen_random_uuid(), message text, data jsonb, timestamp timestamptz DEFAULT now()'
+        });
+        
+        if (tableError) {
+          console.warn('Could not create debug logs table:', tableError);
+        }
+      } catch (tableError) {
+        console.warn('Error checking/creating tables:', tableError);
+      }
+      
       const { error } = await supabase
         .from('whatsapp_settings')
         .upsert({
@@ -260,6 +356,52 @@ const TeamSettings = () => {
       return false;
     } finally {
       setIsSavingWebhookSettings(false);
+    }
+  };
+
+  const testWebhookEndpoint = async () => {
+    setIsTestingWebhook(true);
+    setWebhookTestResult(null);
+    
+    try {
+      // Get the token from state
+      const token = whatsappSettings.verification_token;
+      
+      if (!token) {
+        throw new Error("Verification token is required to test the webhook");
+      }
+      
+      // Call our webhook with the verify parameters
+      const testUrl = `${webhookBaseUrl}?hub.mode=subscribe&hub.verify_token=${encodeURIComponent(token)}&hub.challenge=test_challenge_string`;
+      
+      const response = await fetch(testUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+      
+      const responseText = await response.text();
+      
+      if (response.ok && responseText === "test_challenge_string") {
+        setWebhookTestResult({
+          success: true,
+          message: "Webhook verification test successful!"
+        });
+      } else {
+        setWebhookTestResult({
+          success: false,
+          message: `Webhook test failed: ${response.status} ${response.statusText}. Response: ${responseText}`
+        });
+      }
+    } catch (error) {
+      console.error('Error testing webhook:', error);
+      setWebhookTestResult({
+        success: false,
+        message: `Error: ${error.message}`
+      });
+    } finally {
+      setIsTestingWebhook(false);
     }
   };
 
@@ -419,7 +561,7 @@ const TeamSettings = () => {
 
   // Helper to generate a secure random token
   const generateVerificationToken = () => {
-    const array = new Uint8Array(32);
+    const array = new Uint8Array(16); // reduced size for easier copying
     crypto.getRandomValues(array);
     const token = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
     setWhatsappSettings(prev => ({
@@ -593,6 +735,60 @@ const TeamSettings = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
+              {/* Edge Function status section */}
+              <div className="bg-muted p-4 rounded-lg mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Edge Function Status</h4>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={checkEdgeFunctions}
+                    disabled={isCheckingFunctions}
+                  >
+                    <RefreshCcw className={`h-4 w-4 mr-2 ${isCheckingFunctions ? 'animate-spin' : ''}`} />
+                    {isCheckingFunctions ? 'Checking...' : 'Check Status'}
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {edgeFunctions.map(func => (
+                    <div key={func.name} className="flex items-center space-x-2">
+                      <Badge 
+                        variant={
+                          func.status === 'active' ? 'default' : 
+                          func.status === 'checking' ? 'outline' : 
+                          'destructive'
+                        }
+                        className="h-6"
+                      >
+                        {func.status === 'checking' ? 
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : 
+                          func.status === 'active' ? 
+                            <Check className="h-3 w-3 mr-1" /> : 
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                        }
+                        {func.status}
+                      </Badge>
+                      <span className="font-mono text-sm">{func.name}</span>
+                      {func.lastChecked && (
+                        <span className="text-xs text-muted-foreground">
+                          checked {func.lastChecked.toLocaleTimeString()}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {edgeFunctions.some(f => f.status !== 'active') && (
+                  <Alert variant="destructive" className="mt-3">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Deployment issue detected</AlertTitle>
+                    <AlertDescription>
+                      One or more edge functions may not be properly deployed. This could affect webhook functionality.
+                      Please redeploy the functions or check your Supabase dashboard.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label>Webhook URL</Label>
                 <div className="flex items-center gap-2">
@@ -687,26 +883,58 @@ const TeamSettings = () => {
                 </p>
               </div>
 
-              <Button
-                onClick={updateWhatsAppWebhookSettings}
-                disabled={isSavingWebhookSettings}
-                className="mt-4"
-                variant={webhookSaveSuccess ? "outline" : "default"}
-              >
-                {isSavingWebhookSettings ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : webhookSaveSuccess ? (
-                  <>
-                    <Check className="h-4 w-4 mr-2 text-green-500" />
-                    Saved
-                  </>
-                ) : (
-                  "Save Webhook Settings"
-                )}
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={updateWhatsAppWebhookSettings}
+                  disabled={isSavingWebhookSettings}
+                  className="mt-4"
+                  variant={webhookSaveSuccess ? "outline" : "default"}
+                >
+                  {isSavingWebhookSettings ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : webhookSaveSuccess ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2 text-green-500" />
+                      Saved
+                    </>
+                  ) : (
+                    "Save Webhook Settings"
+                  )}
+                </Button>
+                
+                <Button
+                  onClick={testWebhookEndpoint}
+                  disabled={isTestingWebhook || !whatsappSettings.verification_token}
+                  className="mt-4"
+                  variant="outline"
+                >
+                  {isTestingWebhook ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Testing...
+                    </>
+                  ) : (
+                    "Test Webhook"
+                  )}
+                </Button>
+              </div>
+              
+              {webhookTestResult && (
+                <Alert variant={webhookTestResult.success ? "default" : "destructive"} className="mt-3">
+                  {webhookTestResult.success ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4" />
+                  )}
+                  <AlertTitle>{webhookTestResult.success ? "Success" : "Test Failed"}</AlertTitle>
+                  <AlertDescription>
+                    {webhookTestResult.message}
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="bg-muted p-4 rounded-lg mt-4">
                 <h4 className="font-medium mb-2">Setup Instructions</h4>
@@ -719,9 +947,23 @@ const TeamSettings = () => {
                   <li>Enter the webhook URL shown above in the Webhook configuration section.</li>
                   <li>Enter or generate a verification token here, and use the same token in the Meta dashboard.</li>
                   <li>Subscribe to webhook events for messages.</li>
-                  <li>Save your settings here and complete the verification process in the Meta dashboard.</li>
+                  <li>Save your settings here and test the webhook connection.</li>
+                  <li>Complete the verification process in the Meta dashboard.</li>
                 </ol>
               </div>
+              
+              <Alert>
+                <AlertDescription className="text-sm">
+                  <strong>Troubleshooting:</strong> If you receive a "The callback URL or verify token couldn't be validated" error from Meta,
+                  ensure that: 
+                  <ul className="list-disc pl-5 mt-1">
+                    <li>Your Edge Functions are properly deployed (see status above)</li>
+                    <li>The verification token matches exactly in both places</li>
+                    <li>The webhook URL is correctly entered in the Meta dashboard</li>
+                    <li>You've saved your settings here before configuring the Meta webhook</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
             </div>
           </CardContent>
         </Card>
