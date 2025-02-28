@@ -3,6 +3,7 @@ import { AttributeSettingsManager } from "@/components/settings/AttributeSetting
 import { FAConnectionSettings } from "@/components/settings/FAConnectionSettings";
 import { WhatsAppIntegration } from "@/components/settings/WhatsAppIntegration";
 import { TeamInfoSettings } from "@/components/settings/TeamInfoSettings";
+import { FormatsAndCategoriesSettings } from "@/components/settings/FormatsAndCategoriesSettings";
 
 export default function TeamSettings() {
   return (
@@ -10,6 +11,7 @@ export default function TeamSettings() {
       <h1 className="text-3xl font-bold mb-6">Team Settings</h1>
       
       <TeamInfoSettings />
+      <FormatsAndCategoriesSettings />
       <FAConnectionSettings />
       <WhatsAppIntegration />
       
