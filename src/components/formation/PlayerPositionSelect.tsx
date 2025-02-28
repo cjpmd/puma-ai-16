@@ -34,13 +34,13 @@ export const PlayerPositionSelect = ({
   const [currentPosition, setCurrentPosition] = useState(position);
   const [currentPlayerId, setCurrentPlayerId] = useState(playerId);
   
-  // Use refs to compare previous values
+  // Use refs to compare previous values and prevent unnecessary renders
   const prevPositionRef = useRef(position);
   const prevPlayerIdRef = useRef(playerId);
   
   // Update internal state when props change
   useEffect(() => {
-    // Only log and update if values actually changed
+    // Only update if values actually changed
     if (position !== prevPositionRef.current || playerId !== prevPlayerIdRef.current) {
       console.log(`PlayerPositionSelect: Props changed - position: ${position}, playerId: ${playerId}`);
       setCurrentPosition(position);

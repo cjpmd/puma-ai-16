@@ -35,7 +35,8 @@ export const FormationSelector = ({
     {}
   );
   const [localPerformanceCategory, setLocalPerformanceCategory] = useState(performanceCategory);
-  const previousInitialSelectionsRef = useRef<string>("");
+  const initialSelectionsRef = useRef<string>("");
+  const hasUpdatedSelectionsRef = useRef(false);
 
   const { data: fetchedPlayers } = useQuery({
     queryKey: ["available-players", teamName],
@@ -57,14 +58,16 @@ export const FormationSelector = ({
   useEffect(() => {
     if (initialSelections) {
       const currentInitialSelectionsStr = JSON.stringify(initialSelections);
-      console.log("FormationSelector: Setting initialSelections", initialSelections);
       
       // Only update if the initialSelections are different
-      if (currentInitialSelectionsStr !== previousInitialSelectionsRef.current) {
+      if (currentInitialSelectionsStr !== initialSelectionsRef.current) {
+        console.log("FormationSelector: Setting initialSelections", initialSelections);
+        
         // Deep clone to avoid reference issues
         const clonedSelections = JSON.parse(JSON.stringify(initialSelections));
         setSelections(clonedSelections);
-        previousInitialSelectionsRef.current = currentInitialSelectionsStr;
+        initialSelectionsRef.current = currentInitialSelectionsStr;
+        hasUpdatedSelectionsRef.current = true;
       }
     }
   }, [initialSelections]);
@@ -166,7 +169,7 @@ export const FormationSelector = ({
 
   const formatSelectionsForFormation = () => {
     const formattedSelections = Object.entries(selections)
-      .filter(([_, value]) => value.playerId !== "unassigned" && !value.position.startsWith('sub-'))
+      .filter(([slotId, value]) => value.playerId !== "unassigned" && !slotId.startsWith('sub-'))
       .map(([_, value]) => {
         return {
           position: value.position,

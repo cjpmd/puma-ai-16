@@ -44,27 +44,29 @@ export const TeamPeriodCard = ({
   );
   const [view, setView] = useState<"team-sheet" | "formation">("team-sheet");
   
-  // Add a ref to track whether initialSelections has been loaded
-  const initialSelectionsLoadedRef = useRef(false);
+  // Use refs to track changes
   const initialSelectionsRef = useRef<typeof initialSelections>({});
+  const hasInitializedRef = useRef(false);
 
-  // This is the key useEffect that needs fixing - deep clone initialSelections to prevent reference issues
+  // This useEffect is crucial for initializing and updating selections
   useEffect(() => {
+    // Only process initialSelections if they exist and are not empty
     if (initialSelections && Object.keys(initialSelections).length > 0) {
-      // Check if the initialSelections are different from what we already have
-      const currentSelectionsStr = JSON.stringify(initialSelectionsRef.current);
-      const newSelectionsStr = JSON.stringify(initialSelections);
+      // Create strings for comparison
+      const currentString = JSON.stringify(initialSelectionsRef.current);
+      const newString = JSON.stringify(initialSelections);
       
-      // Only update if they're different
-      if (currentSelectionsStr !== newSelectionsStr) {
+      // Only update if the selections have actually changed
+      if (currentString !== newString) {
         console.log(`TeamPeriodCard (${periodId}): Setting initialSelections`, JSON.stringify(initialSelections));
         
-        // Store a reference to the current initialSelections
-        initialSelectionsRef.current = JSON.parse(JSON.stringify(initialSelections));
+        // Deep clone to avoid reference issues
+        const clonedSelections = JSON.parse(JSON.stringify(initialSelections));
         
-        // Update local state with deep clone to prevent reference issues
-        setLocalSelections(JSON.parse(JSON.stringify(initialSelections)));
-        initialSelectionsLoadedRef.current = true;
+        // Update the ref and local state
+        initialSelectionsRef.current = clonedSelections;
+        setLocalSelections(clonedSelections);
+        hasInitializedRef.current = true;
       }
     }
   }, [initialSelections, periodId]);
@@ -87,7 +89,8 @@ export const TeamPeriodCard = ({
     onSelectionChange(periodId, teamId, updatedSelections);
   };
 
-  const formationKey = `formation-${periodId}-${teamId}-${performanceCategory}-${Object.keys(localSelections).length}-${Math.random()}`;
+  // Generate a unique key for the FormationSelector to force re-renders when needed
+  const formationKey = `formation-${periodId}-${teamId}-${performanceCategory}-${Object.keys(localSelections).length}-${view}`;
 
   return (
     <Card className="relative">
