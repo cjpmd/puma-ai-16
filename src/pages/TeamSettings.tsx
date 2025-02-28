@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings, Bell, Users, Eye, Check, Loader2, Edit, Webhook, Lock, RefreshCcw, AlertCircle } from "lucide-react";
+import { Settings, Bell, Users, Eye, Check, Loader2, Edit, Webhook, Lock, RefreshCcw, AlertCircle, LinkIcon } from "lucide-react";
 import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
 import {
   Collapsible,
@@ -26,6 +26,13 @@ interface WhatsAppSettings {
   api_key: string;
   phone_number_id: string;
   access_token: string;
+}
+
+// Interface for FA Connection settings
+interface FAConnectionSettings {
+  enabled: boolean;
+  team_id: string;
+  provider: string;
 }
 
 // Interface for Edge Function status
@@ -65,6 +72,15 @@ const TeamSettings = () => {
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   const [webhookTestResult, setWebhookTestResult] = useState<{success: boolean; message: string} | null>(null);
   
+  // FA Connection settings
+  const [faConnectionEnabled, setFaConnectionEnabled] = useState(false);
+  const [teamId, setTeamId] = useState("");
+  const [savedTeamId, setSavedTeamId] = useState("");
+  const [isEditingTeamId, setIsEditingTeamId] = useState(false);
+  const [isSavingTeamId, setIsSavingTeamId] = useState(false);
+  const [teamIdSaveSuccess, setTeamIdSaveSuccess] = useState(false);
+  const [faProvider, setFaProvider] = useState("comet");
+  
   // Edge function status tracking
   const [edgeFunctions, setEdgeFunctions] = useState<EdgeFunctionStatus[]>([
     { name: 'whatsapp-webhook', status: 'unknown', lastChecked: null },
@@ -79,6 +95,7 @@ const TeamSettings = () => {
     fetchCategories();
     fetchWhatsAppSettings();
     fetchWebhookBaseUrl();
+    fetchFAConnectionSettings();
     checkEdgeFunctions();
   }, []);
 
@@ -93,6 +110,103 @@ const TeamSettings = () => {
       setWebhookBaseUrl(baseUrl);
     } catch (error) {
       console.error('Error determining webhook URL:', error);
+    }
+  };
+
+  const fetchFAConnectionSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fa_connection_settings')
+        .select('*')
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data) {
+        setFaConnectionEnabled(data.enabled || false);
+        setTeamId(data.team_id || "");
+        setSavedTeamId(data.team_id || "");
+        setFaProvider(data.provider || "comet");
+        setIsEditingTeamId(data.team_id ? false : true);
+      }
+    } catch (error) {
+      console.error('Error fetching FA connection settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load FA connection settings",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateFAConnectionSettings = async (updates: Partial<FAConnectionSettings>) => {
+    try {
+      setIsSavingTeamId(true);
+      setTeamIdSaveSuccess(false);
+      
+      // Check if we need to create the table first
+      try {
+        // Try to create the table if it doesn't exist
+        const { error: tableError } = await supabase.rpc('create_table_if_not_exists', {
+          p_table_name: 'fa_connection_settings',
+          p_columns: 'id uuid PRIMARY KEY DEFAULT gen_random_uuid(), enabled boolean DEFAULT false, team_id text, provider text'
+        });
+        
+        if (tableError) {
+          console.warn('Could not create FA connection settings table:', tableError);
+        }
+      } catch (tableError) {
+        console.warn('Error checking/creating tables:', tableError);
+      }
+      
+      const { error } = await supabase
+        .from('fa_connection_settings')
+        .upsert({
+          id: '00000000-0000-0000-0000-000000000002',
+          enabled: updates.enabled !== undefined ? updates.enabled : faConnectionEnabled,
+          team_id: updates.team_id !== undefined ? updates.team_id : teamId,
+          provider: updates.provider !== undefined ? updates.provider : faProvider
+        });
+
+      if (error) throw error;
+      
+      if (updates.enabled !== undefined) {
+        setFaConnectionEnabled(updates.enabled);
+      }
+      
+      if (updates.team_id !== undefined) {
+        setTeamId(updates.team_id);
+        setSavedTeamId(updates.team_id);
+        setIsEditingTeamId(false);
+      }
+      
+      if (updates.provider !== undefined) {
+        setFaProvider(updates.provider);
+      }
+      
+      setTeamIdSaveSuccess(true);
+      
+      toast({
+        title: "Success",
+        description: "FA connection settings updated successfully",
+      });
+      
+      // Reset success indicator after 3 seconds
+      setTimeout(() => {
+        setTeamIdSaveSuccess(false);
+      }, 3000);
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating FA connection settings:', error);
+      toast({
+        title: "Error",
+        description: `Failed to update FA connection settings: ${error.message}`,
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setIsSavingTeamId(false);
     }
   };
 
@@ -559,6 +673,10 @@ const TeamSettings = () => {
     }
   };
 
+  const handleSaveTeamId = async () => {
+    await updateFAConnectionSettings({ team_id: teamId });
+  };
+
   // Helper to generate a secure random token
   const generateVerificationToken = () => {
     const array = new Uint8Array(16); // reduced size for easier copying
@@ -621,6 +739,107 @@ const TeamSettings = () => {
               >
                 Save Format
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LinkIcon className="h-5 w-5" />
+              Connect to Your Regional FA
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h4 className="text-sm font-medium">Enable FA Connection</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Connect to your Regional Football Association systems for team and fixture management
+                  </p>
+                </div>
+                <Switch
+                  checked={faConnectionEnabled}
+                  onCheckedChange={(checked) => updateFAConnectionSettings({ enabled: checked })}
+                />
+              </div>
+              
+              {faConnectionEnabled && (
+                <div className="pt-4 space-y-6 border-t border-border">
+                  <div onClick={() => window.open("https://www.scottishfacomet.co.uk/", "_blank")} className="cursor-pointer">
+                    <div className="flex items-center gap-3 p-3 bg-secondary/20 rounded-lg hover:bg-secondary/30 transition-colors">
+                      <img 
+                        src="https://www.scottishfa.co.uk/media/1615/scottish-fa-logo.png" 
+                        alt="Scottish FA Comet" 
+                        className="h-12 object-contain" 
+                      />
+                      <div>
+                        <h3 className="font-medium">Scottish FA Comet</h3>
+                        <p className="text-sm text-muted-foreground">Official team and fixture management system</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="team-id">Team ID</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Enter your Team ID from the Comet system to link your accounts
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="team-id"
+                        value={teamId}
+                        onChange={(e) => setTeamId(e.target.value)}
+                        placeholder="Enter Team ID"
+                        className="max-w-md"
+                        disabled={!isEditingTeamId && savedTeamId !== ""}
+                        readOnly={!isEditingTeamId && savedTeamId !== ""}
+                      />
+                      {(isEditingTeamId || savedTeamId === "") ? (
+                        <Button 
+                          onClick={handleSaveTeamId}
+                          disabled={isSavingTeamId}
+                          className="min-w-[80px]"
+                          variant={teamIdSaveSuccess ? "outline" : "default"}
+                        >
+                          {isSavingTeamId ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Saving...
+                            </>
+                          ) : teamIdSaveSuccess ? (
+                            <>
+                              <Check className="h-4 w-4 mr-2 text-green-500" />
+                              Saved
+                            </>
+                          ) : (
+                            "Save"
+                          )}
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={() => setIsEditingTeamId(true)}
+                          variant="outline"
+                          className="min-w-[80px]"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <Alert className="mt-4 bg-muted">
+                      <AlertDescription>
+                        <p className="text-sm">
+                          Connecting to your regional FA allows automatic fixture syncing and team management.
+                          API configuration will be needed to complete the setup.
+                        </p>
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
