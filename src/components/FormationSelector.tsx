@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
@@ -35,6 +35,7 @@ export const FormationSelector = ({
     {}
   );
   const [localPerformanceCategory, setLocalPerformanceCategory] = useState(performanceCategory);
+  const previousInitialSelectionsRef = useRef<string>("");
 
   const { data: fetchedPlayers } = useQuery({
     queryKey: ["available-players", teamName],
@@ -55,9 +56,16 @@ export const FormationSelector = ({
   // Update local state when initialSelections change - improved to handle preserved positions
   useEffect(() => {
     if (initialSelections) {
+      const currentInitialSelectionsStr = JSON.stringify(initialSelections);
       console.log("FormationSelector: Setting initialSelections", initialSelections);
-      // Deep clone to avoid reference issues
-      setSelections(JSON.parse(JSON.stringify(initialSelections)));
+      
+      // Only update if the initialSelections are different
+      if (currentInitialSelectionsStr !== previousInitialSelectionsRef.current) {
+        // Deep clone to avoid reference issues
+        const clonedSelections = JSON.parse(JSON.stringify(initialSelections));
+        setSelections(clonedSelections);
+        previousInitialSelectionsRef.current = currentInitialSelectionsStr;
+      }
     }
   }, [initialSelections]);
 
@@ -102,7 +110,7 @@ export const FormationSelector = ({
         onSelectionChange(updatedSelections);
       }
     }
-  }, [localPerformanceCategory, onSelectionChange]);
+  }, [localPerformanceCategory]);
 
   // Get formation slots with appropriate default positions
   const getFormationSlots = () => {

@@ -2,7 +2,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface PlayerPositionSelectProps {
   position: string;
@@ -34,11 +34,22 @@ export const PlayerPositionSelect = ({
   const [currentPosition, setCurrentPosition] = useState(position);
   const [currentPlayerId, setCurrentPlayerId] = useState(playerId);
   
+  // Use refs to compare previous values
+  const prevPositionRef = useRef(position);
+  const prevPlayerIdRef = useRef(playerId);
+  
   // Update internal state when props change
   useEffect(() => {
-    console.log(`PlayerPositionSelect: Props changed - position: ${position}, playerId: ${playerId}`);
-    setCurrentPosition(position);
-    setCurrentPlayerId(playerId);
+    // Only log and update if values actually changed
+    if (position !== prevPositionRef.current || playerId !== prevPlayerIdRef.current) {
+      console.log(`PlayerPositionSelect: Props changed - position: ${position}, playerId: ${playerId}`);
+      setCurrentPosition(position);
+      setCurrentPlayerId(playerId);
+      
+      // Update refs
+      prevPositionRef.current = position;
+      prevPlayerIdRef.current = playerId;
+    }
   }, [position, playerId]);
 
   const handlePositionChange = (newPosition: string) => {

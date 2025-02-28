@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { FormationSelector } from "@/components/FormationSelector";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -43,14 +43,29 @@ export const TeamPeriodCard = ({
     {}
   );
   const [view, setView] = useState<"team-sheet" | "formation">("team-sheet");
+  
+  // Add a ref to track whether initialSelections has been loaded
+  const initialSelectionsLoadedRef = useRef(false);
+  const initialSelectionsRef = useRef<typeof initialSelections>({});
 
   // This is the key useEffect that needs fixing - deep clone initialSelections to prevent reference issues
   useEffect(() => {
-    if (initialSelections) {
-      console.log(`TeamPeriodCard (${periodId}): Setting initialSelections`, JSON.stringify(initialSelections));
-      // Use a deep clone to ensure no reference issues
-      const deepClonedSelections = JSON.parse(JSON.stringify(initialSelections));
-      setLocalSelections(deepClonedSelections);
+    if (initialSelections && Object.keys(initialSelections).length > 0) {
+      // Check if the initialSelections are different from what we already have
+      const currentSelectionsStr = JSON.stringify(initialSelectionsRef.current);
+      const newSelectionsStr = JSON.stringify(initialSelections);
+      
+      // Only update if they're different
+      if (currentSelectionsStr !== newSelectionsStr) {
+        console.log(`TeamPeriodCard (${periodId}): Setting initialSelections`, JSON.stringify(initialSelections));
+        
+        // Store a reference to the current initialSelections
+        initialSelectionsRef.current = JSON.parse(JSON.stringify(initialSelections));
+        
+        // Update local state with deep clone to prevent reference issues
+        setLocalSelections(JSON.parse(JSON.stringify(initialSelections)));
+        initialSelectionsLoadedRef.current = true;
+      }
     }
   }, [initialSelections, periodId]);
 
@@ -71,6 +86,8 @@ export const TeamPeriodCard = ({
     // Notify parent
     onSelectionChange(periodId, teamId, updatedSelections);
   };
+
+  const formationKey = `formation-${periodId}-${teamId}-${performanceCategory}-${Object.keys(localSelections).length}-${Math.random()}`;
 
   return (
     <Card className="relative">
@@ -115,7 +132,7 @@ export const TeamPeriodCard = ({
       <CardContent>
         <div className="min-h-[500px]">
           <FormationSelector
-            key={`formation-${periodId}-${teamId}-${Object.keys(localSelections).length}`}
+            key={formationKey}
             format={format as "7-a-side"}
             teamName={teamName}
             onSelectionChange={handleSelectionChange}
