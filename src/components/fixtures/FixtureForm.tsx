@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -109,6 +110,25 @@ export const FixtureForm = ({
   }, [form, watchNumberOfTeams, watchMotmPlayerIds]);
 
   useTeamTimes(form, editingFixture, watchNumberOfTeams);
+
+  // When number of teams changes, ensure motm_player_ids array has correct length
+  useEffect(() => {
+    const currentMotmIds = [...(form.getValues().motm_player_ids || [])];
+    
+    // If we need to resize the array
+    if (currentMotmIds.length !== watchNumberOfTeams) {
+      // Create a new array with the correct size
+      const newMotmIds = Array(watchNumberOfTeams).fill("");
+      
+      // Copy existing values
+      for (let i = 0; i < Math.min(currentMotmIds.length, watchNumberOfTeams); i++) {
+        newMotmIds[i] = currentMotmIds[i] || "";
+      }
+      
+      console.log("Resizing MOTM player IDs array after team count change:", newMotmIds);
+      form.setValue('motm_player_ids', newMotmIds, { shouldDirty: true });
+    }
+  }, [watchNumberOfTeams, form]);
 
   const getScoreLabel = (isHomeScore: boolean, teamIndex: number) => {
     const homeTeam = watchIsHome ? "Broughty Pumas 2015s" : watchOpponent;

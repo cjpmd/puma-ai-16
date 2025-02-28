@@ -24,6 +24,8 @@ export const TeamCard = ({
   getMotmLabel
 }: TeamCardProps) => {
   const performanceCategory = form.watch(`team_times.${index}.performance_category`) || "MESSI";
+  
+  // Get the current MOTM player ID for this team
   const motmPlayerId = form.watch(`motm_player_ids.${index}`);
   
   // For debugging
