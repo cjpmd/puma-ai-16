@@ -1,198 +1,135 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
-interface NotificationData {
-  type: 'FIXTURE' | 'TOURNAMENT' | 'FESTIVAL';
-  date: string;
-  time?: string;
-  opponent?: string;
-  location?: string;
-  category: string;
-  eventId?: string;
-  groupId?: string;
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.0";
+
+// Create a Supabase client
+const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+async function getWhatsAppSettings() {
+  try {
+    const { data, error } = await supabase
+      .from('whatsapp_settings')
+      .select('*')
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Error fetching WhatsApp settings:", error);
+    throw error;
+  }
+}
+
+async function formatMessage(payload: any) {
+  let messageText = "";
+  
+  if (payload.type === 'FIXTURE') {
+    const location = payload.is_home ? 'Home' : 'Away';
+    const meetingTime = payload.time ? `Meet at ${payload.time}` : 'Time TBC';
+    
+    messageText = `⚽ MATCH DAY ⚽\n\n`;
+    messageText += `${payload.date}\n`;
+    messageText += `vs ${payload.opponent}\n`;
+    messageText += `${location} game\n`;
+    messageText += `${meetingTime}\n\n`;
+    messageText += `Please confirm attendance ASAP`;
+  } else {
+    // Default message for other types
+    messageText = JSON.stringify(payload);
+  }
+  
+  return messageText;
 }
 
 serve(async (req) => {
   try {
-    // Get request data
-    const data: NotificationData = await req.json();
-    console.log('Received notification request with data:', data);
-
-    // Get environment variables
-    const whatsappApiKey = Deno.env.get('WHATSAPP_API_KEY');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
-
-    if (!whatsappApiKey) {
-      console.error('WHATSAPP_API_KEY environment variable is not set');
-      return new Response(
-        JSON.stringify({
-          error: 'Configuration error: WhatsApp API key not found',
-        }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+    const payload = await req.json();
+    console.log("Received notification payload:", payload);
+    
+    // Get WhatsApp API settings
+    const settings = await getWhatsAppSettings();
+    
+    if (!settings?.access_token || !settings?.phone_number_id) {
+      throw new Error("WhatsApp API credentials not configured");
     }
-
-    // Create Supabase client
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Determine if we should use a group chat
-    const useGroupChat = !!data.groupId;
-    console.log('Using group chat:', useGroupChat, 'Group ID:', data.groupId);
-
-    let message = '';
-    let recipients: string[] = [];
-
-    // Build message based on notification type
-    if (data.type === 'FIXTURE') {
-      message = `📢 *Match Notification*\n\n`;
-      message += `Team: *${data.category}*\n`;
-      message += `Date: *${data.date}*\n`;
-      if (data.time) message += `Meeting Time: *${data.time}*\n`;
-      if (data.opponent) message += `Opponent: *${data.opponent}*\n`;
-      if (data.location) message += `Location: *${data.location}*\n\n`;
-      message += `Please reply with *YES* if you can attend or *NO* if you cannot.`;
-    } else if (data.type === 'TOURNAMENT') {
-      message = `📢 *Tournament Notification*\n\n`;
-      // ... build message
-    } else if (data.type === 'FESTIVAL') {
-      message = `📢 *Festival Notification*\n\n`;
-      // ... build message
+    
+    // Format message based on payload type
+    const messageText = await formatMessage(payload);
+    
+    // Determine recipient
+    let recipient;
+    if (payload.groupId) {
+      recipient = payload.groupId;
+    } else if (payload.phoneNumber) {
+      recipient = payload.phoneNumber;
     } else {
-      message = `📢 *Team Notification*\n\n${JSON.stringify(data)}`;
+      // Fetch from team settings if not provided directly
+      const { data: teamSettings } = await supabase
+        .from('team_settings')
+        .select('whatsapp_group_id')
+        .single();
+      
+      recipient = teamSettings?.whatsapp_group_id;
+      if (!recipient) {
+        throw new Error("No recipient specified and no default group ID configured");
+      }
     }
-
-    // If using group chat, we'll send directly to the group
-    if (useGroupChat) {
-      console.log('Sending message to WhatsApp group');
-      const response = await fetch('https://graph.facebook.com/v17.0/136631906193183/messages', {
-        method: 'POST',
+    
+    // Send message via WhatsApp API
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/${settings.phone_number_id}/messages`,
+      {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${whatsappApiKey}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${settings.access_token}`
         },
         body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          recipient_type: 'group',
-          to: data.groupId,
-          type: 'text',
+          messaging_product: "whatsapp",
+          recipient_type: payload.groupId ? "group" : "individual",
+          to: recipient,
+          type: "text",
           text: {
-            body: message
+            body: messageText
           }
-        }),
-      });
-
-      const result = await response.json();
-      console.log('WhatsApp API response for group message:', result);
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Notification sent to WhatsApp group' 
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
-    } 
-    // Otherwise, fetch parent phone numbers and send individual messages
-    else {
-      console.log('Getting parent phone numbers for event ID:', data.eventId);
-      
-      if (!data.eventId) {
-        return new Response(
-          JSON.stringify({ error: 'Event ID not provided' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
-        );
+        })
       }
-
-      // Query for players attending this event
-      const { data: attendanceData, error: attendanceError } = await supabase
-        .from('event_attendance')
-        .select('player_id')
-        .eq('event_id', data.eventId)
-        .eq('event_type', data.type);
-
-      if (attendanceError) {
-        console.error('Error fetching attendance data:', attendanceError);
-        throw attendanceError;
-      }
-
-      console.log('Found attendance records:', attendanceData?.length);
-
-      if (!attendanceData || attendanceData.length === 0) {
-        return new Response(
-          JSON.stringify({ message: 'No attendance records found' }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Get player IDs from attendance records
-      const playerIds = attendanceData.map(record => record.player_id);
-
-      // Get parent phone numbers for these players
-      const { data: parentData, error: parentError } = await supabase
-        .from('players')
-        .select('parent_details')
-        .in('id', playerIds);
-
-      if (parentError) {
-        console.error('Error fetching parent data:', parentError);
-        throw parentError;
-      }
-
-      // Extract phone numbers
-      recipients = parentData
-        .filter(player => player.parent_details && player.parent_details.phone)
-        .map(player => player.parent_details.phone);
-
-      console.log('Found parent phone numbers:', recipients.length);
-
-      if (recipients.length === 0) {
-        return new Response(
-          JSON.stringify({ message: 'No parent phone numbers found' }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Send messages to each recipient
-      for (const recipient of recipients) {
-        try {
-          console.log('Sending WhatsApp message to:', recipient);
-          const response = await fetch('https://graph.facebook.com/v17.0/136631906193183/messages', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${whatsappApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messaging_product: 'whatsapp',
-              to: recipient,
-              type: 'text',
-              text: {
-                body: message
-              }
-            }),
-          });
-
-          const result = await response.json();
-          console.log('WhatsApp API response:', result);
-        } catch (e) {
-          console.error('Error sending WhatsApp message to', recipient, e);
-        }
-      }
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: `Notification sent to ${recipients.length} recipients` 
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
+    );
+    
+    const responseData = await response.json();
+    console.log("WhatsApp API response:", responseData);
+    
+    if (!response.ok) {
+      throw new Error(`WhatsApp API error: ${JSON.stringify(responseData)}`);
     }
-  } catch (error) {
-    console.error('Error in send-whatsapp-notification edge function:', error);
+    
+    // Log the successful send in the database
+    await supabase.from('whatsapp_sent_messages').insert({
+      recipient: recipient,
+      message: messageText,
+      response: responseData,
+      payload: payload
+    });
+    
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: true, message: "Notification sent" }),
+      { headers: { "Content-Type": "application/json" } }
+    );
+    
+  } catch (error) {
+    console.error("Error sending WhatsApp notification:", error);
+    
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: error.message || "Unknown error occurred" 
+      }),
+      { 
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
     );
   }
 });

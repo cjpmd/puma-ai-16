@@ -8,8 +8,10 @@ interface NotificationData {
   opponent: string;
   location?: string;
   category: string;
-  eventId?: string;  // Made optional to maintain backward compatibility
-  groupId?: string;  // Added to support group chats
+  is_home?: boolean;
+  eventId?: string;
+  groupId?: string;
+  phoneNumber?: string;
 }
 
 export const sendFixtureNotification = async (data: NotificationData) => {
@@ -41,6 +43,7 @@ export const sendFixtureNotification = async (data: NotificationData) => {
     }
     
     console.log('WhatsApp notification sent successfully');
+    return { success: true };
   } catch (error) {
     console.error('Error in sendFixtureNotification:', error);
     throw error;

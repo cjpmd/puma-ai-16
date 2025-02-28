@@ -1,0 +1,4 @@
+
+# See https://supabase.com/docs/functions/config for more options
+force_https = true
+allowed_origins = ["*"]

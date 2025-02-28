@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings, Bell, Users, Eye, Check, Loader2, Edit } from "lucide-react";
+import { Settings, Bell, Users, Eye, Check, Loader2, Edit, Webhook, Lock } from "lucide-react";
 import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
 import {
   Collapsible,
@@ -16,6 +16,15 @@ import {
 } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+// Interface for WhatsApp settings
+interface WhatsAppSettings {
+  verification_token: string;
+  api_key: string;
+  phone_number_id: string;
+  access_token: string;
+}
 
 const TeamSettings = () => {
   const [teamName, setTeamName] = useState("");
@@ -32,12 +41,40 @@ const TeamSettings = () => {
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [isSavingWhatsapp, setIsSavingWhatsapp] = useState(false);
   const [whatsappSaveSuccess, setWhatsappSaveSuccess] = useState(false);
+  
+  // WhatsApp webhook settings
+  const [whatsappSettings, setWhatsappSettings] = useState<WhatsAppSettings>({
+    verification_token: "",
+    api_key: "",
+    phone_number_id: "",
+    access_token: ""
+  });
+  const [isLoadingWebhookSettings, setIsLoadingWebhookSettings] = useState(false);
+  const [isSavingWebhookSettings, setIsSavingWebhookSettings] = useState(false);
+  const [webhookSaveSuccess, setWebhookSaveSuccess] = useState(false);
+  const [webhookBaseUrl, setWebhookBaseUrl] = useState("");
+  
   const { toast } = useToast();
 
   useEffect(() => {
     fetchTeamSettings();
     fetchCategories();
+    fetchWhatsAppSettings();
+    fetchWebhookBaseUrl();
   }, []);
+
+  const fetchWebhookBaseUrl = async () => {
+    try {
+      // This would normally come from an environment variable or config
+      // For now we'll construct it from the Supabase URL
+      const url = supabase.supabaseUrl;
+      // Convert URL from https://project-ref.supabase.co to https://project-ref.supabase.co/functions/v1/whatsapp-webhook
+      const baseUrl = url.replace('.co', '.co/functions/v1/whatsapp-webhook');
+      setWebhookBaseUrl(baseUrl);
+    } catch (error) {
+      console.error('Error determining webhook URL:', error);
+    }
+  };
 
   const fetchTeamSettings = async () => {
     try {
@@ -66,6 +103,36 @@ const TeamSettings = () => {
         description: "Failed to load team settings",
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchWhatsAppSettings = async () => {
+    try {
+      setIsLoadingWebhookSettings(true);
+      const { data, error } = await supabase
+        .from('whatsapp_settings')
+        .select('*')
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data) {
+        setWhatsappSettings({
+          verification_token: data.verification_token || "",
+          api_key: data.api_key || "",
+          phone_number_id: data.phone_number_id || "",
+          access_token: data.access_token || ""
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching WhatsApp settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load WhatsApp webhook settings",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingWebhookSettings(false);
     }
   };
 
@@ -149,6 +216,49 @@ const TeamSettings = () => {
         variant: "destructive",
       });
       return false;
+    }
+  };
+
+  const updateWhatsAppWebhookSettings = async () => {
+    try {
+      setIsSavingWebhookSettings(true);
+      setWebhookSaveSuccess(false);
+      
+      const { error } = await supabase
+        .from('whatsapp_settings')
+        .upsert({
+          id: '00000000-0000-0000-0000-000000000001',
+          verification_token: whatsappSettings.verification_token,
+          api_key: whatsappSettings.api_key,
+          phone_number_id: whatsappSettings.phone_number_id,
+          access_token: whatsappSettings.access_token,
+        });
+
+      if (error) throw error;
+      
+      setWebhookSaveSuccess(true);
+      
+      toast({
+        title: "Success",
+        description: "WhatsApp webhook settings updated successfully",
+      });
+      
+      // Reset success indicator after 3 seconds
+      setTimeout(() => {
+        setWebhookSaveSuccess(false);
+      }, 3000);
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating WhatsApp webhook settings:', error);
+      toast({
+        title: "Error",
+        description: `Failed to update WhatsApp webhook settings: ${error.message}`,
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setIsSavingWebhookSettings(false);
     }
   };
 
@@ -306,6 +416,17 @@ const TeamSettings = () => {
     }
   };
 
+  // Helper to generate a secure random token
+  const generateVerificationToken = () => {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    const token = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    setWhatsappSettings(prev => ({
+      ...prev,
+      verification_token: token
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <motion.div
@@ -458,6 +579,148 @@ const TeamSettings = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Webhook className="h-5 w-5" />
+              WhatsApp Webhook Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label>Webhook URL</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={webhookBaseUrl}
+                    readOnly
+                    className="bg-muted font-mono text-sm"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(webhookBaseUrl);
+                      toast({
+                        title: "Copied!",
+                        description: "Webhook URL copied to clipboard",
+                      });
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Use this URL in the WhatsApp Business Platform dashboard to configure your webhook.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="verification-token">Verification Token</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="verification-token"
+                    type="text"
+                    value={whatsappSettings.verification_token}
+                    onChange={(e) => setWhatsappSettings(prev => ({ ...prev, verification_token: e.target.value }))}
+                    placeholder="Enter verification token"
+                    className="font-mono"
+                  />
+                  <Button 
+                    variant="outline"
+                    onClick={generateVerificationToken}
+                    type="button"
+                  >
+                    Generate
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  This token is used to verify webhook requests from WhatsApp. Enter the same token in the WhatsApp Business Platform dashboard.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone-number-id">Phone Number ID</Label>
+                <Input
+                  id="phone-number-id"
+                  type="text"
+                  value={whatsappSettings.phone_number_id}
+                  onChange={(e) => setWhatsappSettings(prev => ({ ...prev, phone_number_id: e.target.value }))}
+                  placeholder="Enter Phone Number ID from WhatsApp Business Platform"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Find this in the WhatsApp Business Platform dashboard under your registered phone number.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="api-key">API Key (Optional)</Label>
+                <Input
+                  id="api-key"
+                  type="text"
+                  value={whatsappSettings.api_key}
+                  onChange={(e) => setWhatsappSettings(prev => ({ ...prev, api_key: e.target.value }))}
+                  placeholder="Enter API Key"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="access-token">Access Token</Label>
+                <div className="relative">
+                  <Input
+                    id="access-token"
+                    type="password"
+                    value={whatsappSettings.access_token}
+                    onChange={(e) => setWhatsappSettings(prev => ({ ...prev, access_token: e.target.value }))}
+                    placeholder="Enter Permanent Access Token"
+                    className="pr-10"
+                  />
+                  <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Generate a permanent access token in the Meta for Developers platform. This is used to authenticate API requests.
+                </p>
+              </div>
+
+              <Button
+                onClick={updateWhatsAppWebhookSettings}
+                disabled={isSavingWebhookSettings}
+                className="mt-4"
+                variant={webhookSaveSuccess ? "outline" : "default"}
+              >
+                {isSavingWebhookSettings ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : webhookSaveSuccess ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2 text-green-500" />
+                    Saved
+                  </>
+                ) : (
+                  "Save Webhook Settings"
+                )}
+              </Button>
+
+              <div className="bg-muted p-4 rounded-lg mt-4">
+                <h4 className="font-medium mb-2">Setup Instructions</h4>
+                <ol className="list-decimal pl-5 space-y-2 text-sm">
+                  <li>Register your app in the <a href="https://developers.facebook.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Meta for Developers</a> dashboard.</li>
+                  <li>Set up the WhatsApp Business API in your Meta app.</li>
+                  <li>Add a phone number to your WhatsApp business account.</li>
+                  <li>Copy the Phone Number ID from the dashboard.</li>
+                  <li>Generate a permanent access token with the <code className="bg-background px-1 py-0.5 rounded">whatsapp_business_messaging</code> permission.</li>
+                  <li>Enter the webhook URL shown above in the Webhook configuration section.</li>
+                  <li>Enter or generate a verification token here, and use the same token in the Meta dashboard.</li>
+                  <li>Subscribe to webhook events for messages.</li>
+                  <li>Save your settings here and complete the verification process in the Meta dashboard.</li>
+                </ol>
+              </div>
             </div>
           </CardContent>
         </Card>
