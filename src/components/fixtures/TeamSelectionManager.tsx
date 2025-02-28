@@ -143,7 +143,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
             const periodNumber = parseInt(periodId.replace('period-', '')) || 1;
             loadedPeriodsPerTeam[teamId].push({
               id: periodId,
-              duration: 20 // Default duration
+              duration: periodSelections[0]?.duration || 20
             });
           }
           
@@ -377,7 +377,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     }));
   };
 
-  // Save selections with proper period tracking - removed duration field to match schema
+  // Save selections with proper period tracking
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -419,7 +419,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
           // Process each player selection for this team/period
           Object.entries(teamSelections).forEach(([slotId, selection]) => {
             if (selection.playerId && selection.playerId !== "unassigned") {
-              // Create a record with period information but without duration
+              // Create a record with period information
               teamSelectionsToSave.push({
                 fixture_id: fixture.id,
                 player_id: selection.playerId,
@@ -427,7 +427,8 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
                 performance_category: selection.performanceCategory || "MESSI",
                 team_number: parseInt(teamId),
                 is_captain: teamCaptains[teamId] === selection.playerId,
-                period_id: periodId
+                period_id: periodId,
+                duration: period.duration
               });
             }
           });
