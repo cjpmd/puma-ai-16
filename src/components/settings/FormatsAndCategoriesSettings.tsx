@@ -57,8 +57,55 @@ export function FormatsAndCategoriesSettings() {
   const { toast } = useToast();
 
   useEffect(() => {
-    setupTables();
+    loadExistingData();
   }, []);
+
+  const loadExistingData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Check if tables exist first
+      const { data: tablesExist, error: checkError } = await supabase.rpc('execute_sql', {
+        sql: `
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'game_formats'
+          ) AS game_formats_exist,
+          EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'performance_categories'
+          ) AS performance_categories_exist;
+        `
+      });
+      
+      if (checkError) {
+        throw checkError;
+      }
+      
+      const tablesNeedSetup = !(tablesExist?.[0]?.game_formats_exist && tablesExist?.[0]?.performance_categories_exist);
+      
+      if (tablesNeedSetup) {
+        await setupTables();
+      } else {
+        // Just fetch existing data if tables already exist
+        await Promise.all([fetchFormats(), fetchCategories()]);
+      }
+    } catch (error) {
+      console.error('Error checking existing data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load existing configuration",
+        variant: "destructive",
+      });
+      
+      // If we can't check, assume tables need to be setup
+      await setupTables();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const setupTables = async () => {
     try {
@@ -131,6 +178,8 @@ export function FormatsAndCategoriesSettings() {
         `
       });
       
+      console.log("Tables setup completed");
+      
       // Fetch formats and categories after setup
       await Promise.all([fetchFormats(), fetchCategories()]);
     } catch (error) {
@@ -147,13 +196,18 @@ export function FormatsAndCategoriesSettings() {
 
   const fetchFormats = async () => {
     try {
+      console.log("Fetching game formats...");
       const { data, error } = await supabase
         .from('game_formats')
         .select('*')
         .order('name');
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching formats:", error);
+        throw error;
+      }
       
+      console.log("Fetched formats:", data);
       setFormats(data || []);
       
       // Set default format selector
@@ -171,13 +225,18 @@ export function FormatsAndCategoriesSettings() {
 
   const fetchCategories = async () => {
     try {
+      console.log("Fetching performance categories...");
       const { data, error } = await supabase
         .from('performance_categories')
         .select('*')
         .order('name');
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching categories:", error);
+        throw error;
+      }
       
+      console.log("Fetched categories:", data);
       setCategories(data || []);
       
       // Set default category selector
