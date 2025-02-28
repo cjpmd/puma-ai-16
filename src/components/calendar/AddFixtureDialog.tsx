@@ -53,7 +53,7 @@ export const AddFixtureDialog = ({
     }
   }, [editingFixture, initialSelectedDate, isOpen]);
 
-  // Fetch fixture details with team times if editing
+  // Fetch fixture details with team times and team scores if editing
   const { data: fixtureDetails, isLoading: isLoadingFixtureDetails } = useQuery({
     queryKey: ["fixture-details", editingFixture?.id],
     queryFn: async () => {
@@ -85,7 +85,9 @@ export const AddFixtureDialog = ({
       }
     },
     enabled: !!editingFixture?.id && isOpen,
-    retry: 1
+    retry: 1,
+    staleTime: 0, // Don't cache this data
+    refetchOnMount: true
   });
 
   // Merge fetched fixture details with the editingFixture prop
@@ -97,6 +99,14 @@ export const AddFixtureDialog = ({
   } : editingFixture;
 
   console.log("Complete fixture for editing:", completeFixture);
+  
+  // Log MOTM player IDs if available
+  useEffect(() => {
+    if (completeFixture?.fixture_team_scores) {
+      const motmPlayerIds = completeFixture.fixture_team_scores.map(score => score.motm_player_id);
+      console.log("MOTM player IDs from fixture_team_scores:", motmPlayerIds);
+    }
+  }, [completeFixture]);
 
   const { data: players, isLoading: isLoadingPlayers } = useQuery({
     queryKey: ["players"],
@@ -144,6 +154,7 @@ export const AddFixtureDialog = ({
       
       console.log("Creating fixture with date:", dateToUse);
       console.log("Form data:", data);
+      console.log("MOTM player IDs:", data.motm_player_ids);
       
       const fixtureData = {
         opponent: data.opponent,
@@ -153,11 +164,11 @@ export const AddFixtureDialog = ({
         number_of_teams: parseInt(data.number_of_teams || "1"),
         is_home: data.is_home,
         date: dateToUse,
-        motm_player_id: data.motm_player_ids?.[0] || null,
-        team_1_score: data.team_1_score,
-        opponent_1_score: data.opponent_1_score,
-        team_2_score: data.team_2_score,
-        opponent_2_score: data.opponent_2_score,
+        motm_player_id: data.motm_player_ids?.[0] || null, // Store first team's MOTM in main table
+        team_1_score: data.team_1_score !== undefined ? data.team_1_score : null,
+        opponent_1_score: data.opponent_1_score !== undefined ? data.opponent_1_score : null,
+        team_2_score: data.team_2_score !== undefined ? data.team_2_score : null,
+        opponent_2_score: data.opponent_2_score !== undefined ? data.opponent_2_score : null,
         meeting_time: data.team_times?.[0]?.meeting_time || null,
         start_time: data.team_times?.[0]?.start_time || null,
         end_time: data.team_times?.[0]?.end_time || null
@@ -244,19 +255,34 @@ export const AddFixtureDialog = ({
           }
         }
 
+        console.log("Number of teams:", data.number_of_teams);
+        console.log("MOTM player IDs array:", data.motm_player_ids);
+
         const teamScoresData = Array.from({ length: parseInt(data.number_of_teams || "1") }).map((_, index) => {
-          const teamScore = data[`team_${index + 1}_score` as keyof typeof data] as number || 0;
-          const opponentScore = data[`opponent_${index + 1}_score` as keyof typeof data] as number || 0;
-          const motmPlayerId = data.motm_player_ids?.[index] || null;
+          const teamScore = data[`team_${index + 1}_score` as keyof typeof data];
+          const opponentScore = data[`opponent_${index + 1}_score` as keyof typeof data];
           
+          // Ensure we get the MOTM player ID for this team index
+          const motmPlayerId = data.motm_player_ids && index < data.motm_player_ids.length 
+            ? data.motm_player_ids[index] 
+            : null;
+          
+          console.log(`Building team ${index + 1} score:`, {
+            teamScore,
+            opponentScore,
+            motmPlayerId
+          });
+
           return {
             fixture_id: savedFixture.id,
             team_number: index + 1,
-            score: teamScore,
-            opponent_score: opponentScore,
+            score: teamScore === undefined ? null : teamScore,
+            opponent_score: opponentScore === undefined ? null : opponentScore,
             motm_player_id: motmPlayerId === "" ? null : motmPlayerId
           };
         });
+
+        console.log("Team scores data to save:", teamScoresData);
 
         if (teamScoresData.length > 0) {
           const { data: scoresResult, error: scoresError } = await supabase
@@ -279,10 +305,17 @@ export const AddFixtureDialog = ({
         queryKey: ["fixtures"]
       });
       
+      if (dateToUse) {
+        await queryClient.invalidateQueries({ 
+          queryKey: ["fixtures", dateToUse]
+        });
+      }
+      
       // Add team times data to savedFixture
       const enhancedFixture = {
         ...savedFixture,
-        team_times: data.team_times
+        team_times: data.team_times,
+        motm_player_ids: data.motm_player_ids
       };
       
       setNewFixture(enhancedFixture);

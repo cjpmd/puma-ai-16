@@ -48,12 +48,36 @@ export const TeamCard = ({
       
       // Update the form value with the padded array
       form.setValue('motm_player_ids', currentMotmIds, { shouldDirty: false });
+      console.log(`Initialized motm_player_ids array for team ${index + 1}:`, currentMotmIds);
     }
   }, [form, index]);
 
   // Find selected player name for display
   const selectedPlayer = players.find(p => p.id === motmPlayerId);
   const selectedPlayerName = selectedPlayer ? selectedPlayer.name : "None";
+  
+  // Handle change of Player of the Match
+  const handleMotmChange = (value: string) => {
+    const newValue = value === "none" ? "" : value;
+    console.log(`Setting MOTM for team ${index + 1} to:`, newValue);
+    
+    // Get current array of MOTM player IDs
+    const currentMotmIds = [...(form.getValues().motm_player_ids || [])];
+    
+    // Ensure the array is long enough
+    while (currentMotmIds.length <= index) {
+      currentMotmIds.push("");
+    }
+    
+    // Update the value at the specific index
+    currentMotmIds[index] = newValue;
+    
+    // Set the entire array back to the form
+    form.setValue('motm_player_ids', currentMotmIds, { shouldDirty: true });
+    
+    // Log the updated array
+    console.log(`Updated motm_player_ids array after selection:`, currentMotmIds);
+  };
 
   return (
     <Card>
@@ -164,24 +188,7 @@ export const TeamCard = ({
             <Label htmlFor={`motm_player_ids.${index}`}>{getMotmLabel(index)}</Label>
             <Select
               value={motmPlayerId || "none"}
-              onValueChange={(value) => {
-                const newValue = value === "none" ? "" : value;
-                console.log(`Setting MOTM for team ${index + 1} to:`, newValue);
-                
-                // Get current array of MOTM player IDs
-                const currentMotmIds = [...(form.getValues().motm_player_ids || [])];
-                
-                // Ensure the array is long enough
-                while (currentMotmIds.length <= index) {
-                  currentMotmIds.push("");
-                }
-                
-                // Update the value at the specific index
-                currentMotmIds[index] = newValue;
-                
-                // Set the entire array
-                form.setValue('motm_player_ids', currentMotmIds, { shouldDirty: true });
-              }}
+              onValueChange={handleMotmChange}
             >
               <SelectTrigger id={`motm_player_ids.${index}`}>
                 <SelectValue placeholder="Select player">

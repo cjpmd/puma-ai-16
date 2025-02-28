@@ -75,6 +75,9 @@ export const FixtureForm = ({
     });
   };
 
+  const initialMotmPlayerIds = getInitialMotmPlayerIds();
+  console.log("Initial MOTM player IDs before form creation:", initialMotmPlayerIds);
+
   const form = useForm<FixtureFormData>({
     resolver: zodResolver(fixtureFormSchema),
     defaultValues: {
@@ -86,7 +89,7 @@ export const FixtureForm = ({
       opponent_1_score: editingFixture?.opponent_1_score || 0,
       team_2_score: editingFixture?.team_2_score || 0,
       opponent_2_score: editingFixture?.opponent_2_score || 0,
-      motm_player_ids: getInitialMotmPlayerIds(),
+      motm_player_ids: initialMotmPlayerIds,
       team_times: getInitialTeamTimes(),
       is_home: editingFixture?.is_home ?? true,
       team_name: editingFixture?.team_name || "Broughty Pumas 2015s",
@@ -129,6 +132,15 @@ export const FixtureForm = ({
       form.setValue('motm_player_ids', newMotmIds, { shouldDirty: true });
     }
   }, [watchNumberOfTeams, form]);
+
+  // Force reset form values when editingFixture changes
+  useEffect(() => {
+    if (editingFixture) {
+      const motmIds = getInitialMotmPlayerIds();
+      console.log("Resetting MOTM player IDs from fixture_team_scores:", motmIds);
+      form.setValue('motm_player_ids', motmIds, { shouldDirty: false });
+    }
+  }, [editingFixture, form]);
 
   const getScoreLabel = (isHomeScore: boolean, teamIndex: number) => {
     const homeTeam = watchIsHome ? "Broughty Pumas 2015s" : watchOpponent;
