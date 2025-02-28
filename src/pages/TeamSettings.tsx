@@ -115,53 +115,52 @@ const TeamSettings = () => {
 
   const fetchFAConnectionSettings = async () => {
     try {
-      // First check if the table exists
-      const { data: tableExists, error: tableCheckError } = await supabase
-        .from('fa_connection_settings')
-        .select('count(*)', { count: 'exact', head: true });
-      
-      // If there's an error (likely because the table doesn't exist)
-      if (tableCheckError) {
-        console.log('FA connection settings table may not exist:', tableCheckError);
-        
-        try {
-          // Create the table if it doesn't exist
-          // This uses a direct SQL approach instead of the create_table_if_not_exists function
-          const { error: createTableError } = await supabase.rpc(
-            'execute_sql',
-            { 
-              sql: `CREATE TABLE IF NOT EXISTS fa_connection_settings (
-                id uuid PRIMARY KEY DEFAULT gen_random_uuid(), 
-                enabled boolean DEFAULT false, 
-                team_id text, 
-                provider text
-              )`
-            }
-          );
-          
-          if (createTableError) {
-            // If the execute_sql function doesn't exist, just catch the error
-            console.log('Could not create fa_connection_settings table:', createTableError);
-          }
-        } catch (createError) {
-          console.log('Error creating table:', createError);
-        }
-        
-        // Set default values for the UI
-        setFaConnectionEnabled(false);
-        setTeamId("");
-        setSavedTeamId("");
-        setFaProvider("comet");
-        setIsEditingTeamId(true);
-        return;
-      }
-
+      // Check if the table exists first by trying a select
       const { data, error } = await supabase
         .from('fa_connection_settings')
         .select('*')
         .maybeSingle();
-
-      if (error) throw error;
+      
+      if (error) {
+        // Table likely doesn't exist, create it manually
+        console.log('FA connection settings table may not exist, creating it manually');
+        
+        // Direct SQL approach to create the table
+        try {
+          // Create the table
+          await supabase.rpc('execute_sql', { 
+            sql: `CREATE TABLE IF NOT EXISTS fa_connection_settings (
+              id uuid PRIMARY KEY DEFAULT gen_random_uuid(), 
+              enabled boolean DEFAULT false, 
+              team_id text, 
+              provider text
+            )`
+          });
+          
+          // Insert a default record
+          await supabase.rpc('execute_sql', { 
+            sql: `INSERT INTO fa_connection_settings (id, enabled, team_id, provider)
+                  VALUES ('00000000-0000-0000-0000-000000000002', false, '', 'comet')
+                  ON CONFLICT (id) DO NOTHING`
+          });
+          
+          // Set default values for the UI
+          setFaConnectionEnabled(false);
+          setTeamId("");
+          setSavedTeamId("");
+          setFaProvider("comet");
+          setIsEditingTeamId(true);
+        } catch (sqlError) {
+          console.error('SQL error creating FA connection settings table:', sqlError);
+          // Since direct SQL approach might fail if RPC function doesn't exist, fallback to setting UI defaults
+          setFaConnectionEnabled(false);
+          setTeamId("");
+          setSavedTeamId("");
+          setFaProvider("comet");
+          setIsEditingTeamId(true);
+        }
+        return;
+      }
       
       if (data) {
         setFaConnectionEnabled(data.enabled || false);
@@ -176,6 +175,20 @@ const TeamSettings = () => {
         setSavedTeamId("");
         setFaProvider("comet");
         setIsEditingTeamId(true);
+        
+        // Try to insert default record
+        try {
+          await supabase
+            .from('fa_connection_settings')
+            .insert({
+              id: '00000000-0000-0000-0000-000000000002',
+              enabled: false,
+              team_id: '',
+              provider: 'comet'
+            });
+        } catch (insertError) {
+          console.error('Error inserting default FA settings:', insertError);
+        }
       }
     } catch (error) {
       console.error('Error fetching FA connection settings:', error);
@@ -184,6 +197,13 @@ const TeamSettings = () => {
         description: "Failed to load FA connection settings. The settings table may not exist yet.",
         variant: "destructive",
       });
+      
+      // Set default values
+      setFaConnectionEnabled(false);
+      setTeamId("");
+      setSavedTeamId("");
+      setFaProvider("comet");
+      setIsEditingTeamId(true);
     }
   };
 
@@ -192,50 +212,47 @@ const TeamSettings = () => {
       setIsSavingTeamId(true);
       setTeamIdSaveSuccess(false);
       
-      // First check if the table exists
-      const { data: tableExists, error: tableCheckError } = await supabase
-        .from('fa_connection_settings')
-        .select('count(*)', { count: 'exact', head: true });
-      
-      // If there's an error (likely because the table doesn't exist)
-      if (tableCheckError) {
-        console.log('FA connection settings table does not exist, creating it first');
-        
-        try {
-          // Create the table if it doesn't exist
-          const { error: createTableError } = await supabase.rpc(
-            'execute_sql',
-            { 
-              sql: `CREATE TABLE IF NOT EXISTS fa_connection_settings (
-                id uuid PRIMARY KEY DEFAULT gen_random_uuid(), 
-                enabled boolean DEFAULT false, 
-                team_id text, 
-                provider text
-              )`
-            }
-          );
-          
-          if (createTableError) {
-            console.log('Could not create fa_connection_settings table:', createTableError);
-            throw new Error('Failed to create FA connection settings table');
-          }
-        } catch (createError) {
-          console.log('Error creating table:', createError);
-          throw new Error('Error creating FA connection settings table');
-        }
-      }
-      
-      const { error } = await supabase
+      // Simply try to upsert the record - if table doesn't exist, it will error and we'll handle it
+      const { data, error } = await supabase
         .from('fa_connection_settings')
         .upsert({
           id: '00000000-0000-0000-0000-000000000002', // Using a fixed ID for easier updates
           enabled: updates.enabled !== undefined ? updates.enabled : faConnectionEnabled,
           team_id: updates.team_id !== undefined ? updates.team_id : teamId,
           provider: updates.provider !== undefined ? updates.provider : faProvider
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        // Table might not exist, try to create it first
+        try {
+          await supabase.rpc('execute_sql', { 
+            sql: `CREATE TABLE IF NOT EXISTS fa_connection_settings (
+              id uuid PRIMARY KEY DEFAULT gen_random_uuid(), 
+              enabled boolean DEFAULT false, 
+              team_id text, 
+              provider text
+            )`
+          });
+          
+          // Try insert again
+          const { error: retryError } = await supabase
+            .from('fa_connection_settings')
+            .upsert({
+              id: '00000000-0000-0000-0000-000000000002',
+              enabled: updates.enabled !== undefined ? updates.enabled : faConnectionEnabled,
+              team_id: updates.team_id !== undefined ? updates.team_id : teamId,
+              provider: updates.provider !== undefined ? updates.provider : faProvider
+            });
+            
+          if (retryError) throw retryError;
+        } catch (createError) {
+          console.error('Error creating or updating FA connection settings:', createError);
+          throw new Error('Could not create or update FA connection settings table');
+        }
+      }
       
+      // Update local state based on what was changed
       if (updates.enabled !== undefined) {
         setFaConnectionEnabled(updates.enabled);
       }
@@ -881,7 +898,12 @@ const TeamSettings = () => {
                 </div>
                 <Switch
                   checked={faConnectionEnabled}
-                  onCheckedChange={(checked) => updateFAConnectionSettings({ enabled: checked })}
+                  onCheckedChange={(checked) => {
+                    // Directly update the state first for immediate UI feedback
+                    setFaConnectionEnabled(checked);
+                    // Then update the database (this is async)
+                    updateFAConnectionSettings({ enabled: checked });
+                  }}
                 />
               </div>
               
