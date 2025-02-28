@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 
 const TeamSettings = () => {
   const [teamName, setTeamName] = useState("");
@@ -332,12 +333,13 @@ const TeamSettings = () => {
               {notificationsEnabled && (
                 <div className="pt-2 space-y-4 border-t border-border">
                   <div className="space-y-2">
-                    <FormLabel>WhatsApp Group ID</FormLabel>
-                    <FormDescription>
+                    <Label htmlFor="whatsapp-group-id">WhatsApp Group ID</Label>
+                    <p className="text-sm text-muted-foreground">
                       Enter your WhatsApp Group ID to send notifications to a group chat
-                    </FormDescription>
+                    </p>
                     <div className="flex items-center gap-2">
                       <Input
+                        id="whatsapp-group-id"
                         value={whatsappGroupId}
                         onChange={(e) => setWhatsappGroupId(e.target.value)}
                         placeholder="Enter WhatsApp Group ID"
