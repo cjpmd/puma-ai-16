@@ -41,7 +41,9 @@ export const TeamScores = ({
     }
   }
   
-  const isScoreAvailable = teamScore !== undefined && opponentScore !== undefined;
+  // Check if scores are available - important: consider 0 as a valid score
+  const isScoreAvailable = teamScore !== undefined && teamScore !== null && 
+                           opponentScore !== undefined && opponentScore !== null;
   
   const getStatusIcon = () => {
     if (!isScoreAvailable) {
@@ -115,13 +117,21 @@ export const TeamScores = ({
     
     const homeTeam = isHome ? teamName : opponent;
     const awayTeam = isHome ? opponent : teamName;
-    const homeScore = isHome ? teamScore : opponentScore;
-    const awayScore = isHome ? opponentScore : teamScore;
+    
+    // Handle scores properly, including 0 values
+    let displayHomeScore, displayAwayScore;
+    
+    if (isScoreAvailable) {
+      // For valid scores (including 0), use the actual value
+      displayHomeScore = isHome ? teamScore : opponentScore;
+      displayAwayScore = isHome ? opponentScore : teamScore;
+    } else {
+      // For unavailable scores, show placeholder
+      displayHomeScore = "?";
+      displayAwayScore = "?";
+    }
 
-    const formattedHomeScore = homeScore === null || homeScore === undefined ? '0' : homeScore;
-    const formattedAwayScore = awayScore === null || awayScore === undefined ? '0' : awayScore;
-
-    return `${homeTeam}: ${formattedHomeScore} - ${formattedAwayScore} ${awayTeam}`;
+    return `${homeTeam}: ${displayHomeScore} - ${displayAwayScore} ${awayTeam}`;
   };
 
   return (
