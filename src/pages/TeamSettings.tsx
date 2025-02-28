@@ -115,6 +115,47 @@ const TeamSettings = () => {
 
   const fetchFAConnectionSettings = async () => {
     try {
+      // First check if the table exists
+      const { data: tableExists, error: tableCheckError } = await supabase
+        .from('fa_connection_settings')
+        .select('count(*)', { count: 'exact', head: true });
+      
+      // If there's an error (likely because the table doesn't exist)
+      if (tableCheckError) {
+        console.log('FA connection settings table may not exist:', tableCheckError);
+        
+        try {
+          // Create the table if it doesn't exist
+          // This uses a direct SQL approach instead of the create_table_if_not_exists function
+          const { error: createTableError } = await supabase.rpc(
+            'execute_sql',
+            { 
+              sql: `CREATE TABLE IF NOT EXISTS fa_connection_settings (
+                id uuid PRIMARY KEY DEFAULT gen_random_uuid(), 
+                enabled boolean DEFAULT false, 
+                team_id text, 
+                provider text
+              )`
+            }
+          );
+          
+          if (createTableError) {
+            // If the execute_sql function doesn't exist, just catch the error
+            console.log('Could not create fa_connection_settings table:', createTableError);
+          }
+        } catch (createError) {
+          console.log('Error creating table:', createError);
+        }
+        
+        // Set default values for the UI
+        setFaConnectionEnabled(false);
+        setTeamId("");
+        setSavedTeamId("");
+        setFaProvider("comet");
+        setIsEditingTeamId(true);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('fa_connection_settings')
         .select('*')
@@ -128,12 +169,19 @@ const TeamSettings = () => {
         setSavedTeamId(data.team_id || "");
         setFaProvider(data.provider || "comet");
         setIsEditingTeamId(data.team_id ? false : true);
+      } else {
+        // No data found, set default values
+        setFaConnectionEnabled(false);
+        setTeamId("");
+        setSavedTeamId("");
+        setFaProvider("comet");
+        setIsEditingTeamId(true);
       }
     } catch (error) {
       console.error('Error fetching FA connection settings:', error);
       toast({
         title: "Error",
-        description: "Failed to load FA connection settings",
+        description: "Failed to load FA connection settings. The settings table may not exist yet.",
         variant: "destructive",
       });
     }
@@ -144,25 +192,43 @@ const TeamSettings = () => {
       setIsSavingTeamId(true);
       setTeamIdSaveSuccess(false);
       
-      // Check if we need to create the table first
-      try {
-        // Try to create the table if it doesn't exist
-        const { error: tableError } = await supabase.rpc('create_table_if_not_exists', {
-          p_table_name: 'fa_connection_settings',
-          p_columns: 'id uuid PRIMARY KEY DEFAULT gen_random_uuid(), enabled boolean DEFAULT false, team_id text, provider text'
-        });
+      // First check if the table exists
+      const { data: tableExists, error: tableCheckError } = await supabase
+        .from('fa_connection_settings')
+        .select('count(*)', { count: 'exact', head: true });
+      
+      // If there's an error (likely because the table doesn't exist)
+      if (tableCheckError) {
+        console.log('FA connection settings table does not exist, creating it first');
         
-        if (tableError) {
-          console.warn('Could not create FA connection settings table:', tableError);
+        try {
+          // Create the table if it doesn't exist
+          const { error: createTableError } = await supabase.rpc(
+            'execute_sql',
+            { 
+              sql: `CREATE TABLE IF NOT EXISTS fa_connection_settings (
+                id uuid PRIMARY KEY DEFAULT gen_random_uuid(), 
+                enabled boolean DEFAULT false, 
+                team_id text, 
+                provider text
+              )`
+            }
+          );
+          
+          if (createTableError) {
+            console.log('Could not create fa_connection_settings table:', createTableError);
+            throw new Error('Failed to create FA connection settings table');
+          }
+        } catch (createError) {
+          console.log('Error creating table:', createError);
+          throw new Error('Error creating FA connection settings table');
         }
-      } catch (tableError) {
-        console.warn('Error checking/creating tables:', tableError);
       }
       
       const { error } = await supabase
         .from('fa_connection_settings')
         .upsert({
-          id: '00000000-0000-0000-0000-000000000002',
+          id: '00000000-0000-0000-0000-000000000002', // Using a fixed ID for easier updates
           enabled: updates.enabled !== undefined ? updates.enabled : faConnectionEnabled,
           team_id: updates.team_id !== undefined ? updates.team_id : teamId,
           provider: updates.provider !== undefined ? updates.provider : faProvider
@@ -300,23 +366,39 @@ const TeamSettings = () => {
   const fetchWhatsAppSettings = async () => {
     try {
       setIsLoadingWebhookSettings(true);
-      const { data, error } = await supabase
-        .from('whatsapp_settings')
-        .select('*')
-        .maybeSingle();
-
-      if (error) throw error;
       
-      if (data) {
-        setWhatsappSettings({
-          verification_token: data.verification_token || "",
-          api_key: data.api_key || "",
-          phone_number_id: data.phone_number_id || "",
-          access_token: data.access_token || ""
-        });
+      // First check if the table exists
+      try {
+        const { data: tableExists, error: tableCheckError } = await supabase
+          .from('whatsapp_settings')
+          .select('count(*)', { count: 'exact', head: true });
+        
+        // If there's an error (likely because the table doesn't exist)
+        if (tableCheckError) {
+          console.log('WhatsApp settings table may not exist');
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('whatsapp_settings')
+          .select('*')
+          .maybeSingle();
+
+        if (error) throw error;
+        
+        if (data) {
+          setWhatsappSettings({
+            verification_token: data.verification_token || "",
+            api_key: data.api_key || "",
+            phone_number_id: data.phone_number_id || "",
+            access_token: data.access_token || ""
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching WhatsApp settings:', error);
       }
     } catch (error) {
-      console.error('Error fetching WhatsApp settings:', error);
+      console.error('Error in fetchWhatsAppSettings:', error);
       toast({
         title: "Error",
         description: "Failed to load WhatsApp webhook settings",
@@ -415,24 +497,62 @@ const TeamSettings = () => {
       setIsSavingWebhookSettings(true);
       setWebhookSaveSuccess(false);
       
+      // First check if the table exists
+      try {
+        const { data: tableExists, error: tableCheckError } = await supabase
+          .from('whatsapp_settings')
+          .select('count(*)', { count: 'exact', head: true });
+        
+        // If there's an error (likely because the table doesn't exist)
+        if (tableCheckError) {
+          console.log('WhatsApp settings table does not exist, creating it first');
+          
+          // Create the table if it doesn't exist
+          const { error: createTableError } = await supabase.rpc(
+            'execute_sql',
+            { 
+              sql: `CREATE TABLE IF NOT EXISTS whatsapp_settings (
+                id uuid PRIMARY KEY, 
+                verification_token text,
+                api_key text,
+                phone_number_id text,
+                access_token text
+              )`
+            }
+          );
+          
+          if (createTableError) {
+            console.log('Could not create whatsapp_settings table:', createTableError);
+          }
+        }
+      } catch (createError) {
+        console.log('Error creating whatsapp_settings table:', createError);
+      }
+      
+      // Now try to create the debug logs table
+      try {
+        const { error: debugTableError } = await supabase.rpc(
+          'execute_sql',
+          { 
+            sql: `CREATE TABLE IF NOT EXISTS webhook_debug_logs (
+              id uuid PRIMARY KEY DEFAULT gen_random_uuid(), 
+              message text, 
+              data jsonb, 
+              timestamp timestamptz DEFAULT now()
+            )`
+          }
+        );
+        
+        if (debugTableError) {
+          console.log('Could not create webhook_debug_logs table:', debugTableError);
+        }
+      } catch (debugError) {
+        console.log('Error creating webhook_debug_logs table:', debugError);
+      }
+      
       // First check if values are valid
       if (!whatsappSettings.verification_token) {
         throw new Error("Verification token is required");
-      }
-      
-      // Check if we can create the necessary tables
-      try {
-        // Try to create the debug logs table if it doesn't exist
-        const { error: tableError } = await supabase.rpc('create_table_if_not_exists', {
-          p_table_name: 'webhook_debug_logs',
-          p_columns: 'id uuid PRIMARY KEY DEFAULT gen_random_uuid(), message text, data jsonb, timestamp timestamptz DEFAULT now()'
-        });
-        
-        if (tableError) {
-          console.warn('Could not create debug logs table:', tableError);
-        }
-      } catch (tableError) {
-        console.warn('Error checking/creating tables:', tableError);
       }
       
       const { error } = await supabase
