@@ -1,8 +1,10 @@
 
+import { useEffect, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Crown } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TeamHeaderControlsProps {
   teamId: string;
@@ -23,6 +25,40 @@ export const TeamHeaderControls = ({
   onPerformanceCategoryChange,
   onAddPeriod
 }: TeamHeaderControlsProps) => {
+  const [categories, setCategories] = useState<{name: string, value: string}[]>([
+    { name: "Messi", value: "MESSI" },
+    { name: "Ronaldo", value: "RONALDO" },
+    { name: "Jags", value: "JAGS" }
+  ]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('performance_categories')
+          .select('*')
+          .order('name', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching performance categories:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const formattedCategories = data.map(cat => ({
+            name: cat.name,
+            value: cat.id.toUpperCase()
+          }));
+          setCategories(formattedCategories);
+        }
+      } catch (error) {
+        console.error('Error in fetchCategories:', error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
   return (
     <div className="flex justify-end items-center gap-4 mb-4">
       <div className="flex-1 flex items-center gap-2">
@@ -59,9 +95,11 @@ export const TeamHeaderControls = ({
           <SelectValue placeholder="Select category" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="MESSI">Messi</SelectItem>
-          <SelectItem value="RONALDO">Ronaldo</SelectItem>
-          <SelectItem value="JAGS">Jags</SelectItem>
+          {categories.map(category => (
+            <SelectItem key={category.value} value={category.value}>
+              {category.name}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 

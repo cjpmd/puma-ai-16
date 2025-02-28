@@ -223,6 +223,8 @@ export function FAConnectionSettings() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="comet">FA Comet</SelectItem>
+                  <SelectItem value="matchday">MatchDay</SelectItem>
+                  <SelectItem value="fulltime">Full Time</SelectItem>
                   <SelectItem value="playmetrix">Playmetrix</SelectItem>
                   <SelectItem value="custom">Custom</SelectItem>
                 </SelectContent>
