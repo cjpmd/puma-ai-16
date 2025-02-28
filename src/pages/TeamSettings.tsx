@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,10 +14,12 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription } from "@/components/ui/form";
 
 const TeamSettings = () => {
   const [teamName, setTeamName] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [whatsappGroupId, setWhatsappGroupId] = useState("");
   const [hideScoresFromParents, setHideScoresFromParents] = useState(false);
   const [format, setFormat] = useState("7-a-side");
   const [tempFormat, setTempFormat] = useState("7-a-side");
@@ -43,6 +44,7 @@ const TeamSettings = () => {
       if (error) throw error;
       setTeamName(data?.team_name ?? "");
       setNotificationsEnabled(data?.parent_notification_enabled ?? false);
+      setWhatsappGroupId(data?.whatsapp_group_id ?? "");
       setHideScoresFromParents(data?.hide_scores_from_parents ?? false);
       setFormat(data?.format ?? "7-a-side");
       setTempFormat(data?.format ?? "7-a-side");
@@ -94,17 +96,27 @@ const TeamSettings = () => {
     }
   };
 
-  const updateNotificationSettings = async (enabled: boolean) => {
+  const updateNotificationSettings = async (enabled: boolean, groupId?: string) => {
     try {
+      const updates: any = {
+        parent_notification_enabled: enabled,
+        id: '00000000-0000-0000-0000-000000000000'
+      };
+      
+      if (groupId !== undefined) {
+        updates.whatsapp_group_id = groupId;
+      }
+      
       const { error } = await supabase
         .from('team_settings')
-        .upsert({ 
-          parent_notification_enabled: enabled,
-          id: '00000000-0000-0000-0000-000000000000'
-        });
+        .upsert(updates);
 
       if (error) throw error;
       setNotificationsEnabled(enabled);
+      if (groupId !== undefined) {
+        setWhatsappGroupId(groupId);
+      }
+      
       toast({
         title: "Success",
         description: "Notification settings updated successfully",
@@ -213,6 +225,10 @@ const TeamSettings = () => {
     }
   };
 
+  const handleSaveWhatsappGroupId = async () => {
+    await updateNotificationSettings(notificationsEnabled, whatsappGroupId);
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <motion.div
@@ -299,17 +315,41 @@ const TeamSettings = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium">Enable Parent Notifications</h4>
-                <p className="text-sm text-muted-foreground">
-                  Send notifications to parents about team updates and player performance
-                </p>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h4 className="text-sm font-medium">Enable Parent Notifications</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Send notifications to parents about team updates and player performance
+                  </p>
+                </div>
+                <Switch
+                  checked={notificationsEnabled}
+                  onCheckedChange={updateNotificationSettings}
+                />
               </div>
-              <Switch
-                checked={notificationsEnabled}
-                onCheckedChange={updateNotificationSettings}
-              />
+              
+              {notificationsEnabled && (
+                <div className="pt-2 space-y-4 border-t border-border">
+                  <div className="space-y-2">
+                    <FormLabel>WhatsApp Group ID</FormLabel>
+                    <FormDescription>
+                      Enter your WhatsApp Group ID to send notifications to a group chat
+                    </FormDescription>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={whatsappGroupId}
+                        onChange={(e) => setWhatsappGroupId(e.target.value)}
+                        placeholder="Enter WhatsApp Group ID"
+                        className="max-w-md"
+                      />
+                      <Button onClick={handleSaveWhatsappGroupId}>
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
