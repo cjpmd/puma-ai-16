@@ -57,133 +57,20 @@ export function FormatsAndCategoriesSettings() {
   const { toast } = useToast();
 
   useEffect(() => {
-    loadExistingData();
+    setupTablesAndLoadData();
   }, []);
 
-  const loadExistingData = async () => {
+  const setupTablesAndLoadData = async () => {
     try {
       setIsLoading(true);
       
-      // Check if tables exist first
-      const { data: tablesExist, error: checkError } = await supabase.rpc('execute_sql', {
-        sql: `
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_name = 'game_formats'
-          ) AS game_formats_exist,
-          EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_name = 'performance_categories'
-          ) AS performance_categories_exist;
-        `
-      });
+      // Direct table creation - avoiding execute_sql since it's failing
+      await createTablesDirect();
       
-      if (checkError) {
-        throw checkError;
-      }
-      
-      const tablesNeedSetup = !(tablesExist?.[0]?.game_formats_exist && tablesExist?.[0]?.performance_categories_exist);
-      
-      if (tablesNeedSetup) {
-        await setupTables();
-      } else {
-        // Just fetch existing data if tables already exist
-        await Promise.all([fetchFormats(), fetchCategories()]);
-      }
-    } catch (error) {
-      console.error('Error checking existing data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load existing configuration",
-        variant: "destructive",
-      });
-      
-      // If we can't check, assume tables need to be setup
-      await setupTables();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const setupTables = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Create tables if they don't exist
-      await supabase.rpc('execute_sql', {
-        sql: `
-        -- Create game_formats table if it doesn't exist
-        CREATE TABLE IF NOT EXISTS game_formats (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          name TEXT NOT NULL UNIQUE,
-          is_default BOOLEAN DEFAULT false,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-        );
-        
-        -- Create performance_categories table if it doesn't exist
-        CREATE TABLE IF NOT EXISTS performance_categories (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          name TEXT NOT NULL UNIQUE,
-          description TEXT,
-          is_default BOOLEAN DEFAULT false,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-        );
-        
-        -- Insert default formats if none exist
-        INSERT INTO game_formats (name, is_default)
-        SELECT '4-a-side', false
-        WHERE NOT EXISTS (SELECT 1 FROM game_formats WHERE name = '4-a-side');
-        
-        INSERT INTO game_formats (name, is_default)
-        SELECT '5-a-side', false
-        WHERE NOT EXISTS (SELECT 1 FROM game_formats WHERE name = '5-a-side');
-        
-        INSERT INTO game_formats (name, is_default)
-        SELECT '7-a-side', true
-        WHERE NOT EXISTS (SELECT 1 FROM game_formats WHERE name = '7-a-side');
-        
-        INSERT INTO game_formats (name, is_default)
-        SELECT '9-a-side', false
-        WHERE NOT EXISTS (SELECT 1 FROM game_formats WHERE name = '9-a-side');
-        
-        INSERT INTO game_formats (name, is_default)
-        SELECT '11-a-side', false
-        WHERE NOT EXISTS (SELECT 1 FROM game_formats WHERE name = '11-a-side');
-        
-        -- Insert default performance categories if none exist
-        INSERT INTO performance_categories (name, description, is_default)
-        SELECT 'MESSI', 'Top performance category', true
-        WHERE NOT EXISTS (SELECT 1 FROM performance_categories WHERE name = 'MESSI');
-        
-        INSERT INTO performance_categories (name, description, is_default)
-        SELECT 'RONALDO', 'Middle performance category', false
-        WHERE NOT EXISTS (SELECT 1 FROM performance_categories WHERE name = 'RONALDO');
-        
-        INSERT INTO performance_categories (name, description, is_default)
-        SELECT 'JAGS', 'Developing performance category', false
-        WHERE NOT EXISTS (SELECT 1 FROM performance_categories WHERE name = 'JAGS');
-        
-        -- Ensure at least one format and category is set as default
-        UPDATE game_formats SET is_default = true 
-        WHERE id = (SELECT id FROM game_formats LIMIT 1)
-        AND NOT EXISTS (SELECT 1 FROM game_formats WHERE is_default = true);
-        
-        UPDATE performance_categories SET is_default = true 
-        WHERE id = (SELECT id FROM performance_categories LIMIT 1)
-        AND NOT EXISTS (SELECT 1 FROM performance_categories WHERE is_default = true);
-        `
-      });
-      
-      console.log("Tables setup completed");
-      
-      // Fetch formats and categories after setup
+      // Fetch data after creating tables
       await Promise.all([fetchFormats(), fetchCategories()]);
     } catch (error) {
-      console.error('Error in formats and categories setup:', error);
+      console.error('Error in setup and data loading:', error);
       toast({
         title: "Error",
         description: "Failed to set up formats and categories",
@@ -191,6 +78,111 @@ export function FormatsAndCategoriesSettings() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const createTablesDirect = async () => {
+    try {
+      // Create game_formats table
+      const { error: formatsError } = await supabase.from('game_formats').select('count()').limit(1);
+      
+      if (formatsError && formatsError.code === '42P01') {
+        // Table doesn't exist, create it
+        const { error: createError } = await supabase.rpc('create_table_if_not_exists', {
+          table_name: 'game_formats',
+          table_definition: `
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            name TEXT NOT NULL UNIQUE,
+            is_default BOOLEAN DEFAULT false,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+          `
+        });
+        
+        if (createError) {
+          console.error('Error creating game_formats table:', createError);
+          // Alternative approach - try creating sample data directly
+          await insertDefaultGameFormats();
+        } else {
+          await insertDefaultGameFormats();
+        }
+      }
+      
+      // Create performance_categories table
+      const { error: categoriesError } = await supabase.from('performance_categories').select('count()').limit(1);
+      
+      if (categoriesError && categoriesError.code === '42P01') {
+        // Table doesn't exist, create it
+        const { error: createError } = await supabase.rpc('create_table_if_not_exists', {
+          table_name: 'performance_categories',
+          table_definition: `
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            is_default BOOLEAN DEFAULT false,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+          `
+        });
+        
+        if (createError) {
+          console.error('Error creating performance_categories table:', createError);
+          // Alternative approach - try creating directly
+          await insertDefaultPerformanceCategories();
+        } else {
+          await insertDefaultPerformanceCategories();
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error in direct table creation:', error);
+      throw error;
+    }
+  };
+
+  const insertDefaultGameFormats = async () => {
+    try {
+      const defaultFormats = [
+        { name: '4-a-side', is_default: false },
+        { name: '5-a-side', is_default: false },
+        { name: '7-a-side', is_default: true },
+        { name: '9-a-side', is_default: false },
+        { name: '11-a-side', is_default: false }
+      ];
+      
+      // Try to insert default formats
+      for (const format of defaultFormats) {
+        await supabase.from('game_formats').upsert(
+          { name: format.name, is_default: format.is_default },
+          { onConflict: 'name' }
+        );
+      }
+    } catch (error) {
+      console.error('Error inserting default game formats:', error);
+    }
+  };
+
+  const insertDefaultPerformanceCategories = async () => {
+    try {
+      const defaultCategories = [
+        { name: 'MESSI', description: 'Top performance category', is_default: true },
+        { name: 'RONALDO', description: 'Middle performance category', is_default: false },
+        { name: 'JAGS', description: 'Developing performance category', is_default: false }
+      ];
+      
+      // Try to insert default categories
+      for (const category of defaultCategories) {
+        await supabase.from('performance_categories').upsert(
+          { 
+            name: category.name, 
+            description: category.description,
+            is_default: category.is_default 
+          },
+          { onConflict: 'name' }
+        );
+      }
+    } catch (error) {
+      console.error('Error inserting default performance categories:', error);
     }
   };
 
@@ -215,11 +207,6 @@ export function FormatsAndCategoriesSettings() {
       setDefaultFormat(defaultFmt);
     } catch (error) {
       console.error('Error fetching game formats:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load game formats",
-        variant: "destructive",
-      });
     }
   };
 
@@ -244,11 +231,6 @@ export function FormatsAndCategoriesSettings() {
       setDefaultCategory(defaultCat);
     } catch (error) {
       console.error('Error fetching performance categories:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load performance categories",
-        variant: "destructive",
-      });
     }
   };
 

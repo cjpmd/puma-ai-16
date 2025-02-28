@@ -32,66 +32,88 @@ export function FAConnectionSettings() {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchFAConnectionSettings();
+    setupAndFetchSettings();
   }, []);
 
-  const fetchFAConnectionSettings = async () => {
+  const setupAndFetchSettings = async () => {
     try {
       setIsLoading(true);
       
-      // First, check if the table exists
-      const { data: tableExists, error: tableCheckError } = await supabase.rpc(
-        'execute_sql',
-        {
-          sql: `
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_name = 'fa_connection_settings'
-          )
-          `
+      // Try to fetch settings directly
+      const { data: settings, error: settingsError } = await supabase
+        .from('fa_connection_settings')
+        .select('*')
+        .limit(1);
+      
+      if (settingsError) {
+        if (settingsError.code === '42P01') {
+          // Table doesn't exist, create it
+          await createSettingsTable();
+          await fetchFAConnectionSettings();
+        } else {
+          console.error('Error fetching FA connection settings:', settingsError);
         }
-      );
-      
-      if (tableCheckError) {
-        console.error('Error checking table existence:', tableCheckError);
-        setIsLoading(false);
-        return;
+      } else if (settings && settings.length > 0) {
+        setFASettings(settings[0]);
+      } else {
+        // No settings found, create default
+        await createDefaultSettings();
+        await fetchFAConnectionSettings();
       }
+    } catch (error) {
+      console.error('Error in FA connection setup:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createSettingsTable = async () => {
+    try {
+      // Try to create table using rpc
+      const { error } = await supabase.rpc('create_table_if_not_exists', {
+        table_name: 'fa_connection_settings',
+        table_definition: `
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          enabled boolean DEFAULT false,
+          team_id text,
+          provider text
+        `
+      });
       
-      // If table doesn't exist, create it
-      if (!tableExists) {
-        const { error: createError } = await supabase.rpc(
-          'execute_sql',
-          {
-            sql: `
-            CREATE TABLE IF NOT EXISTS fa_connection_settings (
-              id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-              enabled boolean DEFAULT false,
-              team_id text,
-              provider text
-            );
-            
-            INSERT INTO fa_connection_settings (id, enabled, team_id, provider)
-            VALUES ('00000000-0000-0000-0000-000000000002', false, '', 'comet')
-            ON CONFLICT (id) DO NOTHING;
-            `
-          }
-        );
+      if (error) {
+        console.error('Error creating fa_connection_settings table:', error);
         
-        if (createError) {
-          console.error('Error creating FA connection settings table:', createError);
-          setIsLoading(false);
-          toast({
-            title: "Error",
-            description: "Failed to set up FA connection settings",
-            variant: "destructive",
-          });
-          return;
-        }
+        // Try direct creation if RPC fails
+        await createDefaultSettings();
       }
+    } catch (error) {
+      console.error('Error creating FA settings table:', error);
+    }
+  };
+
+  const createDefaultSettings = async () => {
+    try {
+      const { error } = await supabase
+        .from('fa_connection_settings')
+        .insert([
+          {
+            id: '00000000-0000-0000-0000-000000000002',
+            enabled: false,
+            team_id: '',
+            provider: 'comet'
+          }
+        ]);
       
-      // Now fetch the settings
+      if (error && error.code !== '23505') { // Ignore duplicate key errors
+        console.error('Error creating default FA settings:', error);
+      }
+    } catch (error) {
+      console.error('Error creating default FA settings:', error);
+    }
+  };
+
+  const fetchFAConnectionSettings = async () => {
+    try {
       const { data, error } = await supabase
         .from('fa_connection_settings')
         .select('*')
@@ -99,36 +121,12 @@ export function FAConnectionSettings() {
         .single();
       
       if (error) {
-        // If no data exists, create a default entry
-        if (error.code === 'PGRST116') {
-          const { data: newData, error: insertError } = await supabase
-            .from('fa_connection_settings')
-            .insert([
-              {
-                id: '00000000-0000-0000-0000-000000000002',
-                enabled: false,
-                team_id: '',
-                provider: 'comet'
-              }
-            ])
-            .select()
-            .single();
-          
-          if (insertError) {
-            console.error('Error creating default FA settings:', insertError);
-          } else {
-            setFASettings(newData);
-          }
-        } else {
-          console.error('Error fetching FA connection settings:', error);
-        }
+        console.error('Error fetching FA connection settings:', error);
       } else {
         setFASettings(data);
       }
     } catch (error) {
-      console.error('Error in FA connection setup:', error);
-    } finally {
-      setIsLoading(false);
+      console.error('Error fetching FA connection settings:', error);
     }
   };
 

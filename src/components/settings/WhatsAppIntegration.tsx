@@ -43,11 +43,11 @@ export function WhatsAppIntegration() {
   const [whatsappMessages, setWhatsappMessages] = useState<WhatsAppMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [webhookUrl, setWebhookUrl] = useState("");
+  const [integrationEnabled, setIntegrationEnabled] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchWhatsAppSettings();
-    fetchWhatsAppMessages();
+    setupTablesAndLoadData();
     
     // Set the webhook URL based on the current environment
     const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
@@ -58,14 +58,47 @@ export function WhatsAppIntegration() {
     setWebhookUrl(baseUrl);
   }, []);
 
-  const fetchWhatsAppSettings = async () => {
+  const setupTablesAndLoadData = async () => {
     try {
       setIsLoading(true);
       
-      // Check if table exists, create if not
-      await supabase.rpc('execute_sql', {
-        sql: `
-        CREATE TABLE IF NOT EXISTS whatsapp_settings (
+      // Try to fetch settings directly
+      const { data: settings, error: settingsError } = await supabase
+        .from('whatsapp_settings')
+        .select('*')
+        .limit(1);
+      
+      if (settingsError) {
+        if (settingsError.code === '42P01') {
+          // Table doesn't exist, create it
+          await createWhatsAppTables();
+          await fetchWhatsAppSettings();
+        } else {
+          console.error('Error fetching WhatsApp settings:', settingsError);
+        }
+      } else if (settings && settings.length > 0) {
+        setWhatsappSettings(settings[0]);
+        setIntegrationEnabled(!!settings[0].verification_token);
+      } else {
+        // No settings found, create default
+        await createDefaultWhatsAppSettings();
+        await fetchWhatsAppSettings();
+      }
+      
+      await fetchWhatsAppMessages();
+    } catch (error) {
+      console.error('Error in WhatsApp settings setup:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createWhatsAppTables = async () => {
+    try {
+      // Create whatsapp_settings table
+      const { error: settingsError } = await supabase.rpc('create_table_if_not_exists', {
+        table_name: 'whatsapp_settings',
+        table_definition: `
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           verification_token TEXT,
           api_key TEXT,
@@ -73,15 +106,68 @@ export function WhatsAppIntegration() {
           access_token TEXT,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-        );
-        
-        -- Insert default record if none exists
-        INSERT INTO whatsapp_settings (id)
-        SELECT '00000000-0000-0000-0000-000000000001'
-        WHERE NOT EXISTS (SELECT 1 FROM whatsapp_settings LIMIT 1);
         `
       });
       
+      if (settingsError) {
+        console.error('Error creating whatsapp_settings table:', settingsError);
+        // Try direct approach
+        await supabase.from('whatsapp_settings').insert([{
+          id: '00000000-0000-0000-0000-000000000001',
+          verification_token: null,
+          api_key: null,
+          phone_number_id: null,
+          access_token: null
+        }]);
+      }
+      
+      // Create whatsapp_messages table
+      const { error: messagesError } = await supabase.rpc('create_table_if_not_exists', {
+        table_name: 'whatsapp_messages',
+        table_definition: `
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          message_id TEXT,
+          phone_number TEXT,
+          message TEXT,
+          raw_payload JSONB,
+          processed BOOLEAN DEFAULT false,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+        `
+      });
+      
+      if (messagesError) {
+        console.error('Error creating whatsapp_messages table:', messagesError);
+      }
+    } catch (error) {
+      console.error('Error creating WhatsApp tables:', error);
+    }
+  };
+
+  const createDefaultWhatsAppSettings = async () => {
+    try {
+      const { error } = await supabase
+        .from('whatsapp_settings')
+        .insert([
+          {
+            id: '00000000-0000-0000-0000-000000000001',
+            verification_token: null,
+            api_key: null,
+            phone_number_id: null,
+            access_token: null
+          }
+        ]);
+      
+      if (error) {
+        console.error('Error creating default WhatsApp settings:', error);
+      }
+    } catch (error) {
+      console.error('Error creating default WhatsApp settings:', error);
+    }
+  };
+
+  const fetchWhatsAppSettings = async () => {
+    try {
       const { data, error } = await supabase
         .from('whatsapp_settings')
         .select('*')
@@ -92,30 +178,26 @@ export function WhatsAppIntegration() {
         console.error('Error fetching WhatsApp settings:', error);
       } else {
         setWhatsappSettings(data);
+        setIntegrationEnabled(!!data.verification_token);
       }
     } catch (error) {
-      console.error('Error in WhatsApp settings setup:', error);
-    } finally {
-      setIsLoading(false);
+      console.error('Error fetching WhatsApp settings:', error);
     }
   };
 
   const fetchWhatsAppMessages = async () => {
     try {
-      // Check if table exists, create if not
-      await supabase.rpc('execute_sql', {
-        sql: `
-        CREATE TABLE IF NOT EXISTS whatsapp_messages (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          message_id TEXT,
-          phone_number TEXT,
-          message TEXT,
-          raw_payload JSONB,
-          processed BOOLEAN DEFAULT false,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-        );`
-      });
+      // Check if table exists first
+      const { error: checkError } = await supabase
+        .from('whatsapp_messages')
+        .select('count(*)')
+        .limit(1);
+      
+      if (checkError && checkError.code === '42P01') {
+        // Table doesn't exist, create it
+        await createWhatsAppTables();
+        return; // No messages to fetch yet
+      }
       
       const { data, error } = await supabase
         .from('whatsapp_messages')
@@ -171,6 +253,23 @@ export function WhatsAppIntegration() {
     }
   };
 
+  const toggleWhatsAppIntegration = (enabled: boolean) => {
+    if (enabled) {
+      updateWhatsAppSettings({ 
+        verification_token: Math.random().toString(36).substring(2, 15) 
+      });
+      setIntegrationEnabled(true);
+    } else {
+      updateWhatsAppSettings({ 
+        verification_token: null,
+        api_key: null,
+        phone_number_id: null,
+        access_token: null
+      });
+      setIntegrationEnabled(false);
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(
       () => {
@@ -207,19 +306,13 @@ export function WhatsAppIntegration() {
             </p>
           </div>
           <Switch
-            checked={!!whatsappSettings?.verification_token}
-            onCheckedChange={(checked) => {
-              if (checked && !whatsappSettings?.verification_token) {
-                updateWhatsAppSettings({ verification_token: Math.random().toString(36).substring(2, 15) });
-              } else if (!checked) {
-                updateWhatsAppSettings({ verification_token: null });
-              }
-            }}
+            checked={integrationEnabled}
+            onCheckedChange={toggleWhatsAppIntegration}
             disabled={isLoading}
           />
         </div>
         
-        {whatsappSettings?.verification_token && (
+        {integrationEnabled && (
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="grid gap-2">
@@ -228,7 +321,7 @@ export function WhatsAppIntegration() {
                 </label>
                 <Input
                   id="verification-token"
-                  value={whatsappSettings.verification_token || ''}
+                  value={whatsappSettings?.verification_token || ''}
                   onChange={(e) => updateWhatsAppSettings({ verification_token: e.target.value })}
                   placeholder="Verification token for webhook"
                 />
@@ -240,7 +333,7 @@ export function WhatsAppIntegration() {
                 </label>
                 <Input
                   id="phone-number-id"
-                  value={whatsappSettings.phone_number_id || ''}
+                  value={whatsappSettings?.phone_number_id || ''}
                   onChange={(e) => updateWhatsAppSettings({ phone_number_id: e.target.value })}
                   placeholder="Your WhatsApp phone number ID"
                 />
@@ -253,7 +346,7 @@ export function WhatsAppIntegration() {
                 <Input
                   id="access-token"
                   type="password"
-                  value={whatsappSettings.access_token || ''}
+                  value={whatsappSettings?.access_token || ''}
                   onChange={(e) => updateWhatsAppSettings({ access_token: e.target.value })}
                   placeholder="Your WhatsApp API access token"
                 />
