@@ -41,9 +41,10 @@ export const TeamScores = ({
     }
   }
   
-  // Check if scores are available - important: consider 0 as a valid score
-  const isScoreAvailable = teamScore !== undefined && teamScore !== null && 
-                           opponentScore !== undefined && opponentScore !== null;
+  // Critical check: 0 is a valid score, so we only consider scores unavailable if they're undefined or null
+  const isScoreAvailable = 
+    (teamScore !== undefined && teamScore !== null) && 
+    (opponentScore !== undefined && opponentScore !== null);
   
   const getStatusIcon = () => {
     if (!isScoreAvailable) {
@@ -118,15 +119,16 @@ export const TeamScores = ({
     const homeTeam = isHome ? teamName : opponent;
     const awayTeam = isHome ? opponent : teamName;
     
-    // Handle scores properly, including 0 values
+    // Create variables for display scores with proper handling of 0 scores
     let displayHomeScore, displayAwayScore;
     
+    // A score of 0 is valid, so only use placeholders if the score is truly unavailable
     if (isScoreAvailable) {
-      // For valid scores (including 0), use the actual value
+      // For 0-0 scores or any valid scores, directly use the values (including 0)
       displayHomeScore = isHome ? teamScore : opponentScore;
       displayAwayScore = isHome ? opponentScore : teamScore;
     } else {
-      // For unavailable scores, show placeholder
+      // Only when scores are truly null or undefined, show placeholder
       displayHomeScore = "?";
       displayAwayScore = "?";
     }
