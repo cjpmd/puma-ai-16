@@ -131,8 +131,13 @@ export const FixtureCard = ({
   const formatText = fixture.format ? `${fixture.format} Format` : "";
 
   console.log("Rendering fixture:", fixture.id, fixture.opponent);
-  console.log("Fixture MOTM player ID:", fixture.motm_player_id);
   console.log("Fixture team scores:", fixture.fixture_team_scores);
+  console.log("Fixture direct scores:", {
+    team_1_score: fixture.team_1_score,
+    opponent_1_score: fixture.opponent_1_score,
+    team_2_score: fixture.team_2_score,
+    opponent_2_score: fixture.opponent_2_score
+  });
 
   // Format time for display, handling nullable times
   const formatTime = (timeString?: string | null) => {

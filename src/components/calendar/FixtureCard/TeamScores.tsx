@@ -33,12 +33,15 @@ export const TeamScores = ({
     
     // Get scores from the fixture based on teamIndex
     if (teamIndex === 0) {
+      // Use explicit checks so we can distinguish between undefined and 0
       teamScore = fixture.team_1_score !== undefined ? fixture.team_1_score : null;
       opponentScore = fixture.opponent_1_score !== undefined ? fixture.opponent_1_score : null;
     } else if (teamIndex === 1) {
       teamScore = fixture.team_2_score !== undefined ? fixture.team_2_score : null;
       opponentScore = fixture.opponent_2_score !== undefined ? fixture.opponent_2_score : null;
     }
+    
+    console.log(`TeamScores for team ${teamIndex + 1}:`, { teamScore, opponentScore });
   }
   
   // Critical check: 0 is a valid score, so we only consider scores unavailable if they're undefined or null
@@ -51,11 +54,12 @@ export const TeamScores = ({
       return <Minus className="h-4 w-4 text-amber-500" />;
     }
 
-    if (teamScore === null || opponentScore === null) {
-      return <Minus className="h-4 w-4 text-amber-500" />;
-    }
+    // At this point we know both scores are not null or undefined
+    // We can safely compare them as numbers
+    const tScore = teamScore as number;
+    const oScore = opponentScore as number;
 
-    if (teamScore > opponentScore) {
+    if (tScore > oScore) {
       return (
         <svg 
           xmlns="http://www.w3.org/2000/svg" 
@@ -72,7 +76,7 @@ export const TeamScores = ({
           <path d="m5 12 5 5 10-10"></path>
         </svg>
       );
-    } else if (teamScore < opponentScore) {
+    } else if (tScore < oScore) {
       return (
         <svg 
           xmlns="http://www.w3.org/2000/svg" 
