@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,9 +7,18 @@ import { useQuery } from "@tanstack/react-query";
 import { ParentDetailsDialog } from "@/components/parents/ParentDetailsDialog";
 import { Player, PlayerType } from "@/types/player";
 
+interface Parent {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+}
+
 const PlayerDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const [player, setPlayer] = useState<Player | null>(null);
+  const [parents, setParents] = useState<Parent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Query for player details, attributes, and attribute history
   const { data: playerData } = useQuery({
@@ -71,11 +81,50 @@ const PlayerDetailsPage = () => {
     enabled: !!id,
   });
 
+  // Fetch parents data
+  useEffect(() => {
+    if (id) {
+      const fetchParents = async () => {
+        setIsLoading(true);
+        try {
+          const { data, error } = await supabase
+            .from("player_parents")
+            .select("*")
+            .eq("player_id", id);
+
+          if (error) {
+            console.error("Error fetching parents:", error);
+          } else {
+            setParents(data || []);
+          }
+        } catch (error) {
+          console.error("Failed to fetch parents:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchParents();
+    }
+  }, [id]);
+
   useEffect(() => {
     if (playerData) {
       setPlayer(playerData);
     }
   }, [playerData]);
+
+  const handleParentSave = async () => {
+    // Refresh parents after saving
+    if (id) {
+      const { data } = await supabase
+        .from("player_parents")
+        .select("*")
+        .eq("player_id", id);
+      
+      setParents(data || []);
+    }
+  };
 
   if (!player || !id) return null;
 
@@ -83,7 +132,11 @@ const PlayerDetailsPage = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">{player.name}</h1>
-        <ParentDetailsDialog playerId={id} onSave={() => {}} />
+        <ParentDetailsDialog 
+          playerId={id} 
+          existingParents={parents}
+          onSave={handleParentSave} 
+        />
       </div>
       <PlayerDetails player={player} />
     </div>
