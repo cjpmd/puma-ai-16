@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings, Bell, Users, Eye, Check, Loader2 } from "lucide-react";
+import { Settings, Bell, Users, Eye, Check, Loader2, Edit } from "lucide-react";
 import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
 import {
   Collapsible,
@@ -21,6 +21,8 @@ const TeamSettings = () => {
   const [teamName, setTeamName] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [whatsappGroupId, setWhatsappGroupId] = useState("");
+  const [savedWhatsappGroupId, setSavedWhatsappGroupId] = useState("");
+  const [isEditingWhatsapp, setIsEditingWhatsapp] = useState(false);
   const [hideScoresFromParents, setHideScoresFromParents] = useState(false);
   const [format, setFormat] = useState("7-a-side");
   const [tempFormat, setTempFormat] = useState("7-a-side");
@@ -47,7 +49,13 @@ const TeamSettings = () => {
       if (error) throw error;
       setTeamName(data?.team_name ?? "");
       setNotificationsEnabled(data?.parent_notification_enabled ?? false);
-      setWhatsappGroupId(data?.whatsapp_group_id ?? "");
+      
+      // Store both current and saved whatsapp group id
+      const groupId = data?.whatsapp_group_id ?? "";
+      setWhatsappGroupId(groupId);
+      setSavedWhatsappGroupId(groupId);
+      setIsEditingWhatsapp(groupId === "");
+      
       setHideScoresFromParents(data?.hide_scores_from_parents ?? false);
       setFormat(data?.format ?? "7-a-side");
       setTempFormat(data?.format ?? "7-a-side");
@@ -124,6 +132,7 @@ const TeamSettings = () => {
       setNotificationsEnabled(enabled);
       if (groupId !== undefined) {
         setWhatsappGroupId(groupId);
+        setSavedWhatsappGroupId(groupId);
       }
       
       toast({
@@ -278,6 +287,8 @@ const TeamSettings = () => {
       const success = await updateNotificationSettings(notificationsEnabled, whatsappGroupId);
       if (success) {
         setWhatsappSaveSuccess(true);
+        setIsEditingWhatsapp(false);
+        
         // Reset success indicator after 3 seconds
         setTimeout(() => {
           setWhatsappSaveSuccess(false);
@@ -409,27 +420,40 @@ const TeamSettings = () => {
                         onChange={(e) => setWhatsappGroupId(e.target.value)}
                         placeholder="Enter WhatsApp Group ID"
                         className="max-w-md"
+                        disabled={!isEditingWhatsapp && savedWhatsappGroupId !== ""}
+                        readOnly={!isEditingWhatsapp && savedWhatsappGroupId !== ""}
                       />
-                      <Button 
-                        onClick={handleSaveWhatsappGroupId}
-                        disabled={isSavingWhatsapp}
-                        className="min-w-[80px]"
-                        variant={whatsappSaveSuccess ? "outline" : "default"}
-                      >
-                        {isSavingWhatsapp ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : whatsappSaveSuccess ? (
-                          <>
-                            <Check className="h-4 w-4 mr-2 text-green-500" />
-                            Saved
-                          </>
-                        ) : (
-                          "Save"
-                        )}
-                      </Button>
+                      {(isEditingWhatsapp || savedWhatsappGroupId === "") ? (
+                        <Button 
+                          onClick={handleSaveWhatsappGroupId}
+                          disabled={isSavingWhatsapp}
+                          className="min-w-[80px]"
+                          variant={whatsappSaveSuccess ? "outline" : "default"}
+                        >
+                          {isSavingWhatsapp ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Saving...
+                            </>
+                          ) : whatsappSaveSuccess ? (
+                            <>
+                              <Check className="h-4 w-4 mr-2 text-green-500" />
+                              Saved
+                            </>
+                          ) : (
+                            "Save"
+                          )}
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={() => setIsEditingWhatsapp(true)}
+                          variant="outline"
+                          className="min-w-[80px]"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
