@@ -58,18 +58,9 @@ export default function TeamSettings() {
 
   const createDefaultCategories = async () => {
     try {
-      // Try to create the table first
-      await supabase.query(`
-        CREATE TABLE IF NOT EXISTS performance_categories (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          description TEXT,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )
-      `);
-      
-      // Insert default categories
+      // First try to create the table using the SQL API
+      // We need to use the REST API since we can't directly execute SQL queries
+      // Try to insert the default data directly
       const { error } = await supabase
         .from('performance_categories')
         .upsert([
@@ -80,6 +71,27 @@ export default function TeamSettings() {
         
       if (error) {
         console.error('Error creating default categories:', error);
+        
+        // If the error indicates the table doesn't exist, try to create it using a function
+        // For demo purposes, we'll create a new RPC function call
+        const { data, error: rpcError } = await supabase.rpc('create_performance_categories_table');
+        
+        if (rpcError) {
+          console.error('Error creating performance_categories table via RPC:', rpcError);
+        } else {
+          // Try to insert again after table creation
+          const { error: retryError } = await supabase
+            .from('performance_categories')
+            .upsert([
+              { id: 'messi', name: 'Messi', description: 'Messi performance category' },
+              { id: 'ronaldo', name: 'Ronaldo', description: 'Ronaldo performance category' },
+              { id: 'jags', name: 'Jags', description: 'Jags performance category' }
+            ], { onConflict: 'id' });
+            
+          if (retryError) {
+            console.error('Error in retry insert of default categories:', retryError);
+          }
+        }
       }
     } catch (error) {
       console.error('Error in createDefaultCategories:', error);
@@ -88,18 +100,7 @@ export default function TeamSettings() {
   
   const createDefaultFormats = async () => {
     try {
-      // Try to create the table first
-      await supabase.query(`
-        CREATE TABLE IF NOT EXISTS game_formats (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          description TEXT,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )
-      `);
-      
-      // Insert default formats
+      // Try to insert the default data directly
       const { error } = await supabase
         .from('game_formats')
         .upsert([
@@ -112,6 +113,28 @@ export default function TeamSettings() {
         
       if (error) {
         console.error('Error creating default formats:', error);
+        
+        // If the error indicates the table doesn't exist, try to create it using a function
+        const { data, error: rpcError } = await supabase.rpc('create_game_formats_table');
+        
+        if (rpcError) {
+          console.error('Error creating game_formats table via RPC:', rpcError);
+        } else {
+          // Try to insert again after table creation
+          const { error: retryError } = await supabase
+            .from('game_formats')
+            .upsert([
+              { id: '4-a-side', name: '4-a-side', description: '4 players per team' },
+              { id: '5-a-side', name: '5-a-side', description: '5 players per team' },
+              { id: '7-a-side', name: '7-a-side', description: '7 players per team' },
+              { id: '9-a-side', name: '9-a-side', description: '9 players per team' },
+              { id: '11-a-side', name: '11-a-side', description: '11 players per team' }
+            ], { onConflict: 'id' });
+            
+          if (retryError) {
+            console.error('Error in retry insert of default formats:', retryError);
+          }
+        }
       }
     } catch (error) {
       console.error('Error in createDefaultFormats:', error);
