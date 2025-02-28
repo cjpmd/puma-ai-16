@@ -64,11 +64,12 @@ export function FormatsAndCategoriesSettings() {
     try {
       setIsLoading(true);
       
-      // Direct table creation - avoiding execute_sql since it's failing
+      // Ensure tables exist before attempting to load data
       await createTablesDirect();
       
-      // Fetch data after creating tables
-      await Promise.all([fetchFormats(), fetchCategories()]);
+      // Now fetch data - do these one after another to ensure tables are created first
+      await fetchFormats();
+      await fetchCategories();
     } catch (error) {
       console.error('Error in setup and data loading:', error);
       toast({
@@ -83,54 +84,88 @@ export function FormatsAndCategoriesSettings() {
 
   const createTablesDirect = async () => {
     try {
-      // Create game_formats table
-      const { error: formatsError } = await supabase.from('game_formats').select('count()').limit(1);
+      console.log('Checking if game_formats table exists...');
+      // Create game_formats table if it doesn't exist
+      const { error: formatsError } = await supabase.from('game_formats').select('count(*)').limit(1);
       
-      if (formatsError && formatsError.code === '42P01') {
-        // Table doesn't exist, create it
-        const { error: createError } = await supabase.rpc('create_table_if_not_exists', {
-          table_name: 'game_formats',
-          table_definition: `
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            name TEXT NOT NULL UNIQUE,
-            is_default BOOLEAN DEFAULT false,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-          `
-        });
-        
-        if (createError) {
-          console.error('Error creating game_formats table:', createError);
-          // Alternative approach - try creating sample data directly
+      if (formatsError) {
+        console.log('Error checking game_formats table:', formatsError);
+        if (formatsError.code === '42P01') { // Table doesn't exist
+          console.log('Creating game_formats table...');
+          
+          // Create the table directly with SQL
+          const { error: createError } = await supabase.rpc('create_table_if_not_exists', {
+            table_name: 'game_formats',
+            table_definition: `
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              name TEXT NOT NULL UNIQUE,
+              is_default BOOLEAN DEFAULT false,
+              created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+              updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+            `
+          });
+          
+          if (createError) {
+            console.error('Error creating game_formats table:', createError);
+            
+            // Try direct insert of defaults anyway, it might work if table was created by another process
+            await insertDefaultGameFormats();
+          } else {
+            console.log('Successfully created game_formats table, inserting defaults...');
+            await insertDefaultGameFormats();
+          }
+        }
+      } else {
+        console.log('game_formats table exists, checking data...');
+        const { data: existingFormats } = await supabase.from('game_formats').select('*');
+        if (!existingFormats || existingFormats.length === 0) {
+          console.log('No existing formats found, inserting defaults...');
           await insertDefaultGameFormats();
         } else {
-          await insertDefaultGameFormats();
+          console.log('Existing formats found:', existingFormats.length);
         }
       }
       
-      // Create performance_categories table
-      const { error: categoriesError } = await supabase.from('performance_categories').select('count()').limit(1);
+      console.log('Checking if performance_categories table exists...');
+      // Create performance_categories table if it doesn't exist
+      const { error: categoriesError } = await supabase.from('performance_categories').select('count(*)').limit(1);
       
-      if (categoriesError && categoriesError.code === '42P01') {
-        // Table doesn't exist, create it
-        const { error: createError } = await supabase.rpc('create_table_if_not_exists', {
-          table_name: 'performance_categories',
-          table_definition: `
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            name TEXT NOT NULL UNIQUE,
-            description TEXT,
-            is_default BOOLEAN DEFAULT false,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-          `
-        });
-        
-        if (createError) {
-          console.error('Error creating performance_categories table:', createError);
-          // Alternative approach - try creating directly
+      if (categoriesError) {
+        console.log('Error checking performance_categories table:', categoriesError);
+        if (categoriesError.code === '42P01') { // Table doesn't exist
+          console.log('Creating performance_categories table...');
+          
+          // Create the table directly with SQL
+          const { error: createError } = await supabase.rpc('create_table_if_not_exists', {
+            table_name: 'performance_categories',
+            table_definition: `
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              name TEXT NOT NULL UNIQUE,
+              description TEXT,
+              is_default BOOLEAN DEFAULT false,
+              created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+              updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+            `
+          });
+          
+          if (createError) {
+            console.error('Error creating performance_categories table:', createError);
+            
+            // Try direct insert of defaults anyway, it might work if table was created by another process
+            await insertDefaultPerformanceCategories();
+          } else {
+            console.log('Successfully created performance_categories table, inserting defaults...');
+            await insertDefaultPerformanceCategories();
+          }
+        }
+      } else {
+        console.log('performance_categories table exists, checking data...');
+        const { data: existingCategories } = await supabase.from('performance_categories').select('*');
+        if (!existingCategories || existingCategories.length === 0) {
+          console.log('No existing categories found, inserting defaults...');
           await insertDefaultPerformanceCategories();
         } else {
-          await insertDefaultPerformanceCategories();
+          console.log('Existing categories found:', existingCategories.length);
         }
       }
       
@@ -142,6 +177,7 @@ export function FormatsAndCategoriesSettings() {
 
   const insertDefaultGameFormats = async () => {
     try {
+      console.log('Inserting default game formats...');
       const defaultFormats = [
         { name: '4-a-side', is_default: false },
         { name: '5-a-side', is_default: false },
@@ -150,12 +186,17 @@ export function FormatsAndCategoriesSettings() {
         { name: '11-a-side', is_default: false }
       ];
       
-      // Try to insert default formats
+      // Insert each format individually to avoid issues
       for (const format of defaultFormats) {
-        await supabase.from('game_formats').upsert(
+        console.log(`Inserting format: ${format.name}`);
+        const { error } = await supabase.from('game_formats').upsert(
           { name: format.name, is_default: format.is_default },
           { onConflict: 'name' }
         );
+        
+        if (error) {
+          console.error(`Error inserting format ${format.name}:`, error);
+        }
       }
     } catch (error) {
       console.error('Error inserting default game formats:', error);
@@ -164,15 +205,17 @@ export function FormatsAndCategoriesSettings() {
 
   const insertDefaultPerformanceCategories = async () => {
     try {
+      console.log('Inserting default performance categories...');
       const defaultCategories = [
         { name: 'MESSI', description: 'Top performance category', is_default: true },
         { name: 'RONALDO', description: 'Middle performance category', is_default: false },
         { name: 'JAGS', description: 'Developing performance category', is_default: false }
       ];
       
-      // Try to insert default categories
+      // Insert each category individually to avoid issues
       for (const category of defaultCategories) {
-        await supabase.from('performance_categories').upsert(
+        console.log(`Inserting category: ${category.name}`);
+        const { error } = await supabase.from('performance_categories').upsert(
           { 
             name: category.name, 
             description: category.description,
@@ -180,6 +223,10 @@ export function FormatsAndCategoriesSettings() {
           },
           { onConflict: 'name' }
         );
+        
+        if (error) {
+          console.error(`Error inserting category ${category.name}:`, error);
+        }
       }
     } catch (error) {
       console.error('Error inserting default performance categories:', error);
