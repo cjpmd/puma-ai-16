@@ -52,11 +52,12 @@ export const FormationSelector = ({
 
   const players = initialPlayers || fetchedPlayers || [];
   
-  // Update local state when initialSelections change - this is a critical fix
+  // Update local state when initialSelections change - improved to handle preserved positions
   useEffect(() => {
     if (initialSelections) {
       console.log("FormationSelector: Setting initialSelections", initialSelections);
-      setSelections(initialSelections);
+      // Deep clone to avoid reference issues
+      setSelections(JSON.parse(JSON.stringify(initialSelections)));
     }
   }, [initialSelections]);
 
@@ -103,6 +104,7 @@ export const FormationSelector = ({
     }
   }, [localPerformanceCategory, onSelectionChange]);
 
+  // Get formation slots with appropriate default positions
   const getFormationSlots = () => {
     switch (format) {
       case "5-a-side":
@@ -193,7 +195,6 @@ export const FormationSelector = ({
           // Get the current selection for this slot or use default values
           const selection = selections[slot.id] || { playerId: "unassigned", position: slot.label };
           
-          // Important: We're extracting position from the selection, not using the slot label
           return (
             <PlayerPositionSelect
               key={`${slot.id}-${selection.position}-${selection.playerId}`}

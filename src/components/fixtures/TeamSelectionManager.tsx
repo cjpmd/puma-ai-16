@@ -100,6 +100,27 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     setTeamCaptains(newTeamCaptains);
   }, [fixture]);
 
+  // Helper function to map DB position to UI slot
+  const mapPositionToSlot = (position: string) => {
+    const positionToSlotMap: Record<string, string> = {
+      'GK': 'gk-1',
+      'DL': 'def-1',
+      'DC': 'def-2',
+      'DCL': 'def-2', // Map both DC and DCL to def-2
+      'DCR': 'def-3', // Map DCR to def-3
+      'DR': 'def-3',
+      'MC': 'mid-1',
+      'AMC': 'str-2',
+      'STC': 'str-1',
+      'AML': 'mid-2',
+      'AMR': 'mid-3',
+      'ML': 'mid-2',
+      'MR': 'mid-3'
+    };
+    
+    return positionToSlotMap[position] || `pos-${Math.random()}`;
+  };
+
   // Load existing selections when they're fetched
   useEffect(() => {
     if (!existingSelections || existingSelections.length === 0) return;
@@ -157,25 +178,13 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
           
           // Process selections for this period/team
           periodSelections.forEach(selection => {
-            // Determine slot ID based on position
-            let slotId;
-            switch (selection.position) {
-              case 'GK': slotId = 'gk-1'; break;
-              case 'DL': slotId = 'def-1'; break;
-              case 'DC': slotId = 'def-2'; break;
-              case 'DR': slotId = 'def-3'; break;
-              case 'MC': slotId = 'mid-1'; break;
-              case 'AMC': slotId = 'str-2'; break;
-              case 'STC': slotId = 'str-1'; break;
-              case 'AML': slotId = 'mid-2'; break;
-              case 'AMR': slotId = 'mid-3'; break;
-              default: slotId = `pos-${Math.random()}`; break;
-            }
+            // Use the position from DB to determine the appropriate slot
+            const slotId = mapPositionToSlot(selection.position);
             
-            // Add the selection
+            // Add the selection with the original position preserved
             loadedSelections[periodId][teamId][slotId] = {
               playerId: selection.player_id,
-              position: selection.position,
+              position: selection.position, // Keep original position from DB
               performanceCategory: selection.performance_category || 'MESSI'
             };
             

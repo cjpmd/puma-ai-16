@@ -60,7 +60,6 @@ export const PlayerPositionSelect = ({
         <Select 
           value={currentPosition}
           onValueChange={handlePositionChange}
-          defaultValue={position}
         >
           <SelectTrigger className="h-8 text-left">
             <SelectValue placeholder="Select position">
@@ -82,7 +81,6 @@ export const PlayerPositionSelect = ({
         <Select 
           value={currentPlayerId}
           onValueChange={handlePlayerChange}
-          defaultValue={playerId}
         >
           <SelectTrigger className="h-8 text-left">
             <SelectValue placeholder="Select player" />
