@@ -7,11 +7,14 @@ import { CalendarContent } from "@/components/calendar/CalendarContent";
 import { CalendarDialogs } from "@/components/calendar/CalendarDialogs";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const CalendarPage = () => {
   const { toast } = useToast();
   const { profile, isLoading: authLoading } = useAuth();
   const calendarState = useCalendarState();
+  const queryClient = useQueryClient();
+  
   const {
     sessions = [],
     fixtures = [],
@@ -58,6 +61,21 @@ export const CalendarPage = () => {
     );
   }
 
+  const handleDataUpdate = () => {
+    const formattedDate = calendarState.date.toISOString().split('T')[0];
+    queryClient.invalidateQueries({ queryKey: ["fixtures", formattedDate] });
+    queryClient.invalidateQueries({ queryKey: ["festivals", formattedDate] });
+    queryClient.invalidateQueries({ queryKey: ["tournaments", formattedDate] });
+    queryClient.invalidateQueries({ queryKey: ["training-sessions", formattedDate] });
+    queryClient.invalidateQueries({ queryKey: ["objectives", formattedDate] });
+    
+    refetchFixtures();
+    refetchFestivals();
+    refetchTournaments();
+    refetchSessions();
+    refetchObjectives();
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-8">
       <CalendarHeader
@@ -98,15 +116,45 @@ export const CalendarPage = () => {
       <CalendarDialogs
         date={calendarState.date}
         isAddFixtureOpen={calendarState.isAddFixtureOpen}
-        setIsAddFixtureOpen={calendarState.setIsAddFixtureOpen}
+        setIsAddFixtureOpen={(isOpen) => {
+          calendarState.setIsAddFixtureOpen(isOpen);
+          // Refresh data when modal closes
+          if (!isOpen) {
+            handleDataUpdate();
+          }
+        }}
         isAddFriendlyOpen={calendarState.isAddFriendlyOpen}
-        setIsAddFriendlyOpen={calendarState.setIsAddFriendlyOpen}
+        setIsAddFriendlyOpen={(isOpen) => {
+          calendarState.setIsAddFriendlyOpen(isOpen);
+          // Refresh data when modal closes
+          if (!isOpen) {
+            handleDataUpdate();
+          }
+        }}
         isAddFestivalOpen={calendarState.isAddFestivalOpen}
-        setIsAddFestivalOpen={calendarState.setIsAddFestivalOpen}
+        setIsAddFestivalOpen={(isOpen) => {
+          calendarState.setIsAddFestivalOpen(isOpen);
+          // Refresh data when modal closes
+          if (!isOpen) {
+            handleDataUpdate();
+          }
+        }}
         isAddTournamentOpen={calendarState.isAddTournamentOpen}
-        setIsAddTournamentOpen={calendarState.setIsAddTournamentOpen}
+        setIsAddTournamentOpen={(isOpen) => {
+          calendarState.setIsAddTournamentOpen(isOpen);
+          // Refresh data when modal closes
+          if (!isOpen) {
+            handleDataUpdate();
+          }
+        }}
         isTeamSelectionOpen={calendarState.isTeamSelectionOpen}
-        setIsTeamSelectionOpen={calendarState.setIsTeamSelectionOpen}
+        setIsTeamSelectionOpen={(isOpen) => {
+          calendarState.setIsTeamSelectionOpen(isOpen);
+          // Refresh data when modal closes
+          if (!isOpen) {
+            handleDataUpdate();
+          }
+        }}
         editingFixture={calendarState.editingFixture}
         setEditingFixture={calendarState.setEditingFixture}
         editingFestival={calendarState.editingFestival}

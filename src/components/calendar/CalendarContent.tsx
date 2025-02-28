@@ -118,6 +118,19 @@ export const CalendarContent = ({
     }
   };
 
+  // Handle fixture date change with optimistic update
+  const handleFixtureDateChange = async (fixtureId: string, newDate: Date) => {
+    // Create an optimistic update for the fixture date
+    const updatedFixtures = localFixtures.filter(fixture => fixture.id !== fixtureId);
+    setLocalFixtures(updatedFixtures);
+    
+    // Call the real update function
+    await handleUpdateFixtureDate(fixtureId, newDate);
+    
+    // Refresh the data
+    onRefetchFixtures();
+  };
+
   // Default handler for objective editing if none is provided
   const handleEditObjective = (objective: any) => {
     if (onEditObjective) {
@@ -152,7 +165,7 @@ export const CalendarContent = ({
         fileUrls={fileUrls}
         onEditFixture={handleFixtureEdit}
         onDeleteFixture={handleFixtureDelete}
-        onUpdateFixtureDate={handleUpdateFixtureDate}
+        onUpdateFixtureDate={handleFixtureDateChange}
         onAddDrill={(sessionId) => {
           // Handle add drill logic
         }}

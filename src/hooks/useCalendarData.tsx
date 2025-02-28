@@ -28,6 +28,30 @@ export const useCalendarData = (date: Date) => {
       })
       .subscribe();
 
+    const fixtureTeamScoresSubscription = supabase
+      .channel('fixture-team-scores-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'fixture_team_scores'
+      }, (payload) => {
+        console.log('Fixture team scores changed:', payload);
+        queryClient.invalidateQueries({ queryKey: ["fixtures", formattedDate] });
+      })
+      .subscribe();
+
+    const fixtureTeamTimesSubscription = supabase
+      .channel('fixture-team-times-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'fixture_team_times'
+      }, (payload) => {
+        console.log('Fixture team times changed:', payload);
+        queryClient.invalidateQueries({ queryKey: ["fixtures", formattedDate] });
+      })
+      .subscribe();
+
     const festivalsSubscription = supabase
       .channel('festivals-changes')
       .on('postgres_changes', { 
@@ -57,6 +81,8 @@ export const useCalendarData = (date: Date) => {
     // Cleanup subscriptions on unmount or date change
     return () => {
       fixturesSubscription.unsubscribe();
+      fixtureTeamScoresSubscription.unsubscribe();
+      fixtureTeamTimesSubscription.unsubscribe();
       festivalsSubscription.unsubscribe();
       tournamentsSubscription.unsubscribe();
     };
@@ -169,7 +195,7 @@ export const useCalendarData = (date: Date) => {
     },
     staleTime: 0, // Always refetch when requested
     gcTime: 60000, // 1 minute garbage collection time
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     refetchOnMount: true,
     refetchOnReconnect: true
   });
@@ -216,7 +242,8 @@ export const useCalendarData = (date: Date) => {
       }
     },
     staleTime: 0,
-    refetchOnMount: true
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   const { 
@@ -261,7 +288,8 @@ export const useCalendarData = (date: Date) => {
       }
     },
     staleTime: 0,
-    refetchOnMount: true
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   const { 

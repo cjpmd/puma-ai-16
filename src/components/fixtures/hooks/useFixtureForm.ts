@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FixtureFormData } from "../schemas/fixtureFormSchema";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface UseFixtureFormProps {
   onSubmit: (data: FixtureFormData) => void;
@@ -14,6 +15,7 @@ interface UseFixtureFormProps {
 export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFixtureFormProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleSubmit = async (data: FixtureFormData) => {
     setIsSubmitting(true);
@@ -190,6 +192,13 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
 
             console.log("Attendance created for all team players");
           }
+        }
+
+        // Invalidate queries to trigger UI updates
+        queryClient.invalidateQueries({ queryKey: ["fixtures"] });
+        
+        if (dateToUse) {
+          queryClient.invalidateQueries({ queryKey: ["fixtures", dateToUse] });
         }
 
         // Include the team times and MOTM player IDs in the returned fixture
