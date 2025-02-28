@@ -108,7 +108,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
     
     try {
       // Create a structured map to organize selections by team and period
-      const selectionsByTeamAndPeriod = existingSelections.reduce((acc, selection) => {
+      const selectionsByTeamAndPeriod = existingSelections.reduce((acc: Record<string, Record<string, any[]>>, selection: any) => {
         const teamId = selection.team_number?.toString() || '1';
         const periodId = selection.period_id || 'period-1';
         
@@ -122,10 +122,10 @@ export const TeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManage
       console.log("Selections organized by team and period:", selectionsByTeamAndPeriod);
       
       // Initialize data structures
-      const loadedSelections = {};
-      const loadedTeamCaptains = {};
-      const loadedPeriodsPerTeam = {};
-      const loadedPerformanceCategories = {};
+      const loadedSelections: Record<string, Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>> = {};
+      const loadedTeamCaptains: Record<string, string> = {};
+      const loadedPeriodsPerTeam: Record<string, Array<{ id: string; duration: number }>> = {};
+      const loadedPerformanceCategories: Record<string, string> = {};
       
       // Process each team
       Object.keys(selectionsByTeamAndPeriod).forEach(teamId => {
