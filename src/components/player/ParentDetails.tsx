@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ParentDetailsDialog } from "@/components/parents/ParentDetailsDialog";
@@ -8,22 +9,21 @@ interface ParentDetailsProps {
 }
 
 export const ParentDetails = ({ playerId }: ParentDetailsProps) => {
-  const [parentDetails, setParentDetails] = useState<{
+  const [parents, setParents] = useState<{
     id: string;
     name: string;
     email: string | null;
     phone: string | null;
-  } | null>(null);
+  }[]>([]);
 
   const fetchParentDetails = async () => {
     const { data, error } = await supabase
       .from('player_parents')
       .select('*')
-      .eq('player_id', playerId)
-      .maybeSingle();
+      .eq('player_id', playerId);
 
     if (!error && data) {
-      setParentDetails(data);
+      setParents(data);
     }
   };
 
@@ -37,16 +37,20 @@ export const ParentDetails = ({ playerId }: ParentDetailsProps) => {
         <CardTitle>Parent Details</CardTitle>
         <ParentDetailsDialog
           playerId={playerId}
-          existingParent={parentDetails || undefined}
+          existingParents={parents}
           onSave={fetchParentDetails}
         />
       </CardHeader>
       <CardContent>
-        {parentDetails ? (
-          <div className="space-y-2">
-            <p><strong>Name:</strong> {parentDetails.name}</p>
-            {parentDetails.email && <p><strong>Email:</strong> {parentDetails.email}</p>}
-            {parentDetails.phone && <p><strong>Phone:</strong> {parentDetails.phone}</p>}
+        {parents.length > 0 ? (
+          <div className="space-y-4">
+            {parents.map(parent => (
+              <div key={parent.id} className="space-y-2 border-b pb-3 last:border-b-0">
+                <p><strong>Name:</strong> {parent.name}</p>
+                {parent.email && <p><strong>Email:</strong> {parent.email}</p>}
+                {parent.phone && <p><strong>Phone:</strong> {parent.phone}</p>}
+              </div>
+            ))}
           </div>
         ) : (
           <p className="text-muted-foreground">No parent details added yet.</p>
