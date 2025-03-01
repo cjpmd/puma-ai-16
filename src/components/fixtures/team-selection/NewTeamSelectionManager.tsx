@@ -1,18 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { SquadSelectionGrid } from "@/components/formation/SquadSelectionGrid";
-import { DraggableFormation } from "@/components/formation/DraggableFormation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { TeamHeaderControls } from "@/components/fixtures/TeamHeaderControls";
 import { Fixture } from "@/types/fixture";
 import { useTeamSelectionData } from "./hooks/useTeamSelectionData";
 import { useTeamSelectionSave } from "./hooks/useTeamSelectionSave";
-import { ArrowRight } from "lucide-react";
-import { SubstitutesList } from "@/components/formation/SubstitutesList";
+import { TeamTabContent } from "./components/TeamTabContent";
 import { isPlayerSubstitution } from "@/components/formation/utils/playerUtils";
 import { TeamSelectionManagerProps, TeamSelections, AllSelections, PeriodsPerTeam, TeamCaptains } from "./types";
 
@@ -436,128 +428,25 @@ export const NewTeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionMan
         
         {Object.entries(teams).map(([teamId, team]) => (
           <TabsContent key={teamId} value={teamId}>
-            <div className="space-y-6">
-              <TeamHeaderControls
-                teamId={teamId}
-                teamCaptains={teamCaptains}
-                availablePlayers={availablePlayers}
-                onCaptainChange={(teamId, playerId) => handleCaptainChange(teamId, playerId)}
-                performanceCategory={performanceCategories[`${teamId}-${periods[teamId]?.[0]?.id}`] || "MESSI"}
-                onPerformanceCategoryChange={(value) => {
-                  if (periods[teamId]?.[0]?.id) {
-                    handlePerformanceCategoryChange(teamId, periods[teamId][0].id, value);
-                  }
-                }}
-                onAddPeriod={() => handleAddPeriod(teamId)}
-              />
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Squad Selection</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <SquadSelectionGrid
-                    availablePlayers={availablePlayers}
-                    selectedPlayers={team.squadPlayers}
-                    onSelectionChange={(playerIds) => handleSquadSelection(teamId, playerIds)}
-                    getPlayerTeams={getPlayerTeams}
-                  />
-                </CardContent>
-              </Card>
-              
-              {(periods[teamId] || []).map((period, index) => (
-                <Card key={period.id} className="relative">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Period {index + 1}</CardTitle>
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <Label>Performance Category:</Label>
-                        <select
-                          value={performanceCategories[`${teamId}-${period.id}`] || 'MESSI'}
-                          onChange={(e) => handlePerformanceCategoryChange(teamId, period.id, e.target.value)}
-                          className="border rounded px-2 py-1"
-                        >
-                          <option value="MESSI">Messi</option>
-                          <option value="RONALDO">Ronaldo</option>
-                          <option value="JAGS">Jags</option>
-                        </select>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Label>Duration (mins):</Label>
-                        <Input
-                          type="number"
-                          value={period.duration}
-                          onChange={(e) => handleDurationChange(teamId, period.id, parseInt(e.target.value))}
-                          className="w-20"
-                        />
-                      </div>
-                      {index > 0 && (
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => handleDeletePeriod(teamId, period.id)}
-                        >
-                          Remove Period
-                        </Button>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <DraggableFormation
-                      format={fixture?.format as "7-a-side" || "7-a-side"}
-                      availablePlayers={availablePlayers.filter(p => 
-                        team.squadPlayers.includes(p.id)
-                      )}
-                      initialSelections={teamSelections[`${teamId}-${period.id}`] || {}}
-                      onSelectionChange={(selections) => handleFormationChange(teamId, period.id, selections)}
-                      renderSubstitutionIndicator={(position) => 
-                        checkIsSubstitution(teamId, index, position) && (
-                          <span className="absolute -top-4 -right-3 text-amber-500">
-                            <ArrowRight className="h-4 w-4" />
-                          </span>
-                        )
-                      }
-                    />
-                    
-                    <SubstitutesList
-                      maxSubstitutes={5}
-                      selections={teamSelections[`${teamId}-${period.id}`] || {}}
-                      availablePlayers={availablePlayers.filter(p => 
-                        team.squadPlayers.includes(p.id)
-                      )}
-                      onSelectionChange={(slotId, playerId, position) => {
-                        // Update the selection for this substitute
-                        const selectionKey = `${teamId}-${period.id}`;
-                        const currentSelections = teamSelections[selectionKey] || {};
-                        
-                        setTeamSelections(prev => ({
-                          ...prev,
-                          [selectionKey]: {
-                            ...currentSelections,
-                            [slotId]: {
-                              playerId,
-                              position,
-                              performanceCategory: performanceCategories[selectionKey] || 'MESSI'
-                            }
-                          }
-                        }));
-                      }}
-                      selectedPlayers={new Set(
-                        Object.values(teamSelections[`${teamId}-${period.id}`] || {})
-                          .map(s => s.playerId)
-                          .filter(id => id !== 'unassigned')
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              ))}
-              
-              <div className="flex justify-center">
-                <Button onClick={() => handleAddPeriod(teamId)}>
-                  Add Period
-                </Button>
-              </div>
-            </div>
+            <TeamTabContent
+              teamId={teamId}
+              team={team}
+              fixture={fixture}
+              teamCaptains={teamCaptains}
+              availablePlayers={availablePlayers}
+              teamSelections={teamSelections}
+              performanceCategories={performanceCategories}
+              periods={periods[teamId] || []}
+              handleCaptainChange={handleCaptainChange}
+              handlePerformanceCategoryChange={handlePerformanceCategoryChange}
+              handleSquadSelection={handleSquadSelection}
+              handleAddPeriod={handleAddPeriod}
+              handleDeletePeriod={handleDeletePeriod}
+              handleDurationChange={handleDurationChange}
+              handleFormationChange={handleFormationChange}
+              checkIsSubstitution={checkIsSubstitution}
+              getPlayerTeams={getPlayerTeams}
+            />
           </TabsContent>
         ))}
       </Tabs>
