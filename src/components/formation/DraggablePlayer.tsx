@@ -92,7 +92,8 @@ export const DraggablePlayer = ({
       className={cn(
         "absolute transform -translate-x-1/2 -translate-y-1/2 cursor-grab transition-opacity",
         isDragging && "cursor-grabbing opacity-70 scale-105",
-        isSubstitution && "ring-1 ring-orange-500"
+        isSubstitution && "ring-1 ring-orange-500",
+        "z-10"  // Add z-index so players are above position slots
       )}
       style={{
         left: `${playerPos.current.x}%`,
@@ -107,7 +108,7 @@ export const DraggablePlayer = ({
           squadNumber={player.squad_number}
           size="sm"
         />
-        <div className="mt-0.5 text-[8px] font-medium bg-white/80 px-1 py-0.5 rounded shadow-sm text-center max-w-10 truncate">
+        <div className="mt-0.5 text-[7px] font-medium bg-white/80 px-1 py-0.5 rounded shadow-sm text-center max-w-8 truncate">
           {player.name.split(' ')[0]}
           {isSubstitution && (
             <span className="ml-0.5 text-orange-500">↑</span>

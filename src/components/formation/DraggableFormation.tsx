@@ -7,8 +7,8 @@ import { getPlayerDisplay } from "./utils/playerUtils";
 interface DraggableFormationProps {
   format: "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
   availablePlayers: any[];
-  initialSelections?: Record<string, { playerId: string; position: string }>;
-  onSelectionChange?: (selections: Record<string, { playerId: string; position: string }>) => void;
+  initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>;
+  onSelectionChange?: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => void;
   renderSubstitutionIndicator?: (position: string) => React.ReactNode;
 }
 
@@ -20,7 +20,7 @@ export const DraggableFormation = ({
   renderSubstitutionIndicator
 }: DraggableFormationProps) => {
   const [activePlayer, setActivePlayer] = useState<string | null>(null);
-  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string }>>(initialSelections || {});
+  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>(initialSelections || {});
   const formationRef = useRef<HTMLDivElement>(null);
   const playersRef = useRef<Record<string, HTMLDivElement>>({});
 
@@ -125,14 +125,14 @@ export const DraggableFormation = ({
                 {selection && player ? (
                   <div className="relative">
                     <div
-                      className="relative flex items-center justify-center w-10 h-10 bg-white/80 rounded-full cursor-pointer hover:bg-white"
+                      className="relative flex items-center justify-center w-8 h-8 bg-white/80 rounded-full cursor-pointer hover:bg-white"
                       onClick={() => handleRemovePlayer(slotId)}
                     >
                       <div className="flex flex-col items-center">
-                        <div className="w-6 h-6 flex items-center justify-center bg-blue-500 text-white rounded-full text-[10px] font-bold">
+                        <div className="w-5 h-5 flex items-center justify-center bg-blue-500 text-white rounded-full text-[9px] font-bold">
                           {player.squad_number || player.name.charAt(0)}
                         </div>
-                        <div className="text-[8px] mt-0.5 max-w-8 truncate">
+                        <div className="text-[7px] mt-0.5 max-w-5 truncate">
                           {player.name.split(' ')[0]}
                           {selection.isSubstitution && (
                             <span className="ml-0.5 text-orange-500">↑</span>

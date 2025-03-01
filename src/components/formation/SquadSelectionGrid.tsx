@@ -76,7 +76,7 @@ export const SquadSelectionGrid = ({
             >
               <div className="flex flex-col items-center">
                 <div className={cn(
-                  "w-10 h-10 flex items-center justify-center rounded-full text-sm font-bold mb-1", // Reduced size, font, and margin
+                  "w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold mb-1", // Reduced size and font
                   isSelected ? "bg-white text-blue-500" : "bg-blue-100 text-blue-800"
                 )}>
                   {player.squad_number || player.name.charAt(0)}
@@ -94,7 +94,7 @@ export const SquadSelectionGrid = ({
                     {playerTeams.map(teamId => (
                       <span 
                         key={teamId} 
-                        className="w-3 h-3 bg-amber-500 text-[8px] flex items-center justify-center rounded-full text-white"
+                        className="w-2.5 h-2.5 bg-amber-500 text-[7px] flex items-center justify-center rounded-full text-white"
                         title={`Also in Team ${parseInt(teamId) + 1}`}
                       >
                         {parseInt(teamId) + 1}
