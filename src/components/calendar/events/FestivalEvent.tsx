@@ -52,7 +52,10 @@ export const FestivalEvent = ({
           />
           <EventActionButtons
             onEdit={() => onEdit(festival)}
-            onTeamSelection={() => onTeamSelection(festival)}
+            onTeamSelection={() => {
+              console.log("Festival team selection clicked", festival);
+              onTeamSelection(festival);
+            }}
             onDelete={() => onDelete(festival.id)}
           />
         </div>

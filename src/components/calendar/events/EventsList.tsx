@@ -53,6 +53,8 @@ export const EventsList = ({
   const hasEvents = festivals?.length || tournaments?.length || fixtures?.length || sessions?.length;
 
   console.log("EventsList rendering fixtures:", fixtures?.map(f => f.id));
+  console.log("EventsList rendering festivals:", festivals?.length);
+  console.log("EventsList rendering tournaments:", tournaments?.length);
 
   // Convert string dates to Date objects
   const handleFixtureDateChange = (fixtureId: string, newDate: Date) => {

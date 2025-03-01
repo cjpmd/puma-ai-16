@@ -20,7 +20,6 @@ export const EventActionButtons = ({
         size="sm"
         onClick={(e) => {
           e.stopPropagation();
-          console.log("Edit button clicked in EventActionButtons");
           onEdit();
         }}
       >
@@ -31,6 +30,7 @@ export const EventActionButtons = ({
         size="sm"
         onClick={(e) => {
           e.stopPropagation();
+          console.log("Team selection button clicked");
           onTeamSelection();
         }}
       >

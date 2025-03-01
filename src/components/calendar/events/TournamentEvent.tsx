@@ -50,7 +50,10 @@ export const TournamentEvent = ({
           />
           <EventActionButtons
             onEdit={() => onEdit?.(tournament)}
-            onTeamSelection={() => onTeamSelection?.(tournament)}
+            onTeamSelection={() => {
+              console.log("Tournament team selection clicked", tournament);
+              onTeamSelection?.(tournament);
+            }}
             onDelete={() => onDelete?.(tournament.id)}
           />
         </div>

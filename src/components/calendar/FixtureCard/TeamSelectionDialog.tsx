@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { NewTeamSelectionManager } from "@/components/fixtures/team-selection/NewTeamSelectionManager";
+import { TeamSelectionManager } from "@/components/fixtures/team-selection/TeamSelectionManager";
 import { Fixture } from "@/types/fixture";
 import { useToast } from "@/hooks/use-toast";
 
@@ -43,7 +43,7 @@ export const TeamSelectionDialog = ({
           </DialogDescription>
         </DialogHeader>
         
-        <NewTeamSelectionManager 
+        <TeamSelectionManager 
           fixture={fixture}
           onSuccess={handleSuccess}
         />
