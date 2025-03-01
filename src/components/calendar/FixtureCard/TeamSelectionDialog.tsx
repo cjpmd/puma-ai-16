@@ -33,9 +33,10 @@ export const TeamSelectionDialog = ({
     onOpenChange(false);
   };
 
+  // Note: We're now importing from the new team selection manager, but commenting it out until ready
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Team Selection - {fixture.opponent}</DialogTitle>
           <DialogDescription>
@@ -43,10 +44,18 @@ export const TeamSelectionDialog = ({
           </DialogDescription>
         </DialogHeader>
         
+        {/* Use the legacy TeamSelectionManager for now */}
         <TeamSelectionManager 
           fixture={fixture}
           onSuccess={handleSuccess}
         />
+        
+        {/* Uncomment when ready to switch to the new version:
+        <NewTeamSelectionManager 
+          fixture={fixture}
+          onSuccess={handleSuccess}
+        />
+        */}
       </DialogContent>
     </Dialog>
   );
