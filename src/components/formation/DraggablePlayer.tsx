@@ -91,8 +91,8 @@ export const DraggablePlayer = ({
       ref={playerRef}
       className={cn(
         "absolute transform -translate-x-1/2 -translate-y-1/2 cursor-grab transition-opacity",
-        isDragging && "cursor-grabbing opacity-70",
-        isSubstitution && "ring-2 ring-orange-500"
+        isDragging && "cursor-grabbing opacity-70 scale-105",
+        isSubstitution && "ring-1 ring-orange-500"
       )}
       style={{
         left: `${playerPos.current.x}%`,
@@ -107,7 +107,7 @@ export const DraggablePlayer = ({
           squadNumber={player.squad_number}
           size="sm"
         />
-        <div className="mt-1 text-xs font-medium bg-white/80 px-1.5 py-0.5 rounded shadow-sm">
+        <div className="mt-0.5 text-xs font-medium bg-white/80 px-1 py-0.5 rounded shadow-sm text-center max-w-16 truncate">
           {player.name.split(' ')[0]}
           {isSubstitution && (
             <span className="ml-1 text-orange-500">↑</span>

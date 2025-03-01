@@ -28,11 +28,11 @@ export const PlayerAvatar = ({
     .toUpperCase()
     .substring(0, 2);
 
-  // Size classes
+  // Size classes - making all sizes smaller
   const sizeClasses = {
-    sm: "h-10 w-10 text-xs",
-    md: "h-16 w-16 text-sm",
-    lg: "h-20 w-20 text-base",
+    sm: "h-7 w-7 text-xs",
+    md: "h-10 w-10 text-xs",
+    lg: "h-14 w-14 text-sm",
   };
 
   return (
@@ -45,13 +45,13 @@ export const PlayerAvatar = ({
         </AvatarFallback>
       </Avatar>
       
-      {/* Team indicators */}
+      {/* Team indicators - made smaller */}
       {teamsPlaying && teamsPlaying.length > 0 && (
         <div className="absolute -top-1 -right-1 flex -space-x-1">
           {teamsPlaying.map((team, index) => (
             <span 
               key={team.id}
-              className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white shadow-sm"
+              className="flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[8px] text-white shadow-sm"
               style={{ zIndex: 10 - index }}
               title={`Playing in ${team.name}`}
             >
@@ -75,7 +75,7 @@ export const PlayerStatSummary = ({
   // This is a placeholder component - to be enhanced later as requested
   return (
     <div className="mt-1 text-xs text-muted-foreground">
-      <span className="px-1.5 py-0.5 rounded bg-primary/10">Stats coming soon</span>
+      <span className="px-1 py-0.5 rounded bg-primary/10">Stats coming soon</span>
     </div>
   );
 };
