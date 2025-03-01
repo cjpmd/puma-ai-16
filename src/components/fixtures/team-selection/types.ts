@@ -10,6 +10,7 @@ export interface TeamSelection {
   playerId: string;
   position: string;
   performanceCategory?: string;
+  isSubstitution?: boolean;
 }
 
 export interface TeamSelections {
