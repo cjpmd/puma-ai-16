@@ -71,7 +71,9 @@ export const NewTeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionMan
           // Apply performance category to all selections
           const performanceCategory = performanceCategories[`${teamId}-${periodId}`] || 'MESSI';
           Object.keys(result[periodId][teamId]).forEach(slotId => {
-            result[periodId][teamId][slotId].performanceCategory = performanceCategory;
+            if (result[periodId][teamId][slotId]) {
+              result[periodId][teamId][slotId].performanceCategory = performanceCategory;
+            }
           });
         }
       });
@@ -215,11 +217,14 @@ export const NewTeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionMan
     const selectionKey = `${teamId}-${periodId}`;
     
     // Apply performance category to all selections
-    const updatedSelections = {...selections};
+    const updatedSelections: Record<string, { playerId: string; position: string; performanceCategory?: string }> = {};
     const performanceCategory = performanceCategories[selectionKey] || 'MESSI';
     
-    Object.keys(updatedSelections).forEach(slotId => {
-      updatedSelections[slotId].performanceCategory = performanceCategory;
+    Object.keys(selections).forEach(slotId => {
+      updatedSelections[slotId] = {
+        ...selections[slotId],
+        performanceCategory
+      };
     });
     
     setTeamSelections(prev => ({
@@ -434,11 +439,16 @@ export const NewTeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionMan
             <div className="space-y-6">
               <TeamHeaderControls
                 teamId={teamId}
-                teamName={team.name}
-                captain={teamCaptains[teamId] || ""}
-                onCaptainChange={(playerId) => handleCaptainChange(teamId, playerId)}
+                teamCaptains={teamCaptains}
                 availablePlayers={availablePlayers}
-                selectedPlayers={team.squadPlayers}
+                onCaptainChange={(teamId, playerId) => handleCaptainChange(teamId, playerId)}
+                performanceCategory={performanceCategories[`${teamId}-${periods[teamId]?.[0]?.id}`] || "MESSI"}
+                onPerformanceCategoryChange={(value) => {
+                  if (periods[teamId]?.[0]?.id) {
+                    handlePerformanceCategoryChange(teamId, periods[teamId][0].id, value);
+                  }
+                }}
+                onAddPeriod={() => handleAddPeriod(teamId)}
               />
               
               <Card>
