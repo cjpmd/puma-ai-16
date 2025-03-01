@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
+import { TeamSelectionManager } from "@/components/fixtures/team-selection/TeamSelectionManager";
 import { Fixture } from "@/types/fixture";
 import { useToast } from "@/hooks/use-toast";
 
