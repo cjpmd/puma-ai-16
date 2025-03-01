@@ -63,6 +63,8 @@ export const HalfPeriodManager = ({
   
   // Handle formation change for a period
   const handleFormationChange = (periodId: string, selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => {
+    console.log(`Formation change for period ${periodId}:`, selections);
+    
     // Mark substitutions compared to previous period
     const periodIndex = periods.findIndex(p => p.id === periodId);
     let updatedSelections = { ...selections };
@@ -146,7 +148,7 @@ export const HalfPeriodManager = ({
                   )}
                 </div>
               </div>
-              <div className="bg-background/50 rounded-md" style={{height: "200px"}}>
+              <div className="bg-background/50 rounded-md p-2">
                 <DraggableFormation
                   format={fixture?.format as "7-a-side" || "7-a-side"}
                   availablePlayers={filteredPlayers}

@@ -29,6 +29,7 @@ export const useTeamSelectionSave = (
       
       console.log("Saving team selections to database...");
       console.log("Current state:", {
+        fixtureId,
         periodsPerTeam,
         selections,
         teamCaptains
@@ -68,7 +69,8 @@ export const useTeamSelectionSave = (
                 team_number: parseInt(teamId),
                 is_captain: teamCaptains[teamId] === selection.playerId,
                 period_id: periodId,
-                duration: period.duration
+                duration: period.duration,
+                is_substitution: selection.isSubstitution || false
               });
             }
           });
@@ -89,6 +91,8 @@ export const useTeamSelectionSave = (
         }
         
         console.log("Team selections saved successfully:", data);
+      } else {
+        console.log("No selections to save");
       }
       
       toast({

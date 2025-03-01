@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FormationSlots } from "./FormationSlots";
 import { DraggablePlayer } from "./DraggablePlayer";
 import { getPlayerDisplay } from "./utils/playerUtils";
@@ -19,28 +19,38 @@ export const DraggableFormation = ({
   onSelectionChange,
   renderSubstitutionIndicator
 }: DraggableFormationProps) => {
-  const [activePlayer, setActivePlayer] = useState<string | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>(initialSelections || {});
+  const [playerPositions, setPlayerPositions] = useState<Record<string, { x: number; y: number }>>({});
   const formationRef = useRef<HTMLDivElement>(null);
-  const playersRef = useRef<Record<string, HTMLDivElement>>({});
+
+  // Update state when initialSelections change
+  useEffect(() => {
+    if (initialSelections) {
+      setSelections(initialSelections);
+    }
+  }, [initialSelections]);
 
   // Get player object from ID
   const getPlayer = (playerId: string) => {
     return availablePlayers.find(p => p.id === playerId);
   };
 
-  // Handle drag start
-  const handleDragStart = (playerId: string) => {
-    setActivePlayer(playerId);
+  // Set position for a draggable player
+  const handlePositionChange = (playerId: string, position: { x: number; y: number }) => {
+    setPlayerPositions(prev => ({
+      ...prev,
+      [playerId]: position
+    }));
   };
 
   // Handle drop onto a formation slot
   const handleDrop = (slotId: string, position: string) => {
-    if (!activePlayer) return;
+    if (!selectedPlayerId) return;
 
     // Get the current slot that this player is assigned to (if any)
     const currentSlotId = Object.entries(selections).find(
-      ([_, selection]) => selection.playerId === activePlayer
+      ([_, selection]) => selection.playerId === selectedPlayerId
     )?.[0];
 
     // Get the player currently in the target slot (if any)
@@ -50,31 +60,37 @@ export const DraggableFormation = ({
     const newSelections = { ...selections };
 
     // If the player is already assigned to a slot, remove them
-    if (currentSlotId) {
-      // If the player is just moving to a new slot, remove from old one
-      if (currentSlotId !== slotId) {
-        delete newSelections[currentSlotId];
-      }
+    if (currentSlotId && currentSlotId !== slotId) {
+      delete newSelections[currentSlotId];
     }
 
     // Assign the player to the new slot
     newSelections[slotId] = {
-      playerId: activePlayer,
+      playerId: selectedPlayerId,
       position
     };
 
     // If there was a player in the target slot, and it's not the same player,
     // then we need to make that player unassigned
-    if (currentPlayerInSlot && currentPlayerInSlot !== activePlayer) {
-      // Optionally, move that player back to unassigned
-      // or you could implement a swap logic here
+    if (currentPlayerInSlot && currentPlayerInSlot !== selectedPlayerId) {
+      // Find any other slots this player might be in and remove them
+      Object.entries(newSelections).forEach(([sid, sel]) => {
+        if (sid !== slotId && sel.playerId === currentPlayerInSlot) {
+          delete newSelections[sid];
+        }
+      });
     }
 
     setSelections(newSelections);
-    setActivePlayer(null);
+    setSelectedPlayerId(null);
 
     // Notify parent of change
     onSelectionChange?.(newSelections);
+  };
+
+  // Handle player selection for dragging
+  const handlePlayerSelect = (playerId: string) => {
+    setSelectedPlayerId(playerId);
   };
 
   // Handle removing a player from a position
@@ -86,25 +102,27 @@ export const DraggableFormation = ({
     onSelectionChange?.(newSelections);
   };
 
-  // Register ref for a player
-  const registerPlayerRef = (playerId: string, ref: HTMLDivElement | null) => {
-    if (ref) {
-      playersRef.current[playerId] = ref;
-    } else if (playersRef.current[playerId]) {
-      delete playersRef.current[playerId];
-    }
+  // Get all players assigned to positions
+  const getAssignedPlayers = () => {
+    return Object.values(selections).map(s => s.playerId);
+  };
+
+  // Get unassigned players
+  const getUnassignedPlayers = () => {
+    const assignedPlayerIds = new Set(getAssignedPlayers());
+    return availablePlayers.filter(player => !assignedPlayerIds.has(player.id));
   };
 
   return (
     <div className="relative flex flex-col items-center">
       <div 
         ref={formationRef}
-        className="relative w-full max-w-xl aspect-[2/3] mb-8 bg-green-600 rounded-lg overflow-hidden"
+        className="relative w-full max-w-xl aspect-[2/3] bg-green-600 rounded-lg overflow-hidden"
       >
         {/* Helper text for drag functionality */}
         <div className="absolute top-2 left-0 right-0 text-center z-20">
           <span className="px-2 py-1 bg-white/80 rounded text-xs text-gray-700">
-            Click and drag players to positions
+            Select players below and click on positions
           </span>
         </div>
         
@@ -144,7 +162,14 @@ export const DraggableFormation = ({
                     {renderSubstitutionIndicator && renderSubstitutionIndicator(position)}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center w-8 h-8 bg-gray-200 bg-opacity-70 rounded-full">
+                  <div 
+                    className="flex items-center justify-center w-8 h-8 bg-gray-200 bg-opacity-70 rounded-full cursor-pointer hover:bg-gray-300"
+                    onClick={() => {
+                      if (selectedPlayerId) {
+                        handleDrop(slotId, position);
+                      }
+                    }}
+                  >
                     <span className="text-[8px] font-medium">{position}</span>
                   </div>
                 )}
@@ -152,6 +177,27 @@ export const DraggableFormation = ({
             );
           }}
         />
+      </div>
+      
+      {/* Player Selection Area */}
+      <div className="w-full mt-4 bg-gray-100 p-2 rounded-md">
+        <h3 className="text-sm font-medium mb-2">Available Players</h3>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          {getUnassignedPlayers().map(player => (
+            <div 
+              key={player.id}
+              className={`flex items-center p-1 rounded-md cursor-pointer ${
+                selectedPlayerId === player.id ? 'bg-blue-100 ring-2 ring-blue-500' : 'bg-white hover:bg-gray-50'
+              }`}
+              onClick={() => handlePlayerSelect(player.id)}
+            >
+              <div className="w-6 h-6 flex items-center justify-center bg-blue-500 text-white rounded-full text-xs font-bold mr-1">
+                {player.squad_number || player.name.charAt(0)}
+              </div>
+              <span className="text-xs truncate">{player.name}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

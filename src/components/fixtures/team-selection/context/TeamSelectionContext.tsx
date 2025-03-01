@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import { Fixture } from "@/types/fixture";
 
 interface TeamSelectionContextType {
@@ -45,7 +45,8 @@ export const TeamSelectionProvider = ({ children, fixture }: TeamSelectionProvid
   const [selections, setSelections] = useState<Record<string, Record<string, Record<string, Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>>>>({}); 
 
   // Handle squad selection
-  const handleSquadSelection = (teamId: string, playerIds: string[]) => {
+  const handleSquadSelection = useCallback((teamId: string, playerIds: string[]) => {
+    console.log(`Squad selection for team ${teamId}:`, playerIds);
     setTeams(prev => ({
       ...prev,
       [teamId]: {
@@ -53,18 +54,21 @@ export const TeamSelectionProvider = ({ children, fixture }: TeamSelectionProvid
         squadPlayers: playerIds
       }
     }));
-  };
+  }, []);
 
   // Handle captain selection
-  const handleCaptainChange = (teamId: string, playerId: string) => {
+  const handleCaptainChange = useCallback((teamId: string, playerId: string) => {
+    console.log(`Captain change for team ${teamId} to player ${playerId}`);
     setTeamCaptains(prev => ({
       ...prev,
       [teamId]: playerId
     }));
-  };
+  }, []);
 
   // Handle formation changes
-  const handleFormationChange = (teamId: string, halfId: string, periodId: string, newSelections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => {
+  const handleFormationChange = useCallback((teamId: string, halfId: string, periodId: string, newSelections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => {
+    console.log(`Formation change for team ${teamId}, half ${halfId}, period ${periodId}:`, newSelections);
+    
     setSelections(prev => {
       const updated = { ...prev };
       
@@ -78,17 +82,19 @@ export const TeamSelectionProvider = ({ children, fixture }: TeamSelectionProvid
       
       return updated;
     });
-  };
+  }, []);
 
   // Get which teams a player is in
-  const getPlayerTeams = (playerId: string): string[] => {
+  const getPlayerTeams = useCallback((playerId: string): string[] => {
     return Object.entries(teams)
       .filter(([_, team]) => team.squadPlayers.includes(playerId))
       .map(([teamId]) => teamId);
-  };
+  }, [teams]);
 
   // Convert the new structure to the format expected by useTeamSelectionSave
-  const convertToSaveFormat = () => {
+  const convertToSaveFormat = useCallback(() => {
+    console.log("Converting to save format. Current selections:", selections);
+    
     // Create the converted data structure
     const allSelections = {};
     const periodsPerTeam = {};
@@ -146,12 +152,18 @@ export const TeamSelectionProvider = ({ children, fixture }: TeamSelectionProvid
       adjustedTeamCaptains[adjustedTeamId] = teamCaptains[teamId];
     });
     
+    console.log("Save format data:", {
+      allSelections,
+      periodsPerTeam,
+      teamCaptains: adjustedTeamCaptains
+    });
+    
     return {
       allSelections,
       periodsPerTeam,
       teamCaptains: adjustedTeamCaptains
     };
-  };
+  }, [selections, teamCaptains]);
 
   const value = {
     teams,
