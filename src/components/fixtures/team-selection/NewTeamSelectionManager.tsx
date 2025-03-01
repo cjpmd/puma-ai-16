@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Tab, Tabs, TabList, TabPanel } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SquadSelectionGrid } from "@/components/formation/SquadSelectionGrid";
 import { DraggableFormation } from "@/components/formation/DraggableFormation";
 import { Button } from "@/components/ui/button";
@@ -316,16 +316,16 @@ export const NewTeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionMan
   return (
     <div className="space-y-6">
       <Tabs defaultValue="0" onValueChange={setActiveTab}>
-        <TabList>
+        <TabsList className="w-full mb-4">
           {Object.keys(teams).map((teamId) => (
-            <Tab key={teamId} value={teamId}>
+            <TabsTrigger key={teamId} value={teamId}>
               Team {parseInt(teamId) + 1}
-            </Tab>
+            </TabsTrigger>
           ))}
-        </TabList>
+        </TabsList>
         
         {Object.entries(teams).map(([teamId, team]) => (
-          <TabPanel key={teamId} value={teamId}>
+          <TabsContent key={teamId} value={teamId}>
             <div className="space-y-6">
               <TeamHeaderControls
                 teamId={teamId}
@@ -373,7 +373,7 @@ export const NewTeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionMan
                 </Card>
               ))}
             </div>
-          </TabPanel>
+          </TabsContent>
         ))}
       </Tabs>
       
