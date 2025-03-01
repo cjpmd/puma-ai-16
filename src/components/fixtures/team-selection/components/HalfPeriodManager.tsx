@@ -62,7 +62,7 @@ export const HalfPeriodManager = ({
   };
   
   // Handle formation change for a period
-  const handleFormationChange = (periodId: string, selections: Record<string, { playerId: string; position: string }>) => {
+  const handleFormationChange = (periodId: string, selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => {
     // Mark substitutions compared to previous period
     const periodIndex = periods.findIndex(p => p.id === periodId);
     let updatedSelections = { ...selections };
