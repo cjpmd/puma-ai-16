@@ -9,13 +9,15 @@ interface SquadSelectionGridProps {
   selectedPlayers?: string[];
   onSelectionChange: (playerIds: string[]) => void;
   getPlayerTeams?: (playerId: string) => string[];
+  onSaveSelection?: () => void;
 }
 
 export const SquadSelectionGrid = ({ 
   availablePlayers, 
   selectedPlayers = [], 
   onSelectionChange,
-  getPlayerTeams
+  getPlayerTeams,
+  onSaveSelection
 }: SquadSelectionGridProps) => {
   const [search, setSearch] = useState("");
   const [localSelectedPlayers, setLocalSelectedPlayers] = useState<string[]>(selectedPlayers);
@@ -48,17 +50,22 @@ export const SquadSelectionGrid = ({
   
   return (
     <div className="space-y-4">
-      <div className="mb-4">
+      <div className="flex items-center justify-between mb-4">
         <Input
           type="text"
           placeholder="Search players by name or squad number..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full"
+          className="w-full max-w-md"
         />
+        {onSaveSelection && (
+          <Button onClick={onSaveSelection}>
+            Save Selection
+          </Button>
+        )}
       </div>
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {filteredPlayers.map(player => {
           const isSelected = localSelectedPlayers.includes(player.id);
           const playerTeams = getPlayerTeams ? getPlayerTeams(player.id) : [];
@@ -69,14 +76,14 @@ export const SquadSelectionGrid = ({
               key={player.id}
               variant={isSelected ? "default" : "outline"}
               className={cn(
-                "h-auto py-2 px-2 relative", // Reduced padding
+                "h-auto py-2 px-2 relative", 
                 isSelected ? "bg-blue-500" : ""
               )}
               onClick={() => togglePlayerSelection(player.id)}
             >
               <div className="flex flex-col items-center">
                 <div className={cn(
-                  "w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold mb-1", // Reduced size and font
+                  "w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold mb-1",
                   isSelected ? "bg-white text-blue-500" : "bg-blue-100 text-blue-800"
                 )}>
                   {player.squad_number || player.name.charAt(0)}

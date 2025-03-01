@@ -108,7 +108,7 @@ export const DraggablePlayer = ({
           squadNumber={player.squad_number}
           size="sm"
         />
-        <div className="mt-0.5 text-[7px] font-medium bg-white/80 px-1 py-0.5 rounded shadow-sm text-center max-w-8 truncate">
+        <div className="mt-0.5 text-[6px] font-medium bg-white/80 px-0.5 py-0.5 rounded shadow-sm text-center max-w-6 truncate">
           {player.name.split(' ')[0]}
           {isSubstitution && (
             <span className="ml-0.5 text-orange-500">↑</span>

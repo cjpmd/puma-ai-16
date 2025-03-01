@@ -30,15 +30,15 @@ export const PlayerAvatar = ({
 
   // Size classes - making all sizes smaller
   const sizeClasses = {
-    sm: "h-5 w-5 text-[8px]",
-    md: "h-6 w-6 text-[10px]",
-    lg: "h-8 w-8 text-xs",
+    sm: "h-4 w-4 text-[6px]",
+    md: "h-5 w-5 text-[8px]",
+    lg: "h-6 w-6 text-[10px]",
   };
 
   return (
     <div className="relative group" onClick={onClick}>
       <Avatar 
-        className={`${sizeClasses[size]} ${isSelected ? "ring-2 ring-primary" : ""} cursor-pointer transition-all hover:ring-2 hover:ring-primary/50`}
+        className={`${sizeClasses[size]} ${isSelected ? "ring-1 ring-primary" : ""} cursor-pointer transition-all hover:ring-1 hover:ring-primary/50`}
       >
         <AvatarFallback className="bg-primary/10 font-semibold">
           {squadNumber || initials}
@@ -47,11 +47,11 @@ export const PlayerAvatar = ({
       
       {/* Team indicators - made smaller */}
       {teamsPlaying && teamsPlaying.length > 0 && (
-        <div className="absolute -top-1 -right-1 flex -space-x-1">
+        <div className="absolute -top-0.5 -right-0.5 flex -space-x-0.5">
           {teamsPlaying.map((team, index) => (
             <span 
               key={team.id}
-              className="flex h-2 w-2 items-center justify-center rounded-full bg-primary text-[5px] text-white shadow-sm"
+              className="flex h-1.5 w-1.5 items-center justify-center rounded-full bg-primary text-[4px] text-white shadow-sm"
               style={{ zIndex: 10 - index }}
               title={`Playing in ${team.name}`}
             >
