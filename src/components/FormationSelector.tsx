@@ -1,25 +1,15 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PlayerPositionSelect } from "./formation/PlayerPositionSelect";
-import { SubstitutesList } from "./formation/SubstitutesList";
 import { FormationView } from "@/components/fixtures/FormationView";
+import { SubstitutesList } from "./formation/SubstitutesList";
+import { FormationSlots } from "./formation/FormationSlots";
+import { useFormationSelections } from "./formation/hooks/useFormationSelections";
+import { formatSelectionsForFormation } from "./formation/utils/formationUtils";
+import { FormationSelectionProps } from "./formation/types";
 
-interface FormationSelectorProps {
-  format: "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
-  teamName: string;
-  onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => void;
-  selectedPlayers: Set<string>;
-  availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
-  performanceCategory?: string;
-  initialSelections?: Record<string, { playerId: string; position: string; performanceCategory?: string }>;
-  viewMode?: "team-sheet" | "formation";
-  duration?: number;
-  periodNumber?: number;
-}
-
-export const FormationSelector = ({
+export const FormationSelector: React.FC<FormationSelectionProps> = ({
   format,
   teamName,
   onSelectionChange,
@@ -30,13 +20,12 @@ export const FormationSelector = ({
   viewMode = "team-sheet",
   duration = 20,
   periodNumber = 1
-}: FormationSelectorProps) => {
-  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; performanceCategory?: string }>>(
-    {}
-  );
-  const [localPerformanceCategory, setLocalPerformanceCategory] = useState(performanceCategory);
-  const initialSelectionsRef = useRef<string>("");
-  const hasUpdatedSelectionsRef = useRef(false);
+}) => {
+  const { selections, localPerformanceCategory, handlePlayerSelection } = useFormationSelections({
+    initialSelections,
+    performanceCategory,
+    onSelectionChange
+  });
 
   const { data: fetchedPlayers } = useQuery({
     queryKey: ["available-players", teamName],
@@ -53,137 +42,11 @@ export const FormationSelector = ({
   });
 
   const players = initialPlayers || fetchedPlayers || [];
-  
-  // Update local state when initialSelections change - improved to handle preserved positions
-  useEffect(() => {
-    if (initialSelections) {
-      const currentInitialSelectionsStr = JSON.stringify(initialSelections);
-      
-      // Only update if the initialSelections are different
-      if (currentInitialSelectionsStr !== initialSelectionsRef.current) {
-        console.log("FormationSelector: Setting initialSelections", initialSelections);
-        
-        // Deep clone to avoid reference issues
-        const clonedSelections = JSON.parse(JSON.stringify(initialSelections));
-        setSelections(clonedSelections);
-        initialSelectionsRef.current = currentInitialSelectionsStr;
-        hasUpdatedSelectionsRef.current = true;
-      }
-    }
-  }, [initialSelections]);
-
-  // Update local state when performanceCategory changes
-  useEffect(() => {
-    setLocalPerformanceCategory(performanceCategory);
-  }, [performanceCategory]);
-
-  // Handle player selection changes
-  const handlePlayerSelection = (slotId: string, playerId: string, position: string) => {
-    console.log(`FormationSelector: Selection change - SlotID: ${slotId}, PlayerID: ${playerId}, Position: ${position}`);
-    
-    // Create a new selections object with the updated values
-    const newSelections = {
-      ...selections,
-      [slotId]: {
-        playerId,
-        position,
-        performanceCategory: localPerformanceCategory
-      }
-    };
-    
-    // Update local state
-    setSelections(newSelections);
-    
-    // Notify parent component about changes
-    onSelectionChange(newSelections);
-  };
-
-  // Update performance categories when they change
-  useEffect(() => {
-    if (Object.keys(selections).length > 0) {
-      const updatedSelections = Object.fromEntries(
-        Object.entries(selections).map(([key, value]) => [
-          key,
-          { ...value, performanceCategory: localPerformanceCategory }
-        ])
-      );
-      
-      if (JSON.stringify(selections) !== JSON.stringify(updatedSelections)) {
-        setSelections(updatedSelections);
-        onSelectionChange(updatedSelections);
-      }
-    }
-  }, [localPerformanceCategory]);
-
-  // Get formation slots with appropriate default positions
-  const getFormationSlots = () => {
-    switch (format) {
-      case "5-a-side":
-        return [
-          { id: "gk-1", label: "GK", className: "w-full" },
-          { id: "def-1", label: "DL", className: "w-full" },
-          { id: "def-2", label: "DC", className: "w-full" },
-          { id: "def-3", label: "DR", className: "w-full" },
-          { id: "str-1", label: "STC", className: "w-full" },
-        ];
-      case "7-a-side":
-        return [
-          { id: "gk-1", label: "GK", className: "w-full" },
-          { id: "def-1", label: "DL", className: "w-full" },
-          { id: "def-2", label: "DC", className: "w-full" },
-          { id: "def-3", label: "DR", className: "w-full" },
-          { id: "mid-1", label: "MC", className: "w-full" },
-          { id: "str-1", label: "STC", className: "w-full" },
-          { id: "str-2", label: "AMC", className: "w-full" },
-        ];
-      case "9-a-side":
-        return [
-          { id: "gk-1", label: "GK", className: "w-full" },
-          { id: "def-1", label: "DL", className: "w-full" },
-          { id: "def-2", label: "DC", className: "w-full" },
-          { id: "def-3", label: "DR", className: "w-full" },
-          { id: "mid-1", label: "ML", className: "w-full" },
-          { id: "mid-2", label: "MC", className: "w-full" },
-          { id: "mid-3", label: "MR", className: "w-full" },
-          { id: "str-1", label: "AMC", className: "w-full" },
-          { id: "str-2", label: "STC", className: "w-full" },
-        ];
-      case "11-a-side":
-        return [
-          { id: "gk-1", label: "GK", className: "w-full" },
-          { id: "def-1", label: "DL", className: "w-full" },
-          { id: "def-2", label: "DCL", className: "w-full" },
-          { id: "def-3", label: "DC", className: "w-full" },
-          { id: "def-4", label: "DR", className: "w-full" },
-          { id: "mid-1", label: "ML", className: "w-full" },
-          { id: "mid-2", label: "MCL", className: "w-full" },
-          { id: "mid-3", label: "MC", className: "w-full" },
-          { id: "mid-4", label: "MR", className: "w-full" },
-          { id: "str-1", label: "AMC", className: "w-full" },
-          { id: "str-2", label: "STC", className: "w-full" },
-        ];
-      default:
-        return [];
-    }
-  };
-
-  const formatSelectionsForFormation = () => {
-    const formattedSelections = Object.entries(selections)
-      .filter(([slotId, value]) => value.playerId !== "unassigned" && !slotId.startsWith('sub-'))
-      .map(([_, value]) => {
-        return {
-          position: value.position,
-          playerId: value.playerId
-        };
-      });
-
-    return formattedSelections;
-  };
 
   if (viewMode === "formation") {
     return (
       <FormationView
-        positions={formatSelectionsForFormation()}
+        positions={formatSelectionsForFormation(selections)}
         players={players.map(player => ({
           id: player.id,
           name: player.name,
@@ -201,23 +64,13 @@ export const FormationSelector = ({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2">
-        {getFormationSlots().map((slot) => {
-          // Get the current selection for this slot or use default values
-          const selection = selections[slot.id] || { playerId: "unassigned", position: slot.label };
-          
-          return (
-            <PlayerPositionSelect
-              key={`${slot.id}-${selection.position}-${selection.playerId}`}
-              position={selection.position}
-              playerId={selection.playerId}
-              availablePlayers={players}
-              onSelectionChange={(playerId, position) => handlePlayerSelection(slot.id, playerId, position)}
-              selectedPlayers={selectedPlayers}
-            />
-          );
-        })}
-      </div>
+      <FormationSlots
+        format={format}
+        selections={selections}
+        availablePlayers={players}
+        onPlayerSelection={handlePlayerSelection}
+        selectedPlayers={selectedPlayers}
+      />
 
       <SubstitutesList
         maxSubstitutes={format === "11-a-side" ? 5 : 3}
