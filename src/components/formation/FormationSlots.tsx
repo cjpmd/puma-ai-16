@@ -1,3 +1,4 @@
+
 import React from "react";
 import { PlayerPositionSelect } from "./PlayerPositionSelect";
 import { FormationFormat, FormationSlot, PlayerSelection } from "./types";
@@ -10,7 +11,16 @@ interface FormationSlotsProps {
   onPlayerSelection?: (slotId: string, playerId: string, position: string) => void;
   selectedPlayers?: Set<string>;
   onDrop?: (slotId: string, position: string) => void;
-  renderSlot?: (slotId: string, position: string, dropProps: any) => React.ReactNode;
+  renderSlot?: (
+    slotId: string, 
+    position: string, 
+    dropProps: {
+      className: string;
+      onDragOver: (e: React.DragEvent) => void;
+      onDragLeave: (e: React.DragEvent) => void;
+      onDrop: (e: React.DragEvent) => void;
+    }
+  ) => React.ReactNode;
 }
 
 export const FormationSlots: React.FC<FormationSlotsProps> = ({
