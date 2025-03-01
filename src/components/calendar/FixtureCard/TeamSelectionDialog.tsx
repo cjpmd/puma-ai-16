@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { TeamSelectionManager } from "@/components/fixtures/team-selection/TeamSelectionManager";
+import { NewTeamSelectionManager } from "@/components/fixtures/team-selection/NewTeamSelectionManager";
 import { Fixture } from "@/types/fixture";
 import { useToast } from "@/hooks/use-toast";
 
@@ -33,7 +33,6 @@ export const TeamSelectionDialog = ({
     onOpenChange(false);
   };
 
-  // Note: We're now importing from the new team selection manager, but commenting it out until ready
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
@@ -44,18 +43,10 @@ export const TeamSelectionDialog = ({
           </DialogDescription>
         </DialogHeader>
         
-        {/* Use the legacy TeamSelectionManager for now */}
-        <TeamSelectionManager 
-          fixture={fixture}
-          onSuccess={handleSuccess}
-        />
-        
-        {/* Uncomment when ready to switch to the new version:
         <NewTeamSelectionManager 
           fixture={fixture}
           onSuccess={handleSuccess}
         />
-        */}
       </DialogContent>
     </Dialog>
   );

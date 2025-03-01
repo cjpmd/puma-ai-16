@@ -4,317 +4,422 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SquadSelectionGrid } from "@/components/formation/SquadSelectionGrid";
 import { DraggableFormation } from "@/components/formation/DraggableFormation";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { TeamHeaderControls } from "@/components/fixtures/TeamHeaderControls";
+import { Fixture } from "@/types/fixture";
+import { useTeamSelectionData } from "./hooks/useTeamSelectionData";
 import { useTeamSelectionSave } from "./hooks/useTeamSelectionSave";
-import { Period, TeamSelectionManagerProps } from "./types";
-import { Card, CardContent } from "@/components/ui/card";
-
-interface PlayerPosition {
-  playerId: string;
-  position: { x: number; y: number };
-  isSubstitution?: boolean;
-}
-
-interface TeamFormationState {
-  selectedPlayers: string[];
-  playerPositions: Record<string, PlayerPosition[]>;
-  captainId?: string;
-  performanceCategory: string;
-  periods: Period[];
-}
+import { ArrowRight } from "lucide-react";
+import { SubstitutesList } from "@/components/formation/SubstitutesList";
+import { isPlayerSubstitution } from "@/components/formation/utils/playerUtils";
+import { TeamSelectionManagerProps, TeamSelections, AllSelections, PeriodsPerTeam, TeamCaptains } from "./types";
 
 export const NewTeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionManagerProps) => {
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<string>("0");
-  const [teams, setTeams] = useState<Record<string, TeamFormationState>>({});
-  const [playersInTeams, setPlayersInTeams] = useState<Record<string, Array<{ id: string; name: string }>>>({});
-  
-  // Query to fetch available players
-  const { data: players, isLoading: playersLoading } = useQuery({
-    queryKey: ["players-for-team-selection"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("players")
-        .select("*")
-        .order("name");
-      
-      if (error) throw error;
-      return data || [];
-    },
-  });
-  
-  // Initialize teams state when fixture loads
-  useEffect(() => {
-    if (fixture && fixture.number_of_teams) {
-      const initialTeams: Record<string, TeamFormationState> = {};
-      
-      for (let i = 0; i < fixture.number_of_teams; i++) {
-        initialTeams[i.toString()] = {
-          selectedPlayers: [],
-          playerPositions: {
-            "period-0": []
-          },
-          captainId: undefined,
-          performanceCategory: "MESSI",
-          periods: [{ id: "period-0", duration: 20 }]
-        };
-      }
-      
-      setTeams(initialTeams);
-    }
-  }, [fixture]);
-  
-  // Handle player selection/deselection for a team
-  const handlePlayerToggle = (teamId: string, playerId: string) => {
-    setTeams(prevTeams => {
-      const teamState = prevTeams[teamId];
-      
-      if (!teamState) return prevTeams;
-      
-      let updatedSelectedPlayers: string[];
-      
-      if (teamState.selectedPlayers.includes(playerId)) {
-        // Remove player
-        updatedSelectedPlayers = teamState.selectedPlayers.filter(id => id !== playerId);
-        
-        // Also remove from positions
-        const updatedPositions = { ...teamState.playerPositions };
-        Object.keys(updatedPositions).forEach(periodId => {
-          updatedPositions[periodId] = updatedPositions[periodId].filter(p => p.playerId !== playerId);
-        });
-        
-        // If player was captain, remove captain
-        const updatedCaptainId = teamState.captainId === playerId ? undefined : teamState.captainId;
-        
-        return {
-          ...prevTeams,
-          [teamId]: {
-            ...teamState,
-            selectedPlayers: updatedSelectedPlayers,
-            playerPositions: updatedPositions,
-            captainId: updatedCaptainId
-          }
-        };
-      } else {
-        // Add player
-        updatedSelectedPlayers = [...teamState.selectedPlayers, playerId];
-        
-        // Add to positions with default position
-        const updatedPositions = { ...teamState.playerPositions };
-        Object.keys(updatedPositions).forEach(periodId => {
-          const index = updatedPositions[periodId].length;
-          updatedPositions[periodId] = [
-            ...updatedPositions[periodId],
-            {
-              playerId,
-              position: { 
-                x: 20 + (index % 5) * 15, 
-                y: 25 + Math.floor(index / 5) * 20 
-              },
-              isSubstitution: false
-            }
-          ];
-        });
-        
-        return {
-          ...prevTeams,
-          [teamId]: {
-            ...teamState,
-            selectedPlayers: updatedSelectedPlayers,
-            playerPositions: updatedPositions
-          }
-        };
-      }
-    });
-    
-    // Update playersInTeams state
-    updatePlayersInTeams();
-  };
-  
-  // Update which players are in which teams
-  const updatePlayersInTeams = () => {
-    const playersMap: Record<string, Array<{ id: string; name: string }>> = {};
-    
-    Object.entries(teams).forEach(([teamId, team]) => {
-      team.selectedPlayers.forEach(playerId => {
-        const player = players?.find(p => p.id === playerId);
-        if (!player) return;
-        
-        if (!playersMap[playerId]) {
-          playersMap[playerId] = [];
-        }
-        
-        playersMap[playerId].push({ id: teamId, name: `Team ${parseInt(teamId) + 1}` });
-      });
-    });
-    
-    setPlayersInTeams(playersMap);
-  };
-  
-  // Handle player position changes
-  const handlePositionsChange = (teamId: string, periodId: string, positions: PlayerPosition[]) => {
-    setTeams(prevTeams => ({
-      ...prevTeams,
-      [teamId]: {
-        ...prevTeams[teamId],
-        playerPositions: {
-          ...prevTeams[teamId].playerPositions,
-          [periodId]: positions
-        }
-      }
-    }));
-  };
-  
-  // Handle captain change
-  const handleCaptainChange = (teamId: string, playerId: string) => {
-    setTeams(prevTeams => ({
-      ...prevTeams,
-      [teamId]: {
-        ...prevTeams[teamId],
-        captainId: prevTeams[teamId].captainId === playerId ? undefined : playerId
-      }
-    }));
-  };
-  
-  // Handle performance category change
-  const handlePerformanceCategoryChange = (teamId: string, category: string) => {
-    setTeams(prevTeams => ({
-      ...prevTeams,
-      [teamId]: {
-        ...prevTeams[teamId],
-        performanceCategory: category
-      }
-    }));
-  };
-  
-  // Handle adding a period
-  const handleAddPeriod = (teamId: string) => {
-    setTeams(prevTeams => {
-      const teamState = prevTeams[teamId];
-      const newPeriodId = `period-${teamState.periods.length}`;
-      const previousPeriodId = `period-${teamState.periods.length - 1}`;
-      
-      // Clone player positions from previous period
-      const previousPositions = teamState.playerPositions[previousPeriodId] || [];
-      
-      return {
-        ...prevTeams,
-        [teamId]: {
-          ...teamState,
-          periods: [
-            ...teamState.periods,
-            { id: newPeriodId, duration: 20 }
-          ],
-          playerPositions: {
-            ...teamState.playerPositions,
-            [newPeriodId]: previousPositions.map(pos => ({
-              ...pos,
-              isSubstitution: true // Mark all as substitutions in new period
-            }))
-          }
-        }
-      };
-    });
-  };
-  
-  // Handle period duration change
-  const handlePeriodDurationChange = (teamId: string, periodId: string, duration: number) => {
-    setTeams(prevTeams => {
-      const teamState = prevTeams[teamId];
-      
-      return {
-        ...prevTeams,
-        [teamId]: {
-          ...teamState,
-          periods: teamState.periods.map(period => 
-            period.id === periodId ? { ...period, duration } : period
-          )
-        }
-      };
-    });
-  };
-  
-  // Convert data for saving
-  const convertTeamsToSaveFormat = () => {
-    const selections = {};
-    const periodsPerTeam = {};
-    const teamCaptains = {};
-    
-    Object.entries(teams).forEach(([teamId, team]) => {
-      // Set team captains
-      if (team.captainId) {
-        teamCaptains[teamId] = team.captainId;
-      }
-      
-      // Set periods
-      periodsPerTeam[teamId] = team.periods;
-      
-      // Set selections
-      team.periods.forEach(period => {
-        const periodId = period.id;
-        const positions = team.playerPositions[periodId] || [];
-        
-        if (!selections[periodId]) {
-          selections[periodId] = {};
-        }
-        
-        if (!selections[periodId][teamId]) {
-          selections[periodId][teamId] = {};
-        }
-        
-        positions.forEach(pos => {
-          selections[periodId][teamId][pos.playerId] = {
-            playerId: pos.playerId,
-            position: `position-${Math.floor(pos.position.x)}-${Math.floor(pos.position.y)}`,
-            performanceCategory: team.performanceCategory,
-            isSubstitution: pos.isSubstitution
-          };
-        });
-      });
-    });
-    
-    return { selections, periodsPerTeam, teamCaptains };
-  };
-  
-  // Save the team selection
+  const [activeTab, setActiveTab] = useState("0");
+  const [teams, setTeams] = useState<Record<string, { name: string; squadPlayers: string[] }>>({});
+  const [periods, setPeriods] = useState<Record<string, { id: string; teamId: string; duration: number }[]>>({});
+  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
+  const [teamCaptains, setTeamCaptains] = useState<Record<string, string>>({});
+  const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
+
+  // Use the existing data and save hooks
+  const {
+    availablePlayers,
+    selectedPlayers: existingSelectedPlayers,
+    periodsPerTeam,
+    selections: existingSelections,
+    performanceCategories: existingPerformanceCategories,
+    teamCaptains: existingTeamCaptains,
+    isLoading,
+    actions
+  } = useTeamSelectionData(fixture?.id);
+
+  // Initialize save hook
   const { isSaving, handleSave } = useTeamSelectionSave(
     fixture?.id,
-    {}, // Will convert on save
-    {}, // Will convert on save
-    {}, // Will convert on save
+    convertToAllSelections(),
+    convertToPeriodsPerTeam(),
+    convertToTeamCaptains(),
     onSuccess
   );
-  
-  const handleSaveTeamSelection = () => {
-    try {
-      const { selections, periodsPerTeam, teamCaptains } = convertTeamsToSaveFormat();
-      
-      // TODO: Save team selection to database
-      toast({
-        title: "Success",
-        description: "Team selections saved successfully",
+
+  // Function to convert our state format to the format expected by useTeamSelectionSave
+  function convertToAllSelections(): AllSelections {
+    const result: AllSelections = {};
+    
+    // Process each team and its periods
+    Object.keys(periods).forEach(teamId => {
+      periods[teamId].forEach(period => {
+        const periodId = period.id;
+        
+        // Initialize period if it doesn't exist
+        if (!result[periodId]) {
+          result[periodId] = {};
+        }
+        
+        // Initialize team if it doesn't exist
+        if (!result[periodId][teamId]) {
+          result[periodId][teamId] = {};
+        }
+        
+        // Add selections for this team/period if they exist
+        if (teamSelections[`${teamId}-${periodId}`]) {
+          result[periodId][teamId] = {...teamSelections[`${teamId}-${periodId}`]};
+          
+          // Apply performance category to all selections
+          const performanceCategory = performanceCategories[`${teamId}-${periodId}`] || 'MESSI';
+          Object.keys(result[periodId][teamId]).forEach(slotId => {
+            result[periodId][teamId][slotId].performanceCategory = performanceCategory;
+          });
+        }
       });
-      
-      onSuccess?.();
-    } catch (error) {
-      console.error("Error saving team selections:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save team selections",
-      });
-    }
-  };
-  
-  if (playersLoading || !players) {
-    return <div>Loading players...</div>;
+    });
+    
+    return result;
   }
   
+  function convertToPeriodsPerTeam(): PeriodsPerTeam {
+    const result: PeriodsPerTeam = {};
+    
+    Object.keys(periods).forEach(teamId => {
+      result[teamId] = periods[teamId].map(period => ({
+        id: period.id,
+        duration: period.duration
+      }));
+    });
+    
+    return result;
+  }
+  
+  function convertToTeamCaptains(): TeamCaptains {
+    const result: TeamCaptains = {};
+    
+    Object.keys(teamCaptains).forEach(teamId => {
+      result[teamId] = teamCaptains[teamId];
+    });
+    
+    return result;
+  }
+
+  // Initialize teams data
+  useEffect(() => {
+    if (fixture) {
+      const numTeams = fixture.number_of_teams || 1;
+      const newTeams: Record<string, { name: string; squadPlayers: string[] }> = {};
+      const newPeriods: Record<string, { id: string; teamId: string; duration: number }[]> = {};
+      
+      for (let i = 0; i < numTeams; i++) {
+        const teamId = String(i);
+        newTeams[teamId] = {
+          name: `Team ${i + 1}`,
+          squadPlayers: []
+        };
+        
+        // Initialize with one period for each team
+        newPeriods[teamId] = [
+          { id: `period-1`, teamId, duration: 20 }
+        ];
+      }
+      
+      setTeams(newTeams);
+      setPeriods(newPeriods);
+    }
+  }, [fixture]);
+
+  // Load existing data when it's available
+  useEffect(() => {
+    if (!isLoading && fixture) {
+      const newTeamSelections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>> = {};
+      const newTeamCaptains: Record<string, string> = {};
+      const newPerformanceCategories: Record<string, string> = {};
+      const newPeriods: Record<string, { id: string; teamId: string; duration: number }[]> = {};
+      const newTeams: Record<string, { name: string; squadPlayers: string[] }> = {};
+      
+      // Process existing periods and selections
+      Object.keys(periodsPerTeam).forEach(teamId => {
+        const teamPeriods = periodsPerTeam[teamId] || [];
+        const teamNumber = parseInt(teamId);
+        
+        // Initialize team
+        newTeams[String(teamNumber - 1)] = {
+          name: `Team ${teamNumber}`,
+          squadPlayers: [] // Will populate from selections
+        };
+        
+        // Add periods
+        newPeriods[String(teamNumber - 1)] = teamPeriods.map(period => ({
+          id: period.id,
+          teamId: String(teamNumber - 1),
+          duration: period.duration
+        }));
+        
+        // Add team captain
+        if (existingTeamCaptains[teamId]) {
+          newTeamCaptains[String(teamNumber - 1)] = existingTeamCaptains[teamId];
+        }
+        
+        // Process selections for each period
+        teamPeriods.forEach(period => {
+          const periodId = period.id;
+          
+          // Get existing selections for this period and team
+          if (existingSelections[periodId] && existingSelections[periodId][teamId]) {
+            const selectionKey = `${String(teamNumber - 1)}-${periodId}`;
+            newTeamSelections[selectionKey] = {...existingSelections[periodId][teamId]};
+            
+            // Add all players to squad
+            Object.values(existingSelections[periodId][teamId]).forEach(selection => {
+              if (selection.playerId && selection.playerId !== "unassigned") {
+                if (!newTeams[String(teamNumber - 1)].squadPlayers.includes(selection.playerId)) {
+                  newTeams[String(teamNumber - 1)].squadPlayers.push(selection.playerId);
+                }
+              }
+            });
+            
+            // Get performance category
+            const perfCatKey = `${periodId}-${teamId}`;
+            if (existingPerformanceCategories[perfCatKey]) {
+              newPerformanceCategories[`${String(teamNumber - 1)}-${periodId}`] = 
+                existingPerformanceCategories[perfCatKey];
+            }
+          }
+        });
+      });
+      
+      // Only update state if we have data
+      if (Object.keys(newPeriods).length > 0) {
+        setPeriods(newPeriods);
+        setTeamSelections(newTeamSelections);
+        setTeamCaptains(newTeamCaptains);
+        setPerformanceCategories(newPerformanceCategories);
+        setTeams(newTeams);
+      }
+    }
+  }, [isLoading, fixture, periodsPerTeam, existingSelections, existingTeamCaptains, existingPerformanceCategories]);
+
+  // Handle squad selection changes
+  const handleSquadSelection = (teamId: string, playerIds: string[]) => {
+    setTeams(prevTeams => ({
+      ...prevTeams,
+      [teamId]: {
+        ...prevTeams[teamId],
+        squadPlayers: playerIds
+      }
+    }));
+  };
+
+  // Handle formation changes (dragging players)
+  const handleFormationChange = (teamId: string, periodId: string, selections: Record<string, { playerId: string; position: string }>) => {
+    const selectionKey = `${teamId}-${periodId}`;
+    
+    // Apply performance category to all selections
+    const updatedSelections = {...selections};
+    const performanceCategory = performanceCategories[selectionKey] || 'MESSI';
+    
+    Object.keys(updatedSelections).forEach(slotId => {
+      updatedSelections[slotId].performanceCategory = performanceCategory;
+    });
+    
+    setTeamSelections(prev => ({
+      ...prev,
+      [selectionKey]: updatedSelections
+    }));
+  };
+
+  // Handle captain selection
+  const handleCaptainChange = (teamId: string, playerId: string) => {
+    setTeamCaptains(prev => ({
+      ...prev,
+      [teamId]: playerId
+    }));
+  };
+
+  // Handle performance category changes
+  const handlePerformanceCategoryChange = (teamId: string, periodId: string, category: string) => {
+    const key = `${teamId}-${periodId}`;
+    
+    setPerformanceCategories(prev => ({
+      ...prev,
+      [key]: category
+    }));
+    
+    // Also update all existing selections with the new performance category
+    if (teamSelections[key]) {
+      const updatedSelections = {...teamSelections[key]};
+      
+      Object.keys(updatedSelections).forEach(slotId => {
+        updatedSelections[slotId] = {
+          ...updatedSelections[slotId],
+          performanceCategory: category
+        };
+      });
+      
+      setTeamSelections(prev => ({
+        ...prev,
+        [key]: updatedSelections
+      }));
+    }
+  };
+
+  // Handle period duration changes
+  const handleDurationChange = (teamId: string, periodId: string, duration: number) => {
+    setPeriods(prev => ({
+      ...prev,
+      [teamId]: prev[teamId].map(p => 
+        p.id === periodId ? { ...p, duration } : p
+      )
+    }));
+  };
+
+  // Handle adding a new period
+  const handleAddPeriod = (teamId: string) => {
+    setPeriods(prev => {
+      const teamPeriods = prev[teamId] || [];
+      const lastPeriodNumber = teamPeriods.length > 0 
+        ? parseInt(teamPeriods[teamPeriods.length - 1].id.replace('period-', ''))
+        : 0;
+      const newPeriodId = `period-${lastPeriodNumber + 1}`;
+      
+      // Get the last period's selections to duplicate
+      let lastPeriodSelections = {};
+      if (teamPeriods.length > 0) {
+        const lastPeriodId = teamPeriods[teamPeriods.length - 1].id;
+        const lastSelectionKey = `${teamId}-${lastPeriodId}`;
+        
+        if (teamSelections[lastSelectionKey]) {
+          lastPeriodSelections = JSON.parse(JSON.stringify(teamSelections[lastSelectionKey]));
+        }
+      }
+      
+      // Add the new period's selections
+      const newSelectionKey = `${teamId}-${newPeriodId}`;
+      setTeamSelections(prevSelections => ({
+        ...prevSelections,
+        [newSelectionKey]: lastPeriodSelections
+      }));
+      
+      // Copy performance category from last period
+      if (teamPeriods.length > 0) {
+        const lastPeriodId = teamPeriods[teamPeriods.length - 1].id;
+        const lastCategoryKey = `${teamId}-${lastPeriodId}`;
+        const category = performanceCategories[lastCategoryKey] || 'MESSI';
+        
+        setPerformanceCategories(prevCategories => ({
+          ...prevCategories,
+          [newSelectionKey]: category
+        }));
+      }
+      
+      return {
+        ...prev,
+        [teamId]: [
+          ...teamPeriods,
+          { id: newPeriodId, teamId, duration: 20 }
+        ]
+      };
+    });
+  };
+
+  // Handle deleting a period
+  const handleDeletePeriod = (teamId: string, periodId: string) => {
+    // Remove the period
+    setPeriods(prev => ({
+      ...prev,
+      [teamId]: prev[teamId].filter(p => p.id !== periodId)
+    }));
+    
+    // Remove selections for this period
+    const selectionKey = `${teamId}-${periodId}`;
+    setTeamSelections(prev => {
+      const newSelections = {...prev};
+      delete newSelections[selectionKey];
+      return newSelections;
+    });
+    
+    // Remove performance category
+    setPerformanceCategories(prev => {
+      const newCategories = {...prev};
+      delete newCategories[selectionKey];
+      return newCategories;
+    });
+  };
+
+  // Save all selections
+  const handleSaveSelections = async () => {
+    // Convert our state to the format expected by useTeamSelectionSave
+    const allSelections = convertToAllSelections();
+    const periodsPerTeamData = convertToPeriodsPerTeam();
+    const teamCaptainsData = convertToTeamCaptains();
+    
+    console.log("Saving team selections with:", {
+      allSelections,
+      periodsPerTeamData,
+      teamCaptainsData
+    });
+    
+    // Use the existing save mechanism
+    await handleSave();
+  };
+
+  // Check if a player is a substitution compared to previous period
+  const checkIsSubstitution = (teamId: string, periodIndex: number, position: string): boolean => {
+    if (periodIndex <= 0) return false;
+    
+    const teamPeriods = periods[teamId] || [];
+    if (teamPeriods.length <= 1) return false;
+    
+    const currentPeriodId = teamPeriods[periodIndex].id;
+    const previousPeriodId = teamPeriods[periodIndex - 1].id;
+    
+    const currentSelections = teamSelections[`${teamId}-${currentPeriodId}`];
+    const previousSelections = teamSelections[`${teamId}-${previousPeriodId}`];
+    
+    return isPlayerSubstitution(currentSelections, previousSelections, position);
+  };
+
+  // Get selected players across all teams
+  const getSelectedPlayers = (): Set<string> => {
+    const selected = new Set<string>();
+    
+    Object.values(teams).forEach(team => {
+      team.squadPlayers.forEach(playerId => {
+        if (playerId && playerId !== "unassigned") {
+          selected.add(playerId);
+        }
+      });
+    });
+    
+    return selected;
+  };
+
+  // Which teams a player is selected for
+  const getPlayerTeams = (playerId: string): string[] => {
+    return Object.entries(teams)
+      .filter(([_, team]) => team.squadPlayers.includes(playerId))
+      .map(([teamId]) => teamId);
+  };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-40">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <span className="ml-2">Loading team selection data...</span>
+    </div>;
+  }
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Team Selection - {fixture?.opponent}</h2>
+        <Button 
+          onClick={handleSaveSelections} 
+          disabled={isSaving}
+        >
+          {isSaving ? 'Saving...' : 'Save Selections'}
+        </Button>
+      </div>
+
       <Tabs defaultValue="0" onValueChange={setActiveTab}>
         <TabsList className="w-full mb-4">
           {Object.keys(teams).map((teamId) => (
@@ -329,58 +434,129 @@ export const NewTeamSelectionManager = ({ fixture, onSuccess }: TeamSelectionMan
             <div className="space-y-6">
               <TeamHeaderControls
                 teamId={teamId}
-                teamCaptains={{ [teamId]: team.captainId }}
-                availablePlayers={players}
-                onCaptainChange={(_, captainId) => handleCaptainChange(teamId, captainId)}
-                performanceCategory={team.performanceCategory}
-                onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(teamId, value)}
-                onAddPeriod={() => handleAddPeriod(teamId)}
+                teamName={team.name}
+                captain={teamCaptains[teamId] || ""}
+                onCaptainChange={(playerId) => handleCaptainChange(teamId, playerId)}
+                availablePlayers={availablePlayers}
+                selectedPlayers={team.squadPlayers}
               />
               
-              <SquadSelectionGrid
-                availablePlayers={players}
-                selectedPlayers={team.selectedPlayers}
-                onPlayerToggle={(playerId) => handlePlayerToggle(teamId, playerId)}
-                playersInOtherTeams={playersInTeams}
-              />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Squad Selection</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SquadSelectionGrid
+                    availablePlayers={availablePlayers}
+                    selectedPlayers={team.squadPlayers}
+                    onSelectionChange={(playerIds) => handleSquadSelection(teamId, playerIds)}
+                    getPlayerTeams={getPlayerTeams}
+                  />
+                </CardContent>
+              </Card>
               
-              {team.periods.map((period, index) => (
-                <Card key={period.id} className="mt-6">
-                  <CardContent className="pt-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="font-semibold">Period {index + 1}</h3>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">Duration (mins):</span>
-                        <input
+              {(periods[teamId] || []).map((period, index) => (
+                <Card key={period.id} className="relative">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Period {index + 1}</CardTitle>
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <Label>Performance Category:</Label>
+                        <select
+                          value={performanceCategories[`${teamId}-${period.id}`] || 'MESSI'}
+                          onChange={(e) => handlePerformanceCategoryChange(teamId, period.id, e.target.value)}
+                          className="border rounded px-2 py-1"
+                        >
+                          <option value="MESSI">Messi</option>
+                          <option value="RONALDO">Ronaldo</option>
+                          <option value="JAGS">Jags</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Label>Duration (mins):</Label>
+                        <Input
                           type="number"
                           value={period.duration}
-                          onChange={(e) => handlePeriodDurationChange(teamId, period.id, parseInt(e.target.value) || 20)}
-                          className="w-16 h-8 px-2 border rounded"
-                          min="1"
+                          onChange={(e) => handleDurationChange(teamId, period.id, parseInt(e.target.value))}
+                          className="w-20"
                         />
                       </div>
+                      {index > 0 && (
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => handleDeletePeriod(teamId, period.id)}
+                        >
+                          Remove Period
+                        </Button>
+                      )}
                     </div>
-                    
+                  </CardHeader>
+                  <CardContent>
                     <DraggableFormation
-                      selectedPlayers={team.selectedPlayers.map(id => players.find(p => p.id === id)).filter(Boolean)}
-                      captainId={team.captainId}
-                      initialPositions={team.playerPositions[period.id] || []}
-                      onPositionsChange={(positions) => handlePositionsChange(teamId, period.id, positions)}
-                      onCaptainChange={(playerId) => handleCaptainChange(teamId, playerId)}
-                      title={`Period ${index + 1} Formation`}
+                      format={fixture?.format as "7-a-side" || "7-a-side"}
+                      availablePlayers={availablePlayers.filter(p => 
+                        team.squadPlayers.includes(p.id)
+                      )}
+                      initialSelections={teamSelections[`${teamId}-${period.id}`] || {}}
+                      onSelectionChange={(selections) => handleFormationChange(teamId, period.id, selections)}
+                      renderSubstitutionIndicator={(position) => 
+                        checkIsSubstitution(teamId, index, position) && (
+                          <span className="absolute -top-4 -right-3 text-amber-500">
+                            <ArrowRight className="h-4 w-4" />
+                          </span>
+                        )
+                      }
+                    />
+                    
+                    <SubstitutesList
+                      maxSubstitutes={5}
+                      selections={teamSelections[`${teamId}-${period.id}`] || {}}
+                      availablePlayers={availablePlayers.filter(p => 
+                        team.squadPlayers.includes(p.id)
+                      )}
+                      onSelectionChange={(slotId, playerId, position) => {
+                        // Update the selection for this substitute
+                        const selectionKey = `${teamId}-${period.id}`;
+                        const currentSelections = teamSelections[selectionKey] || {};
+                        
+                        setTeamSelections(prev => ({
+                          ...prev,
+                          [selectionKey]: {
+                            ...currentSelections,
+                            [slotId]: {
+                              playerId,
+                              position,
+                              performanceCategory: performanceCategories[selectionKey] || 'MESSI'
+                            }
+                          }
+                        }));
+                      }}
+                      selectedPlayers={new Set(
+                        Object.values(teamSelections[`${teamId}-${period.id}`] || {})
+                          .map(s => s.playerId)
+                          .filter(id => id !== 'unassigned')
+                      )}
                     />
                   </CardContent>
                 </Card>
               ))}
+              
+              <div className="flex justify-center">
+                <Button onClick={() => handleAddPeriod(teamId)}>
+                  Add Period
+                </Button>
+              </div>
             </div>
           </TabsContent>
         ))}
       </Tabs>
       
-      <div className="flex justify-end">
+      <div className="flex justify-end mt-8">
         <Button 
-          onClick={handleSaveTeamSelection} 
+          onClick={handleSaveSelections} 
           disabled={isSaving}
+          size="lg"
         >
           {isSaving ? 'Saving...' : 'Save Team Selections'}
         </Button>

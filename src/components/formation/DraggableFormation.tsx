@@ -1,161 +1,144 @@
 
-import { useRef, useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState, useRef } from "react";
+import { FormationSlots } from "./FormationSlots";
 import { DraggablePlayer } from "./DraggablePlayer";
-import { Crown } from "lucide-react";
-
-// Types for player positions
-interface PlayerPosition {
-  playerId: string;
-  position: { x: number; y: number };
-  isSubstitution?: boolean;
-}
+import { getPlayerDisplay } from "./utils/playerUtils";
 
 interface DraggableFormationProps {
-  selectedPlayers: Array<{ id: string; name: string; squad_number?: number }>;
-  captainId?: string;
-  initialPositions?: PlayerPosition[];
-  onPositionsChange: (positions: PlayerPosition[]) => void;
-  onCaptainChange: (playerId: string) => void;
-  title?: string;
+  format: "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
+  availablePlayers: any[];
+  initialSelections?: Record<string, { playerId: string; position: string }>;
+  onSelectionChange?: (selections: Record<string, { playerId: string; position: string }>) => void;
+  renderSubstitutionIndicator?: (position: string) => React.ReactNode;
 }
 
-// Default player positions for a standard formation
-const DEFAULT_POSITIONS = [
-  { x: 50, y: 85 }, // GK
-  { x: 20, y: 65 }, // LB
-  { x: 40, y: 65 }, // CB
-  { x: 60, y: 65 }, // CB
-  { x: 80, y: 65 }, // RB
-  { x: 30, y: 45 }, // LM
-  { x: 50, y: 45 }, // CM
-  { x: 70, y: 45 }, // RM
-  { x: 30, y: 25 }, // LF
-  { x: 50, y: 25 }, // CF
-  { x: 70, y: 25 }, // RF
-];
-
 export const DraggableFormation = ({
-  selectedPlayers,
-  captainId,
-  initialPositions = [],
-  onPositionsChange,
-  onCaptainChange,
-  title = "Formation"
+  format,
+  availablePlayers,
+  initialSelections = {},
+  onSelectionChange,
+  renderSubstitutionIndicator
 }: DraggableFormationProps) => {
-  const pitchRef = useRef<HTMLDivElement>(null);
-  const [playerPositions, setPlayerPositions] = useState<PlayerPosition[]>([]);
-  
-  // Initialize player positions on mount or when selected players change
-  useEffect(() => {
-    if (initialPositions.length > 0) {
-      // Use provided positions
-      setPlayerPositions(initialPositions);
-    } else {
-      // Create default positions for players
-      const newPositions = selectedPlayers.map((player, index) => ({
-        playerId: player.id,
-        position: DEFAULT_POSITIONS[index] || { 
-          x: 20 + (index % 5) * 15, 
-          y: 25 + Math.floor(index / 5) * 20 
-        },
-        isSubstitution: false
-      }));
-      
-      setPlayerPositions(newPositions);
-      onPositionsChange(newPositions);
+  const [activePlayer, setActivePlayer] = useState<string | null>(null);
+  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string }>>(initialSelections || {});
+  const playersRef = useRef<Record<string, HTMLDivElement>>({});
+
+  // Get player object from ID
+  const getPlayer = (playerId: string) => {
+    return availablePlayers.find(p => p.id === playerId);
+  };
+
+  // Handle drag start
+  const handleDragStart = (playerId: string) => {
+    setActivePlayer(playerId);
+  };
+
+  // Handle drop onto a formation slot
+  const handleDrop = (slotId: string, position: string) => {
+    if (!activePlayer) return;
+
+    // Get the current slot that this player is assigned to (if any)
+    const currentSlotId = Object.entries(selections).find(
+      ([_, selection]) => selection.playerId === activePlayer
+    )?.[0];
+
+    // Get the player currently in the target slot (if any)
+    const currentPlayerInSlot = selections[slotId]?.playerId;
+
+    // Create a new selections object
+    const newSelections = { ...selections };
+
+    // If the player is already assigned to a slot, remove them
+    if (currentSlotId) {
+      // If the player is just moving to a new slot, remove from old one
+      if (currentSlotId !== slotId) {
+        delete newSelections[currentSlotId];
+      }
     }
-  }, [selectedPlayers.length]);
-  
-  // Update a player's position
-  const handlePositionChange = (playerId: string, position: { x: number; y: number }) => {
-    const updatedPositions = playerPositions.map(p => 
-      p.playerId === playerId ? { ...p, position } : p
-    );
+
+    // Assign the player to the new slot
+    newSelections[slotId] = {
+      playerId: activePlayer,
+      position
+    };
+
+    // If there was a player in the target slot, and it's not the same player,
+    // then we need to make that player unassigned
+    if (currentPlayerInSlot && currentPlayerInSlot !== activePlayer) {
+      // Optionally, move that player back to unassigned
+      // or you could implement a swap logic here
+    }
+
+    setSelections(newSelections);
+    setActivePlayer(null);
+
+    // Notify parent of change
+    onSelectionChange?.(newSelections);
+  };
+
+  // Handle removing a player from a position
+  const handleRemovePlayer = (slotId: string) => {
+    const newSelections = { ...selections };
+    delete newSelections[slotId];
     
-    setPlayerPositions(updatedPositions);
-    onPositionsChange(updatedPositions);
+    setSelections(newSelections);
+    onSelectionChange?.(newSelections);
   };
-  
-  // Toggle player as captain
-  const toggleCaptain = (playerId: string) => {
-    onCaptainChange(playerId);
+
+  // Register ref for a player
+  const registerPlayerRef = (playerId: string, ref: HTMLDivElement | null) => {
+    if (ref) {
+      playersRef.current[playerId] = ref;
+    } else if (playersRef.current[playerId]) {
+      delete playersRef.current[playerId];
+    }
   };
-  
+
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <h3 className="font-semibold mb-4">{title}</h3>
-        <div 
-          ref={pitchRef}
-          className="relative w-full h-[400px] bg-green-600 rounded-lg border-2 border-white mb-4"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, white 1px, transparent 1px),
-              linear-gradient(to bottom, white 1px, transparent 1px)
-            `,
-            backgroundSize: '20% 20%',
-            backgroundPosition: 'center',
-            boxShadow: 'inset 0 0 20px rgba(0, 0, 0, 0.2)'
-          }}
-        >
-          {/* Center circle */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[100px] h-[100px] border-2 border-white rounded-full" />
-          
-          {/* Goal areas */}
-          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[150px] h-[40px] border-b-2 border-l-2 border-r-2 border-white" />
-          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-[150px] h-[40px] border-t-2 border-l-2 border-r-2 border-white" />
-          
-          {/* Players */}
-          {playerPositions.map((playerPos) => {
-            const player = selectedPlayers.find(p => p.id === playerPos.playerId);
-            if (!player) return null;
-            
-            const isCaptain = captainId === player.id;
+    <div className="relative flex flex-col items-center">
+      <div className="relative w-full max-w-xl aspect-[2/3] mb-8 bg-green-600 rounded-lg overflow-hidden">
+        <FormationSlots
+          format={format}
+          onDrop={handleDrop}
+          renderSlot={(slotId, position, dropProps) => {
+            const selection = selections[slotId];
+            const player = selection ? getPlayer(selection.playerId) : null;
             
             return (
-              <div key={player.id} className="relative">
-                <DraggablePlayer
-                  player={player}
-                  position={playerPos.position}
-                  onPositionChange={handlePositionChange}
-                  containerRef={pitchRef}
-                  isSubstitution={playerPos.isSubstitution}
-                />
-                
-                {/* Captain indicator */}
-                {isCaptain && (
-                  <div className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2">
-                    <Crown className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+              <div
+                {...dropProps}
+                className={`absolute flex items-center justify-center w-16 h-16 -translate-x-1/2 -translate-y-1/2 rounded-full ${
+                  dropProps.className
+                }`}
+              >
+                {selection && player ? (
+                  <div className="relative">
+                    <div
+                      className="relative flex items-center justify-center w-16 h-16 bg-white rounded-full cursor-pointer"
+                      onClick={() => handleRemovePlayer(slotId)}
+                    >
+                      <div className="flex flex-col items-center">
+                        <div className="w-10 h-10 flex items-center justify-center bg-blue-500 text-white rounded-full text-lg font-bold">
+                          {player.squad_number || player.name.charAt(0)}
+                        </div>
+                        <div className="text-xs mt-1 max-w-16 truncate">
+                          {player.name}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Substitution indicator */}
+                    {renderSubstitutionIndicator && renderSubstitutionIndicator(position)}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center w-12 h-12 bg-gray-200 bg-opacity-70 rounded-full">
+                    <span className="text-xs font-medium">{position}</span>
                   </div>
                 )}
-                
-                {/* Captain button (appears on hover) */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`absolute top-0 right-0 h-5 w-5 opacity-0 group-hover:opacity-100 ${
-                    isCaptain ? 'bg-yellow-400/20' : ''
-                  }`}
-                  onClick={() => toggleCaptain(player.id)}
-                >
-                  <Crown className="h-3 w-3" />
-                </Button>
               </div>
             );
-          })}
-        </div>
-        
-        {/* Substitutes section */}
-        <div className="mt-4">
-          <h4 className="text-sm font-medium mb-2">Substitutes</h4>
-          <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[60px]">
-            {/* Will be populated when implementing substitution functionality */}
-            <div className="text-sm text-muted-foreground">Drag players here to set as substitutes</div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          }}
+        />
+      </div>
+    </div>
   );
 };
