@@ -69,30 +69,32 @@ export const SquadSelectionGrid = ({
               key={player.id}
               variant={isSelected ? "default" : "outline"}
               className={cn(
-                "h-auto py-4 relative",
+                "h-auto py-2 px-2 relative", // Reduced padding
                 isSelected ? "bg-blue-500" : ""
               )}
               onClick={() => togglePlayerSelection(player.id)}
             >
               <div className="flex flex-col items-center">
                 <div className={cn(
-                  "w-14 h-14 flex items-center justify-center rounded-full text-xl font-bold mb-2",
+                  "w-10 h-10 flex items-center justify-center rounded-full text-sm font-bold mb-1", // Reduced size, font, and margin
                   isSelected ? "bg-white text-blue-500" : "bg-blue-100 text-blue-800"
                 )}>
                   {player.squad_number || player.name.charAt(0)}
                 </div>
-                <span className="text-sm font-medium">{player.name}</span>
+                <span className="text-xs font-medium">
+                  {player.name.length > 15 ? `${player.name.substring(0, 15)}...` : player.name}
+                </span>
                 {player.squad_number && (
-                  <span className="text-xs opacity-70">#{player.squad_number}</span>
+                  <span className="text-[10px] opacity-70">#{player.squad_number}</span>
                 )}
                 
                 {/* Show which other teams the player is in */}
                 {isInOtherTeams && (
-                  <div className="absolute top-1 right-1 flex gap-1">
+                  <div className="absolute top-1 right-1 flex gap-0.5">
                     {playerTeams.map(teamId => (
                       <span 
                         key={teamId} 
-                        className="w-4 h-4 bg-amber-500 text-xs flex items-center justify-center rounded-full text-white"
+                        className="w-3 h-3 bg-amber-500 text-[8px] flex items-center justify-center rounded-full text-white"
                         title={`Also in Team ${parseInt(teamId) + 1}`}
                       >
                         {parseInt(teamId) + 1}

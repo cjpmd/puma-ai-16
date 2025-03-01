@@ -102,7 +102,7 @@ export const DraggableFormation = ({
         className="relative w-full max-w-xl aspect-[2/3] mb-8 bg-green-600 rounded-lg overflow-hidden"
       >
         {/* Helper text for drag functionality */}
-        <div className="absolute top-2 left-0 right-0 text-center">
+        <div className="absolute top-2 left-0 right-0 text-center z-20">
           <span className="px-2 py-1 bg-white/80 rounded text-xs text-gray-700">
             Click and drag players to positions
           </span>
@@ -118,22 +118,25 @@ export const DraggableFormation = ({
             return (
               <div
                 {...dropProps}
-                className={`absolute flex items-center justify-center w-12 h-12 -translate-x-1/2 -translate-y-1/2 rounded-full ${
+                className={`absolute flex items-center justify-center w-10 h-10 -translate-x-1/2 -translate-y-1/2 rounded-full ${
                   dropProps.className
                 } ${!player ? 'border-2 border-dashed border-white/50 hover:border-white/80' : ''}`}
               >
                 {selection && player ? (
                   <div className="relative">
                     <div
-                      className="relative flex items-center justify-center w-12 h-12 bg-white/80 rounded-full cursor-pointer hover:bg-white"
+                      className="relative flex items-center justify-center w-10 h-10 bg-white/80 rounded-full cursor-pointer hover:bg-white"
                       onClick={() => handleRemovePlayer(slotId)}
                     >
                       <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full text-sm font-bold">
+                        <div className="w-6 h-6 flex items-center justify-center bg-blue-500 text-white rounded-full text-[10px] font-bold">
                           {player.squad_number || player.name.charAt(0)}
                         </div>
-                        <div className="text-[10px] mt-0.5 max-w-12 truncate">
+                        <div className="text-[8px] mt-0.5 max-w-8 truncate">
                           {player.name.split(' ')[0]}
+                          {selection.isSubstitution && (
+                            <span className="ml-0.5 text-orange-500">↑</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -141,8 +144,8 @@ export const DraggableFormation = ({
                     {renderSubstitutionIndicator && renderSubstitutionIndicator(position)}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center w-10 h-10 bg-gray-200 bg-opacity-70 rounded-full">
-                    <span className="text-[10px] font-medium">{position}</span>
+                  <div className="flex items-center justify-center w-8 h-8 bg-gray-200 bg-opacity-70 rounded-full">
+                    <span className="text-[8px] font-medium">{position}</span>
                   </div>
                 )}
               </div>

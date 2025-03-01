@@ -28,11 +28,11 @@ export const PlayerAvatar = ({
     .toUpperCase()
     .substring(0, 2);
 
-  // Size classes - making all sizes smaller
+  // Size classes - making all sizes even smaller
   const sizeClasses = {
-    sm: "h-7 w-7 text-xs",
-    md: "h-10 w-10 text-xs",
-    lg: "h-14 w-14 text-sm",
+    sm: "h-6 w-6 text-[10px]",
+    md: "h-8 w-8 text-xs",
+    lg: "h-10 w-10 text-sm",
   };
 
   return (
@@ -45,13 +45,13 @@ export const PlayerAvatar = ({
         </AvatarFallback>
       </Avatar>
       
-      {/* Team indicators - made smaller */}
+      {/* Team indicators - made even smaller */}
       {teamsPlaying && teamsPlaying.length > 0 && (
         <div className="absolute -top-1 -right-1 flex -space-x-1">
           {teamsPlaying.map((team, index) => (
             <span 
               key={team.id}
-              className="flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[8px] text-white shadow-sm"
+              className="flex h-2.5 w-2.5 items-center justify-center rounded-full bg-primary text-[6px] text-white shadow-sm"
               style={{ zIndex: 10 - index }}
               title={`Playing in ${team.name}`}
             >
