@@ -1,7 +1,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { FormationSlots } from "./FormationSlots";
-import { getPlayerDisplay } from "./utils/playerUtils";
+import { PitchMarkings } from "./components/PitchMarkings";
+import { FormationSlot } from "./components/FormationSlot";
+import { SubstitutesSection } from "./components/SubstitutesSection";
+import { AvailableSquadPlayers } from "./components/AvailableSquadPlayers";
 
 interface DraggableFormationProps {
   format: "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
@@ -108,46 +111,6 @@ export const DraggableFormation = ({
     );
   };
 
-  // Generate pitch markings based on format
-  const getPitchMarkings = () => {
-    switch (format) {
-      case "11-a-side":
-        return (
-          <>
-            <div className="absolute w-full h-[80%] border-2 border-white/40 rounded"></div>
-            <div className="absolute w-[60%] h-[30%] border-2 border-white/40 bottom-[20%] left-[20%]"></div>
-            <div className="absolute w-[20%] h-[10%] border-2 border-white/40 bottom-[20%] left-[40%]"></div>
-            <div className="absolute w-[60%] h-[30%] border-2 border-white/40 top-0 left-[20%]"></div>
-            <div className="absolute w-[20%] h-[10%] border-2 border-white/40 top-0 left-[40%]"></div>
-            <div className="absolute w-[30%] rounded-full border-2 border-white/40 h-[20%] bottom-[20%] left-[35%]"></div>
-            <div className="absolute w-[30%] rounded-full border-2 border-white/40 h-[20%] top-0 left-[35%]"></div>
-            <div className="absolute w-[20%] h-[20%] rounded-full border-2 border-white/40 top-[40%] left-[40%]"></div>
-          </>
-        );
-      case "9-a-side":
-      case "7-a-side":
-        return (
-          <>
-            <div className="absolute w-full h-[80%] border-2 border-white/40 rounded"></div>
-            <div className="absolute w-[50%] h-[25%] border-2 border-white/40 bottom-[20%] left-[25%]"></div>
-            <div className="absolute w-[50%] h-[25%] border-2 border-white/40 top-0 left-[25%]"></div>
-            <div className="absolute w-[20%] h-[20%] rounded-full border-2 border-white/40 top-[40%] left-[40%]"></div>
-          </>
-        );
-      case "5-a-side":
-        return (
-          <>
-            <div className="absolute w-full h-[80%] border-2 border-white/40 rounded"></div>
-            <div className="absolute w-[40%] h-[20%] border-2 border-white/40 bottom-[20%] left-[30%]"></div>
-            <div className="absolute w-[40%] h-[20%] border-2 border-white/40 top-0 left-[30%]"></div>
-            <div className="absolute w-[16%] h-[16%] rounded-full border-2 border-white/40 top-[42%] left-[42%]"></div>
-          </>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="relative flex flex-col items-center">
       <div 
@@ -155,7 +118,7 @@ export const DraggableFormation = ({
         className="relative w-full max-w-xl aspect-[2/3] bg-green-600 bg-gradient-to-b from-green-500 to-green-700 rounded-lg overflow-hidden mb-6"
       >
         {/* Pitch markings */}
-        {getPitchMarkings()}
+        <PitchMarkings format={format} />
         
         {/* Helper text for interaction */}
         <div className="absolute top-2 left-0 right-0 text-center z-20">
@@ -219,51 +182,18 @@ export const DraggableFormation = ({
       </div>
       
       {/* Substitutes section */}
-      <div className="w-full bg-gray-100 p-3 rounded-md mb-4">
-        <h3 className="text-sm font-medium mb-2">Substitutes</h3>
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(selections)
-            .filter(([_, selection]) => selection.isSubstitution)
-            .map(([slotId, selection]) => {
-              const player = getPlayer(selection.playerId);
-              if (!player) return null;
-              
-              return (
-                <div
-                  key={slotId}
-                  className="bg-white rounded-md p-1 flex items-center gap-1 shadow-sm"
-                  onClick={() => handleRemovePlayer(slotId)}
-                >
-                  <div className="w-5 h-5 flex items-center justify-center bg-amber-500 text-white rounded-full text-[9px] font-bold">
-                    {player.squad_number || player.name.charAt(0)}
-                  </div>
-                  <span className="text-xs">{player.name}</span>
-                </div>
-              );
-            })}
-        </div>
-      </div>
+      <SubstitutesSection 
+        selections={selections}
+        getPlayer={getPlayer}
+        handleRemovePlayer={handleRemovePlayer}
+      />
       
       {/* Available Squad Players */}
-      <div className="w-full bg-gray-100 p-3 rounded-md">
-        <h3 className="text-sm font-medium mb-2">Squad Players</h3>
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-          {getAvailableSquadPlayers().map(player => (
-            <div 
-              key={player.id}
-              className={`flex items-center p-1 rounded-md cursor-pointer ${
-                selectedPlayerId === player.id ? 'bg-blue-100 ring-2 ring-blue-500' : 'bg-white hover:bg-gray-50'
-              }`}
-              onClick={() => handlePlayerSelect(player.id)}
-            >
-              <div className="w-6 h-6 flex items-center justify-center bg-blue-500 text-white rounded-full text-xs font-bold mr-1">
-                {player.squad_number || player.name.charAt(0)}
-              </div>
-              <span className="text-xs truncate">{player.name}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <AvailableSquadPlayers 
+        availableSquadPlayers={getAvailableSquadPlayers()}
+        handlePlayerSelect={handlePlayerSelect}
+        selectedPlayerId={selectedPlayerId}
+      />
     </div>
   );
 };
