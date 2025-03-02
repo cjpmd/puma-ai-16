@@ -52,11 +52,6 @@ export const NewTeamTabContent = ({
     setShowOnlySelected(true);
   };
 
-  // Display players - either all or only selected based on state
-  const displayedPlayers = showOnlySelected
-    ? availablePlayers.filter(p => team.squadPlayers.includes(p.id))
-    : availablePlayers;
-
   return (
     <div className="space-y-4">
       <TeamHeaderControls
@@ -78,7 +73,7 @@ export const NewTeamTabContent = ({
         </CardHeader>
         <CardContent>
           <SquadSelectionGrid 
-            availablePlayers={displayedPlayers}
+            availablePlayers={availablePlayers}
             selectedPlayers={team.squadPlayers}
             onSelectionChange={(playerIds) => onSquadSelection(teamId, playerIds)}
             getPlayerTeams={getPlayerTeams}

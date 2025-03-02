@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Edit, Save } from "lucide-react";
 
 interface SquadSelectionGridProps {
   availablePlayers: any[];
@@ -21,6 +22,7 @@ export const SquadSelectionGrid = ({
 }: SquadSelectionGridProps) => {
   const [search, setSearch] = useState("");
   const [localSelectedPlayers, setLocalSelectedPlayers] = useState<string[]>(selectedPlayers);
+  const [isEditMode, setIsEditMode] = useState(true);
   
   // Update local state when selectedPlayers changes
   useEffect(() => {
@@ -35,6 +37,8 @@ export const SquadSelectionGrid = ({
   
   // Toggle player selection
   const togglePlayerSelection = (playerId: string) => {
+    if (!isEditMode) return;
+    
     const isSelected = localSelectedPlayers.includes(playerId);
     let updatedSelection;
     
@@ -47,6 +51,22 @@ export const SquadSelectionGrid = ({
     setLocalSelectedPlayers(updatedSelection);
     onSelectionChange(updatedSelection);
   };
+
+  // Handle save button click
+  const handleSaveClick = () => {
+    setIsEditMode(false);
+    onSaveSelection?.();
+  };
+
+  // Handle edit button click
+  const handleEditClick = () => {
+    setIsEditMode(true);
+  };
+  
+  // Determine which players to display based on edit mode
+  const playersToDisplay = isEditMode 
+    ? filteredPlayers 
+    : filteredPlayers.filter(player => localSelectedPlayers.includes(player.id));
   
   return (
     <div className="space-y-4">
@@ -57,16 +77,23 @@ export const SquadSelectionGrid = ({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full max-w-md"
+          disabled={!isEditMode}
         />
-        {onSaveSelection && (
-          <Button onClick={onSaveSelection}>
+        {isEditMode ? (
+          <Button onClick={handleSaveClick}>
+            <Save className="h-4 w-4 mr-2" />
             Save Selection
+          </Button>
+        ) : (
+          <Button onClick={handleEditClick} variant="outline">
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Selection
           </Button>
         )}
       </div>
       
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        {filteredPlayers.map(player => {
+        {playersToDisplay.map(player => {
           const isSelected = localSelectedPlayers.includes(player.id);
           const playerTeams = getPlayerTeams ? getPlayerTeams(player.id) : [];
           const isInOtherTeams = playerTeams.length > 0 && !isSelected;
@@ -77,9 +104,11 @@ export const SquadSelectionGrid = ({
               variant={isSelected ? "default" : "outline"}
               className={cn(
                 "h-auto py-2 px-2 relative", 
-                isSelected ? "bg-blue-500" : ""
+                isSelected ? "bg-blue-500" : "",
+                !isEditMode && !isSelected ? "hidden" : ""
               )}
               onClick={() => togglePlayerSelection(player.id)}
+              disabled={!isEditMode && !isSelected}
             >
               <div className="flex flex-col items-center">
                 <div className={cn(

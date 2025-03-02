@@ -1,12 +1,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { FormationSlots } from "./FormationSlots";
-import { DraggablePlayer } from "./DraggablePlayer";
 import { getPlayerDisplay } from "./utils/playerUtils";
 
 interface DraggableFormationProps {
   format: "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
   availablePlayers: any[];
+  squadPlayers?: string[]; // Add squad players prop
   initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>;
   onSelectionChange?: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => void;
   renderSubstitutionIndicator?: (position: string) => React.ReactNode;
@@ -15,13 +15,13 @@ interface DraggableFormationProps {
 export const DraggableFormation = ({
   format,
   availablePlayers,
+  squadPlayers = [],
   initialSelections = {},
   onSelectionChange,
   renderSubstitutionIndicator
 }: DraggableFormationProps) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>(initialSelections || {});
-  const [playerPositions, setPlayerPositions] = useState<Record<string, { x: number; y: number }>>({});
   const formationRef = useRef<HTMLDivElement>(null);
 
   // Update state when initialSelections change
@@ -34,14 +34,6 @@ export const DraggableFormation = ({
   // Get player object from ID
   const getPlayer = (playerId: string) => {
     return availablePlayers.find(p => p.id === playerId);
-  };
-
-  // Set position for a draggable player
-  const handlePositionChange = (playerId: string, position: { x: number; y: number }) => {
-    setPlayerPositions(prev => ({
-      ...prev,
-      [playerId]: position
-    }));
   };
 
   // Handle drop onto a formation slot
@@ -67,7 +59,8 @@ export const DraggableFormation = ({
     // Assign the player to the new slot
     newSelections[slotId] = {
       playerId: selectedPlayerId,
-      position
+      position,
+      isSubstitution: position.includes('SUB')
     };
 
     // If there was a player in the target slot, and it's not the same player,
@@ -90,7 +83,7 @@ export const DraggableFormation = ({
 
   // Handle player selection for dragging
   const handlePlayerSelect = (playerId: string) => {
-    setSelectedPlayerId(playerId);
+    setSelectedPlayerId(playerId === selectedPlayerId ? null : playerId);
   };
 
   // Handle removing a player from a position
@@ -107,22 +100,67 @@ export const DraggableFormation = ({
     return Object.values(selections).map(s => s.playerId);
   };
 
-  // Get unassigned players
-  const getUnassignedPlayers = () => {
+  // Get squad players that haven't been assigned yet
+  const getAvailableSquadPlayers = () => {
     const assignedPlayerIds = new Set(getAssignedPlayers());
-    return availablePlayers.filter(player => !assignedPlayerIds.has(player.id));
+    return availablePlayers.filter(player => 
+      squadPlayers.includes(player.id) && !assignedPlayerIds.has(player.id)
+    );
+  };
+
+  // Generate pitch markings based on format
+  const getPitchMarkings = () => {
+    switch (format) {
+      case "11-a-side":
+        return (
+          <>
+            <div className="absolute w-full h-[80%] border-2 border-white/40 rounded"></div>
+            <div className="absolute w-[60%] h-[30%] border-2 border-white/40 bottom-[20%] left-[20%]"></div>
+            <div className="absolute w-[20%] h-[10%] border-2 border-white/40 bottom-[20%] left-[40%]"></div>
+            <div className="absolute w-[60%] h-[30%] border-2 border-white/40 top-0 left-[20%]"></div>
+            <div className="absolute w-[20%] h-[10%] border-2 border-white/40 top-0 left-[40%]"></div>
+            <div className="absolute w-[30%] rounded-full border-2 border-white/40 h-[20%] bottom-[20%] left-[35%]"></div>
+            <div className="absolute w-[30%] rounded-full border-2 border-white/40 h-[20%] top-0 left-[35%]"></div>
+            <div className="absolute w-[20%] h-[20%] rounded-full border-2 border-white/40 top-[40%] left-[40%]"></div>
+          </>
+        );
+      case "9-a-side":
+      case "7-a-side":
+        return (
+          <>
+            <div className="absolute w-full h-[80%] border-2 border-white/40 rounded"></div>
+            <div className="absolute w-[50%] h-[25%] border-2 border-white/40 bottom-[20%] left-[25%]"></div>
+            <div className="absolute w-[50%] h-[25%] border-2 border-white/40 top-0 left-[25%]"></div>
+            <div className="absolute w-[20%] h-[20%] rounded-full border-2 border-white/40 top-[40%] left-[40%]"></div>
+          </>
+        );
+      case "5-a-side":
+        return (
+          <>
+            <div className="absolute w-full h-[80%] border-2 border-white/40 rounded"></div>
+            <div className="absolute w-[40%] h-[20%] border-2 border-white/40 bottom-[20%] left-[30%]"></div>
+            <div className="absolute w-[40%] h-[20%] border-2 border-white/40 top-0 left-[30%]"></div>
+            <div className="absolute w-[16%] h-[16%] rounded-full border-2 border-white/40 top-[42%] left-[42%]"></div>
+          </>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
     <div className="relative flex flex-col items-center">
       <div 
         ref={formationRef}
-        className="relative w-full max-w-xl aspect-[2/3] bg-green-600 rounded-lg overflow-hidden"
+        className="relative w-full max-w-xl aspect-[2/3] bg-green-600 bg-gradient-to-b from-green-500 to-green-700 rounded-lg overflow-hidden mb-6"
       >
-        {/* Helper text for drag functionality */}
+        {/* Pitch markings */}
+        {getPitchMarkings()}
+        
+        {/* Helper text for interaction */}
         <div className="absolute top-2 left-0 right-0 text-center z-20">
           <span className="px-2 py-1 bg-white/80 rounded text-xs text-gray-700">
-            Select players below and click on positions
+            {selectedPlayerId ? "Now click on a position to place player" : "Select a player below first"}
           </span>
         </div>
         
@@ -139,12 +177,20 @@ export const DraggableFormation = ({
                 className={`absolute flex items-center justify-center w-10 h-10 -translate-x-1/2 -translate-y-1/2 rounded-full ${
                   dropProps.className
                 } ${!player ? 'border-2 border-dashed border-white/50 hover:border-white/80' : ''}`}
+                onClick={() => {
+                  if (selectedPlayerId) {
+                    handleDrop(slotId, position);
+                  }
+                }}
               >
                 {selection && player ? (
                   <div className="relative">
                     <div
-                      className="relative flex items-center justify-center w-8 h-8 bg-white/80 rounded-full cursor-pointer hover:bg-white"
-                      onClick={() => handleRemovePlayer(slotId)}
+                      className="relative flex items-center justify-center w-8 h-8 bg-white/90 rounded-full cursor-pointer hover:bg-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemovePlayer(slotId);
+                      }}
                     >
                       <div className="flex flex-col items-center">
                         <div className="w-5 h-5 flex items-center justify-center bg-blue-500 text-white rounded-full text-[9px] font-bold">
@@ -162,14 +208,7 @@ export const DraggableFormation = ({
                     {renderSubstitutionIndicator && renderSubstitutionIndicator(position)}
                   </div>
                 ) : (
-                  <div 
-                    className="flex items-center justify-center w-8 h-8 bg-gray-200 bg-opacity-70 rounded-full cursor-pointer hover:bg-gray-300"
-                    onClick={() => {
-                      if (selectedPlayerId) {
-                        handleDrop(slotId, position);
-                      }
-                    }}
-                  >
+                  <div className="flex items-center justify-center w-8 h-8 bg-gray-200 bg-opacity-70 rounded-full cursor-pointer hover:bg-gray-300">
                     <span className="text-[8px] font-medium">{position}</span>
                   </div>
                 )}
@@ -179,11 +218,37 @@ export const DraggableFormation = ({
         />
       </div>
       
-      {/* Player Selection Area */}
-      <div className="w-full mt-4 bg-gray-100 p-2 rounded-md">
-        <h3 className="text-sm font-medium mb-2">Available Players</h3>
+      {/* Substitutes section */}
+      <div className="w-full bg-gray-100 p-3 rounded-md mb-4">
+        <h3 className="text-sm font-medium mb-2">Substitutes</h3>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(selections)
+            .filter(([_, selection]) => selection.isSubstitution)
+            .map(([slotId, selection]) => {
+              const player = getPlayer(selection.playerId);
+              if (!player) return null;
+              
+              return (
+                <div
+                  key={slotId}
+                  className="bg-white rounded-md p-1 flex items-center gap-1 shadow-sm"
+                  onClick={() => handleRemovePlayer(slotId)}
+                >
+                  <div className="w-5 h-5 flex items-center justify-center bg-amber-500 text-white rounded-full text-[9px] font-bold">
+                    {player.squad_number || player.name.charAt(0)}
+                  </div>
+                  <span className="text-xs">{player.name}</span>
+                </div>
+              );
+            })}
+        </div>
+      </div>
+      
+      {/* Available Squad Players */}
+      <div className="w-full bg-gray-100 p-3 rounded-md">
+        <h3 className="text-sm font-medium mb-2">Squad Players</h3>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-          {getUnassignedPlayers().map(player => (
+          {getAvailableSquadPlayers().map(player => (
             <div 
               key={player.id}
               className={`flex items-center p-1 rounded-md cursor-pointer ${
