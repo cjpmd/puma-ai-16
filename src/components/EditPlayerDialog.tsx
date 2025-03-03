@@ -31,7 +31,7 @@ import { useForm } from "react-hook-form";
 import { Edit, Check, Upload, X, Loader2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { differenceInYears } from "date-fns";
-import { ensureColumnExists, createColumn } from "@/utils/databaseUtils";
+import { ensureColumnExists, createColumn } from "@/utils/database";
 
 interface EditPlayerDialogProps {
   player: Player;
@@ -50,14 +50,11 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
 
   useEffect(() => {
     if (open) {
-      // Initialize image preview when dialog opens
       setImagePreview(player.profileImage);
       setSaveAttempted(false);
       
-      // Verify column exists when dialog opens
       const verifyColumn = async () => {
         try {
-          // Ensure the profile_image column exists
           const exists = await ensureColumnExists('players', 'profile_image', 'text');
           console.log(`profile_image column verification: ${exists}`);
           setColumnVerified(exists);
@@ -92,7 +89,6 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
     if (file) {
       console.log("New image selected:", file.name, file.type, file.size);
       
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
           title: "Image too large",
@@ -125,7 +121,6 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
     setIsUploading(true);
     try {
       console.log("Converting image to base64");
-      // Store image as base64 string in the player record
       const reader = new FileReader();
       return new Promise((resolve, reject) => {
         reader.onloadend = () => {
@@ -157,12 +152,10 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
     console.log("Starting player update with values:", JSON.stringify(values));
     
     try {
-      // Make sure the profile_image column exists
       const profileImageExists = await createColumn('players', 'profile_image', 'text');
       console.log("Profile image column creation result:", profileImageExists);
       setColumnVerified(profileImageExists);
       
-      // Process image if there's a new one or if it was removed
       let profileImageUrl = imagePreview;
       if (imageFile) {
         console.log("Uploading new image");
@@ -173,19 +166,16 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         console.log("Image processed, length:", profileImageUrl.length);
       }
       
-      // Prepare update data
       const updateData: any = {
         squad_number: values.squadNumber,
         player_type: values.playerType,
         date_of_birth: values.dateOfBirth,
       };
       
-      // Only include profile_image if we have one
       if (profileImageUrl !== undefined) {
         updateData.profile_image = profileImageUrl;
       }
       
-      // Calculate age based on date of birth
       if (values.dateOfBirth) {
         const age = differenceInYears(new Date(), new Date(values.dateOfBirth));
         updateData.age = age;
@@ -197,7 +187,6 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         profile_image: updateData.profile_image ? `[base64 string length: ${updateData.profile_image?.length}]` : null
       });
       
-      // Update player record
       const { data, error } = await supabase
         .from("players")
         .update(updateData)
@@ -215,10 +204,8 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         description: "Player details updated successfully",
       });
       
-      // Force reload of data
       onPlayerUpdated();
       
-      // Small delay to ensure data is refreshed
       setTimeout(() => {
         setIsSaving(false);
         setOpen(false);
@@ -254,7 +241,6 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
           </DialogDescription>
         </DialogHeader>
         
-        {/* Image Upload Section */}
         <div className="flex flex-col items-center gap-4 mb-4">
           <div className="relative">
             <Avatar className="w-24 h-24 border-2 border-primary/20">

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlayerHeader } from "@/components/player/PlayerHeader";
@@ -10,7 +11,7 @@ import { PlayerObjectives } from "@/components/coaching/PlayerObjectives";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CoachingComments } from "@/components/coaching/CoachingComments";
-import { ensureColumnExists, createColumn } from "@/utils/databaseUtils";
+import { ensureColumnExists, createColumn } from "@/utils/database";
 import { useToast } from "@/hooks/use-toast";
 
 interface PlayerDetailsProps {
