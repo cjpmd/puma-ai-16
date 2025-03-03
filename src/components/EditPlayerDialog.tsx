@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { Edit, Check, Upload, X } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { differenceInYears } from "date-fns";
 
 interface EditPlayerDialogProps {
   player: Player;
@@ -78,9 +79,24 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
       const fileName = `${player.id}-${Date.now()}.${fileExt}`;
       const filePath = `player-images/${fileName}`;
       
-      const { error: uploadError, data } = await supabase.storage
+      // Create the bucket if it doesn't exist
+      const { error: bucketError } = await supabase.storage
+        .createBucket('player-assets', {
+          public: true,
+          fileSizeLimit: 5242880, // 5MB
+        });
+      
+      if (bucketError && bucketError.message !== 'Bucket already exists') {
+        console.error("Error creating bucket:", bucketError);
+        throw bucketError;
+      }
+      
+      const { error: uploadError } = await supabase.storage
         .from('player-assets')
-        .upload(filePath, imageFile);
+        .upload(filePath, imageFile, {
+          cacheControl: '3600',
+          upsert: true
+        });
       
       if (uploadError) throw uploadError;
       
@@ -107,6 +123,9 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
       // Upload image if there's a new one
       const profileImage = await uploadImage();
       
+      // Calculate age based on date of birth
+      const age = differenceInYears(new Date(), new Date(values.dateOfBirth));
+      
       const { error } = await supabase
         .from("players")
         .update({
@@ -114,6 +133,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
           player_type: values.playerType,
           date_of_birth: values.dateOfBirth,
           profile_image: profileImage,
+          age: age // Update age based on the date of birth
         })
         .eq("id", player.id);
 
@@ -273,3 +293,4 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
     </Dialog>
   );
 };
+

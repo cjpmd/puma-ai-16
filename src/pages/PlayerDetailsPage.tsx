@@ -6,6 +6,7 @@ import { PlayerDetails } from "@/components/PlayerDetails";
 import { useQuery } from "@tanstack/react-query";
 import { ParentDetailsDialog } from "@/components/parents/ParentDetailsDialog";
 import { Player, PlayerType } from "@/types/player";
+import { differenceInYears } from "date-fns";
 
 interface Parent {
   id: string;
@@ -21,7 +22,7 @@ const PlayerDetailsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Query for player details, attributes, and attribute history
-  const { data: playerData } = useQuery({
+  const { data: playerData, refetch: refetchPlayerData } = useQuery({
     queryKey: ["player-with-attributes", id],
     queryFn: async () => {
       // Fetch player details
@@ -57,11 +58,16 @@ const PlayerDetailsPage = () => {
         });
       });
 
+      // Calculate age based on date of birth if needed
+      const calculatedAge = playerResult.date_of_birth 
+        ? differenceInYears(new Date(), new Date(playerResult.date_of_birth)) 
+        : playerResult.age;
+
       // Transform the player data to match the Player type
       const transformedPlayer: Player = {
         id: playerResult.id,
         name: playerResult.name,
-        age: playerResult.age,
+        age: calculatedAge,
         dateOfBirth: playerResult.date_of_birth,
         squadNumber: playerResult.squad_number,
         playerType: playerResult.player_type as PlayerType,
@@ -124,6 +130,12 @@ const PlayerDetailsPage = () => {
         .eq("player_id", id);
       
       setParents(data || []);
+    }
+  };
+
+  const handlePlayerUpdated = () => {
+    if (id) {
+      refetchPlayerData();
     }
   };
 

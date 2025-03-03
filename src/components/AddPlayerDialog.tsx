@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerType } from "@/types/player";
@@ -73,6 +74,9 @@ export const AddPlayerDialog = () => {
         return;
       }
 
+      // Calculate age based on date of birth
+      const age = differenceInYears(new Date(), new Date(values.dateOfBirth));
+
       const { data, error } = await supabase
         .from("players")
         .insert([
@@ -81,7 +85,7 @@ export const AddPlayerDialog = () => {
             squad_number: values.squadNumber,
             date_of_birth: values.dateOfBirth,
             player_type: values.playerType,
-            age: differenceInYears(new Date(), new Date(values.dateOfBirth)),
+            age: age,
           },
         ])
         .select()

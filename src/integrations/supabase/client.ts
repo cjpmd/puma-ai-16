@@ -25,6 +25,11 @@ export type Database = {
           age: number;
           squad_number: number;
           team_category: string | null;
+          date_of_birth: string;
+          player_type: string;
+          profile_image: string | null;
+          created_at: string;
+          updated_at: string;
         };
       };
       role_definitions: {
@@ -87,4 +92,3 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     }
   }
 });
-
