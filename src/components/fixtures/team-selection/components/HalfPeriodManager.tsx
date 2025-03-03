@@ -1,12 +1,12 @@
 
 import { useState } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { FormationFormat } from "@/components/formation/types";
 import { ViewToggleButton } from "./ViewToggleButton";
 import { AllPeriodsView } from "./AllPeriodsView";
 import { PeriodSelector } from "./PeriodSelector";
 import { PeriodDurationInput } from "./PeriodDurationInput";
 import { SinglePeriodView } from "./SinglePeriodView";
+import { getFormationFormat } from "../utils/formationUtils";
 
 interface Period {
   id: string;
@@ -42,16 +42,6 @@ export const HalfPeriodManager = ({
   
   const halfId = title.toLowerCase().replace(/\s+/g, '-');
   
-  const getFormat = (): FormationFormat => {
-    switch (fixture?.format) {
-      case "5-a-side": return "5-a-side";
-      case "7-a-side": return "7-a-side";
-      case "9-a-side": return "9-a-side";
-      case "11-a-side": return "11-a-side";
-      default: return "7-a-side";
-    }
-  };
-
   const handleFormationChange = (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => {
     // Store selections locally
     setPeriodSelections(prev => ({
@@ -160,7 +150,7 @@ export const HalfPeriodManager = ({
               key={period.id}
               period={period}
               isActive={period.id === activePeriod}
-              format={getFormat()}
+              format={getFormationFormat(fixture)}
               availablePlayers={availablePlayers}
               squadPlayers={squadPlayers}
               selections={periodSelections[period.id] || {}}
