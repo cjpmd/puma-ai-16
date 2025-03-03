@@ -183,22 +183,6 @@ export const HalfPeriodManager = ({
             </>
           )}
           
-          <span className="text-sm text-gray-500 ml-4">Category:</span>
-          <Select
-            value={performanceCategory}
-            onValueChange={onPerformanceCategoryChange}
-          >
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="MESSI">MESSI</SelectItem>
-              <SelectItem value="RONALDO">RONALDO</SelectItem>
-              <SelectItem value="NEYMAR">NEYMAR</SelectItem>
-              <SelectItem value="JAGS">JAGS</SelectItem>
-            </SelectContent>
-          </Select>
-          
           <ViewToggleButton 
             isGridView={isGridView} 
             onToggle={() => setIsGridView(!isGridView)} 
