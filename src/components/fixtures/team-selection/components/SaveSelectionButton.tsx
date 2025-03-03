@@ -36,13 +36,24 @@ export const SaveSelectionButton = ({
   // Save all selections
   const handleSaveSelections = async () => {
     try {
+      console.log("SaveSelectionButton: Starting save operation with data:", saveData);
       const result = await handleSave();
       
       if (result) {
         // Invalidate queries to ensure updated data is fetched
         if (fixture?.id) {
+          console.log("SaveSelectionButton: Invalidating queries for fixture:", fixture.id);
           await queryClient.invalidateQueries({ 
             queryKey: ["fixture-selections", fixture.id] 
+          });
+          
+          // Also invalidate calendar data to update UI
+          await queryClient.invalidateQueries({
+            queryKey: ["fixtures"]
+          });
+          
+          await queryClient.invalidateQueries({
+            queryKey: ["calendar-data"]
           });
         }
         
@@ -60,7 +71,7 @@ export const SaveSelectionButton = ({
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save team selections. Please check the console for details.",
+        description: `Failed to save team selections: ${error.message || "Unknown error"}`,
       });
     }
   };

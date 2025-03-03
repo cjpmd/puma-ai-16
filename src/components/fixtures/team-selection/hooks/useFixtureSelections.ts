@@ -21,7 +21,7 @@ export const useFixtureSelections = (fixtureId: string | undefined) => {
           return [];
         }
         
-        console.log("Fetched selections:", data);
+        console.log("Fetched selections:", data || []);
         return data || [];
       } catch (error) {
         console.error("Exception fetching selections:", error);

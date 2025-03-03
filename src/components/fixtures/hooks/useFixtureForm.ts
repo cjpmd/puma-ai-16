@@ -117,22 +117,21 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           console.log("Team times saved:", teamTimesResult);
         }
 
-        // Insert or update team scores with MOTM player IDs
+        // Insert or update team scores WITHOUT MOTM player IDs
         const teamScoresData = Array.from({ length: parseInt(data.number_of_teams || "1") }).map((_, index) => {
           const teamScore = data[`team_${index + 1}_score`] || 0;
           const opponentScore = data[`opponent_${index + 1}_score`] || 0;
-          const motmPlayerId = data.motm_player_ids?.[index] || null;
           
           return {
             fixture_id: fixtureId,
             team_number: index + 1,
             score: teamScore,
             opponent_score: opponentScore,
-            motm_player_id: motmPlayerId
+            // Do not include motm_player_id if it doesn't exist in the table
           };
         });
 
-        console.log("Saving team scores with MOTM player IDs:", teamScoresData);
+        console.log("Saving team scores:", teamScoresData);
 
         // Delete existing scores first if editing
         if (editingFixture?.id) {
@@ -157,7 +156,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
             throw scoresError;
           }
 
-          console.log("Team scores saved with MOTM player IDs:", scoresResult);
+          console.log("Team scores saved:", scoresResult);
         }
 
         // Create default event attendance entries for all players in the team
@@ -226,7 +225,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save fixture",
+        description: "Failed to save fixture: " + (error.message || "Unknown error"),
       });
       throw error;
     } finally {

@@ -46,7 +46,7 @@ export const useTeamSelectionSave = (
         throw deleteError;
       }
       
-      // Use a very minimal approach that should work with most database schemas
+      // Prepare data to be saved
       const teamSelectionsToSave = [];
       
       // Process each team and each period
@@ -64,13 +64,13 @@ export const useTeamSelectionSave = (
               teamSelectionsToSave.push({
                 fixture_id: fixtureId,
                 player_id: selection.playerId,
-                position: selection.position,
+                position: selection.position || slotId,
                 performance_category: selection.performanceCategory || "MESSI",
                 team_number: parseInt(teamId),
                 is_captain: teamCaptains[teamId] === selection.playerId,
                 period_id: periodId,
                 duration: period.duration
-                // Removed is_substitution field that was causing issues
+                // Note: is_substitution field has been removed as it doesn't exist in DB
               });
             }
           });
@@ -91,20 +91,11 @@ export const useTeamSelectionSave = (
         }
         
         console.log("Team selections saved successfully:", data);
+        return true;
       } else {
         console.log("No selections to save");
+        return true;
       }
-      
-      toast({
-        title: "Success",
-        description: "Team selections saved successfully",
-      });
-      
-      if (onSuccess) {
-        onSuccess();
-      }
-      
-      return true;
     } catch (error) {
       console.error("Error saving team selections:", error);
       toast({

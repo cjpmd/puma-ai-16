@@ -1,6 +1,7 @@
 
 import { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import { Fixture } from "@/types/fixture";
+import { areSelectionsEmpty } from "../utils/selectionUtils";
 
 interface TeamSelectionContextType {
   teams: Record<string, { name: string; squadPlayers: string[] }>;
@@ -130,27 +131,32 @@ export const TeamSelectionProvider = ({ children, fixture }: TeamSelectionProvid
           
           // Convert each selection to include the proper position and performance category
           Object.entries(selections[teamId][halfId][periodId]).forEach(([slotId, selection]) => {
-            selectionData[slotId] = {
-              playerId: selection.playerId,
-              position: selection.position,
-              performanceCategory: "MESSI" // Default if not specified
-            };
+            if (selection.playerId && selection.playerId !== "unassigned") {
+              selectionData[slotId] = {
+                playerId: selection.playerId,
+                position: selection.position || slotId,
+                performanceCategory: "MESSI" // Default if not specified
+              };
+            }
           });
           
-          allSelections[formattedPeriodId][adjustedTeamId] = selectionData;
-          
-          // Add period to periodsPerTeam
-          if (!periodsPerTeam[adjustedTeamId]) {
-            periodsPerTeam[adjustedTeamId] = [];
-          }
-          
-          // Add period with duration (assuming 20 minutes by default)
-          const periodExists = periodsPerTeam[adjustedTeamId].some(p => p.id === formattedPeriodId);
-          if (!periodExists) {
-            periodsPerTeam[adjustedTeamId].push({
-              id: formattedPeriodId,
-              duration: 20 // Default duration
-            });
+          // Only add if there are actual selections
+          if (Object.keys(selectionData).length > 0) {
+            allSelections[formattedPeriodId][adjustedTeamId] = selectionData;
+            
+            // Add period to periodsPerTeam
+            if (!periodsPerTeam[adjustedTeamId]) {
+              periodsPerTeam[adjustedTeamId] = [];
+            }
+            
+            // Add period with duration (assuming 20 minutes by default)
+            const periodExists = periodsPerTeam[adjustedTeamId].some(p => p.id === formattedPeriodId);
+            if (!periodExists) {
+              periodsPerTeam[adjustedTeamId].push({
+                id: formattedPeriodId,
+                duration: 20 // Default duration
+              });
+            }
           }
         });
       });

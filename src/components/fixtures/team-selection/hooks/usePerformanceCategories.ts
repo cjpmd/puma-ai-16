@@ -43,11 +43,20 @@ export const usePerformanceCategories = () => {
     });
   };
 
+  // Set explicit category for a period-team combination
+  const setPerformanceCategory = (periodId: string, teamId: string, category: string) => {
+    setPerformanceCategories(prev => ({
+      ...prev,
+      [`${periodId}-${teamId}`]: category
+    }));
+  };
+
   return {
     performanceCategories,
     setPerformanceCategories,
     initializePerformanceCategory,
     cleanupPerformanceCategory,
-    availableCategories
+    availableCategories,
+    setPerformanceCategory
   };
 };

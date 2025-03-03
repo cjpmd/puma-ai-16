@@ -16,7 +16,10 @@ export const useProcessSelections = () => {
     setPerformanceCategories: (value: React.SetStateAction<PerformanceCategories>) => void,
     setSelectedPlayers: (value: React.SetStateAction<Set<string>>) => void
   ) => {
-    if (!existingSelections || existingSelections.length === 0) return false;
+    if (!existingSelections || existingSelections.length === 0) {
+      console.log("No existing selections to process");
+      return false;
+    }
     
     console.log("Processing existing selections:", existingSelections);
     
@@ -69,8 +72,9 @@ export const useProcessSelections = () => {
           
           // Process selections for this period/team
           periodSelections.forEach(selection => {
-            // Use the position from DB to determine the appropriate slot
-            const slotId = mapPositionToSlot(selection.position);
+            // Get the position from DB and map it to a slot
+            const position = selection.position || '';
+            const slotId = mapPositionToSlot(position);
             
             // Skip invalid slots
             if (!slotId) return;
@@ -78,7 +82,7 @@ export const useProcessSelections = () => {
             // Add the selection with the original position preserved
             loadedSelections[periodId][teamId][slotId] = {
               playerId: selection.player_id,
-              position: selection.position, // Keep original position from DB
+              position: position, // Keep original position from DB
               performanceCategory: selection.performance_category || 'MESSI'
             };
             

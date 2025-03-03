@@ -78,3 +78,30 @@ export const simplifySelections = (selections: AllSelections): string => {
     }))
   );
 };
+
+// Check if selections are empty
+export const areSelectionsEmpty = (selections: AllSelections): boolean => {
+  if (!selections || Object.keys(selections).length === 0) {
+    return true;
+  }
+  
+  // Check each period
+  for (const periodId in selections) {
+    // Check each team in the period
+    for (const teamId in selections[periodId]) {
+      // Check if there are any player assignments
+      const teamSelections = selections[periodId][teamId];
+      if (Object.keys(teamSelections).length > 0) {
+        // Check if any player is assigned (not unassigned)
+        for (const slotId in teamSelections) {
+          if (teamSelections[slotId].playerId && teamSelections[slotId].playerId !== 'unassigned') {
+            return false; // Found at least one assigned player
+          }
+        }
+      }
+    }
+  }
+  
+  // No assigned players found
+  return true;
+};
