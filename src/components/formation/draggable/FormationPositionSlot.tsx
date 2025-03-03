@@ -1,5 +1,6 @@
 
 import React from "react";
+import { X } from "lucide-react";
 
 interface FormationPositionSlotProps {
   slotId: string;
@@ -50,7 +51,7 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
   return (
     <div
       {...dropProps}
-      className={`${dropProps.className} w-12 h-12 rounded-full flex items-center justify-center ${
+      className={`${dropProps.className} w-18 h-18 rounded-full flex items-center justify-center ${
         !player ? 'border-2 border-dashed border-white/50 hover:border-white/80' : ''
       }`}
       onClick={() => {
@@ -60,37 +61,42 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
       }}
     >
       {selection && player ? (
-        <div className="relative">
+        <div className="relative group">
           <div
-            className="relative flex items-center justify-center w-10 h-10 bg-white/90 rounded-full cursor-pointer hover:bg-white"
+            className="relative flex items-center justify-center w-15 h-15 bg-white/90 rounded-full cursor-move hover:bg-white"
             draggable={true}
             onDragStart={handleDragStart}
-            onClick={(e) => {
-              e.stopPropagation();
-              // Don't remove the player when starting a drag
-              if (e.type === 'click') {
-                onRemovePlayer(slotId);
-              }
-            }}
           >
             <div className="flex flex-col items-center">
-              <div className="w-6 h-6 flex items-center justify-center bg-blue-500 text-white rounded-full text-[9px] font-bold">
+              <div className="w-9 h-9 flex items-center justify-center bg-blue-500 text-white rounded-full text-[11px] font-bold">
                 {player.squad_number || player.name.charAt(0)}
               </div>
-              <div className="text-[7px] mt-0.5 max-w-5 truncate">
+              <div className="text-[9px] mt-0.5 max-w-5 truncate">
                 {player.name.split(' ')[0]}
                 {selection.isSubstitution && (
                   <span className="ml-0.5 text-orange-500">↑</span>
                 )}
               </div>
             </div>
+            
+            {/* Remove player button */}
+            <button 
+              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemovePlayer(slotId);
+              }}
+            >
+              <X className="w-3 h-3" />
+            </button>
           </div>
+          
           {/* Substitution indicator */}
           {renderSubstitutionIndicator && renderSubstitutionIndicator(position)}
         </div>
       ) : (
-        <div className="flex items-center justify-center w-10 h-10 bg-gray-200 bg-opacity-70 rounded-full cursor-pointer hover:bg-gray-300">
-          <span className="text-[8px] font-medium">{position}</span>
+        <div className="flex items-center justify-center w-15 h-15 bg-gray-200 bg-opacity-70 rounded-full cursor-pointer hover:bg-gray-300">
+          <span className="text-[10px] font-medium">{position}</span>
         </div>
       )}
     </div>

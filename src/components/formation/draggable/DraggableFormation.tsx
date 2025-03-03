@@ -50,7 +50,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     <div className="relative flex flex-col items-center">
       <div 
         ref={formationRef}
-        className="relative w-full max-w-xl aspect-[2/3] bg-green-600 overflow-hidden mb-6 rounded-lg"
+        className="relative w-[60%] mx-auto aspect-[2/3] bg-green-600 overflow-hidden mb-6 rounded-lg"
       >
         {/* Pitch markings */}
         <PitchMarkings format={format} />
