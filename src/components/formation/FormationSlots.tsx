@@ -1,4 +1,3 @@
-
 import React from "react";
 import { FormationFormat, FormationSlot, PlayerSelection } from "./types";
 import { getFormationSlots, getAllPositionSlots } from "./utils/formationUtils";
@@ -32,13 +31,11 @@ export const FormationSlots: React.FC<FormationSlotsProps> = ({
   onPlayerSelection,
   selectedPlayers = new Set(),
   onDrop,
-  showAllPositions = false,
+  showAllPositions = true,
   renderSlot
 }) => {
-  // Get all formation slots or just the ones for the selected format
-  const formationSlots = showAllPositions 
-    ? getAllPositionSlots() 
-    : getFormationSlots(format);
+  // Get all formation slots
+  const formationSlots = getAllPositionSlots();
 
   // If renderSlot is provided, we're in drag-and-drop mode
   if (renderSlot) {

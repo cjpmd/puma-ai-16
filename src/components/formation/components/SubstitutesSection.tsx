@@ -32,20 +32,17 @@ export const SubstitutesSection = ({
     e.stopPropagation();
     e.currentTarget.classList.remove('bg-yellow-100', 'ring-2', 'ring-yellow-500');
     
-    // Get the source slot ID
+    // Get the source slot ID and player ID
     const fromSlotId = e.dataTransfer.getData('fromSlotId');
     const playerId = e.dataTransfer.getData('playerId');
     
     console.log(`Player ${playerId} dropped to substitutes from slot ${fromSlotId}`);
     
-    if (fromSlotId && playerId) {
-      // If onSubstituteDrop is provided, use it instead of just removing the player
-      if (onSubstituteDrop) {
-        onSubstituteDrop(playerId, fromSlotId);
-      } else {
-        // Remove the player from the position (fallback behavior)
-        handleRemovePlayer(fromSlotId);
-      }
+    if (fromSlotId && playerId && onSubstituteDrop) {
+      // Call the onSubstituteDrop handler to move player to substitutes
+      onSubstituteDrop(playerId, fromSlotId);
+      e.stopPropagation(); // Prevent bubbling to parent elements
+      return;
     }
   };
 

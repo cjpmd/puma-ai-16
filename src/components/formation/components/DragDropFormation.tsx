@@ -28,6 +28,7 @@ export const DragDropFormation: React.FC<DragDropFormationProps> = ({
   // Create a wrapper div that handles drag events over empty areas
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    // Do not stop propagation here to allow bubbling
   };
 
   return (

@@ -40,9 +40,9 @@ export const AvailableSquadPlayers = ({
     
     console.log(`Player ${playerId} dropped back to squad from slot ${fromSlotId}`);
     
-    if (fromSlotId) {
+    if (fromSlotId && onDragEnd) {
       // Call the drag end handler which will unassign the player
-      onDragEnd?.();
+      onDragEnd();
     }
   };
 
