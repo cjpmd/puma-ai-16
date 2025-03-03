@@ -1,15 +1,12 @@
 
 import { useState } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Clock } from "lucide-react";
-import { DraggableFormation } from "@/components/formation/DraggableFormation";
 import { FormationFormat } from "@/components/formation/types";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { AllPeriodsView } from "./AllPeriodsView";
 import { ViewToggleButton } from "./ViewToggleButton";
+import { AllPeriodsView } from "./AllPeriodsView";
+import { PeriodSelector } from "./PeriodSelector";
+import { PeriodDurationInput } from "./PeriodDurationInput";
+import { SinglePeriodView } from "./SinglePeriodView";
 
 interface Period {
   id: string;
@@ -34,8 +31,7 @@ export const HalfPeriodManager = ({
   availablePlayers,
   squadPlayers,
   onFormationChange,
-  performanceCategory = "MESSI",
-  onPerformanceCategoryChange
+  performanceCategory = "MESSI"
 }: HalfPeriodManagerProps) => {
   const [activePeriod, setActivePeriod] = useState("period-1");
   const [periods, setPeriods] = useState<Period[]>([
@@ -110,9 +106,6 @@ export const HalfPeriodManager = ({
       p.id === periodId ? { ...p, duration } : p
     ));
   };
-
-  // Get the current period's duration
-  const activePeriodDuration = periods.find(p => p.id === activePeriod)?.duration || 20;
   
   // Get selections for a specific period
   const getSelectionsForPeriod = (periodId: string) => {
@@ -126,60 +119,19 @@ export const HalfPeriodManager = ({
         <div className="flex items-center gap-2">
           {!isGridView && (
             <>
-              <span className="text-sm text-gray-500">Period:</span>
-              <div className="flex items-center">
-                <Select
-                  value={activePeriod}
-                  onValueChange={setActivePeriod}
-                >
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {periods.map(period => (
-                      <SelectItem key={period.id} value={period.id}>
-                        {period.id.replace('period-', 'Period ')} ({period.duration}m)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => addNewPeriod()}
-                  className="ml-1"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => deletePeriod(activePeriod)}
-                  disabled={periods.length <= 1}
-                  className="ml-1"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              <PeriodSelector
+                periods={periods}
+                activePeriod={activePeriod}
+                onPeriodChange={setActivePeriod}
+                onAddPeriod={addNewPeriod}
+                onDeletePeriod={deletePeriod}
+              />
               
-              <div className="flex items-center ml-2">
-                <Label htmlFor={`duration-${activePeriod}`} className="mr-2 flex items-center">
-                  <Clock className="h-4 w-4 mr-1" />
-                  <span>Duration:</span>
-                </Label>
-                <Input
-                  id={`duration-${activePeriod}`}
-                  type="number"
-                  value={activePeriodDuration}
-                  onChange={(e) => updatePeriodDuration(activePeriod, parseInt(e.target.value) || 20)}
-                  className="w-16 text-center"
-                  min={5}
-                  max={60}
-                />
-                <span className="ml-1">min</span>
-              </div>
+              <PeriodDurationInput
+                periodId={activePeriod}
+                duration={periods.find(p => p.id === activePeriod)?.duration || 20}
+                onDurationChange={updatePeriodDuration}
+              />
             </>
           )}
           
@@ -198,31 +150,22 @@ export const HalfPeriodManager = ({
             periods={periods}
             availablePlayers={availablePlayers}
             squadPlayers={squadPlayers}
-            performanceCategory={performanceCategory || "MESSI"}
+            performanceCategory={performanceCategory}
             getSelections={getSelectionsForPeriod}
             onFormationChange={handleAllViewFormationChange}
           />
         ) : (
           periods.map((period) => (
-            <div key={period.id} className={period.id !== activePeriod ? 'hidden' : ''}>
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-medium">{period.id.replace('period-', 'Period ')} ({period.duration} minutes)</h3>
-              </div>
-              <DraggableFormation
-                format={getFormat()}
-                availablePlayers={availablePlayers}
-                squadPlayers={squadPlayers}
-                initialSelections={periodSelections[period.id]}
-                onSelectionChange={handleFormationChange}
-                renderSubstitutionIndicator={(position) => (
-                  position.includes('SUB') ? (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full text-white text-[8px] flex items-center justify-center">
-                      S
-                    </span>
-                  ) : null
-                )}
-              />
-            </div>
+            <SinglePeriodView
+              key={period.id}
+              period={period}
+              isActive={period.id === activePeriod}
+              format={getFormat()}
+              availablePlayers={availablePlayers}
+              squadPlayers={squadPlayers}
+              selections={periodSelections[period.id] || {}}
+              onFormationChange={handleFormationChange}
+            />
           ))
         )}
       </CardContent>
