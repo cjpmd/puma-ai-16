@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useRef } from "react";
 import { PitchMarkings } from "../components/PitchMarkings";
 import { SubstitutesSection } from "../components/SubstitutesSection";
 import { AvailableSquadPlayers } from "../components/AvailableSquadPlayers";
@@ -7,9 +7,10 @@ import { FormationSlots } from "../FormationSlots";
 import { useDraggableFormation } from "./hooks/useDraggableFormation";
 import { FormationHelperText } from "./FormationHelperText";
 import { FormationPositionSlot } from "./FormationPositionSlot";
+import { FormationFormat } from "../types";
 
 interface DraggableFormationProps {
-  format: "5-a-side" | "7-a-side" | "9-a-side" | "11-a-side";
+  format: FormationFormat;
   availablePlayers: any[];
   squadPlayers?: string[];
   initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>;

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,7 +28,6 @@ export const HalfPeriodManager = ({
   const [activePeriod, setActivePeriod] = useState("1");
   const halfId = title.toLowerCase().replace(/\s+/g, '-');
   
-  // Convert fixture format to FormationFormat
   const getFormat = (): FormationFormat => {
     switch (fixture?.format) {
       case "5-a-side": return "5-a-side";
@@ -40,7 +38,6 @@ export const HalfPeriodManager = ({
     }
   };
 
-  // Handle formation changes
   const handleFormationChange = (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => {
     onFormationChange(halfId, activePeriod, selections);
     console.log(`Formation changed for ${title}, period ${activePeriod}:`, selections);
