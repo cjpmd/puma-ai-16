@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { RadarChart } from "@/components/analytics/RadarChart";
@@ -16,6 +17,36 @@ export const Analytics = () => {
     },
   });
 
+  // Query for attribute history data
+  const { data: attributeHistory } = useQuery({
+    queryKey: ["attribute-history"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_attributes")
+        .select("name, value, created_at, player_id")
+        .order("created_at", { ascending: true });
+      
+      if (error) throw error;
+      
+      // Transform data into the format expected by AttributeTrends
+      const history: Record<string, { date: string; value: number }[]> = {};
+      
+      data?.forEach(attr => {
+        const key = attr.name;
+        if (!history[key]) {
+          history[key] = [];
+        }
+        
+        history[key].push({
+          date: attr.created_at,
+          value: attr.value
+        });
+      });
+      
+      return history;
+    }
+  });
+
   // Transform data for radar chart
   const radarData = playerAttributes?.map(attr => ({
     name: attr.name,
@@ -31,7 +62,7 @@ export const Analytics = () => {
           <ObjectiveStats />
         </div>
         <div>
-          <AttributeTrends />
+          <AttributeTrends attributeHistory={attributeHistory || {}} />
         </div>
       </div>
     </div>
