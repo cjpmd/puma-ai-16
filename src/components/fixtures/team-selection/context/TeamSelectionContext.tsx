@@ -126,7 +126,18 @@ export const TeamSelectionProvider = ({ children, fixture }: TeamSelectionProvid
           }
           
           // Add selections for this team/period
-          allSelections[formattedPeriodId][adjustedTeamId] = selections[teamId][halfId][periodId];
+          const selectionData = {};
+          
+          // Convert each selection to include the proper position and performance category
+          Object.entries(selections[teamId][halfId][periodId]).forEach(([slotId, selection]) => {
+            selectionData[slotId] = {
+              playerId: selection.playerId,
+              position: selection.position,
+              performanceCategory: "MESSI" // Default if not specified
+            };
+          });
+          
+          allSelections[formattedPeriodId][adjustedTeamId] = selectionData;
           
           // Add period to periodsPerTeam
           if (!periodsPerTeam[adjustedTeamId]) {

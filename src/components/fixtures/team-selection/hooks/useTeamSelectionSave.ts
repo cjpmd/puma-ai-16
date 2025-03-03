@@ -60,7 +60,7 @@ export const useTeamSelectionSave = (
           // Process each player selection for this team/period
           Object.entries(teamSelections).forEach(([slotId, selection]) => {
             if (selection.playerId && selection.playerId !== "unassigned") {
-              // Create a record with period information, but omit is_substitution if it's causing problems
+              // Create a record with period information
               teamSelectionsToSave.push({
                 fixture_id: fixtureId,
                 player_id: selection.playerId,
@@ -70,7 +70,7 @@ export const useTeamSelectionSave = (
                 is_captain: teamCaptains[teamId] === selection.playerId,
                 period_id: periodId,
                 duration: period.duration
-                // Removed is_substitution which is causing the error
+                // is_substitution has been removed
               });
             }
           });
@@ -101,6 +101,8 @@ export const useTeamSelectionSave = (
       });
       
       onSuccess?.();
+      
+      return true;
     } catch (error) {
       console.error("Error saving team selections:", error);
       toast({
@@ -108,6 +110,7 @@ export const useTeamSelectionSave = (
         title: "Error",
         description: "Failed to save team selections: " + (error.message || "Unknown error"),
       });
+      return false;
     } finally {
       setIsSaving(false);
     }

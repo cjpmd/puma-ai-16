@@ -34,11 +34,14 @@ export const SaveSelectionButton = ({
   // Save all selections
   const handleSaveSelections = async () => {
     try {
-      await handleSave();
-      toast({
-        title: "Success",
-        description: "Team selections saved successfully",
-      });
+      const result = await handleSave();
+      
+      if (result) {
+        toast({
+          title: "Success",
+          description: "Team selections saved successfully",
+        });
+      }
     } catch (error) {
       console.error("Error saving team selections:", error);
       toast({

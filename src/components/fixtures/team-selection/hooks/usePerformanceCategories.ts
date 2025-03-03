@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PerformanceCategories } from "../types";
 
 // Define fallback performance categories since the table doesn't exist
@@ -7,6 +7,7 @@ const DEFAULT_PERFORMANCE_CATEGORIES = ["MESSI", "RONALDO", "JAGS"];
 
 export const usePerformanceCategories = () => {
   const [performanceCategories, setPerformanceCategories] = useState<PerformanceCategories>({});
+  const [availableCategories, setAvailableCategories] = useState(DEFAULT_PERFORMANCE_CATEGORIES);
 
   // Initialize performance categories for a new period
   const initializePerformanceCategory = (
@@ -40,16 +41,11 @@ export const usePerformanceCategories = () => {
     });
   };
 
-  // Get available performance categories (hardcoded since the table doesn't exist)
-  const getAvailableCategories = () => {
-    return DEFAULT_PERFORMANCE_CATEGORIES;
-  };
-
   return {
     performanceCategories,
     setPerformanceCategories,
     initializePerformanceCategory,
     cleanupPerformanceCategory,
-    availableCategories: getAvailableCategories()
+    availableCategories
   };
 };

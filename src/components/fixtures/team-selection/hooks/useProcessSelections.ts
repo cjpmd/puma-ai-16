@@ -17,7 +17,7 @@ export const useProcessSelections = () => {
     setPerformanceCategories: (value: React.SetStateAction<PerformanceCategories>) => void,
     setSelectedPlayers: (value: React.SetStateAction<Set<string>>) => void
   ) => {
-    if (!existingSelections || existingSelections.length === 0) return;
+    if (!existingSelections || existingSelections.length === 0) return false;
     
     console.log("Processing existing selections:", existingSelections);
     
@@ -72,6 +72,9 @@ export const useProcessSelections = () => {
           periodSelections.forEach(selection => {
             // Use the position from DB to determine the appropriate slot
             const slotId = mapPositionToSlot(selection.position);
+            
+            // Skip invalid slots
+            if (!slotId) return;
             
             // Add the selection with the original position preserved
             loadedSelections[periodId][teamId][slotId] = {
