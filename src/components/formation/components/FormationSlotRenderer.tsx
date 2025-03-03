@@ -24,8 +24,11 @@ export const FormationSlotRenderer: React.FC<FormationSlotRendererProps> = ({
 }) => {
   if (!renderSlot) return null;
   
+  // Apply proper positioning to align with the visual position markers
+  const positionClasses = `absolute ${slot.className}`;
+  
   const dropProps = {
-    className: `absolute ${slot.className} transition-colors duration-200 z-10`,
+    className: `${positionClasses} z-10`,
     onDragOver: (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
