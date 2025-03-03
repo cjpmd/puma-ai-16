@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, Check, Loader2 } from "lucide-react";
+import { Plus, Trash2, Check, Loader2, AlertCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Parent {
   id: string;
@@ -27,6 +28,7 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
   const [parents, setParents] = useState<Parent[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showMultipleParentsWarning, setShowMultipleParentsWarning] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -43,6 +45,9 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
           phone: ''
         }]);
       }
+
+      // Show warning if more than one parent is already added
+      setShowMultipleParentsWarning(existingParents.length === 0 && parents.length > 1);
     }
   }, [existingParents, open]);
 
@@ -53,7 +58,7 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
   };
 
   const addParent = () => {
-    setParents([
+    const newParents = [
       ...parents, 
       {
         id: 'new-' + Date.now(),
@@ -61,7 +66,11 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
         email: '',
         phone: ''
       }
-    ]);
+    ];
+    
+    setParents(newParents);
+    // Show warning when adding a second parent
+    setShowMultipleParentsWarning(existingParents.length === 0 && newParents.length > 1);
   };
 
   const removeParent = (parentId: string) => {
@@ -74,7 +83,10 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
       return;
     }
     
-    setParents(parents.filter(parent => parent.id !== parentId));
+    const updatedParents = parents.filter(parent => parent.id !== parentId);
+    setParents(updatedParents);
+    // Update warning visibility
+    setShowMultipleParentsWarning(existingParents.length === 0 && updatedParents.length > 1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,53 +144,29 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
         }
       }
       
-      // Handle new parents - FIXED: Check if any parents already exist
+      // Handle new parents with database constraint in mind
       const newParents = parents.filter(p => p.id.startsWith('new-') && p.name.trim() !== '');
       console.log("Adding new parents:", newParents.length);
       
-      // Fix for constraint violation: Check if this player already has parents to determine approach
-      const hasExistingParents = existingParentsToUpdate.length > 0;
-      
       if (newParents.length > 0) {
-        if (hasExistingParents) {
-          console.log("Player already has parents - using update approach for new parents");
-          // Get the first existing parent to update additional details
-          const parentToUpdate = existingParentsToUpdate[0].id;
+        // Due to database constraints, we can only have one parent record per player
+        if (existingParentsToUpdate.length > 0) {
+          // If we already have a parent, show a limitation message
+          console.log("Parent record already exists - showing limitation message");
           
-          // Add parent info to existing notes
-          for (const parent of newParents) {
-            const noteUpdate = `Additional parent: ${parent.name}${parent.email ? `, Email: ${parent.email}` : ''}${parent.phone ? `, Phone: ${parent.phone}` : ''}`;
-            
-            // Update an existing field with this information
-            const { error } = await supabase
-              .from('player_parents')
-              .update({ 
-                notes: noteUpdate
-              })
-              .eq('id', parentToUpdate);
-              
-            if (error) {
-              console.error(`Error adding parent info to notes:`, error);
-              throw error;
-            }
-          }
+          const additionalInfo = newParents.map(p => 
+            `${p.name}${p.email ? ` (${p.email})` : ''}${p.phone ? ` - ${p.phone}` : ''}`
+          ).join(", ");
           
           toast({
-            title: "Success with limitations",
-            description: "Due to database constraints, additional parents are added as notes to the main parent record",
+            title: "Database Limitation",
+            description: `Due to database constraints, only one parent record can be stored. Additional parent info: ${additionalInfo}`,
+            variant: "destructive",
           });
         } else {
-          // If no parents yet, we can add the first one normally
+          // If no parents yet, we can add the first one
           const firstParent = newParents[0];
           console.log("Adding first parent:", firstParent);
-          
-          // Create notes field if more than one parent
-          let notes = '';
-          if (newParents.length > 1) {
-            notes = newParents.slice(1).map(p => 
-              `Additional parent: ${p.name}${p.email ? `, Email: ${p.email}` : ''}${p.phone ? `, Phone: ${p.phone}` : ''}`
-            ).join('\n');
-          }
           
           const { error } = await supabase
             .from('player_parents')
@@ -187,7 +175,6 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
               name: firstParent.name,
               email: firstParent.email || null,
               phone: firstParent.phone || null,
-              notes: notes || null
             });
             
           if (error) {
@@ -196,21 +183,26 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
           }
           
           if (newParents.length > 1) {
+            const additionalInfo = newParents.slice(1).map(p => 
+              `${p.name}${p.email ? ` (${p.email})` : ''}${p.phone ? ` - ${p.phone}` : ''}`
+            ).join(", ");
+            
             toast({
-              title: "Success with limitations",
-              description: "Due to database constraints, additional parents are added as notes to the main parent record",
+              title: "Database Limitation",
+              description: `Due to database constraints, only the first parent record was saved. Additional parent info: ${additionalInfo}`,
+              variant: "destructive",
             });
           }
         }
       }
       
-      console.log("All parent updates completed successfully");
+      console.log("Parent update completed with limitations");
       setSaveSuccess(true);
       
-      // Show success toast and close dialog after a short delay
+      // Show success toast
       toast({
         title: "Success",
-        description: "Parent details saved successfully",
+        description: "Parent details saved successfully with database limitations",
       });
       
       // Run the onSave callback to refresh the parent list
@@ -252,7 +244,18 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
             Manage parent contact information for this player.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[calc(85vh-120px)] pr-4 overflow-y-auto">
+        
+        {showMultipleParentsWarning && (
+          <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              Due to database constraints, only one parent record can be fully saved. 
+              The system will save the first parent and display a summary of additional parents.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        <ScrollArea className="max-h-[calc(85vh-160px)] pr-4 overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
             {parents.map((parent, index) => (
               <div key={parent.id} className="p-4 border rounded-md space-y-4">
