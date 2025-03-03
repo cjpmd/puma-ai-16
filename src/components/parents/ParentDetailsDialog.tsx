@@ -246,7 +246,7 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
         </DialogHeader>
         
         {showMultipleParentsWarning && (
-          <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
+          <Alert variant="default" className="mb-4 bg-amber-50 border-amber-200">
             <AlertCircle className="h-4 w-4 text-amber-600" />
             <AlertDescription className="text-amber-800">
               Due to database constraints, only one parent record can be fully saved. 
