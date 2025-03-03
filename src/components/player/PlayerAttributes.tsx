@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Label } from "@/components/ui/label";
+import { verifyDataSaved } from "@/utils/databaseUtils";
 
 interface PlayerAttributesProps {
   attributes: Array<{
@@ -26,6 +27,8 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
   const [editedAttributes, setEditedAttributes] = useState<Record<string, number>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveProgress, setSaveProgress] = useState(0);
+  const [savingAttributeId, setSavingAttributeId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleEditToggle = () => {
@@ -50,9 +53,12 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
   const saveAttributes = async () => {
     setIsSaving(true);
     setSaveSuccess(false);
+    setSaveProgress(0);
     
     // Array to collect any errors during save
     const errors: string[] = [];
+    const totalAttributes = Object.keys(editedAttributes).length;
+    let savedCount = 0;
     
     try {
       console.log("Saving attributes:", editedAttributes);
@@ -60,6 +66,7 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
       // Update each edited attribute one by one
       for (const [id, value] of Object.entries(editedAttributes)) {
         console.log(`Updating attribute ${id} with value ${value}`);
+        setSavingAttributeId(id);
         
         try {
           const { error } = await supabase
@@ -70,11 +77,22 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
           if (error) {
             console.error(`Error updating attribute ${id}:`, error);
             errors.push(`Failed to update ${attributes.find(a => a.id === id)?.name || id}: ${error.message}`);
+          } else {
+            // Verify the save was successful
+            const verified = await verifyDataSaved('player_attributes', 'value', id, value);
+            console.log(`Attribute ${id} save verified: ${verified}`);
+            
+            if (!verified) {
+              errors.push(`Could not verify save for ${attributes.find(a => a.id === id)?.name || id}`);
+            }
           }
         } catch (err) {
           console.error(`Exception updating attribute ${id}:`, err);
           errors.push(`Exception updating ${attributes.find(a => a.id === id)?.name || id}`);
         }
+        
+        savedCount++;
+        setSaveProgress(Math.round((savedCount / totalAttributes) * 100));
       }
       
       if (errors.length > 0) {
@@ -82,7 +100,7 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
         console.error("Some attributes failed to save:", errors);
         toast({
           title: "Partial success",
-          description: "Some attributes could not be saved. Please try again.",
+          description: `${savedCount - errors.length}/${totalAttributes} attributes saved. Some failed.`,
           variant: "destructive",
         });
       } else {
@@ -91,7 +109,7 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
         
         toast({
           title: "Success",
-          description: "Attributes updated successfully",
+          description: "All attributes updated successfully",
         });
         
         // Delay resetting the form to show success state
@@ -99,9 +117,10 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
           setIsEditing(false);
           setEditedAttributes({});
           setSaveSuccess(false);
+          setSavingAttributeId(null);
           // Force page refresh to show updated values
           window.location.reload();
-        }, 1000);
+        }, 1500);
       }
     } catch (error) {
       console.error('Error updating attributes:', error);
@@ -112,6 +131,7 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
       });
     } finally {
       setIsSaving(false);
+      setSavingAttributeId(null);
     }
   };
 
@@ -164,7 +184,7 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
                   {isSaving ? (
                     <span className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Saving...
+                      Saving... {saveProgress}%
                     </span>
                   ) : saveSuccess ? (
                     <span className="flex items-center gap-2">
@@ -204,8 +224,9 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
                           <Label htmlFor={`attr-${attr.id}`} className="text-sm text-gray-700">
                             {attr.name}
                           </Label>
-                          <span className="font-semibold text-sm">
+                          <span className={`font-semibold text-sm ${savingAttributeId === attr.id ? 'text-blue-500' : ''}`}>
                             {editedAttributes[attr.id] !== undefined ? editedAttributes[attr.id] : attr.value}
+                            {savingAttributeId === attr.id && <Loader2 className="inline-block h-3 w-3 ml-2 animate-spin" />}
                           </span>
                         </div>
                         {isEditing && (

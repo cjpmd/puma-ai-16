@@ -32,7 +32,7 @@ import { useForm } from "react-hook-form";
 import { Edit, Check, Upload, X, Loader2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { differenceInYears } from "date-fns";
-import { ensureColumnExists } from "@/utils/databaseUtils";
+import { ensureColumnExists, verifyDataSaved } from "@/utils/databaseUtils";
 
 interface EditPlayerDialogProps {
   player: Player;
@@ -45,14 +45,34 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
   const [isUploading, setIsUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [columnVerified, setColumnVerified] = useState(false);
+  const [saveAttempted, setSaveAttempted] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
       // Initialize image preview when dialog opens
       setImagePreview(player.profileImage);
+      setSaveAttempted(false);
+      
+      // Verify column exists when dialog opens
+      const verifyColumn = async () => {
+        const exists = await ensureColumnExists('players', 'profile_image');
+        console.log(`profile_image column verified: ${exists}`);
+        setColumnVerified(exists);
+        
+        if (!exists) {
+          toast({
+            title: "Database Schema Notice",
+            description: "The profile_image column may be missing. Images might not be saved correctly.",
+            variant: "destructive",
+          });
+        }
+      };
+      
+      verifyColumn();
     }
-  }, [open, player.profileImage]);
+  }, [open, player.profileImage, toast]);
 
   const form = useForm({
     defaultValues: {
@@ -65,12 +85,23 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      console.log("New image selected:", file.name);
+      console.log("New image selected:", file.name, file.type, file.size);
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Image too large",
+          description: "Please select an image smaller than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
-        console.log("Image preview created");
+        console.log("Image preview created, length:", result.length);
         setImagePreview(result);
       };
       reader.readAsDataURL(file);
@@ -94,11 +125,11 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
       return new Promise((resolve, reject) => {
         reader.onloadend = () => {
           const base64String = reader.result as string;
-          console.log("Image converted to base64 string for storage");
+          console.log("Image converted to base64 string, length:", base64String.length);
           resolve(base64String);
         };
-        reader.onerror = () => {
-          console.error("Failed to convert image to base64");
+        reader.onerror = (error) => {
+          console.error("Failed to convert image to base64:", error);
           reject(new Error("Failed to convert image to base64"));
         };
         reader.readAsDataURL(imageFile);
@@ -109,7 +140,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         variant: "destructive",
         description: "Failed to process image",
       });
-      return imagePreview;
+      return null;
     } finally {
       setIsUploading(false);
     }
@@ -117,22 +148,32 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
 
   const onSubmit = async (values: any) => {
     setIsSaving(true);
+    setSaveAttempted(true);
     try {
-      console.log("Starting player update process");
+      console.log("Starting player update process with values:", values);
       
       // Process image if there's a new one or if it was removed
       let profileImageUrl = imagePreview;
       if (imageFile) {
         console.log("Uploading new image");
         profileImageUrl = await uploadImage();
+        if (!profileImageUrl) {
+          throw new Error("Failed to process image");
+        }
       }
       
       console.log("Ensuring profile_image column exists");
       // Make sure the profile_image column exists
       const hasProfileImage = await ensureColumnExists('players', 'profile_image');
+      setColumnVerified(hasProfileImage);
       
       if (!hasProfileImage) {
-        console.log("profile_image column doesn't exist, but proceeding anyway");
+        console.log("profile_image column doesn't exist, attempting to add it");
+        await supabase.rpc('add_column_if_not_exists', {
+          p_table_name: 'players',
+          p_column_name: 'profile_image',
+          p_column_type: 'text'
+        });
       }
       
       // Prepare update data
@@ -142,11 +183,8 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         date_of_birth: values.dateOfBirth,
       };
       
-      // Only include profile_image if we have a value or we're explicitly clearing it
-      if (hasProfileImage || profileImageUrl !== undefined) {
-        console.log("Including profile_image in update data:", profileImageUrl ? "Has image" : "No image");
-        updateData.profile_image = profileImageUrl;
-      }
+      // Always include profile_image field, even if null
+      updateData.profile_image = profileImageUrl;
       
       // Calculate age based on date of birth
       if (values.dateOfBirth) {
@@ -155,7 +193,10 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         console.log(`Calculated age: ${age} years`);
       }
       
-      console.log("Sending update to database:", updateData);
+      console.log("Sending update to database:", {
+        ...updateData,
+        profile_image: updateData.profile_image ? `[base64 string length: ${updateData.profile_image.length}]` : null
+      });
       
       // Update player record
       const { data, error } = await supabase
@@ -171,13 +212,39 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
 
       console.log("Player updated successfully:", data);
       
+      // Verify the data was actually saved
+      if (profileImageUrl) {
+        const verified = await verifyDataSaved(
+          "players", 
+          "profile_image", 
+          player.id, 
+          profileImageUrl
+        );
+        console.log(`Image save verified: ${verified}`);
+        
+        if (!verified) {
+          console.warn("Image may not have been saved correctly");
+          // Continue anyway, but warn user
+          toast({
+            title: "Warning",
+            description: "Your changes were saved, but the profile image may not have uploaded correctly.",
+            variant: "destructive",
+          });
+        }
+      }
+      
       toast({
         description: "Player details updated successfully",
       });
       
+      // Force reload of data
       onPlayerUpdated();
-      setIsSaving(false);
-      setOpen(false);
+      
+      // Small delay to ensure data is refreshed
+      setTimeout(() => {
+        setIsSaving(false);
+        setOpen(false);
+      }, 500);
     } catch (error) {
       console.error("Error updating player:", error);
       toast({
@@ -200,6 +267,11 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
           <DialogTitle>Edit Player: {player.name}</DialogTitle>
           <DialogDescription>
             Update player details and profile image
+            {!columnVerified && saveAttempted && (
+              <span className="text-red-500 block mt-1">
+                Warning: Database column issues detected. Images may not save.
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
         
@@ -309,8 +381,8 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
             >
               {isSaving ? (
                 <span className="flex items-center gap-2">
-                  <Check className="h-4 w-4" />
-                  Saved!
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
                 </span>
               ) : isUploading ? (
                 <span className="flex items-center gap-2">

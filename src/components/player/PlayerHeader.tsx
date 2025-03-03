@@ -4,6 +4,7 @@ import { EditPlayerDialog } from "@/components/EditPlayerDialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerHeaderProps {
   player: Player;
@@ -20,15 +21,45 @@ export const PlayerHeader = ({
 }: PlayerHeaderProps) => {
   const [imageError, setImageError] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(player.profileImage);
+  const [lastUpdate, setLastUpdate] = useState(Date.now());
   
-  // Update profile image when player data changes
+  // Fetch the latest profile image when player data changes or after updates
   useEffect(() => {
-    if (player.profileImage) {
-      console.log("Updating profile image from player data");
-      setProfileImage(player.profileImage);
-      setImageError(false);
-    }
-  }, [player.profileImage]);
+    const fetchLatestProfileImage = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('players')
+          .select('profile_image')
+          .eq('id', player.id)
+          .single();
+          
+        if (error) {
+          console.error("Error fetching profile image:", error);
+          return;
+        }
+        
+        if (data && data.profile_image) {
+          console.log("Got latest profile image from database");
+          setProfileImage(data.profile_image);
+          setImageError(false);
+        } else if (player.profileImage) {
+          console.log("Using player prop profile image");
+          setProfileImage(player.profileImage);
+          setImageError(false);
+        }
+      } catch (error) {
+        console.error("Failed to fetch latest profile image:", error);
+      }
+    };
+    
+    fetchLatestProfileImage();
+  }, [player.id, player.profileImage, lastUpdate]);
+  
+  const handlePlayerUpdated = () => {
+    console.log("Player updated, refreshing data");
+    setLastUpdate(Date.now());
+    onPlayerUpdated();
+  };
   
   return (
     <div className="flex items-center justify-between">
@@ -74,7 +105,7 @@ export const PlayerHeader = ({
         </div>
       </div>
       
-      <EditPlayerDialog player={player} onPlayerUpdated={onPlayerUpdated} />
+      <EditPlayerDialog player={player} onPlayerUpdated={handlePlayerUpdated} />
     </div>
   );
 };

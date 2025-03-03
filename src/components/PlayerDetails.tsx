@@ -11,7 +11,7 @@ import { PlayerObjectives } from "@/components/coaching/PlayerObjectives";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CoachingComments } from "@/components/coaching/CoachingComments";
-import { ensureColumnExists } from "@/utils/databaseUtils";
+import { ensureColumnExists, addColumnIfNotExists } from "@/utils/databaseUtils";
 import { useToast } from "@/hooks/use-toast";
 
 interface PlayerDetailsProps {
@@ -22,11 +22,12 @@ interface PlayerDetailsProps {
 export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) => {
   const [showAttributeVisuals, setShowAttributeVisuals] = useState(true);
   const [hasCheckedSchema, setHasCheckedSchema] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Add a refresh key to force re-renders
   const { toast } = useToast();
 
   // Query for player position suitability
   const { data: positionsData, refetch: refetchPositions } = useQuery({
-    queryKey: ["player-positions", player.id],
+    queryKey: ["player-positions", player.id, refreshKey],
     queryFn: async () => {
       console.log("Fetching player positions for:", player.id);
       const { data, error } = await supabase
@@ -52,7 +53,7 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
 
   // Query for parents data
   const { data: parentsData, refetch: refetchParents } = useQuery({
-    queryKey: ["player-parents", player.id],
+    queryKey: ["player-parents", player.id, refreshKey],
     queryFn: async () => {
       console.log("Fetching player parents for:", player.id);
       const { data, error } = await supabase
@@ -64,7 +65,7 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
         console.error("Error fetching parents:", error);
         throw error;
       }
-      console.log("Fetched parents data:", data);
+      console.log("Fetched parents data:", data?.length || 0, "parents");
       return data;
     },
   });
@@ -75,21 +76,32 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
       if (hasCheckedSchema) return;
 
       try {
-        // Check if profile_image column exists
-        const exists = await ensureColumnExists('players', 'profile_image');
-        console.log(`profile_image column exists: ${exists}`);
+        // Ensure profile_image column exists and is usable
+        const profileImageExists = await ensureColumnExists('players', 'profile_image');
+        console.log(`profile_image column exists: ${profileImageExists}`);
         
-        if (!exists) {
-          toast({
-            title: "Database Schema Notice",
-            description: "The profile_image column may be missing. Some features might not work correctly.",
-            variant: "destructive",
-          });
+        if (!profileImageExists) {
+          console.log("Attempting to add profile_image column");
+          const added = await addColumnIfNotExists('players', 'profile_image', 'text');
+          console.log(`profile_image column added: ${added}`);
+          
+          if (!added) {
+            toast({
+              title: "Database Schema Notice",
+              description: "Unable to use profile images. Please contact support.",
+              variant: "destructive",
+            });
+          }
         }
         
         setHasCheckedSchema(true);
       } catch (error) {
         console.error("Error checking schema:", error);
+        toast({
+          title: "Database Error",
+          description: "Could not verify database schema. Some features may not work.",
+          variant: "destructive",
+        });
       }
     };
     
@@ -98,6 +110,10 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
 
   const handleLocalUpdate = () => {
     console.log("Local update triggered, refreshing queries");
+    // Update the refresh key to force React Query to refetch
+    setRefreshKey(prevKey => prevKey + 1);
+    
+    // Explicitly refetch all queries
     refetchPositions();
     refetchParents();
     
@@ -167,7 +183,10 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
         </TabsContent>
         
         <TabsContent value="parents">
-          <ParentDetails playerId={player.id} />
+          <ParentDetails 
+            playerId={player.id} 
+            key={`parent-details-${refreshKey}`} // Force refresh when refreshKey changes
+          />
         </TabsContent>
       </Tabs>
     </div>
