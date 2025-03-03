@@ -25,23 +25,29 @@ export const SubstitutesSection = ({
     e.currentTarget.classList.remove('bg-yellow-100');
   };
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('bg-yellow-100');
+    
+    // Get the source slot ID
+    const fromSlotId = e.dataTransfer.getData('fromSlotId');
+    const playerId = e.dataTransfer.getData('playerId');
+    
+    console.log(`Player ${playerId} dropped to substitutes from slot ${fromSlotId}`);
+    
+    if (fromSlotId) {
+      // Remove the player from the position
+      handleRemovePlayer(fromSlotId);
+    }
+  };
+
   return (
     <div 
       className="w-full bg-gray-100 p-3 rounded-md mb-4"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
-      onDrop={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        e.currentTarget.classList.remove('bg-yellow-100');
-        
-        // Get the source slot ID
-        const fromSlotId = e.dataTransfer.getData('fromSlotId');
-        if (fromSlotId) {
-          // Remove the player from the position
-          handleRemovePlayer(fromSlotId);
-        }
-      }}
+      onDrop={handleDrop}
     >
       <h3 className="text-sm font-medium mb-2">Substitutes</h3>
       <div className="flex flex-wrap gap-2">
@@ -61,6 +67,14 @@ export const SubstitutesSection = ({
                   e.dataTransfer.setData('playerId', player.id);
                   e.dataTransfer.setData('fromSlotId', slotId);
                   e.dataTransfer.effectAllowed = 'move';
+                  
+                  // Set a custom drag image
+                  const dragImage = document.createElement('div');
+                  dragImage.className = 'bg-amber-500 text-white rounded-full p-1 text-xs font-bold';
+                  dragImage.textContent = player.squad_number?.toString() || player.name.charAt(0);
+                  document.body.appendChild(dragImage);
+                  e.dataTransfer.setDragImage(dragImage, 15, 15);
+                  setTimeout(() => document.body.removeChild(dragImage), 0);
                 }}
               >
                 <div className="w-5 h-5 flex items-center justify-center bg-amber-500 text-white rounded-full text-[9px] font-bold">

@@ -32,17 +32,25 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
   // Make the player slot draggable when player exists
   const handleDragStart = (e: React.DragEvent) => {
     if (player) {
+      console.log(`Starting drag for player ${player.id} from slot ${slotId}`);
       e.dataTransfer.setData('playerId', player.id);
       e.dataTransfer.setData('fromSlotId', slotId);
       e.dataTransfer.effectAllowed = 'move';
-      e.stopPropagation();
+      
+      // Set a custom drag image if needed
+      const dragImage = document.createElement('div');
+      dragImage.className = 'bg-blue-500 text-white rounded-full p-1 text-xs font-bold';
+      dragImage.textContent = player.squad_number?.toString() || player.name.charAt(0);
+      document.body.appendChild(dragImage);
+      e.dataTransfer.setDragImage(dragImage, 15, 15);
+      setTimeout(() => document.body.removeChild(dragImage), 0);
     }
   };
 
   return (
     <div
       {...dropProps}
-      className={`${dropProps.className} w-10 h-10 rounded-full flex items-center justify-center ${
+      className={`${dropProps.className} w-12 h-12 rounded-full flex items-center justify-center ${
         !player ? 'border-2 border-dashed border-white/50 hover:border-white/80' : ''
       }`}
       onClick={() => {
@@ -54,7 +62,7 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
       {selection && player ? (
         <div className="relative">
           <div
-            className="relative flex items-center justify-center w-8 h-8 bg-white/90 rounded-full cursor-pointer hover:bg-white"
+            className="relative flex items-center justify-center w-10 h-10 bg-white/90 rounded-full cursor-pointer hover:bg-white"
             draggable={true}
             onDragStart={handleDragStart}
             onClick={(e) => {
@@ -66,7 +74,7 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
             }}
           >
             <div className="flex flex-col items-center">
-              <div className="w-5 h-5 flex items-center justify-center bg-blue-500 text-white rounded-full text-[9px] font-bold">
+              <div className="w-6 h-6 flex items-center justify-center bg-blue-500 text-white rounded-full text-[9px] font-bold">
                 {player.squad_number || player.name.charAt(0)}
               </div>
               <div className="text-[7px] mt-0.5 max-w-5 truncate">
@@ -81,7 +89,7 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
           {renderSubstitutionIndicator && renderSubstitutionIndicator(position)}
         </div>
       ) : (
-        <div className="flex items-center justify-center w-8 h-8 bg-gray-200 bg-opacity-70 rounded-full cursor-pointer hover:bg-gray-300">
+        <div className="flex items-center justify-center w-10 h-10 bg-gray-200 bg-opacity-70 rounded-full cursor-pointer hover:bg-gray-300">
           <span className="text-[8px] font-medium">{position}</span>
         </div>
       )}

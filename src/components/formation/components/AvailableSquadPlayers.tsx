@@ -29,23 +29,29 @@ export const AvailableSquadPlayers = ({
     e.currentTarget.classList.remove('bg-green-100');
   };
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('bg-green-100');
+    
+    // Get the source slot ID
+    const fromSlotId = e.dataTransfer.getData('fromSlotId');
+    const playerId = e.dataTransfer.getData('playerId');
+    
+    console.log(`Player ${playerId} dropped back to squad from slot ${fromSlotId}`);
+    
+    if (fromSlotId) {
+      // Find the associated onDragEnd handler and use it to remove the player
+      onDragEnd?.();
+    }
+  };
+
   return (
     <div 
       className="w-full bg-gray-100 p-3 rounded-md"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
-      onDrop={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        e.currentTarget.classList.remove('bg-green-100');
-        
-        // Get the source slot ID
-        const fromSlotId = e.dataTransfer.getData('fromSlotId');
-        if (fromSlotId) {
-          // Find the associated onDragEnd handler and use it to remove the player
-          onDragEnd?.();
-        }
-      }}
+      onDrop={handleDrop}
     >
       <h3 className="text-sm font-medium mb-2">Squad Players</h3>
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">

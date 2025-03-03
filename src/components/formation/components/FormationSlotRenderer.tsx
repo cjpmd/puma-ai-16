@@ -28,7 +28,7 @@ export const FormationSlotRenderer: React.FC<FormationSlotRendererProps> = ({
   const positionClasses = `absolute ${slot.className} transform -translate-x-1/2 -translate-y-1/2`;
   
   const dropProps = {
-    className: `${positionClasses} z-10`,
+    className: `${positionClasses} z-10 cursor-pointer`,
     onDragOver: (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
@@ -48,9 +48,9 @@ export const FormationSlotRenderer: React.FC<FormationSlotRendererProps> = ({
       const playerId = e.dataTransfer.getData('playerId');
       const fromSlotId = e.dataTransfer.getData('fromSlotId');
       
-      // If we have a player ID in the data transfer, use that
-      // Otherwise, fallback to normal drop behavior
+      // Ensure the onDrop callback is called with correct parameters
       if (playerId) {
+        console.log(`Dropping player ${playerId} to slot ${slot.id} (${slot.label})`);
         onDrop?.(slot.id, slot.label, fromSlotId || undefined);
       } else {
         onDrop?.(slot.id, slot.label);

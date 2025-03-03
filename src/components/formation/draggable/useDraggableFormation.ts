@@ -32,18 +32,25 @@ export const useDraggableFormation = ({
 
   // Handle drop onto a formation slot
   const handleDrop = (slotId: string, position: string, fromSlotId?: string) => {
+    console.log(`handleDrop: slotId=${slotId}, position=${position}, fromSlotId=${fromSlotId}`);
+    
     // Use either dragging player or selected player or fromSlotId's player
     let playerToAssign: string | null = null;
     
     if (fromSlotId && selections[fromSlotId]) {
       // If we're dragging from another slot, use that player
       playerToAssign = selections[fromSlotId].playerId;
+      console.log(`Using player ${playerToAssign} from slot ${fromSlotId}`);
     } else {
       // Otherwise use either the dragging player or selected player
       playerToAssign = draggingPlayer || selectedPlayerId;
+      console.log(`Using dragging/selected player ${playerToAssign}`);
     }
     
-    if (!playerToAssign) return;
+    if (!playerToAssign) {
+      console.log('No player to assign, returning');
+      return;
+    }
 
     // Get the current slot that this player is assigned to (if any)
     const currentSlotId = Object.entries(selections).find(
@@ -58,10 +65,12 @@ export const useDraggableFormation = ({
 
     // If we're dragging from another slot, clear that slot
     if (fromSlotId && selections[fromSlotId]?.playerId === playerToAssign) {
+      console.log(`Removing player ${playerToAssign} from source slot ${fromSlotId}`);
       delete newSelections[fromSlotId];
     }
     // If the player is already assigned to a different slot, remove them
     else if (currentSlotId && currentSlotId !== slotId) {
+      console.log(`Removing player ${playerToAssign} from current slot ${currentSlotId}`);
       delete newSelections[currentSlotId];
     }
 
@@ -71,6 +80,7 @@ export const useDraggableFormation = ({
       position,
       isSubstitution: position.includes('SUB')
     };
+    console.log(`Assigned player ${playerToAssign} to slot ${slotId} (${position})`);
 
     // If there was a player in the target slot, and it's not the same player,
     // handle them appropriately (swap or make unassigned)
@@ -83,13 +93,7 @@ export const useDraggableFormation = ({
           position: selections[fromSlotId]?.position || '',
           isSubstitution: selections[fromSlotId]?.isSubstitution
         };
-      } else {
-        // If we're not doing a direct swap, make sure this player isn't assigned elsewhere
-        Object.entries(newSelections).forEach(([sid, sel]) => {
-          if (sid !== slotId && sel.playerId === currentPlayerInSlot) {
-            delete newSelections[sid];
-          }
-        });
+        console.log(`Swapped - placed player ${currentPlayerInSlot} in slot ${fromSlotId}`);
       }
     }
 
@@ -103,11 +107,13 @@ export const useDraggableFormation = ({
 
   // Handle player selection for dragging
   const handlePlayerSelect = (playerId: string) => {
+    console.log(`Selected player: ${playerId}`);
     setSelectedPlayerId(playerId === selectedPlayerId ? null : playerId);
   };
 
   // Handle removing a player from a position
   const handleRemovePlayer = (slotId: string) => {
+    console.log(`Removing player from slot ${slotId}`);
     const newSelections = { ...selections };
     delete newSelections[slotId];
     
@@ -117,6 +123,7 @@ export const useDraggableFormation = ({
 
   // Handle drag start for a player
   const handleDragStart = (e: React.DragEvent, playerId: string) => {
+    console.log(`Drag start for player ${playerId}`);
     setDraggingPlayer(playerId);
     // Set dataTransfer data for compatibility
     e.dataTransfer.setData('playerId', playerId);
@@ -134,6 +141,7 @@ export const useDraggableFormation = ({
 
   // Handle drag end
   const handleDragEnd = () => {
+    console.log('Drag ended');
     setDraggingPlayer(null);
   };
 

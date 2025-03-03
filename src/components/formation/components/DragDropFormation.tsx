@@ -25,8 +25,16 @@ export const DragDropFormation: React.FC<DragDropFormationProps> = ({
   onDrop,
   renderSlot
 }) => {
+  // Create a wrapper div that handles drag events over empty areas
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
   return (
-    <div className="relative w-full h-full">
+    <div 
+      className="relative w-full h-full"
+      onDragOver={handleDragOver}
+    >
       {formationSlots.map(slot => (
         <FormationSlotRenderer 
           key={slot.id}
