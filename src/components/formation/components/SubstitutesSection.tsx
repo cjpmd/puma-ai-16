@@ -5,12 +5,14 @@ interface SubstitutesSectionProps {
   selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>;
   getPlayer: (playerId: string) => any;
   handleRemovePlayer: (slotId: string) => void;
+  onSubstituteDrop?: (playerId: string, fromSlotId: string) => void;
 }
 
 export const SubstitutesSection = ({
   selections,
   getPlayer,
-  handleRemovePlayer
+  handleRemovePlayer,
+  onSubstituteDrop
 }: SubstitutesSectionProps) => {
   // Handle dropping players back to substitutes
   const handleDragOver = (e: React.DragEvent) => {
@@ -36,9 +38,14 @@ export const SubstitutesSection = ({
     
     console.log(`Player ${playerId} dropped to substitutes from slot ${fromSlotId}`);
     
-    if (fromSlotId) {
-      // Remove the player from the position
-      handleRemovePlayer(fromSlotId);
+    if (fromSlotId && playerId) {
+      // If onSubstituteDrop is provided, use it instead of just removing the player
+      if (onSubstituteDrop) {
+        onSubstituteDrop(playerId, fromSlotId);
+      } else {
+        // Remove the player from the position (fallback behavior)
+        handleRemovePlayer(fromSlotId);
+      }
     }
   };
 

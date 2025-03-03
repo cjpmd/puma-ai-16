@@ -1,99 +1,115 @@
 import { FormationFormat, FormationSlot } from "../types";
+import { ALL_POSITIONS } from "../constants/positions";
 
-/**
- * Get formation slots based on formation format
- */
-export function getFormationSlots(format: FormationFormat): FormationSlot[] {
+// Position definitions with their visual coordinates on the pitch
+const positionDefinitions: Record<string, { x: string; y: string; label: string }> = {
+  // Goalkeeper
+  "GK": { x: "50%", y: "5%", label: "GK" },
+  
+  // Defenders
+  "DL": { x: "15%", y: "15%", label: "DL" },
+  "DCL": { x: "35%", y: "15%", label: "DCL" },
+  "DC": { x: "50%", y: "15%", label: "DC" },
+  "DCR": { x: "65%", y: "15%", label: "DCR" },
+  "DR": { x: "85%", y: "15%", label: "DR" },
+  
+  // Wing Backs
+  "WBL": { x: "15%", y: "28%", label: "WBL" },
+  "WBR": { x: "85%", y: "28%", label: "WBR" },
+  
+  // Defensive Midfielder
+  "DM": { x: "50%", y: "30%", label: "DM" },
+  
+  // Midfielders
+  "ML": { x: "15%", y: "45%", label: "ML" },
+  "MCL": { x: "35%", y: "45%", label: "MCL" },
+  "MC": { x: "50%", y: "45%", label: "MC" },
+  "MCR": { x: "65%", y: "45%", label: "MCR" },
+  "MR": { x: "85%", y: "45%", label: "MR" },
+  
+  // Attacking Midfielders
+  "AML": { x: "25%", y: "60%", label: "AML" },
+  "AMC": { x: "50%", y: "60%", label: "AMC" },
+  "AMR": { x: "75%", y: "60%", label: "AMR" },
+  
+  // Strikers
+  "STL": { x: "30%", y: "80%", label: "STL" },
+  "STC": { x: "50%", y: "80%", label: "STC" },
+  "STR": { x: "70%", y: "80%", label: "STR" }
+};
+
+// Generate className for positioning based on x/y percentages
+const getPositionClass = (x: string, y: string): string => {
+  return `left-[${x}] top-[${y}]`;
+};
+
+// Get all position slots for any formation
+export const getAllPositionSlots = (): FormationSlot[] => {
+  return ALL_POSITIONS.map(pos => {
+    const position = positionDefinitions[pos];
+    if (!position) {
+      console.warn(`Position ${pos} not found in position definitions`);
+      return null;
+    }
+    
+    return {
+      id: pos,
+      label: position.label,
+      className: getPositionClass(position.x, position.y)
+    };
+  }).filter(Boolean) as FormationSlot[];
+};
+
+// Get specific formation slots based on format
+export const getFormationSlots = (format: FormationFormat): FormationSlot[] => {
+  let positions: string[] = [];
+  
   switch (format) {
-    case "11-a-side":
-      return [
-        // Strikers
-        { id: "STL", label: "STL", className: "top-[15%] left-[25%]" },
-        { id: "STC", label: "STC", className: "top-[15%] left-1/2" },
-        { id: "STR", label: "STR", className: "top-[15%] right-[25%]" },
-        
-        // Attacking midfielders
-        { id: "AML", label: "AML", className: "top-[35%] left-[25%]" },
-        { id: "AMC", label: "AMC", className: "top-[35%] left-1/2" },
-        { id: "AMR", label: "AMR", className: "top-[35%] right-[25%]" },
-        
-        // Central midfielders
-        { id: "ML", label: "ML", className: "top-[50%] left-[20%]" },
-        { id: "MCL", label: "MCL", className: "top-[50%] left-[35%]" },
-        { id: "MC", label: "MC", className: "top-[50%] left-1/2" },
-        { id: "MCR", label: "MCR", className: "top-[50%] right-[35%]" },
-        { id: "MR", label: "MR", className: "top-[50%] right-[20%]" },
-        
-        // Defensive midfielders & wingbacks
-        { id: "WBL", label: "WBL", className: "top-[65%] left-[15%]" },
-        { id: "DM", label: "DM", className: "top-[65%] left-1/2" },
-        { id: "WBR", label: "WBR", className: "top-[65%] right-[15%]" },
-        
-        // Defenders
-        { id: "DL", label: "DL", className: "top-[80%] left-[15%]" },
-        { id: "DCL", label: "DCL", className: "top-[80%] left-[32%]" },
-        { id: "DC", label: "DC", className: "top-[80%] left-1/2" },
-        { id: "DCR", label: "DCR", className: "top-[80%] right-[32%]" },
-        { id: "DR", label: "DR", className: "top-[80%] right-[15%]" },
-        
-        // Goalkeeper
-        { id: "GK", label: "GK", className: "top-[95%] left-1/2" },
-      ];
-    case "9-a-side":
-      return [
-        // Strikers
-        { id: "STL", label: "STL", className: "top-[15%] left-[30%]" },
-        { id: "STC", label: "STC", className: "top-[15%] left-1/2" },
-        { id: "STR", label: "STR", className: "top-[15%] right-[30%]" },
-        
-        // Midfielders
-        { id: "ML", label: "ML", className: "top-[40%] left-[25%]" },
-        { id: "MC", label: "MC", className: "top-[40%] left-1/2" },
-        { id: "MR", label: "MR", className: "top-[40%] right-[25%]" },
-        
-        // Defenders
-        { id: "DL", label: "DL", className: "top-[75%] left-[25%]" },
-        { id: "DC", label: "DC", className: "top-[75%] left-1/2" },
-        { id: "DR", label: "DR", className: "top-[75%] right-[25%]" },
-        
-        // Goalkeeper
-        { id: "GK", label: "GK", className: "top-[95%] left-1/2" },
-      ];
-    case "7-a-side":
-      return [
-        // Strikers
-        { id: "STL", label: "STL", className: "top-[15%] left-[30%]" },
-        { id: "STC", label: "STC", className: "top-[15%] left-1/2" },
-        { id: "STR", label: "STR", className: "top-[15%] right-[30%]" },
-        
-        // Midfielders
-        { id: "ML", label: "ML", className: "top-[50%] left-[30%]" },
-        { id: "MR", label: "MR", className: "top-[50%] right-[30%]" },
-        
-        // Defender
-        { id: "DC", label: "DC", className: "top-[75%] left-1/2" },
-        
-        // Goalkeeper
-        { id: "GK", label: "GK", className: "top-[95%] left-1/2" },
-      ];
     case "5-a-side":
+      positions = ["GK", "DL", "DR", "STC", "STR"];
+      break;
+    case "7-a-side":
+      positions = ["GK", "DL", "DC", "DR", "MC", "STL", "STC"];
+      break;
+    case "9-a-side":
+      positions = ["GK", "DL", "DCL", "DCR", "DR", "MC", "AMC", "STL", "STC"];
+      break;
+    case "11-a-side":
+      positions = ["GK", "DL", "DCL", "DCR", "DR", "ML", "MC", "MR", "AML", "STC", "AMR"];
+      break;
     default:
-      return [
-        // Strikers
-        { id: "STL", label: "STL", className: "top-[20%] left-[30%]" },
-        { id: "STR", label: "STR", className: "top-[20%] right-[30%]" },
-        
-        // Midfielder
-        { id: "MC", label: "MC", className: "top-[50%] left-1/2" },
-        
-        // Defender
-        { id: "DC", label: "DC", className: "top-[75%] left-1/2" },
-        
-        // Goalkeeper
-        { id: "GK", label: "GK", className: "top-[95%] left-1/2" },
-      ];
+      positions = ["GK", "DL", "DC", "DR", "MC", "STL", "STC"];
   }
-}
+  
+  // Filter the positions to only include the ones we want for this formation
+  return positions.map(pos => {
+    const position = positionDefinitions[pos];
+    if (!position) {
+      console.warn(`Position ${pos} not found in position definitions`);
+      return null;
+    }
+    
+    return {
+      id: pos,
+      label: position.label,
+      className: getPositionClass(position.x, position.y)
+    };
+  }).filter(Boolean) as FormationSlot[];
+};
+
+// Helper function to get positions for a specific line (e.g., defense, midfield)
+export const getPositionsInLine = (line: 'defense' | 'midfield' | 'attack'): string[] => {
+  switch (line) {
+    case 'defense':
+      return ["DL", "DCL", "DC", "DCR", "DR", "WBL", "WBR"];
+    case 'midfield':
+      return ["DM", "ML", "MCL", "MC", "MCR", "MR", "AML", "AMC", "AMR"];
+    case 'attack':
+      return ["STL", "STC", "STR"];
+    default:
+      return [];
+  }
+};
 
 export const formatSelectionsForFormation = (selections: Record<string, { playerId: string; position: string }>) => {
   return Object.entries(selections)

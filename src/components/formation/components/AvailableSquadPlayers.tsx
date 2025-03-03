@@ -41,7 +41,7 @@ export const AvailableSquadPlayers = ({
     console.log(`Player ${playerId} dropped back to squad from slot ${fromSlotId}`);
     
     if (fromSlotId) {
-      // Find the associated onDragEnd handler and use it to remove the player
+      // Call the drag end handler which will unassign the player
       onDragEnd?.();
     }
   };

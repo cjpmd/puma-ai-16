@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 
 interface UseDraggableFormationProps {
@@ -17,11 +18,23 @@ export const useDraggableFormation = ({
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>(initialSelections || {});
   const formationRef = useRef<HTMLDivElement>(null);
   const [draggingPlayer, setDraggingPlayer] = useState<string | null>(null);
+  
+  // Substitution counter for generating unique slot IDs
+  const subCounterRef = useRef<number>(0);
 
   // Update state when initialSelections change
   useEffect(() => {
     if (initialSelections && Object.keys(initialSelections).length > 0) {
       setSelections(initialSelections);
+      
+      // Calculate the highest sub-X ID to continue numbering from there
+      const subIds = Object.keys(initialSelections)
+        .filter(id => id.startsWith('sub-'))
+        .map(id => parseInt(id.replace('sub-', ''), 10));
+      
+      if (subIds.length > 0) {
+        subCounterRef.current = Math.max(...subIds) + 1;
+      }
     }
   }, [initialSelections]);
 
@@ -78,7 +91,7 @@ export const useDraggableFormation = ({
     newSelections[slotId] = {
       playerId: playerToAssign,
       position,
-      isSubstitution: position.includes('SUB')
+      isSubstitution: position === 'SUB'
     };
     console.log(`Assigned player ${playerToAssign} to slot ${slotId} (${position})`);
 
@@ -145,6 +158,32 @@ export const useDraggableFormation = ({
     setDraggingPlayer(null);
   };
 
+  // Handle dragging to substitutes section
+  const handleSubstituteDrop = (playerId: string, fromSlotId: string) => {
+    console.log(`Player ${playerId} dropped to substitutes section from ${fromSlotId}`);
+    
+    // Generate a new substitute slot ID
+    const subSlotId = `sub-${subCounterRef.current++}`;
+    
+    // Create a new selections object
+    const newSelections = { ...selections };
+    
+    // Remove the player from their current position
+    if (fromSlotId && selections[fromSlotId]) {
+      delete newSelections[fromSlotId];
+    }
+    
+    // Add them to the substitutes
+    newSelections[subSlotId] = {
+      playerId,
+      position: 'SUB',
+      isSubstitution: true
+    };
+    
+    setSelections(newSelections);
+    onSelectionChange?.(newSelections);
+  };
+
   // Get all players assigned to positions
   const getAssignedPlayers = () => {
     return Object.values(selections).map(s => s.playerId);
@@ -173,6 +212,7 @@ export const useDraggableFormation = ({
     handleRemovePlayer,
     handleDragStart,
     handleDragEnd,
+    handleSubstituteDrop,
     getPlayer,
     getAvailableSquadPlayers
   };

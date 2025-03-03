@@ -52,8 +52,10 @@ export const FormationSlotRenderer: React.FC<FormationSlotRendererProps> = ({
       console.log(`Dropping player ${playerId} to slot ${slot.id} (${slot.label}), from slot: ${fromSlotId || 'none'}`);
       
       // Ensure the onDrop callback is called with correct parameters
-      if (playerId) {
-        onDrop?.(slot.id, slot.label, fromSlotId || undefined);
+      if (playerId && fromSlotId) {
+        onDrop?.(slot.id, slot.label, fromSlotId);
+      } else if (playerId) {
+        onDrop?.(slot.id, slot.label);
       } else {
         onDrop?.(slot.id, slot.label);
       }

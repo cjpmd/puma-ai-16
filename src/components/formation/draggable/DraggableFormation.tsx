@@ -35,6 +35,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     handleRemovePlayer,
     handleDragStart,
     handleDragEnd,
+    handleSubstituteDrop,
     getPlayer,
     getAvailableSquadPlayers
   } = useDraggableFormation({
@@ -61,6 +62,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         
         <FormationSlots
           format={format}
+          showAllPositions={true}
           onDrop={handleDrop}
           renderSlot={(slotId, position, dropProps) => {
             const selection = selections[slotId];
@@ -88,6 +90,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         selections={selections}
         getPlayer={getPlayer}
         handleRemovePlayer={handleRemovePlayer}
+        onSubstituteDrop={handleSubstituteDrop}
       />
       
       {/* Available Squad Players */}

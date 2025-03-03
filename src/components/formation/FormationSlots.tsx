@@ -1,7 +1,7 @@
 
 import React from "react";
 import { FormationFormat, FormationSlot, PlayerSelection } from "./types";
-import { getFormationSlots } from "./utils/formationUtils";
+import { getFormationSlots, getAllPositionSlots } from "./utils/formationUtils";
 import { DragDropFormation } from "./components/DragDropFormation";
 import { StandardSelectionGrid } from "./components/StandardSelectionGrid";
 
@@ -12,6 +12,7 @@ interface FormationSlotsProps {
   onPlayerSelection?: (slotId: string, playerId: string, position: string) => void;
   selectedPlayers?: Set<string>;
   onDrop?: (slotId: string, position: string) => void;
+  showAllPositions?: boolean;
   renderSlot?: (
     slotId: string, 
     position: string, 
@@ -31,9 +32,13 @@ export const FormationSlots: React.FC<FormationSlotsProps> = ({
   onPlayerSelection,
   selectedPlayers = new Set(),
   onDrop,
+  showAllPositions = false,
   renderSlot
 }) => {
-  const formationSlots = getFormationSlots(format);
+  // Get all formation slots or just the ones for the selected format
+  const formationSlots = showAllPositions 
+    ? getAllPositionSlots() 
+    : getFormationSlots(format);
 
   // If renderSlot is provided, we're in drag-and-drop mode
   if (renderSlot) {
