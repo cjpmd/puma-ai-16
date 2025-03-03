@@ -1,37 +1,37 @@
 export const positionDefinitions: Record<string, { x: string; y: string; label: string }> = {
   // Goalkeeper at bottom of the pitch (flipped from original to match display)
-  "GK": { x: "50%", y: "95%", label: "GK" },
+  "GK": { x: "50%", y: "90%", label: "GK" },
   
-  // Defenders
-  "DL": { x: "20%", y: "80%", label: "DL" },
-  "DCL": { x: "35%", y: "80%", label: "DCL" },
-  "DC": { x: "50%", y: "80%", label: "DC" },
-  "DCR": { x: "65%", y: "80%", label: "DCR" },
-  "DR": { x: "80%", y: "80%", label: "DR" },
+  // Defenders - spread out horizontally with more space
+  "DL": { x: "15%", y: "75%", label: "DL" },
+  "DCL": { x: "35%", y: "75%", label: "DCL" },
+  "DC": { x: "50%", y: "75%", label: "DC" },
+  "DCR": { x: "65%", y: "75%", label: "DCR" },
+  "DR": { x: "85%", y: "75%", label: "DR" },
   
-  // Wing Backs
-  "WBL": { x: "15%", y: "70%", label: "WBL" },
-  "WBR": { x: "85%", y: "70%", label: "WBR" },
+  // Wing Backs - moved further out to sides
+  "WBL": { x: "10%", y: "65%", label: "WBL" },
+  "WBR": { x: "90%", y: "65%", label: "WBR" },
   
-  // Defensive Midfielder
-  "DM": { x: "50%", y: "65%", label: "DM" },
+  // Defensive Midfielder - moved slightly up
+  "DM": { x: "50%", y: "58%", label: "DM" },
   
-  // Midfielders
-  "ML": { x: "20%", y: "55%", label: "ML" },
-  "MCL": { x: "35%", y: "55%", label: "MCL" },
-  "MC": { x: "50%", y: "55%", label: "MC" },
-  "MCR": { x: "65%", y: "55%", label: "MCR" },
-  "MR": { x: "80%", y: "55%", label: "MR" },
+  // Midfielders - more spaced horizontally
+  "ML": { x: "15%", y: "50%", label: "ML" },
+  "MCL": { x: "35%", y: "48%", label: "MCL" },
+  "MC": { x: "50%", y: "45%", label: "MC" },
+  "MCR": { x: "65%", y: "48%", label: "MCR" },
+  "MR": { x: "85%", y: "50%", label: "MR" },
   
-  // Attacking Midfielders
-  "AML": { x: "30%", y: "40%", label: "AML" },
-  "AMC": { x: "50%", y: "40%", label: "AMC" },
-  "AMR": { x: "70%", y: "40%", label: "AMR" },
+  // Attacking Midfielders - adjusted spacing
+  "AML": { x: "25%", y: "35%", label: "AML" },
+  "AMC": { x: "50%", y: "32%", label: "AMC" },
+  "AMR": { x: "75%", y: "35%", label: "AMR" },
   
-  // Strikers - at the top of the pitch
-  "STL": { x: "35%", y: "20%", label: "STL" },
-  "STC": { x: "50%", y: "20%", label: "STC" },
-  "STR": { x: "65%", y: "20%", label: "STR" }
+  // Strikers - spread more horizontally
+  "STL": { x: "30%", y: "15%", label: "STL" },
+  "STC": { x: "50%", y: "15%", label: "STC" },
+  "STR": { x: "70%", y: "15%", label: "STR" }
 };
 
 // Generate className for positioning based on x/y percentages

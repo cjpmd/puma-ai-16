@@ -51,7 +51,7 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
   return (
     <div
       {...dropProps}
-      className={`${dropProps.className} w-22 h-22 rounded-full flex items-center justify-center ${
+      className={`${dropProps.className} w-16 h-16 rounded-full flex items-center justify-center ${
         !player ? 'border-2 border-dashed border-white/50 hover:border-white/80' : ''
       }`}
       onClick={() => {
@@ -63,15 +63,15 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
       {selection && player ? (
         <div className="relative group">
           <div
-            className="relative flex items-center justify-center w-20 h-20 bg-white/90 rounded-full cursor-move hover:bg-white"
+            className="relative flex items-center justify-center w-14 h-14 bg-white/90 rounded-full cursor-move hover:bg-white"
             draggable={true}
             onDragStart={handleDragStart}
           >
             <div className="flex flex-col items-center">
-              <div className="w-12 h-12 flex items-center justify-center bg-blue-500 text-white rounded-full text-[14px] font-bold">
+              <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full text-[10px] font-bold">
                 {player.squad_number || player.name.charAt(0)}
               </div>
-              <div className="text-[11px] mt-0.5 max-w-16 truncate font-medium">
+              <div className="text-[8px] mt-0.5 max-w-12 truncate font-medium">
                 {player.name.split(' ')[0]}
                 {selection.isSubstitution && (
                   <span className="ml-0.5 text-orange-500">↑</span>
@@ -81,13 +81,13 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
             
             {/* Remove player button */}
             <button 
-              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={(e) => {
                 e.stopPropagation();
                 onRemovePlayer(slotId);
               }}
             >
-              <X className="w-4 h-4" />
+              <X className="w-3 h-3" />
             </button>
           </div>
           
@@ -95,8 +95,8 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
           {renderSubstitutionIndicator && renderSubstitutionIndicator(position)}
         </div>
       ) : (
-        <div className="flex items-center justify-center w-20 h-20 bg-gray-200 bg-opacity-70 rounded-full cursor-pointer hover:bg-gray-300">
-          <span className="text-[12px] font-medium">{position}</span>
+        <div className="flex items-center justify-center w-14 h-14 bg-gray-200 bg-opacity-70 rounded-full cursor-pointer hover:bg-gray-300">
+          <span className="text-[10px] font-medium">{position}</span>
         </div>
       )}
     </div>
