@@ -17,12 +17,23 @@ export const PlayerHeader = ({
   showAttributeVisuals,
   onPlayerUpdated = () => window.location.reload()
 }: PlayerHeaderProps) => {
+  console.log("PlayerHeader rendering with profileImage:", player.profileImage);
+  
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-4">
         <Avatar className="h-16 w-16 border-2 border-primary/20">
           {player.profileImage ? (
-            <AvatarImage src={player.profileImage} alt={player.name} />
+            <AvatarImage 
+              src={player.profileImage} 
+              alt={player.name} 
+              onError={(e) => {
+                console.error("Error loading image:", e);
+                const target = e.target as HTMLImageElement;
+                target.onerror = null; // Prevent infinite loop
+                target.src = ""; // Clear the src
+              }} 
+            />
           ) : (
             <AvatarFallback className="text-3xl font-bold">
               {player.name.charAt(0)}

@@ -25,6 +25,7 @@ const PlayerDetailsPage = () => {
   const { data: playerData, refetch: refetchPlayerData } = useQuery({
     queryKey: ["player-with-attributes", id],
     queryFn: async () => {
+      console.log("Fetching player data for ID:", id);
       // Fetch player details
       const { data: playerResult, error: playerError } = await supabase
         .from("players")
@@ -36,6 +37,9 @@ const PlayerDetailsPage = () => {
         .single();
 
       if (playerError) throw playerError;
+
+      console.log("Player data fetched:", playerResult);
+      console.log("Profile image URL:", playerResult.profile_image);
 
       // Fetch attribute history
       const { data: historyData, error: historyError } = await supabase
@@ -117,6 +121,7 @@ const PlayerDetailsPage = () => {
 
   useEffect(() => {
     if (playerData) {
+      console.log("Updating player state with new data, image:", playerData.profileImage);
       setPlayer(playerData);
     }
   }, [playerData]);
@@ -135,6 +140,7 @@ const PlayerDetailsPage = () => {
 
   const handlePlayerUpdated = () => {
     if (id) {
+      console.log("Player updated, refetching data...");
       refetchPlayerData();
     }
   };
@@ -151,7 +157,7 @@ const PlayerDetailsPage = () => {
           onSave={handleParentSave} 
         />
       </div>
-      <PlayerDetails player={player} />
+      <PlayerDetails player={player} onPlayerUpdated={handlePlayerUpdated} />
     </div>
   );
 };

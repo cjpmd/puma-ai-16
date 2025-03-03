@@ -79,6 +79,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
       const fileName = `${player.id}-${Date.now()}.${fileExt}`;
       const filePath = `player-images/${fileName}`;
       
+      console.log("Creating bucket if it doesn't exist...");
       // Create the bucket if it doesn't exist
       const { error: bucketError } = await supabase.storage
         .createBucket('player-assets', {
@@ -91,6 +92,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         throw bucketError;
       }
       
+      console.log("Uploading file to bucket...");
       const { error: uploadError } = await supabase.storage
         .from('player-assets')
         .upload(filePath, imageFile, {
@@ -98,12 +100,17 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
           upsert: true
         });
       
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        throw uploadError;
+      }
       
+      console.log("Getting public URL...");
       const { data: urlData } = supabase.storage
         .from('player-assets')
         .getPublicUrl(filePath);
       
+      console.log("Public URL:", urlData.publicUrl);
       return urlData.publicUrl;
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -121,11 +128,14 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
     setIsSaving(true);
     try {
       // Upload image if there's a new one
+      console.log("Starting image upload process...");
       const profileImage = await uploadImage();
+      console.log("Image uploaded, URL:", profileImage);
       
       // Calculate age based on date of birth
       const age = differenceInYears(new Date(), new Date(values.dateOfBirth));
       
+      console.log("Updating player record with profile image:", profileImage);
       const { error } = await supabase
         .from("players")
         .update({
@@ -293,4 +303,3 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
     </Dialog>
   );
 };
-
