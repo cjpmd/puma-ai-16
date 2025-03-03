@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -132,24 +132,75 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
         }
       }
       
-      // Insert new parents individually to better track errors
+      // Handle new parents - FIXED: Check if any parents already exist
       const newParents = parents.filter(p => p.id.startsWith('new-') && p.name.trim() !== '');
       console.log("Adding new parents:", newParents.length);
       
-      for (const parent of newParents) {
-        console.log("Adding new parent:", parent);
-        const { error } = await supabase
-          .from('player_parents')
-          .insert({
-            player_id: playerId,
-            name: parent.name,
-            email: parent.email || null,
-            phone: parent.phone || null
-          });
+      // Fix for constraint violation: Check if this player already has parents to determine approach
+      const hasExistingParents = existingParentsToUpdate.length > 0;
+      
+      if (newParents.length > 0) {
+        if (hasExistingParents) {
+          console.log("Player already has parents - using update approach for new parents");
+          // Get the first existing parent to update additional details
+          const parentToUpdate = existingParentsToUpdate[0].id;
           
-        if (error) {
-          console.error(`Error inserting parent:`, error);
-          throw error;
+          // Add parent info to existing notes
+          for (const parent of newParents) {
+            const noteUpdate = `Additional parent: ${parent.name}${parent.email ? `, Email: ${parent.email}` : ''}${parent.phone ? `, Phone: ${parent.phone}` : ''}`;
+            
+            // Update an existing field with this information
+            const { error } = await supabase
+              .from('player_parents')
+              .update({ 
+                notes: noteUpdate
+              })
+              .eq('id', parentToUpdate);
+              
+            if (error) {
+              console.error(`Error adding parent info to notes:`, error);
+              throw error;
+            }
+          }
+          
+          toast({
+            title: "Success with limitations",
+            description: "Due to database constraints, additional parents are added as notes to the main parent record",
+          });
+        } else {
+          // If no parents yet, we can add the first one normally
+          const firstParent = newParents[0];
+          console.log("Adding first parent:", firstParent);
+          
+          // Create notes field if more than one parent
+          let notes = '';
+          if (newParents.length > 1) {
+            notes = newParents.slice(1).map(p => 
+              `Additional parent: ${p.name}${p.email ? `, Email: ${p.email}` : ''}${p.phone ? `, Phone: ${p.phone}` : ''}`
+            ).join('\n');
+          }
+          
+          const { error } = await supabase
+            .from('player_parents')
+            .insert({
+              player_id: playerId,
+              name: firstParent.name,
+              email: firstParent.email || null,
+              phone: firstParent.phone || null,
+              notes: notes || null
+            });
+            
+          if (error) {
+            console.error(`Error inserting parent:`, error);
+            throw error;
+          }
+          
+          if (newParents.length > 1) {
+            toast({
+              title: "Success with limitations",
+              description: "Due to database constraints, additional parents are added as notes to the main parent record",
+            });
+          }
         }
       }
       
@@ -197,6 +248,9 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
           <DialogTitle>
             {existingParents && existingParents.length > 0 ? "Edit Parent Details" : "Add Parent Details"}
           </DialogTitle>
+          <DialogDescription>
+            Manage parent contact information for this player.
+          </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[calc(85vh-120px)] pr-4 overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-6">

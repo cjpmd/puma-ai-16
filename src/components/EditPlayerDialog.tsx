@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,10 +29,10 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
-import { Edit, Check, Upload, X, Loader2 } from "lucide-react";
+import { Edit, Check, Upload, X, Loader2, Info } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { differenceInYears } from "date-fns";
-import { ensureColumnExists, createColumn } from "@/utils/database";
+import { columnExists } from "@/utils/database";
 
 interface EditPlayerDialogProps {
   player: Player;
@@ -46,29 +47,28 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [columnVerified, setColumnVerified] = useState(false);
   const [saveAttempted, setSaveAttempted] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
       setImagePreview(player.profileImage);
       setSaveAttempted(false);
+      setImageError(null);
       
       const verifyColumn = async () => {
         try {
-          const exists = await ensureColumnExists('players', 'profile_image', 'text');
+          const exists = await columnExists('players', 'profile_image');
           console.log(`profile_image column verification: ${exists}`);
           setColumnVerified(exists);
           
           if (!exists) {
-            toast({
-              title: "Database Schema Error",
-              description: "Failed to verify or create the profile_image column. Images might not save.",
-              variant: "destructive",
-            });
+            setImageError("The profile image feature is currently unavailable. Please contact an administrator.");
           }
         } catch (error) {
           console.error("Column verification error:", error);
           setColumnVerified(false);
+          setImageError("Could not verify database configuration for profile images.");
         }
       };
       
@@ -116,7 +116,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
   };
 
   const uploadImage = async (): Promise<string | null> => {
-    if (!imageFile) return imagePreview;
+    if (!imageFile || !columnVerified) return imagePreview;
     
     setIsUploading(true);
     try {
@@ -152,34 +152,36 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
     console.log("Starting player update with values:", JSON.stringify(values));
     
     try {
-      const profileImageExists = await createColumn('players', 'profile_image', 'text');
-      console.log("Profile image column creation result:", profileImageExists);
-      setColumnVerified(profileImageExists);
-      
-      let profileImageUrl = imagePreview;
-      if (imageFile) {
-        console.log("Uploading new image");
-        profileImageUrl = await uploadImage();
-        if (!profileImageUrl) {
-          throw new Error("Failed to process image");
-        }
-        console.log("Image processed, length:", profileImageUrl.length);
-      }
-      
+      // Build the base update data without the profile image
       const updateData: any = {
         squad_number: values.squadNumber,
         player_type: values.playerType,
         date_of_birth: values.dateOfBirth,
       };
       
-      if (profileImageUrl !== undefined) {
-        updateData.profile_image = profileImageUrl;
-      }
-      
+      // Calculate age from date of birth if present
       if (values.dateOfBirth) {
         const age = differenceInYears(new Date(), new Date(values.dateOfBirth));
         updateData.age = age;
         console.log(`Calculated age: ${age} years`);
+      }
+      
+      // Only add profile_image if the column exists and we have a new image
+      if (columnVerified && imageFile) {
+        console.log("Processing profile image for database update");
+        const profileImageUrl = await uploadImage();
+        if (profileImageUrl) {
+          updateData.profile_image = profileImageUrl;
+          console.log("Profile image added to update data");
+        }
+      } else if (imageFile && !columnVerified) {
+        // Image selected but column doesn't exist
+        console.log("Profile image column not verified, skipping image update");
+        toast({
+          title: "Image not saved",
+          description: "Profile image could not be saved due to database configuration",
+          variant: "warning"
+        });
       }
       
       console.log("Sending update to database:", {
@@ -264,24 +266,32 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
             )}
           </div>
           
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => document.getElementById('player-image-upload')?.click()}
-              disabled={isUploading}
-            >
-              {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-              {imagePreview ? 'Change Photo' : 'Upload Photo'}
-            </Button>
-            <input
-              id="player-image-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageChange}
-            />
-          </div>
+          {imageError ? (
+            <div className="text-sm text-amber-600 flex items-center gap-2 p-2 bg-amber-50 rounded">
+              <Info className="h-4 w-4" />
+              {imageError}
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => document.getElementById('player-image-upload')?.click()}
+                disabled={isUploading || !columnVerified}
+              >
+                {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                {imagePreview ? 'Change Photo' : 'Upload Photo'}
+              </Button>
+              <input
+                id="player-image-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageChange}
+                disabled={!columnVerified}
+              />
+            </div>
+          )}
         </div>
         
         <Form {...form}>

@@ -15,6 +15,7 @@ export const ParentDetails = ({ playerId }: ParentDetailsProps) => {
     name: string;
     email: string | null;
     phone: string | null;
+    notes?: string | null;
   }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -73,6 +74,11 @@ export const ParentDetails = ({ playerId }: ParentDetailsProps) => {
                 <p><strong>Name:</strong> {parent.name}</p>
                 {parent.email && <p><strong>Email:</strong> {parent.email}</p>}
                 {parent.phone && <p><strong>Phone:</strong> {parent.phone}</p>}
+                {parent.notes && (
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    <p className="whitespace-pre-line">{parent.notes}</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>

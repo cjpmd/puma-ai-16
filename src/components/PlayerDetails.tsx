@@ -11,7 +11,7 @@ import { PlayerObjectives } from "@/components/coaching/PlayerObjectives";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CoachingComments } from "@/components/coaching/CoachingComments";
-import { ensureColumnExists, createColumn } from "@/utils/database";
+import { columnExists } from "@/utils/database";
 import { useToast } from "@/hooks/use-toast";
 
 interface PlayerDetailsProps {
@@ -71,40 +71,36 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
   });
 
   useEffect(() => {
-    // Check if necessary columns exist
-    const checkAndUpdateSchema = async () => {
+    // Check if necessary columns exist and update config
+    const checkSchema = async () => {
       if (hasCheckedSchema) return;
 
       try {
         console.log("Checking and updating database schema...");
         
-        // Ensure profile_image column exists and is usable
-        const profileImageExists = await createColumn('players', 'profile_image', 'text');
-        console.log(`profile_image column exists/created: ${profileImageExists}`);
+        // Check if profile_image column exists
+        const profileImageExists = await columnExists('players', 'profile_image');
+        console.log(`profile_image column exists: ${profileImageExists}`);
         
         if (!profileImageExists) {
-          console.error("Failed to ensure profile_image column exists");
-          toast({
-            title: "Database Schema Error",
-            description: "Unable to use profile images. Please check database permissions.",
-            variant: "destructive",
-          });
-        } else {
-          console.log("Database schema is ready for use");
+          console.log("Profile image column does not exist");
+          // We'll handle UI limitations based on the check at render time
         }
         
         setHasCheckedSchema(true);
       } catch (error) {
         console.error("Error checking schema:", error);
         toast({
-          title: "Database Error",
-          description: "Could not verify database schema. Some features may not work.",
+          title: "Database Warning",
+          description: "Could not verify database schema. Some features may be limited.",
           variant: "destructive",
         });
+        
+        setHasCheckedSchema(true); // Set to true anyway to avoid repeated checks
       }
     };
     
-    checkAndUpdateSchema();
+    checkSchema();
   }, [hasCheckedSchema, toast]);
 
   const handleLocalUpdate = () => {

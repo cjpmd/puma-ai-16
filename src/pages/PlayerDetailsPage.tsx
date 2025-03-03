@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ParentDetailsDialog } from "@/components/parents/ParentDetailsDialog";
 import { Player, PlayerType } from "@/types/player";
 import { differenceInYears } from "date-fns";
+import { columnExists } from "@/utils/database";
 
 interface Parent {
   id: string;
@@ -21,21 +22,31 @@ const PlayerDetailsPage = () => {
   const [parents, setParents] = useState<Parent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dataVersion, setDataVersion] = useState(0); // Add version to force data refresh
+  const [profileImageAvailable, setProfileImageAvailable] = useState(false);
+
+  // Check for profile_image column
+  useEffect(() => {
+    const checkProfileImageColumn = async () => {
+      if (!id) return;
+      
+      try {
+        const exists = await columnExists('players', 'profile_image');
+        console.log(`Profile image column available: ${exists}`);
+        setProfileImageAvailable(exists);
+      } catch (error) {
+        console.error('Error checking profile image column:', error);
+        setProfileImageAvailable(false);
+      }
+    };
+    
+    checkProfileImageColumn();
+  }, [id]);
 
   // Query for player details, attributes, and attribute history
   const { data: playerData, refetch: refetchPlayerData } = useQuery({
     queryKey: ["player-with-attributes", id, dataVersion],
     queryFn: async () => {
       console.log("Fetching player data for ID:", id);
-      
-      try {
-        // Try to ensure the profile_image column exists first
-        await supabase.rpc('execute_sql', { 
-          sql_string: "ALTER TABLE players ADD COLUMN IF NOT EXISTS profile_image text"
-        });
-      } catch (error) {
-        console.log("Column creation via RPC failed, continuing:", error);
-      }
       
       // Fetch player details
       const { data: playerResult, error: playerError } = await supabase
@@ -50,7 +61,13 @@ const PlayerDetailsPage = () => {
       if (playerError) throw playerError;
 
       console.log("Player data fetched:", playerResult);
-      console.log("Profile image URL:", playerResult.profile_image);
+      
+      // Log profile image URL if available
+      if (profileImageAvailable && playerResult.profile_image) {
+        console.log("Profile image URL:", playerResult.profile_image);
+      } else {
+        console.log("Profile image URL:", undefined);
+      }
 
       // Fetch attribute history
       const { data: historyData, error: historyError } = await supabase
@@ -86,7 +103,7 @@ const PlayerDetailsPage = () => {
         dateOfBirth: playerResult.date_of_birth,
         squadNumber: playerResult.squad_number,
         playerType: playerResult.player_type as PlayerType,
-        profileImage: playerResult.profile_image,
+        profileImage: profileImageAvailable ? playerResult.profile_image : undefined,
         teamCategory: playerResult.team_category,
         attributes: playerResult.attributes.map((attr: any) => ({
           id: attr.id,
@@ -101,7 +118,7 @@ const PlayerDetailsPage = () => {
 
       return transformedPlayer;
     },
-    enabled: !!id,
+    enabled: !!id && profileImageAvailable !== undefined,
   });
 
   // Fetch parents data

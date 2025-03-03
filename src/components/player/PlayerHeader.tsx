@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { columnExists } from "@/utils/database";
 
 interface PlayerHeaderProps {
   player: Player;
@@ -22,43 +23,71 @@ export const PlayerHeader = ({
   const [imageError, setImageError] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(player.profileImage);
   const [lastUpdate, setLastUpdate] = useState(Date.now());
+  const [columnAvailable, setColumnAvailable] = useState(false);
+  
+  // Check if profile_image column exists
+  useEffect(() => {
+    const checkProfileImageColumn = async () => {
+      try {
+        const exists = await columnExists('players', 'profile_image');
+        console.log(`Profile image column exists: ${exists}`);
+        setColumnAvailable(exists);
+        
+        if (!exists && profileImage) {
+          console.log("Profile image column doesn't exist but we have an image - using local state");
+        }
+      } catch (error) {
+        console.error("Error checking profile image column:", error);
+        setColumnAvailable(false);
+      }
+    };
+    
+    checkProfileImageColumn();
+  }, [profileImage]);
   
   // Fetch the latest profile image when player data changes or after updates
   useEffect(() => {
     const fetchLatestProfileImage = async () => {
       try {
-        console.log("Fetching profile image for player:", player.id);
-        
-        const { data, error } = await supabase
-          .from('players')
-          .select('profile_image')
-          .eq('id', player.id)
-          .single();
-          
-        if (error) {
-          // If column doesn't exist, we won't get an error here but data will be null
-          if (error.message.includes('does not exist')) {
-            console.log("profile_image column doesn't exist, using default");
-            setProfileImage(player.profileImage);
-            return;
-          }
-          
-          console.error("Error fetching profile image:", error);
-          return;
-        }
-        
-        if (data && data.profile_image) {
-          console.log("Got latest profile image from database");
-          setProfileImage(data.profile_image);
-          setImageError(false);
-        } else if (player.profileImage) {
+        // First set the image from props
+        if (player.profileImage) {
           console.log("Using player prop profile image");
           setProfileImage(player.profileImage);
           setImageError(false);
-        } else {
-          console.log("No profile image found");
-          setProfileImage(null);
+          return;
         }
+        
+        // Only try to fetch from database if column exists
+        if (columnAvailable) {
+          console.log("Fetching profile image for player:", player.id);
+          
+          const { data, error } = await supabase
+            .from('players')
+            .select('profile_image')
+            .eq('id', player.id)
+            .single();
+            
+          if (error) {
+            console.error("Error fetching profile image:", error);
+            
+            // If column doesn't exist, we'll get an error here
+            if (error.message.includes('does not exist')) {
+              console.log("profile_image column doesn't exist, using default");
+              setProfileImage(null);
+            }
+            return;
+          }
+          
+          if (data && data.profile_image) {
+            console.log("Got latest profile image from database");
+            setProfileImage(data.profile_image);
+            setImageError(false);
+            return;
+          }
+        }
+        
+        console.log("No profile image found");
+        setProfileImage(null);
       } catch (error) {
         console.error("Failed to fetch latest profile image:", error);
         // Fallback to the prop
@@ -67,7 +96,7 @@ export const PlayerHeader = ({
     };
     
     fetchLatestProfileImage();
-  }, [player.id, player.profileImage, lastUpdate]);
+  }, [player.id, player.profileImage, lastUpdate, columnAvailable]);
   
   const handlePlayerUpdated = () => {
     console.log("Player updated, refreshing data");
