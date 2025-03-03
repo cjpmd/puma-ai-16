@@ -28,8 +28,17 @@ export const useSubstitutionManager = (
 
   // Handle dragging to substitutes section
   const handleSubstituteDrop = (playerId: string, fromSlotId: string) => {
+    if (!playerId || !fromSlotId) {
+      console.log("Missing playerId or fromSlotId, cannot create substitute");
+      return;
+    }
+    
     console.log(`Player ${playerId} dropped to substitutes section from ${fromSlotId}`);
-    initializeSubCounter();
+    
+    // Initialize the counter if needed
+    if (subCounterRef.current === 0) {
+      initializeSubCounter();
+    }
     
     // Generate a new substitute slot ID
     const subSlotId = `sub-${subCounterRef.current++}`;
@@ -53,7 +62,7 @@ export const useSubstitutionManager = (
       isSubstitution: true
     };
     
-    console.log('New selections:', newSelections);
+    console.log('New selections after substitution:', newSelections);
     
     updateSelections(newSelections);
   };

@@ -38,10 +38,9 @@ export const SubstitutesSection = ({
     
     console.log(`Dropping player ${playerId} to substitutes from slot ${fromSlotId}`);
     
-    // Only call onSubstituteDrop if both playerId and fromSlotId exist
+    // Check if we have both playerId and fromSlotId - needed for substitutes
     if (playerId && fromSlotId && onSubstituteDrop) {
       onSubstituteDrop(playerId, fromSlotId);
-      return; // Prevent further handling
     }
   };
 
@@ -55,7 +54,7 @@ export const SubstitutesSection = ({
 
   return (
     <div 
-      className="w-full bg-gray-100 p-3 rounded-md mb-4"
+      className="w-full bg-gray-100 p-3 rounded-md mb-4 transition-colors"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -94,7 +93,9 @@ export const SubstitutesSection = ({
           ))}
         </div>
       ) : (
-        <div className="text-xs text-gray-500 italic">No substitutes assigned</div>
+        <div className="text-xs text-gray-500 italic">
+          No substitutes assigned - drag players here to add substitutes
+        </div>
       )}
     </div>
   );

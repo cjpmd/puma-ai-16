@@ -1,6 +1,7 @@
 
 import React from "react";
 import { FormationSlot } from "../types";
+import { getPositionStyle } from "../utils/positionDefinitions";
 
 interface FormationSlotRendererProps {
   slot: FormationSlot;
@@ -13,6 +14,7 @@ interface FormationSlotRendererProps {
       onDragOver: (e: React.DragEvent) => void;
       onDragLeave: (e: React.DragEvent) => void;
       onDrop: (e: React.DragEvent) => void;
+      style?: React.CSSProperties;
     }
   ) => React.ReactNode;
 }
@@ -24,11 +26,12 @@ export const FormationSlotRenderer: React.FC<FormationSlotRendererProps> = ({
 }) => {
   if (!renderSlot) return null;
   
-  // Apply proper positioning to align with the visual position markers
-  const positionClasses = `absolute ${slot.className} transform -translate-x-1/2 -translate-y-1/2`;
+  // Use the style helper to ensure accurate positioning
+  const positionStyle = getPositionStyle(slot.label);
   
   const dropProps = {
-    className: `${positionClasses} z-10 cursor-pointer`,
+    className: `z-10 cursor-pointer`,
+    style: positionStyle,
     onDragOver: (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
