@@ -4,7 +4,7 @@ import { PitchMarkings } from "../components/PitchMarkings";
 import { SubstitutesSection } from "../components/SubstitutesSection";
 import { AvailableSquadPlayers } from "../components/AvailableSquadPlayers";
 import { FormationSlots } from "../FormationSlots";
-import { useDraggableFormation } from "./useDraggableFormation";
+import { useDraggableFormation } from "./hooks/useDraggableFormation";
 import { FormationHelperText } from "./FormationHelperText";
 import { FormationPositionSlot } from "./FormationPositionSlot";
 
