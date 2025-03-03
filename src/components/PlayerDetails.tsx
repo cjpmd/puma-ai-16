@@ -103,7 +103,9 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
         </TabsContent>
         
         <TabsContent value="trends">
-          {player.attributeHistory && <AttributeTrends attributeHistory={player.attributeHistory} />}
+          {player.attributeHistory && (
+            <AttributeTrends attributeHistory={player.attributeHistory} />
+          )}
         </TabsContent>
         
         <TabsContent value="parents">
