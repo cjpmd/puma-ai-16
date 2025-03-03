@@ -159,8 +159,10 @@ export const TeamSelectionProvider = ({ children, fixture }: TeamSelectionProvid
     // Convert team captains (also 1-indexed in save format)
     const adjustedTeamCaptains = {};
     Object.keys(teamCaptains).forEach(teamId => {
-      const adjustedTeamId = (parseInt(teamId) + 1).toString();
-      adjustedTeamCaptains[adjustedTeamId] = teamCaptains[teamId];
+      if (teamCaptains[teamId]) {
+        const adjustedTeamId = (parseInt(teamId) + 1).toString();
+        adjustedTeamCaptains[adjustedTeamId] = teamCaptains[teamId];
+      }
     });
     
     console.log("Save format data:", {

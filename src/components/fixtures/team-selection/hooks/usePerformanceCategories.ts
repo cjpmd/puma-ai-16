@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { PerformanceCategories } from "../types";
+import { useToast } from "@/hooks/use-toast";
 
 // Define fallback performance categories since the table doesn't exist
 const DEFAULT_PERFORMANCE_CATEGORIES = ["MESSI", "RONALDO", "JAGS"];
@@ -8,6 +9,7 @@ const DEFAULT_PERFORMANCE_CATEGORIES = ["MESSI", "RONALDO", "JAGS"];
 export const usePerformanceCategories = () => {
   const [performanceCategories, setPerformanceCategories] = useState<PerformanceCategories>({});
   const [availableCategories, setAvailableCategories] = useState(DEFAULT_PERFORMANCE_CATEGORIES);
+  const { toast } = useToast();
 
   // Initialize performance categories for a new period
   const initializePerformanceCategory = (

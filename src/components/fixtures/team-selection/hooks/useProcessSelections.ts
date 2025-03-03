@@ -1,5 +1,4 @@
 
-import { useState, useEffect } from "react";
 import { 
   AllSelections, 
   PeriodsPerTeam, 
@@ -25,7 +24,7 @@ export const useProcessSelections = () => {
       // Create a structured map to organize selections by team and period
       const selectionsByTeamAndPeriod = existingSelections.reduce((acc: Record<string, Record<string, any[]>>, selection: any) => {
         const teamId = selection.team_number?.toString() || '1';
-        const periodId = selection.period_id || 'period-1';
+        const periodId = selection.period_id || 'first-half-period-1';
         
         if (!acc[teamId]) acc[teamId] = {};
         if (!acc[teamId][periodId]) acc[teamId][periodId] = [];
@@ -95,8 +94,8 @@ export const useProcessSelections = () => {
         
         // Sort periods by their number
         loadedPeriodsPerTeam[teamId].sort((a, b) => {
-          const aNum = parseInt(a.id.replace('period-', ''));
-          const bNum = parseInt(b.id.replace('period-', ''));
+          const aNum = parseInt(a.id.replace(/[^\d]/g, '')) || 0;
+          const bNum = parseInt(b.id.replace(/[^\d]/g, '')) || 0;
           return aNum - bNum;
         });
       });

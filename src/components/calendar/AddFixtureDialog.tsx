@@ -152,9 +152,8 @@ export const AddFixtureDialog = ({
           ? format(new Date(editingFixture.date), "yyyy-MM-dd")
           : format(new Date(), "yyyy-MM-dd");
       
-      console.log("Creating fixture with date:", dateToUse);
-      console.log("Form data:", data);
-      console.log("MOTM player IDs:", data.motm_player_ids);
+      console.log("Using date for fixture:", dateToUse);
+      console.log("Form data with MOTM player IDs:", data.motm_player_ids);
       
       const fixtureData = {
         opponent: data.opponent,
@@ -173,6 +172,8 @@ export const AddFixtureDialog = ({
         start_time: data.team_times?.[0]?.start_time || null,
         end_time: data.team_times?.[0]?.end_time || null
       };
+
+      console.log("Saving fixture with data:", fixtureData);
 
       let savedFixture;
       
@@ -213,6 +214,8 @@ export const AddFixtureDialog = ({
         }
       }
 
+      console.log("Fixture saved successfully:", savedFixture);
+
       // Save team times with performance categories
       if (savedFixture && data.team_times) {
         // Delete existing team times
@@ -237,12 +240,12 @@ export const AddFixtureDialog = ({
             });
         });
         
-        await Promise.all(teamTimesPromises);
-        console.log("Saved team times with performance categories");
+        const teamTimesResults = await Promise.all(teamTimesPromises);
+        console.log("Team times saved:", teamTimesResults);
       }
 
-      // Save team scores with MOTM player IDs
-      if (savedFixture && data.motm_player_ids) {
+      // Save team scores, but skip the motm_player_id field since it doesn't exist
+      if (savedFixture) {
         // Delete existing scores first if editing
         if (editingFixture?.id) {
           const { error: deleteScoresError } = await supabase
@@ -262,43 +265,40 @@ export const AddFixtureDialog = ({
           const teamScore = data[`team_${index + 1}_score` as keyof typeof data];
           const opponentScore = data[`opponent_${index + 1}_score` as keyof typeof data];
           
-          // Ensure we get the MOTM player ID for this team index
-          const motmPlayerId = data.motm_player_ids && index < data.motm_player_ids.length 
-            ? data.motm_player_ids[index] 
-            : null;
-          
+          // We skip the motm_player_id field since it doesn't exist in the table
           console.log(`Building team ${index + 1} score:`, {
             teamScore,
-            opponentScore,
-            motmPlayerId
+            opponentScore
           });
 
           return {
             fixture_id: savedFixture.id,
             team_number: index + 1,
             score: teamScore === undefined ? null : teamScore,
-            opponent_score: opponentScore === undefined ? null : opponentScore,
-            motm_player_id: motmPlayerId === "" ? null : motmPlayerId
+            opponent_score: opponentScore === undefined ? null : opponentScore
+            // motm_player_id removed since it doesn't exist in the database table
           };
         });
 
         console.log("Team scores data to save:", teamScoresData);
 
         if (teamScoresData.length > 0) {
-          const { data: scoresResult, error: scoresError } = await supabase
-            .from('fixture_team_scores')
-            .upsert(teamScoresData)
-            .select();
+          try {
+            const { data: scoresResult, error: scoresError } = await supabase
+              .from('fixture_team_scores')
+              .upsert(teamScoresData)
+              .select();
 
-          if (scoresError) {
-            console.error("Error saving team scores:", scoresError);
-          } else {
-            console.log("Team scores saved with MOTM player IDs:", scoresResult);
+            if (scoresError) {
+              console.error("Error saving team scores:", scoresError);
+            } else {
+              console.log("Team scores saved with MOTM player IDs:", scoresResult);
+            }
+          } catch (error) {
+            console.error("Exception saving team scores:", error);
           }
         }
       }
-
-      console.log("Fixture saved successfully:", savedFixture);
       
       // Invalidate all fixture queries to ensure calendar is updated
       await queryClient.invalidateQueries({ 
@@ -337,7 +337,7 @@ export const AddFixtureDialog = ({
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save fixture",
+        description: "Failed to save fixture: " + (error.message || "Unknown error"),
       });
       throw error;
     } finally {

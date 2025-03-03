@@ -1,3 +1,4 @@
+
 // Utility functions for handling selections
 
 import { AllSelections } from "../types";
@@ -60,4 +61,20 @@ export const mapPositionToSlot = (position: string): string => {
 export const mapSlotToPosition = (slotId: string): string => {
   // For now, we'll use the slot ID directly as the position
   return slotId;
+};
+
+// Convert the selections to a simplified format for direct comparison
+export const simplifySelections = (selections: AllSelections): string => {
+  return JSON.stringify(
+    Object.entries(selections).map(([periodId, periodData]) => ({
+      periodId,
+      teams: Object.entries(periodData).map(([teamId, teamData]) => ({
+        teamId,
+        positions: Object.entries(teamData).map(([position, data]) => ({
+          position,
+          playerId: data.playerId
+        }))
+      }))
+    }))
+  );
 };

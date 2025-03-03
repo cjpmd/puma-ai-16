@@ -70,7 +70,7 @@ export const useTeamSelectionSave = (
                 is_captain: teamCaptains[teamId] === selection.playerId,
                 period_id: periodId,
                 duration: period.duration
-                // is_substitution has been removed
+                // Removed is_substitution field that was causing issues
               });
             }
           });
@@ -100,7 +100,9 @@ export const useTeamSelectionSave = (
         description: "Team selections saved successfully",
       });
       
-      onSuccess?.();
+      if (onSuccess) {
+        onSuccess();
+      }
       
       return true;
     } catch (error) {

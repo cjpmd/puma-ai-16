@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTeamSelection } from "../context/TeamSelectionContext";
 import { useTeamSelectionSave } from "../hooks/useTeamSelectionSave";
 import { SaveIcon } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface SaveSelectionButtonProps {
   onSuccess?: () => void;
@@ -18,6 +19,7 @@ export const SaveSelectionButton = ({
 }: SaveSelectionButtonProps) => {
   const { toast } = useToast();
   const { fixture, convertToSaveFormat } = useTeamSelection();
+  const queryClient = useQueryClient();
   
   // Convert the structure for saving
   const saveData = convertToSaveFormat();
@@ -37,10 +39,21 @@ export const SaveSelectionButton = ({
       const result = await handleSave();
       
       if (result) {
+        // Invalidate queries to ensure updated data is fetched
+        if (fixture?.id) {
+          await queryClient.invalidateQueries({ 
+            queryKey: ["fixture-selections", fixture.id] 
+          });
+        }
+        
         toast({
           title: "Success",
           description: "Team selections saved successfully",
         });
+        
+        if (onSuccess) {
+          onSuccess();
+        }
       }
     } catch (error) {
       console.error("Error saving team selections:", error);
