@@ -50,7 +50,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     <div className="relative flex flex-col items-center">
       <div 
         ref={formationRef}
-        className="relative w-full max-w-xl aspect-[2/3] bg-green-600 bg-gradient-to-b from-green-500 to-green-700 rounded-lg overflow-hidden mb-6"
+        className="relative w-full max-w-xl aspect-[2/3] bg-green-600 overflow-hidden mb-6 rounded-lg"
       >
         {/* Pitch markings */}
         <PitchMarkings format={format} />
@@ -61,29 +61,32 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
           selectedPlayerId={selectedPlayerId} 
         />
         
-        <FormationSlots
-          format={format}
-          showAllPositions={true}
-          onDrop={handleDrop}
-          renderSlot={(slotId, position, dropProps) => {
-            const selection = selections[slotId];
-            const player = selection ? getPlayer(selection.playerId) : null;
-            
-            return (
-              <FormationPositionSlot
-                slotId={slotId}
-                position={position}
-                selection={selection}
-                player={player}
-                selectedPlayerId={selectedPlayerId}
-                onDrop={handleDrop}
-                onRemovePlayer={handleRemovePlayer}
-                renderSubstitutionIndicator={renderSubstitutionIndicator}
-                dropProps={dropProps}
-              />
-            );
-          }}
-        />
+        {/* Formation Slots - Positions */}
+        <div className="absolute inset-0 z-10">
+          <FormationSlots
+            format={format}
+            showAllPositions={true}
+            onDrop={handleDrop}
+            renderSlot={(slotId, position, dropProps) => {
+              const selection = selections[slotId];
+              const player = selection ? getPlayer(selection.playerId) : null;
+              
+              return (
+                <FormationPositionSlot
+                  slotId={slotId}
+                  position={position}
+                  selection={selection}
+                  player={player}
+                  selectedPlayerId={selectedPlayerId}
+                  onDrop={handleDrop}
+                  onRemovePlayer={handleRemovePlayer}
+                  renderSubstitutionIndicator={renderSubstitutionIndicator}
+                  dropProps={dropProps}
+                />
+              );
+            }}
+          />
+        </div>
       </div>
       
       {/* Substitutes section */}
