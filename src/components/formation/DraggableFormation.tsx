@@ -1,5 +1,10 @@
 
-import { DraggableFormation } from "./draggable";
+import { useDraggableFormation } from "./draggable";
+import { FormationPositionSlot } from "./draggable/FormationPositionSlot"; 
+import { FormationHelperText } from "./draggable/FormationHelperText";
 
-// Re-export for backward compatibility
-export { DraggableFormation };
+export const DraggableFormation = {
+  useFormation: useDraggableFormation,
+  PositionSlot: FormationPositionSlot,
+  HelperText: FormationHelperText
+};
