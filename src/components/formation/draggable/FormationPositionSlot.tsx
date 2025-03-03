@@ -29,6 +29,15 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
   renderSubstitutionIndicator,
   dropProps
 }) => {
+  // Make the player slot draggable when player exists
+  const handleDragStart = (e: React.DragEvent) => {
+    if (player) {
+      e.dataTransfer.setData('playerId', player.id);
+      e.dataTransfer.setData('fromSlotId', slotId);
+      e.stopPropagation();
+    }
+  };
+
   return (
     <div
       {...dropProps}
@@ -45,9 +54,14 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
         <div className="relative">
           <div
             className="relative flex items-center justify-center w-8 h-8 bg-white/90 rounded-full cursor-pointer hover:bg-white"
+            draggable={true}
+            onDragStart={handleDragStart}
             onClick={(e) => {
               e.stopPropagation();
-              onRemovePlayer(slotId);
+              // Don't remove the player when starting a drag
+              if (e.type === 'click') {
+                onRemovePlayer(slotId);
+              }
             }}
           >
             <div className="flex flex-col items-center">

@@ -1,10 +1,9 @@
-
 import React from "react";
 import { FormationSlot } from "../types";
 
 interface FormationSlotRendererProps {
   slot: FormationSlot;
-  onDrop?: (slotId: string, position: string) => void;
+  onDrop?: (slotId: string, position: string, fromSlotId?: string) => void;
   renderSlot?: (
     slotId: string, 
     position: string, 
@@ -41,7 +40,18 @@ export const FormationSlotRenderer: React.FC<FormationSlotRendererProps> = ({
       e.preventDefault();
       e.stopPropagation();
       e.currentTarget.classList.remove('bg-blue-200', 'bg-opacity-50');
-      onDrop?.(slot.id, slot.label);
+      
+      // Get the player ID from dataTransfer
+      const playerId = e.dataTransfer.getData('playerId');
+      const fromSlotId = e.dataTransfer.getData('fromSlotId');
+      
+      // If we have a player ID in the data transfer, use that
+      // Otherwise, fallback to normal drop behavior
+      if (playerId) {
+        onDrop?.(slot.id, slot.label, fromSlotId || undefined);
+      } else {
+        onDrop?.(slot.id, slot.label);
+      }
     }
   };
   

@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 
 interface UseDraggableFormationProps {
@@ -32,14 +31,23 @@ export const useDraggableFormation = ({
   };
 
   // Handle drop onto a formation slot
-  const handleDrop = (slotId: string, position: string) => {
-    // Use either dragging player or selected player
-    const playerToAssign = draggingPlayer || selectedPlayerId;
+  const handleDrop = (slotId: string, position: string, fromSlotId?: string) => {
+    // Use either dragging player or selected player or fromSlotId's player
+    let playerToAssign: string | null = null;
+    
+    if (fromSlotId && selections[fromSlotId]) {
+      // If we're dragging from another slot, use that player
+      playerToAssign = selections[fromSlotId].playerId;
+    } else {
+      // Otherwise use either the dragging player or selected player
+      playerToAssign = draggingPlayer || selectedPlayerId;
+    }
+    
     if (!playerToAssign) return;
 
     // Get the current slot that this player is assigned to (if any)
     const currentSlotId = Object.entries(selections).find(
-      ([_, selection]) => selection.playerId === playerToAssign
+      ([sid, selection]) => selection.playerId === playerToAssign && sid !== fromSlotId
     )?.[0];
 
     // Get the player currently in the target slot (if any)
@@ -48,8 +56,12 @@ export const useDraggableFormation = ({
     // Create a new selections object
     const newSelections = { ...selections };
 
-    // If the player is already assigned to a slot, remove them
-    if (currentSlotId && currentSlotId !== slotId) {
+    // If we're dragging from another slot, clear that slot
+    if (fromSlotId && selections[fromSlotId]?.playerId === playerToAssign) {
+      delete newSelections[fromSlotId];
+    }
+    // If the player is already assigned to a different slot, remove them
+    else if (currentSlotId && currentSlotId !== slotId) {
       delete newSelections[currentSlotId];
     }
 
@@ -61,14 +73,24 @@ export const useDraggableFormation = ({
     };
 
     // If there was a player in the target slot, and it's not the same player,
-    // then we need to make that player unassigned
+    // handle them appropriately (swap or make unassigned)
     if (currentPlayerInSlot && currentPlayerInSlot !== playerToAssign) {
-      // Find any other slots this player might be in and remove them
-      Object.entries(newSelections).forEach(([sid, sel]) => {
-        if (sid !== slotId && sel.playerId === currentPlayerInSlot) {
-          delete newSelections[sid];
-        }
-      });
+      if (fromSlotId) {
+        // If we're dragging from another slot and there's a player in the target slot,
+        // put the displaced player in the source slot (swap them)
+        newSelections[fromSlotId] = {
+          playerId: currentPlayerInSlot,
+          position: selections[fromSlotId]?.position || '',
+          isSubstitution: selections[fromSlotId]?.isSubstitution
+        };
+      } else {
+        // If we're not doing a direct swap, make sure this player isn't assigned elsewhere
+        Object.entries(newSelections).forEach(([sid, sel]) => {
+          if (sid !== slotId && sel.playerId === currentPlayerInSlot) {
+            delete newSelections[sid];
+          }
+        });
+      }
     }
 
     setSelections(newSelections);
@@ -97,7 +119,7 @@ export const useDraggableFormation = ({
   const handleDragStart = (e: React.DragEvent, playerId: string) => {
     setDraggingPlayer(playerId);
     // Set dataTransfer data for compatibility
-    e.dataTransfer.setData('text/plain', playerId);
+    e.dataTransfer.setData('playerId', playerId);
     // Set a custom drag image if needed
     const player = getPlayer(playerId);
     if (player) {
