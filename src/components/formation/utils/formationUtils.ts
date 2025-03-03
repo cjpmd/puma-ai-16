@@ -2,40 +2,41 @@ import { FormationFormat, FormationSlot } from "../types";
 import { ALL_POSITIONS } from "../constants/positions";
 
 // Position definitions with their visual coordinates on the pitch
+// Flipped Y coordinates so GK is at the bottom (95%) and strikers at the top (20%)
 const positionDefinitions: Record<string, { x: string; y: string; label: string }> = {
-  // Goalkeeper
-  "GK": { x: "50%", y: "5%", label: "GK" },
+  // Goalkeeper - now at the bottom
+  "GK": { x: "50%", y: "95%", label: "GK" },
   
-  // Defenders
-  "DL": { x: "15%", y: "15%", label: "DL" },
-  "DCL": { x: "35%", y: "15%", label: "DCL" },
-  "DC": { x: "50%", y: "15%", label: "DC" },
-  "DCR": { x: "65%", y: "15%", label: "DCR" },
-  "DR": { x: "85%", y: "15%", label: "DR" },
+  // Defenders - moved down (higher Y percentage)
+  "DL": { x: "15%", y: "85%", label: "DL" },
+  "DCL": { x: "35%", y: "85%", label: "DCL" },
+  "DC": { x: "50%", y: "85%", label: "DC" },
+  "DCR": { x: "65%", y: "85%", label: "DCR" },
+  "DR": { x: "85%", y: "85%", label: "DR" },
   
   // Wing Backs
-  "WBL": { x: "15%", y: "28%", label: "WBL" },
-  "WBR": { x: "85%", y: "28%", label: "WBR" },
+  "WBL": { x: "15%", y: "70%", label: "WBL" },
+  "WBR": { x: "85%", y: "70%", label: "WBR" },
   
   // Defensive Midfielder
-  "DM": { x: "50%", y: "30%", label: "DM" },
+  "DM": { x: "50%", y: "70%", label: "DM" },
   
   // Midfielders
-  "ML": { x: "15%", y: "45%", label: "ML" },
-  "MCL": { x: "35%", y: "45%", label: "MCL" },
-  "MC": { x: "50%", y: "45%", label: "MC" },
-  "MCR": { x: "65%", y: "45%", label: "MCR" },
-  "MR": { x: "85%", y: "45%", label: "MR" },
+  "ML": { x: "15%", y: "55%", label: "ML" },
+  "MCL": { x: "35%", y: "55%", label: "MCL" },
+  "MC": { x: "50%", y: "55%", label: "MC" },
+  "MCR": { x: "65%", y: "55%", label: "MCR" },
+  "MR": { x: "85%", y: "55%", label: "MR" },
   
   // Attacking Midfielders
-  "AML": { x: "25%", y: "60%", label: "AML" },
-  "AMC": { x: "50%", y: "60%", label: "AMC" },
-  "AMR": { x: "75%", y: "60%", label: "AMR" },
+  "AML": { x: "25%", y: "40%", label: "AML" },
+  "AMC": { x: "50%", y: "40%", label: "AMC" },
+  "AMR": { x: "75%", y: "40%", label: "AMR" },
   
-  // Strikers
-  "STL": { x: "30%", y: "80%", label: "STL" },
-  "STC": { x: "50%", y: "80%", label: "STC" },
-  "STR": { x: "70%", y: "80%", label: "STR" }
+  // Strikers - now at the top
+  "STL": { x: "30%", y: "20%", label: "STL" },
+  "STC": { x: "50%", y: "20%", label: "STC" },
+  "STR": { x: "70%", y: "20%", label: "STR" }
 };
 
 // Generate className for positioning based on x/y percentages

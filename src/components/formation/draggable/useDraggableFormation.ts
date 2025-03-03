@@ -165,11 +165,15 @@ export const useDraggableFormation = ({
     // Generate a new substitute slot ID
     const subSlotId = `sub-${subCounterRef.current++}`;
     
+    // Get the player's current position for debugging
+    const currentPosition = selections[fromSlotId]?.position;
+    console.log(`Moving player from position ${currentPosition} to SUB`);
+    
     // Create a new selections object
     const newSelections = { ...selections };
     
     // Remove the player from their current position
-    if (fromSlotId && selections[fromSlotId]) {
+    if (selections[fromSlotId]) {
       delete newSelections[fromSlotId];
     }
     
@@ -179,6 +183,8 @@ export const useDraggableFormation = ({
       position: 'SUB',
       isSubstitution: true
     };
+    
+    console.log('New selections:', newSelections);
     
     setSelections(newSelections);
     onSelectionChange?.(newSelections);
