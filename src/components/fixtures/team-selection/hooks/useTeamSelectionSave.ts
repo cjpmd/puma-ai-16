@@ -60,7 +60,7 @@ export const useTeamSelectionSave = (
           // Process each player selection for this team/period
           Object.entries(teamSelections).forEach(([slotId, selection]) => {
             if (selection.playerId && selection.playerId !== "unassigned") {
-              // Create a record with period information
+              // Create a record with period information, but omit is_substitution if it's causing problems
               teamSelectionsToSave.push({
                 fixture_id: fixtureId,
                 player_id: selection.playerId,
@@ -69,8 +69,8 @@ export const useTeamSelectionSave = (
                 team_number: parseInt(teamId),
                 is_captain: teamCaptains[teamId] === selection.playerId,
                 period_id: periodId,
-                duration: period.duration,
-                is_substitution: selection.isSubstitution || false
+                duration: period.duration
+                // Removed is_substitution which is causing the error
               });
             }
           });

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useTeamSelection } from "../context/TeamSelectionContext";
 import { useTeamSelectionSave } from "../hooks/useTeamSelectionSave";
+import { SaveIcon } from "lucide-react";
 
 interface SaveSelectionButtonProps {
   onSuccess?: () => void;
@@ -43,10 +44,13 @@ export const SaveSelectionButton = ({
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save team selections",
+        description: "Failed to save team selections. Please check the console for details.",
       });
     }
   };
+
+  // Don't render if there's no fixture
+  if (!fixture) return null;
 
   return (
     <Button 
@@ -55,7 +59,12 @@ export const SaveSelectionButton = ({
       size={size}
       className={className}
     >
-      {isSaving ? 'Saving...' : 'Save Selections'}
+      {isSaving ? 'Saving...' : (
+        <>
+          <SaveIcon className="h-4 w-4 mr-2" />
+          Save Selections
+        </>
+      )}
     </Button>
   );
 };

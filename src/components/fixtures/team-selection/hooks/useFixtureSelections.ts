@@ -29,5 +29,7 @@ export const useFixtureSelections = (fixtureId: string | undefined) => {
       }
     },
     enabled: !!fixtureId,
+    staleTime: 0, // Don't cache this data, always refetch
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 };

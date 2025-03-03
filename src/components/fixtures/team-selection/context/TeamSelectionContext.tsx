@@ -112,7 +112,7 @@ export const TeamSelectionProvider = ({ children, fixture }: TeamSelectionProvid
           if (!selections[teamId][halfId][periodId]) return;
           
           // Create period ID for the save format
-          const formattedPeriodId = `${halfId}-period-${periodId}`;
+          const formattedPeriodId = `${halfId}-${periodId}`;
           
           // Initialize the period if it doesn't exist
           if (!allSelections[formattedPeriodId]) {

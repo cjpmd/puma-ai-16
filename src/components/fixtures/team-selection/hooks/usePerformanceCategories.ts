@@ -2,30 +2,33 @@
 import { useState } from "react";
 import { PerformanceCategories } from "../types";
 
+// Define fallback performance categories since the table doesn't exist
+const DEFAULT_PERFORMANCE_CATEGORIES = ["MESSI", "RONALDO", "JAGS"];
+
 export const usePerformanceCategories = () => {
   const [performanceCategories, setPerformanceCategories] = useState<PerformanceCategories>({});
 
-  // Initialize performance category for a new period
+  // Initialize performance categories for a new period
   const initializePerformanceCategory = (
-    periodId: string, 
-    teamId: string, 
+    newPeriodId: string,
+    teamId: string,
     lastPeriodId: string | null,
     existingCategories: PerformanceCategories
   ) => {
-    let newCategory = 'MESSI';
+    // Get the performance category from the last period if available
+    let performanceCategory = "MESSI"; // Default to MESSI
     
-    // Copy performance category from the last period if available
-    if (lastPeriodId) {
-      const lastCategory = existingCategories[`${lastPeriodId}-${teamId}`] || 'MESSI';
-      newCategory = lastCategory;
+    if (lastPeriodId && existingCategories[`${lastPeriodId}-${teamId}`]) {
+      performanceCategory = existingCategories[`${lastPeriodId}-${teamId}`];
     }
     
+    // Update state
     setPerformanceCategories(prev => ({
       ...prev,
-      [`${periodId}-${teamId}`]: newCategory
+      [`${newPeriodId}-${teamId}`]: performanceCategory
     }));
     
-    return newCategory;
+    return performanceCategory;
   };
 
   // Clean up performance category for deleted period
@@ -37,10 +40,16 @@ export const usePerformanceCategories = () => {
     });
   };
 
+  // Get available performance categories (hardcoded since the table doesn't exist)
+  const getAvailableCategories = () => {
+    return DEFAULT_PERFORMANCE_CATEGORIES;
+  };
+
   return {
     performanceCategories,
     setPerformanceCategories,
     initializePerformanceCategory,
-    cleanupPerformanceCategory
+    cleanupPerformanceCategory,
+    availableCategories: getAvailableCategories()
   };
 };
