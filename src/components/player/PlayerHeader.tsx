@@ -27,6 +27,8 @@ export const PlayerHeader = ({
   useEffect(() => {
     const fetchLatestProfileImage = async () => {
       try {
+        console.log("Fetching profile image for player:", player.id);
+        
         const { data, error } = await supabase
           .from('players')
           .select('profile_image')
@@ -34,6 +36,13 @@ export const PlayerHeader = ({
           .single();
           
         if (error) {
+          // If column doesn't exist, we won't get an error here but data will be null
+          if (error.message.includes('does not exist')) {
+            console.log("profile_image column doesn't exist, using default");
+            setProfileImage(player.profileImage);
+            return;
+          }
+          
           console.error("Error fetching profile image:", error);
           return;
         }
@@ -46,9 +55,14 @@ export const PlayerHeader = ({
           console.log("Using player prop profile image");
           setProfileImage(player.profileImage);
           setImageError(false);
+        } else {
+          console.log("No profile image found");
+          setProfileImage(null);
         }
       } catch (error) {
         console.error("Failed to fetch latest profile image:", error);
+        // Fallback to the prop
+        setProfileImage(player.profileImage);
       }
     };
     

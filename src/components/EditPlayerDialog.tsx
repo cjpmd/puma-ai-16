@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +31,7 @@ import { useForm } from "react-hook-form";
 import { Edit, Check, Upload, X, Loader2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { differenceInYears } from "date-fns";
-import { ensureColumnExists, verifyDataSaved } from "@/utils/databaseUtils";
+import { ensureColumnExists, createColumn } from "@/utils/databaseUtils";
 
 interface EditPlayerDialogProps {
   player: Player;
@@ -57,16 +56,22 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
       
       // Verify column exists when dialog opens
       const verifyColumn = async () => {
-        const exists = await ensureColumnExists('players', 'profile_image');
-        console.log(`profile_image column verified: ${exists}`);
-        setColumnVerified(exists);
-        
-        if (!exists) {
-          toast({
-            title: "Database Schema Notice",
-            description: "The profile_image column may be missing. Images might not be saved correctly.",
-            variant: "destructive",
-          });
+        try {
+          // Ensure the profile_image column exists
+          const exists = await ensureColumnExists('players', 'profile_image', 'text');
+          console.log(`profile_image column verification: ${exists}`);
+          setColumnVerified(exists);
+          
+          if (!exists) {
+            toast({
+              title: "Database Schema Error",
+              description: "Failed to verify or create the profile_image column. Images might not save.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error("Column verification error:", error);
+          setColumnVerified(false);
         }
       };
       
@@ -149,8 +154,13 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
   const onSubmit = async (values: any) => {
     setIsSaving(true);
     setSaveAttempted(true);
+    console.log("Starting player update with values:", JSON.stringify(values));
+    
     try {
-      console.log("Starting player update process with values:", values);
+      // Make sure the profile_image column exists
+      const profileImageExists = await createColumn('players', 'profile_image', 'text');
+      console.log("Profile image column creation result:", profileImageExists);
+      setColumnVerified(profileImageExists);
       
       // Process image if there's a new one or if it was removed
       let profileImageUrl = imagePreview;
@@ -160,20 +170,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         if (!profileImageUrl) {
           throw new Error("Failed to process image");
         }
-      }
-      
-      console.log("Ensuring profile_image column exists");
-      // Make sure the profile_image column exists
-      const hasProfileImage = await ensureColumnExists('players', 'profile_image');
-      setColumnVerified(hasProfileImage);
-      
-      if (!hasProfileImage) {
-        console.log("profile_image column doesn't exist, attempting to add it");
-        await supabase.rpc('add_column_if_not_exists', {
-          p_table_name: 'players',
-          p_column_name: 'profile_image',
-          p_column_type: 'text'
-        });
+        console.log("Image processed, length:", profileImageUrl.length);
       }
       
       // Prepare update data
@@ -183,8 +180,10 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         date_of_birth: values.dateOfBirth,
       };
       
-      // Always include profile_image field, even if null
-      updateData.profile_image = profileImageUrl;
+      // Only include profile_image if we have one
+      if (profileImageUrl !== undefined) {
+        updateData.profile_image = profileImageUrl;
+      }
       
       // Calculate age based on date of birth
       if (values.dateOfBirth) {
@@ -195,7 +194,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
       
       console.log("Sending update to database:", {
         ...updateData,
-        profile_image: updateData.profile_image ? `[base64 string length: ${updateData.profile_image.length}]` : null
+        profile_image: updateData.profile_image ? `[base64 string length: ${updateData.profile_image?.length}]` : null
       });
       
       // Update player record
@@ -211,27 +210,6 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
       }
 
       console.log("Player updated successfully:", data);
-      
-      // Verify the data was actually saved
-      if (profileImageUrl) {
-        const verified = await verifyDataSaved(
-          "players", 
-          "profile_image", 
-          player.id, 
-          profileImageUrl
-        );
-        console.log(`Image save verified: ${verified}`);
-        
-        if (!verified) {
-          console.warn("Image may not have been saved correctly");
-          // Continue anyway, but warn user
-          toast({
-            title: "Warning",
-            description: "Your changes were saved, but the profile image may not have uploaded correctly.",
-            variant: "destructive",
-          });
-        }
-      }
       
       toast({
         description: "Player details updated successfully",
@@ -251,6 +229,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         variant: "destructive",
         description: "Failed to update player details. Please try again.",
       });
+    } finally {
       setIsSaving(false);
     }
   };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlayerHeader } from "@/components/player/PlayerHeader";
@@ -11,7 +10,7 @@ import { PlayerObjectives } from "@/components/coaching/PlayerObjectives";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CoachingComments } from "@/components/coaching/CoachingComments";
-import { ensureColumnExists, addColumnIfNotExists } from "@/utils/databaseUtils";
+import { ensureColumnExists, createColumn } from "@/utils/databaseUtils";
 import { useToast } from "@/hooks/use-toast";
 
 interface PlayerDetailsProps {
@@ -76,22 +75,21 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
       if (hasCheckedSchema) return;
 
       try {
+        console.log("Checking and updating database schema...");
+        
         // Ensure profile_image column exists and is usable
-        const profileImageExists = await ensureColumnExists('players', 'profile_image');
-        console.log(`profile_image column exists: ${profileImageExists}`);
+        const profileImageExists = await createColumn('players', 'profile_image', 'text');
+        console.log(`profile_image column exists/created: ${profileImageExists}`);
         
         if (!profileImageExists) {
-          console.log("Attempting to add profile_image column");
-          const added = await addColumnIfNotExists('players', 'profile_image', 'text');
-          console.log(`profile_image column added: ${added}`);
-          
-          if (!added) {
-            toast({
-              title: "Database Schema Notice",
-              description: "Unable to use profile images. Please contact support.",
-              variant: "destructive",
-            });
-          }
+          console.error("Failed to ensure profile_image column exists");
+          toast({
+            title: "Database Schema Error",
+            description: "Unable to use profile images. Please check database permissions.",
+            variant: "destructive",
+          });
+        } else {
+          console.log("Database schema is ready for use");
         }
         
         setHasCheckedSchema(true);

@@ -20,12 +20,23 @@ const PlayerDetailsPage = () => {
   const [player, setPlayer] = useState<Player | null>(null);
   const [parents, setParents] = useState<Parent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [dataVersion, setDataVersion] = useState(0); // Add version to force data refresh
 
   // Query for player details, attributes, and attribute history
   const { data: playerData, refetch: refetchPlayerData } = useQuery({
-    queryKey: ["player-with-attributes", id],
+    queryKey: ["player-with-attributes", id, dataVersion],
     queryFn: async () => {
       console.log("Fetching player data for ID:", id);
+      
+      try {
+        // Try to ensure the profile_image column exists first
+        await supabase.rpc('execute_sql', { 
+          sql_string: "ALTER TABLE players ADD COLUMN IF NOT EXISTS profile_image text"
+        });
+      } catch (error) {
+        console.log("Column creation via RPC failed, continuing:", error);
+      }
+      
       // Fetch player details
       const { data: playerResult, error: playerError } = await supabase
         .from("players")
@@ -76,6 +87,7 @@ const PlayerDetailsPage = () => {
         squadNumber: playerResult.squad_number,
         playerType: playerResult.player_type as PlayerType,
         profileImage: playerResult.profile_image,
+        teamCategory: playerResult.team_category,
         attributes: playerResult.attributes.map((attr: any) => ({
           id: attr.id,
           name: attr.name,
@@ -117,7 +129,7 @@ const PlayerDetailsPage = () => {
 
       fetchParents();
     }
-  }, [id]);
+  }, [id, dataVersion]); // Add dataVersion to dependencies
 
   useEffect(() => {
     if (playerData) {
@@ -129,12 +141,18 @@ const PlayerDetailsPage = () => {
   const handleParentSave = async () => {
     // Refresh parents after saving
     if (id) {
-      const { data } = await supabase
-        .from("player_parents")
-        .select("*")
-        .eq("player_id", id);
-      
-      setParents(data || []);
+      try {
+        const { data } = await supabase
+          .from("player_parents")
+          .select("*")
+          .eq("player_id", id);
+        
+        setParents(data || []);
+        // Force data refresh
+        setDataVersion(v => v + 1);
+      } catch (error) {
+        console.error("Error refreshing parents after save:", error);
+      }
     }
   };
 
@@ -142,6 +160,7 @@ const PlayerDetailsPage = () => {
     if (id) {
       console.log("Player updated, refetching data...");
       refetchPlayerData();
+      setDataVersion(v => v + 1); // Increment to force data refresh
     }
   };
 

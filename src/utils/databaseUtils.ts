@@ -2,41 +2,64 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
+ * Direct SQL execution for critical database operations
+ */
+export const executeSql = async (sql: string): Promise<boolean> => {
+  try {
+    console.log(`Executing SQL: ${sql}`);
+    const { data, error } = await supabase.rpc('execute_sql', { sql_string: sql });
+    
+    if (error) {
+      console.error(`SQL execution error:`, error);
+      return false;
+    }
+    
+    console.log(`SQL execution result:`, data);
+    return true;
+  } catch (error) {
+    console.error(`Exception during SQL execution:`, error);
+    return false;
+  }
+};
+
+/**
  * Enhanced column existence check with proper error handling and detailed logging
  */
 export const columnExists = async (tableName: string, columnName: string): Promise<boolean> => {
   try {
     console.log(`Checking if column ${columnName} exists in ${tableName}...`);
     
-    // Use metadata API to check if column exists
-    const { data: columns, error: metadataError } = await supabase
-      .rpc('get_table_columns', { table_name: tableName });
+    // Manual approach - directly query the information_schema
+    const { data, error } = await supabase
+      .from('information_schema.columns')
+      .select('column_name')
+      .eq('table_name', tableName)
+      .eq('column_name', columnName);
     
-    if (!metadataError && columns) {
-      const exists = columns.includes(columnName);
-      console.log(`Column ${columnName} exists in ${tableName} (metadata check): ${exists}`);
+    if (error) {
+      console.error(`Error querying information schema:`, error);
+      
+      // Fallback approach - try to select the column
+      const { error: selectError } = await supabase
+        .from(tableName)
+        .select(columnName)
+        .limit(1);
+      
+      const exists = !selectError;
+      console.log(`Column ${columnName} exists in ${tableName} (query check): ${exists}`);
+      
+      if (selectError) {
+        console.error(`Error checking column existence: ${selectError.message}`);
+      }
+      
       return exists;
     }
     
-    console.log(`Metadata check failed, falling back to SELECT query...`);
-    
-    // Fallback: Try to select the column (might fail if it doesn't exist)
-    const { error } = await supabase
-      .from(tableName)
-      .select(columnName)
-      .limit(1);
-    
-    const exists = !error;
-    console.log(`Column ${columnName} exists in ${tableName} (query check): ${exists}`);
-    
-    if (error) {
-      console.error(`Error checking column existence: ${error.message}`);
-    }
-    
+    const exists = data && data.length > 0;
+    console.log(`Column ${columnName} exists in ${tableName} (schema check): ${exists}`);
     return exists;
   } catch (error) {
     console.error(`Error checking if column ${columnName} exists in ${tableName}:`, error);
-    // Return false when we can't confirm - safer approach for updates
     return false;
   }
 };
@@ -48,42 +71,70 @@ export const getTableColumns = async (tableName: string): Promise<string[]> => {
   try {
     console.log(`Getting columns for ${tableName}...`);
     
-    // Try using the RPC function first
-    const { data: rpcData, error: rpcError } = await supabase.rpc(
-      'get_table_columns',
-      { table_name: tableName }
-    );
-    
-    if (!rpcError && rpcData) {
-      console.log(`Retrieved columns via RPC for ${tableName}:`, rpcData);
-      return rpcData;
-    }
-    
-    console.log(`RPC failed, falling back to query method:`, rpcError);
-    
-    // Fallback: Try querying one row to get the structure
+    // Direct query to information_schema
     const { data, error } = await supabase
-      .from(tableName)
-      .select('*')
-      .limit(1);
+      .from('information_schema.columns')
+      .select('column_name')
+      .eq('table_name', tableName);
     
     if (error) {
-      console.error(`Error getting columns for ${tableName}:`, error);
+      console.error(`Error querying information schema:`, error);
+      
+      // Fallback: Try querying one row to get the structure
+      const { data: rowData, error: rowError } = await supabase
+        .from(tableName)
+        .select('*')
+        .limit(1);
+      
+      if (rowError) {
+        console.error(`Error getting columns for ${tableName}:`, rowError);
+        return [];
+      }
+      
+      // If data exists, get the keys from the first row
+      if (rowData && rowData.length > 0) {
+        const columns = Object.keys(rowData[0]);
+        console.log(`Retrieved columns for ${tableName} from row:`, columns);
+        return columns;
+      }
+      
+      console.log(`No data found for ${tableName} to determine columns`);
       return [];
     }
     
-    // If data exists, get the keys from the first row
-    if (data && data.length > 0) {
-      const columns = Object.keys(data[0]);
-      console.log(`Retrieved columns for ${tableName}:`, columns);
-      return columns;
-    }
-    
-    console.log(`No data found for ${tableName} to determine columns`);
-    return [];
+    const columns = data.map(col => col.column_name);
+    console.log(`Retrieved columns for ${tableName}:`, columns);
+    return columns;
   } catch (error) {
     console.error(`Failed to get columns for ${tableName}:`, error);
     return [];
+  }
+};
+
+/**
+ * Manual column creation via direct SQL
+ */
+export const createColumn = async (
+  tableName: string,
+  columnName: string,
+  columnType: string
+): Promise<boolean> => {
+  try {
+    console.log(`Creating column ${columnName} in ${tableName} with type ${columnType}`);
+    
+    // Prevent SQL injection by validating inputs
+    if (!/^[a-z0-9_]+$/.test(tableName) || !/^[a-z0-9_]+$/.test(columnName) || 
+        !['text', 'integer', 'boolean', 'float', 'json', 'jsonb', 'timestamp'].includes(columnType)) {
+      console.error('Invalid table name, column name, or column type');
+      return false;
+    }
+    
+    // Use direct SQL to create the column
+    const sql = `ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${columnName} ${columnType}`;
+    return await executeSql(sql);
+  } catch (error) {
+    console.error(`Failed to create column ${columnName} in ${tableName}:`, error);
+    return false;
   }
 };
 
@@ -92,39 +143,21 @@ export const getTableColumns = async (tableName: string): Promise<string[]> => {
  */
 export const ensureColumnExists = async (
   tableName: string, 
-  columnName: string
+  columnName: string,
+  columnType: string = 'text'
 ): Promise<boolean> => {
   try {
     console.log(`Ensuring column ${columnName} exists in ${tableName}...`);
     
-    // Try checking with columnExists first
+    // Try checking if column exists first
     const exists = await columnExists(tableName, columnName);
     console.log(`Column check result for ${columnName} in ${tableName}: ${exists}`);
     
     if (!exists) {
-      console.log(`Column ${columnName} not found in ${tableName}, checking if we need to add it...`);
-      try {
-        // Try to verify if the column should be added using RPC function
-        const { data: added, error: addError } = await supabase.rpc(
-          'add_column_if_not_exists',
-          { 
-            p_table_name: tableName,
-            p_column_name: columnName,
-            p_column_type: 'text'  // Default to text type for profile_image
-          }
-        );
-        
-        if (addError) {
-          console.error(`Error adding column via RPC: ${addError.message}`);
-          return false;
-        }
-        
-        console.log(`Column add attempt result: ${added}`);
-        return true;
-      } catch (addError) {
-        console.error(`Failed to add column ${columnName} to ${tableName}:`, addError);
-        return false;
-      }
+      console.log(`Column ${columnName} not found in ${tableName}, attempting to create it...`);
+      const created = await createColumn(tableName, columnName, columnType);
+      console.log(`Column ${columnName} creation result: ${created}`);
+      return created;
     }
     
     return exists;
@@ -168,8 +201,7 @@ export const verifyDataSaved = async (
 };
 
 /**
- * Add column if not exists (client-side version)
- * This is a compatibility function that just checks column existence
+ * Add column if not exists (client-side implementation)
  */
 export const addColumnIfNotExists = async (
   tableName: string, 
@@ -177,23 +209,17 @@ export const addColumnIfNotExists = async (
   columnType: string
 ): Promise<boolean> => {
   try {
-    // Try to use RPC function first
-    const { data, error } = await supabase.rpc(
-      'add_column_if_not_exists',
-      { 
-        p_table_name: tableName,
-        p_column_name: columnName,
-        p_column_type: columnType
-      }
-    );
+    console.log(`Adding column ${columnName} to ${tableName}...`);
     
-    if (!error) {
-      console.log(`Column add attempt successful: ${data}`);
+    // First check if it exists
+    const exists = await columnExists(tableName, columnName);
+    if (exists) {
+      console.log(`Column ${columnName} already exists in ${tableName}`);
       return true;
     }
     
-    console.error(`RPC error: ${error.message}, falling back to check-only`);
-    return ensureColumnExists(tableName, columnName);
+    // Create the column using our direct SQL approach
+    return await createColumn(tableName, columnName, columnType);
   } catch (error) {
     console.error(`Error in addColumnIfNotExists:`, error);
     return false;

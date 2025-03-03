@@ -8,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Label } from "@/components/ui/label";
-import { verifyDataSaved } from "@/utils/databaseUtils";
 
 interface PlayerAttributesProps {
   attributes: Array<{
@@ -69,6 +68,7 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
         setSavingAttributeId(id);
         
         try {
+          // First try updating the attribute
           const { error } = await supabase
             .from('player_attributes')
             .update({ value })
@@ -78,12 +78,21 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
             console.error(`Error updating attribute ${id}:`, error);
             errors.push(`Failed to update ${attributes.find(a => a.id === id)?.name || id}: ${error.message}`);
           } else {
-            // Verify the save was successful
-            const verified = await verifyDataSaved('player_attributes', 'value', id, value);
-            console.log(`Attribute ${id} save verified: ${verified}`);
+            // Double-check that update was successful by querying the updated record
+            const { data: verifyData, error: verifyError } = await supabase
+              .from('player_attributes')
+              .select('value')
+              .eq('id', id)
+              .single();
             
-            if (!verified) {
-              errors.push(`Could not verify save for ${attributes.find(a => a.id === id)?.name || id}`);
+            if (verifyError) {
+              console.error(`Error verifying attribute ${id}:`, verifyError);
+              errors.push(`Could not verify update for ${attributes.find(a => a.id === id)?.name || id}`);
+            } else if (verifyData.value !== value) {
+              console.error(`Attribute ${id} value mismatch: expected ${value}, got ${verifyData.value}`);
+              errors.push(`Value mismatch for ${attributes.find(a => a.id === id)?.name || id}`);
+            } else {
+              console.log(`Successfully updated and verified attribute ${id}`);
             }
           }
         } catch (err) {
