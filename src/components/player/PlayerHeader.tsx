@@ -3,6 +3,7 @@ import { Player } from "@/types/player";
 import { EditPlayerDialog } from "@/components/EditPlayerDialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useState } from "react";
 
 interface PlayerHeaderProps {
   player: Player;
@@ -17,19 +18,22 @@ export const PlayerHeader = ({
   showAttributeVisuals,
   onPlayerUpdated = () => window.location.reload()
 }: PlayerHeaderProps) => {
+  const [imageError, setImageError] = useState(false);
+  
+  // Check if the image is a base64 string (starts with data:)
+  const isBase64Image = typeof player.profileImage === 'string' && player.profileImage.startsWith('data:');
+  
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-4">
         <Avatar className="h-16 w-16 border-2 border-primary/20">
-          {player.profileImage ? (
+          {player.profileImage && !imageError ? (
             <AvatarImage 
               src={player.profileImage} 
               alt={player.name} 
               onError={(e) => {
                 console.error("Error loading image:", e);
-                const target = e.target as HTMLImageElement;
-                target.onerror = null; // Prevent infinite loop
-                target.src = ""; // Clear the src
+                setImageError(true);
               }} 
             />
           ) : (

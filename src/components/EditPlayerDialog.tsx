@@ -76,35 +76,25 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
     
     setIsUploading(true);
     try {
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${player.id}-${Date.now()}.${fileExt}`;
-      const filePath = `player-images/${fileName}`;
-      
-      // Upload file to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('player-assets')
-        .upload(filePath, imageFile, {
-          cacheControl: '3600',
-          upsert: true
-        });
-      
-      if (uploadError) {
-        console.error("Upload error:", uploadError);
-        throw uploadError;
-      }
-      
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('player-assets')
-        .getPublicUrl(filePath);
-      
-      console.log("Image uploaded, URL:", urlData.publicUrl);
-      return urlData.publicUrl;
+      // Store image as base64 string in the player record instead of using Storage
+      // This is a workaround for the missing bucket
+      const reader = new FileReader();
+      return new Promise((resolve, reject) => {
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          console.log("Image converted to base64 string for storage");
+          resolve(base64String);
+        };
+        reader.onerror = () => {
+          reject(new Error("Failed to convert image to base64"));
+        };
+        reader.readAsDataURL(imageFile);
+      });
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.error("Error processing image:", error);
       toast({
         variant: "destructive",
-        description: "Failed to upload image",
+        description: "Failed to process image",
       });
       return player.profileImage || null;
     } finally {
@@ -115,7 +105,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
   const onSubmit = async (values: any) => {
     setIsSaving(true);
     try {
-      // Upload image if there's a new one
+      // Process image if there's a new one
       let profileImageUrl = player.profileImage;
       if (imageFile) {
         profileImageUrl = await uploadImage();
@@ -124,23 +114,41 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         profileImageUrl = null;
       }
       
+      console.log("Updating player record with profile image type:", typeof profileImageUrl);
+      
+      // First check if the profile_image column exists
+      const { data: columnData, error: columnError } = await supabase
+        .rpc('get_table_columns', { table_name: 'players' });
+      
+      if (columnError) {
+        console.error("Error checking columns:", columnError);
+        throw new Error("Failed to check table structure");
+      }
+      
+      let updateData: any = {
+        squad_number: values.squadNumber,
+        player_type: values.playerType,
+        date_of_birth: values.dateOfBirth,
+      };
+      
+      // Only include profile_image if the column exists
+      if (columnData && columnData.includes('profile_image')) {
+        updateData.profile_image = profileImageUrl;
+      } else {
+        console.log("profile_image column not found, skipping this field in update");
+      }
+      
       // Calculate age based on date of birth
       const age = values.dateOfBirth ? 
         differenceInYears(new Date(), new Date(values.dateOfBirth)) : 
         player.age;
       
-      console.log("Updating player record with profile image:", profileImageUrl);
+      updateData.age = age;
       
       // Update player record
       const { error } = await supabase
         .from("players")
-        .update({
-          squad_number: values.squadNumber,
-          player_type: values.playerType,
-          date_of_birth: values.dateOfBirth,
-          age: age,
-          profile_image: profileImageUrl,
-        })
+        .update(updateData)
         .eq("id", player.id);
 
       if (error) {

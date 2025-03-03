@@ -1,53 +1,70 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
-export const initializeFixtureTeamSelectionsTable = async () => {
-  // Check if the table exists first
-  const { data: tablesData, error: tablesError } = await supabase
-    .from('information_schema.tables')
-    .select('table_name')
-    .eq('table_name', 'fixture_team_selections');
-  
-  if (tablesError) {
-    console.error("Error checking table existence:", tablesError);
-    return false;
-  }
-  
-  if (!tablesData || tablesData.length === 0) {
-    // Table doesn't exist, create it
-    const createTableSQL = `
-      CREATE TABLE IF NOT EXISTS fixture_team_selections (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        fixture_id UUID REFERENCES fixtures(id) ON DELETE CASCADE,
-        team_id TEXT NOT NULL,
-        period_id TEXT NOT NULL,
-        duration INTEGER,
-        performance_category TEXT,
-        selections_data JSONB,
-        captain_id UUID REFERENCES players(id),
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        UNIQUE(fixture_id, team_id, period_id)
-      );
-    `;
+/**
+ * Adds a column to a table if it doesn't exist
+ */
+export const addColumnIfNotExists = async (
+  tableName: string, 
+  columnName: string, 
+  columnType: string
+) => {
+  try {
+    // First check if the function exists in the database
+    const { data: funcExists, error: funcError } = await supabase.rpc(
+      'function_exists',
+      { function_name: 'add_column_if_not_exists' }
+    );
     
-    const { error: createError } = await supabase.rpc('run_sql', { sql: createTableSQL });
-    if (createError) {
-      console.error("Error creating table:", createError);
+    if (funcError) {
+      console.error("Error checking if function exists:", funcError);
       return false;
     }
     
-    console.log("Table created successfully");
+    if (!funcExists) {
+      console.error("The add_column_if_not_exists function doesn't exist in the database");
+      return false;
+    }
+    
+    // Call the function to add the column if it doesn't exist
+    const { data, error } = await supabase.rpc(
+      'add_column_if_not_exists',
+      { 
+        p_table_name: tableName,
+        p_column_name: columnName,
+        p_column_type: columnType
+      }
+    );
+    
+    if (error) {
+      console.error(`Error adding column ${columnName} to ${tableName}:`, error);
+      return false;
+    }
+    
     return true;
-  }
-  
-  // Table exists, check columns and add missing ones
-  const { error } = await supabase.rpc('add_missing_columns_to_fixture_team_selections');
-  if (error) {
-    console.error("Error adding missing columns:", error);
+  } catch (error) {
+    console.error(`Failed to add column ${columnName} to ${tableName}:`, error);
     return false;
   }
-  
-  console.log("Missing columns added successfully");
-  return true;
+};
+
+/**
+ * Gets a list of columns for a table
+ */
+export const getTableColumns = async (tableName: string): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase.rpc(
+      'get_table_columns',
+      { table_name: tableName }
+    );
+    
+    if (error) {
+      console.error(`Error getting columns for ${tableName}:`, error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error(`Failed to get columns for ${tableName}:`, error);
+    return [];
+  }
 };

@@ -1,10 +1,10 @@
 
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Edit, Save, Sliders } from "lucide-react";
+import { ChevronDown, Edit, Save, Sliders, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AttributeCategory } from "@/types/player";
@@ -26,12 +26,14 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
   const [isEditing, setIsEditing] = useState(false);
   const [editedAttributes, setEditedAttributes] = useState<Record<string, number>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const { toast } = useToast();
 
   const handleEditToggle = () => {
     if (isEditing) {
       // Reset when canceling edit mode
       setEditedAttributes({});
+      setSaveSuccess(false);
     }
     setIsEditing(!isEditing);
   };
@@ -45,24 +47,38 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
 
   const saveAttributes = async () => {
     setIsSaving(true);
+    setSaveSuccess(false);
     try {
       // Update each edited attribute
-      for (const [id, value] of Object.entries(editedAttributes)) {
-        const { error } = await supabase
+      const promises = Object.entries(editedAttributes).map(([id, value]) => {
+        return supabase
           .from('player_attributes')
           .update({ value })
           .eq('id', id);
-          
-        if (error) throw error;
+      });
+      
+      const results = await Promise.all(promises);
+      
+      // Check for any errors
+      const errors = results.filter(result => result.error).map(result => result.error);
+      if (errors.length > 0) {
+        console.error('Errors updating attributes:', errors);
+        throw new Error(`${errors.length} attributes failed to update`);
       }
+      
+      setSaveSuccess(true);
       
       toast({
         title: "Success",
         description: "Attributes updated successfully",
       });
       
-      setIsEditing(false);
-      setEditedAttributes({});
+      // Delay resetting the form to show success state
+      setTimeout(() => {
+        setIsEditing(false);
+        setEditedAttributes({});
+        setSaveSuccess(false);
+      }, 1000);
     } catch (error) {
       console.error('Error updating attributes:', error);
       toast({
@@ -119,9 +135,24 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
                 <Button 
                   onClick={saveAttributes} 
                   disabled={isSaving || Object.keys(editedAttributes).length === 0}
+                  className={saveSuccess ? "bg-green-500 hover:bg-green-600" : ""}
                 >
-                  {isSaving ? "Saving..." : "Save"}
-                  <Save className="ml-2 h-4 w-4" />
+                  {isSaving ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </span>
+                  ) : saveSuccess ? (
+                    <span className="flex items-center gap-2">
+                      <Check className="h-4 w-4" />
+                      Saved!
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Save className="h-4 w-4" />
+                      Save
+                    </span>
+                  )}
                 </Button>
               </div>
             ) : (

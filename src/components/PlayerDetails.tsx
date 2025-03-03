@@ -11,6 +11,8 @@ import { PlayerObjectives } from "@/components/coaching/PlayerObjectives";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CoachingComments } from "@/components/coaching/CoachingComments";
+import { addColumnIfNotExists } from "@/utils/databaseUtils";
+import { useEffect } from "react";
 
 interface PlayerDetailsProps {
   player: Player;
@@ -19,6 +21,7 @@ interface PlayerDetailsProps {
 
 export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) => {
   const [showAttributeVisuals, setShowAttributeVisuals] = useState(true);
+  const [hasCheckedSchema, setHasCheckedSchema] = useState(false);
 
   // Query for player position suitability
   const { data: positionsData } = useQuery({
@@ -54,6 +57,23 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
       return data;
     },
   });
+
+  useEffect(() => {
+    // Check if necessary columns exist and add them if they don't
+    const checkAndUpdateSchema = async () => {
+      if (hasCheckedSchema) return;
+
+      try {
+        // Check if the profile_image column exists in players table
+        await addColumnIfNotExists('players', 'profile_image', 'text');
+        setHasCheckedSchema(true);
+      } catch (error) {
+        console.error("Error checking schema:", error);
+      }
+    };
+    
+    checkAndUpdateSchema();
+  }, [hasCheckedSchema]);
 
   return (
     <div className="space-y-6">

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSession } from "@supabase/auth-helpers-react";
 import { format } from "date-fns";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, Loader2, Check } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface CoachingCommentsProps {
@@ -21,6 +21,8 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const { toast } = useToast();
   const session = useSession();
 
@@ -62,6 +64,7 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
     if (!newComment.trim() || !session?.user?.id) return;
     
     setIsSaving(true);
+    setSaveSuccess(false);
     try {
       // Get the profile id
       const { data: profileData, error: profileError } = await supabase
@@ -84,8 +87,15 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
 
       if (error) throw error;
 
-      setNewComment("");
-      fetchComments();
+      setSaveSuccess(true);
+      
+      // Show success feedback momentarily before resetting
+      setTimeout(() => {
+        setNewComment("");
+        setSaveSuccess(false);
+        fetchComments();
+      }, 1000);
+      
       toast({
         title: "Success",
         description: "Comment added successfully",
@@ -105,6 +115,7 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
   const handleDeleteComment = async () => {
     if (!deleteCommentId) return;
     
+    setIsDeleting(true);
     try {
       const { error } = await supabase
         .from('coaching_comments')
@@ -126,6 +137,8 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
         description: "Failed to delete comment",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -147,9 +160,21 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
               <Button 
                 onClick={handleAddComment} 
                 disabled={isSaving || !newComment.trim()}
-                className="w-full"
+                className={`w-full transition-all ${saveSuccess ? 'bg-green-500 hover:bg-green-600' : ''}`}
               >
-                {isSaving ? "Adding..." : "Add Comment"}
+                {isSaving ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Adding...
+                  </span>
+                ) : saveSuccess ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Check className="h-4 w-4" />
+                    Comment Added!
+                  </span>
+                ) : (
+                  "Add Comment"
+                )}
               </Button>
             </div>
           )}
@@ -204,7 +229,20 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteComment}>Delete</AlertDialogAction>
+            <AlertDialogAction 
+              onClick={handleDeleteComment}
+              disabled={isDeleting}
+              className={isDeleting ? "opacity-70" : ""}
+            >
+              {isDeleting ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting...
+                </span>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

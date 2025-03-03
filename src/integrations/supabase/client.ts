@@ -27,7 +27,7 @@ export type Database = {
           team_category: string | null;
           date_of_birth: string;
           player_type: string;
-          profile_image: string | null;
+          profile_image?: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -49,6 +49,27 @@ export type Database = {
           category: string;
           created_at: string | null;
         };
+      };
+      player_parents: {
+        Row: {
+          id: string;
+          player_id: string;
+          name: string;
+          email: string | null;
+          phone: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        }
+      };
+      coaching_comments: {
+        Row: {
+          id: string;
+          player_id: string;
+          coach_id: string;
+          content: string;
+          created_at: string;
+          updated_at?: string | null;
+        }
       };
       fixture_team_scores: {
         Row: {
@@ -72,6 +93,26 @@ export type Database = {
           created_at: string;
           updated_at: string;
         };
+      };
+    };
+    Functions: {
+      get_table_columns: {
+        Args: { table_name: string };
+        Returns: string[];
+      };
+      add_column_if_not_exists: {
+        Args: { 
+          p_table_name: string;
+          p_column_name: string;
+          p_column_type: string;
+        };
+        Returns: boolean;
+      };
+      function_exists: {
+        Args: { 
+          function_name: string;
+        };
+        Returns: boolean;
       };
     };
   };

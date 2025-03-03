@@ -4,9 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Check, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Parent {
@@ -26,6 +26,7 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
   const [open, setOpen] = useState(false);
   const [parents, setParents] = useState<Parent[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -75,6 +76,7 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSaveSuccess(false);
     
     try {
       // Validate that at least one parent has a name
@@ -92,16 +94,21 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
       
       // Delete removed parents
       if (deletedIds.length > 0) {
+        console.log("Deleting parents with IDs:", deletedIds);
         const { error: deleteError } = await supabase
           .from('player_parents')
           .delete()
           .in('id', deletedIds);
           
-        if (deleteError) throw deleteError;
+        if (deleteError) {
+          console.error("Error deleting parents:", deleteError);
+          throw deleteError;
+        }
       }
       
       // Update existing parents
       for (const parent of parents.filter(p => !p.id.startsWith('new-'))) {
+        console.log("Updating parent:", parent);
         const { error: updateError } = await supabase
           .from('player_parents')
           .update({ 
@@ -111,12 +118,16 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
           })
           .eq('id', parent.id);
           
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error("Error updating parent:", updateError);
+          throw updateError;
+        }
       }
       
       // Insert new parents
       const newParents = parents.filter(p => p.id.startsWith('new-') && p.name.trim() !== '');
       if (newParents.length > 0) {
+        console.log("Adding new parents:", newParents);
         const { error: insertError } = await supabase
           .from('player_parents')
           .insert(
@@ -128,15 +139,26 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
             }))
           );
           
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error("Error inserting parents:", insertError);
+          throw insertError;
+        }
       }
       
+      setSaveSuccess(true);
+      
+      // Show success toast and close dialog after a short delay
       toast({
         title: "Success",
         description: "Parent details saved successfully",
       });
-      onSave();
-      setOpen(false);
+      
+      setTimeout(() => {
+        onSave();
+        setOpen(false);
+        setSaveSuccess(false);
+      }, 1000);
+      
     } catch (error) {
       console.error('Error saving parent details:', error);
       toast({
@@ -164,7 +186,7 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
             {existingParents && existingParents.length > 0 ? "Edit Parent Details" : "Add Parent Details"}
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="max-h-[calc(85vh-120px)] pr-4">
+        <ScrollArea className="max-h-[calc(85vh-120px)] pr-4 overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
             {parents.map((parent, index) => (
               <div key={parent.id} className="p-4 border rounded-md space-y-4">
@@ -184,7 +206,7 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
                   <Label htmlFor={`name-${parent.id}`}>Name *</Label>
                   <Input
                     id={`name-${parent.id}`}
-                    value={parent.name}
+                    value={parent.name || ''}
                     onChange={(e) => handleInputChange(parent.id, 'name', e.target.value)}
                     required={index === 0}
                   />
@@ -222,10 +244,22 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
             
             <Button 
               type="submit" 
-              className="w-full"
+              className={`w-full transition-all ${saveSuccess ? 'bg-green-500 hover:bg-green-600' : ''}`}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Saving..." : "Save"}
+              {isSubmitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </span>
+              ) : saveSuccess ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Check className="h-4 w-4" />
+                  Saved!
+                </span>
+              ) : (
+                'Save'
+              )}
             </Button>
           </form>
         </ScrollArea>
