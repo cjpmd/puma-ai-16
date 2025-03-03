@@ -26,10 +26,8 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
 
   // Handle drag over for substitute drop zone
   const handleDragOver = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('playerId')) {
-      e.preventDefault();
-      e.currentTarget.classList.add('bg-blue-100', 'border-blue-300');
-    }
+    e.preventDefault(); // Always prevent default to allow dropping
+    e.currentTarget.classList.add('bg-blue-100', 'border-blue-300');
   };
 
   // Handle drag leave for substitute drop zone
@@ -43,11 +41,13 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
     e.currentTarget.classList.remove('bg-blue-100', 'border-blue-300');
     
     const playerId = e.dataTransfer.getData('playerId');
-    const fromSlotId = e.dataTransfer.getData('fromSlotId');
+    const fromSlotId = e.dataTransfer.getData('fromSlotId') || undefined;
+    
+    console.log(`SubstitutesSection: Dropping player ${playerId} from slot ${fromSlotId || 'direct'}`);
     
     if (playerId) {
       // Pass both parameters to onSubstituteDrop
-      onSubstituteDrop(playerId, fromSlotId || undefined);
+      onSubstituteDrop(playerId, fromSlotId);
     }
   };
 
@@ -57,6 +57,7 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      data-testid="substitutes-drop-zone"
     >
       <h3 className="text-sm font-semibold mb-2 text-center">Substitutes</h3>
       
@@ -65,17 +66,17 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
           {substitutes.map(({ slotId, player, position }) => (
             <div key={slotId} className="relative group">
               <div 
-                className="flex flex-col items-center justify-center w-14 h-14 bg-gray-100 rounded-lg p-1"
+                className="flex flex-col items-center justify-center w-12 h-12 bg-gray-100 rounded-lg p-1"
                 draggable
                 onDragStart={(e) => {
                   e.dataTransfer.setData('playerId', player.id);
                   e.dataTransfer.setData('fromSlotId', slotId);
                 }}
               >
-                <div className="w-8 h-8 flex items-center justify-center bg-amber-500 text-white rounded-full text-xs font-bold">
+                <div className="w-7 h-7 flex items-center justify-center bg-amber-500 text-white rounded-full text-xs font-bold">
                   {player.squad_number || player.name.charAt(0)}
                 </div>
-                <div className="text-[8px] mt-1 max-w-12 truncate text-center">
+                <div className="text-[8px] mt-1 max-w-10 truncate text-center">
                   {player.name.split(' ')[0]}
                 </div>
                 <div className="text-[7px] text-gray-500">({position})</div>

@@ -1,5 +1,5 @@
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 
 type SelectionType = {
   playerId: string;
@@ -14,6 +14,11 @@ export const useSubstitutionManager = (
   // Substitution counter for generating unique slot IDs
   const subCounterRef = useRef<number>(0);
 
+  // Initialize from existing selections when component mounts
+  useEffect(() => {
+    initializeSubCounter();
+  }, []);
+
   // Initialize from existing selections if any
   const initializeSubCounter = () => {
     // Calculate the highest sub-X ID to continue numbering from there
@@ -23,22 +28,18 @@ export const useSubstitutionManager = (
     
     if (subIds.length > 0) {
       subCounterRef.current = Math.max(...subIds) + 1;
+      console.log(`Initialized sub counter to ${subCounterRef.current}`);
     }
   };
 
   // Handle dragging to substitutes section
-  const handleSubstituteDrop = (playerId: string, fromSlotId: string = '') => {
+  const handleSubstituteDrop = (playerId: string, fromSlotId?: string) => {
     if (!playerId) {
       console.log("Missing playerId, cannot create substitute");
       return;
     }
     
     console.log(`Player ${playerId} dropped to substitutes section from ${fromSlotId || 'direct selection'}`);
-    
-    // Initialize the counter if needed
-    if (subCounterRef.current === 0) {
-      initializeSubCounter();
-    }
     
     // Generate a new substitute slot ID
     const subSlotId = `sub-${subCounterRef.current++}`;
