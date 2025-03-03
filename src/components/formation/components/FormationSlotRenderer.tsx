@@ -25,7 +25,7 @@ export const FormationSlotRenderer: React.FC<FormationSlotRendererProps> = ({
   if (!renderSlot) return null;
   
   const dropProps = {
-    className: `${slot.className} transition-colors duration-200 z-10`,
+    className: `absolute ${slot.className} transition-colors duration-200 z-10`,
     onDragOver: (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();

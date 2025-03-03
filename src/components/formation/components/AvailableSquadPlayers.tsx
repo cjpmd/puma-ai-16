@@ -5,7 +5,7 @@ interface AvailableSquadPlayersProps {
   availableSquadPlayers: any[];
   handlePlayerSelect: (playerId: string) => void;
   selectedPlayerId: string | null;
-  onDragStart?: (playerId: string) => void;
+  onDragStart?: (e: React.DragEvent, playerId: string) => void;
   onDragEnd?: () => void;
 }
 
@@ -28,7 +28,7 @@ export const AvailableSquadPlayers = ({
             }`}
             onClick={() => handlePlayerSelect(player.id)}
             draggable={true}
-            onDragStart={() => onDragStart?.(player.id)}
+            onDragStart={(e) => onDragStart?.(e, player.id)}
             onDragEnd={onDragEnd}
           >
             <div className="w-6 h-6 flex items-center justify-center bg-blue-500 text-white rounded-full text-xs font-bold mr-1">

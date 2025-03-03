@@ -103,8 +103,20 @@ export const DraggableFormation = ({
   };
 
   // Handle drag start for a player
-  const handleDragStart = (playerId: string) => {
+  const handleDragStart = (e: React.DragEvent, playerId: string) => {
     setDraggingPlayer(playerId);
+    // Set dataTransfer data for compatibility
+    e.dataTransfer.setData('text/plain', playerId);
+    // Set a custom drag image if needed
+    const player = getPlayer(playerId);
+    if (player) {
+      const dragImage = document.createElement('div');
+      dragImage.className = 'bg-blue-500 text-white rounded-full p-1 text-xs font-bold';
+      dragImage.textContent = player.squad_number?.toString() || player.name.charAt(0);
+      document.body.appendChild(dragImage);
+      e.dataTransfer.setDragImage(dragImage, 15, 15);
+      setTimeout(() => document.body.removeChild(dragImage), 0);
+    }
   };
 
   // Handle drag end
@@ -120,9 +132,14 @@ export const DraggableFormation = ({
   // Get squad players that haven't been assigned yet
   const getAvailableSquadPlayers = () => {
     const assignedPlayerIds = new Set(getAssignedPlayers());
-    return availablePlayers.filter(player => 
-      squadPlayers.includes(player.id) && !assignedPlayerIds.has(player.id)
-    );
+    // If squadPlayers is provided, filter by that, otherwise use all available players
+    if (squadPlayers.length > 0) {
+      return availablePlayers.filter(player => 
+        squadPlayers.includes(player.id) && !assignedPlayerIds.has(player.id)
+      );
+    } else {
+      return availablePlayers.filter(player => !assignedPlayerIds.has(player.id));
+    }
   };
 
   return (
@@ -151,9 +168,9 @@ export const DraggableFormation = ({
             return (
               <div
                 {...dropProps}
-                className={`absolute flex items-center justify-center w-10 h-10 -translate-x-1/2 -translate-y-1/2 rounded-full ${
-                  dropProps.className
-                } ${!player ? 'border-2 border-dashed border-white/50 hover:border-white/80' : ''}`}
+                className={`${dropProps.className} w-10 h-10 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center ${
+                  !player ? 'border-2 border-dashed border-white/50 hover:border-white/80' : ''
+                }`}
                 onClick={() => {
                   if (selectedPlayerId) {
                     handleDrop(slotId, position);
