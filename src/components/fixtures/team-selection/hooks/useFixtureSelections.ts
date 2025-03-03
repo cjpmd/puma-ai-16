@@ -1,10 +1,8 @@
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useFixtureSelections = (fixtureId: string | undefined) => {
-  const queryClient = useQueryClient();
-
   return useQuery({
     queryKey: ["fixture-selections", fixtureId],
     queryFn: async () => {
@@ -44,9 +42,11 @@ export const useFixtureSelections = (fixtureId: string | undefined) => {
     enabled: !!fixtureId,
     staleTime: 0, // Don't cache this data, always refetch
     refetchOnWindowFocus: true, // Refetch when window regains focus
-    onSuccess: (data) => {
-      // We can use this to update any other queries that might depend on this data
-      console.log(`Successfully fetched ${data.length} selections for fixture ${fixtureId}`);
-    },
+    meta: {
+      onSuccess: (data) => {
+        // We can use this to update any other queries that might depend on this data
+        console.log(`Successfully fetched ${data.length} selections for fixture ${fixtureId}`);
+      }
+    }
   });
 };
