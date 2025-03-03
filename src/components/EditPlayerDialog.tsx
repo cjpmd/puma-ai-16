@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,7 +28,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
-import { Edit, Check } from "lucide-react";
+import { Edit, Check, Upload, X } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface EditPlayerDialogProps {
   player: Player;
@@ -37,6 +39,9 @@ interface EditPlayerDialogProps {
 export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogProps) => {
   const [open, setOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(player.profileImage || null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   const form = useForm({
@@ -47,15 +52,68 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
     },
   });
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImagePreview(null);
+    setImageFile(null);
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return player.profileImage || null;
+    
+    setIsUploading(true);
+    try {
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${player.id}-${Date.now()}.${fileExt}`;
+      const filePath = `player-images/${fileName}`;
+      
+      const { error: uploadError, data } = await supabase.storage
+        .from('player-assets')
+        .upload(filePath, imageFile);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: urlData } = supabase.storage
+        .from('player-assets')
+        .getPublicUrl(filePath);
+      
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast({
+        variant: "destructive",
+        description: "Failed to upload image",
+      });
+      return player.profileImage || null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const onSubmit = async (values: any) => {
     setIsSaving(true);
     try {
+      // Upload image if there's a new one
+      const profileImage = await uploadImage();
+      
       const { error } = await supabase
         .from("players")
         .update({
           squad_number: values.squadNumber,
           player_type: values.playerType,
           date_of_birth: values.dateOfBirth,
+          profile_image: profileImage,
         })
         .eq("id", player.id);
 
@@ -91,6 +149,51 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         <DialogHeader>
           <DialogTitle>Edit Player: {player.name}</DialogTitle>
         </DialogHeader>
+        
+        {/* Image Upload Section */}
+        <div className="flex flex-col items-center gap-4 mb-4">
+          <div className="relative">
+            <Avatar className="w-24 h-24 border-2 border-primary/20">
+              {imagePreview ? (
+                <AvatarImage src={imagePreview} alt={player.name} />
+              ) : (
+                <AvatarFallback className="text-2xl font-bold">
+                  {player.name.charAt(0)}
+                </AvatarFallback>
+              )}
+            </Avatar>
+            {imagePreview && (
+              <Button 
+                variant="destructive" 
+                size="icon" 
+                className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                onClick={removeImage}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => document.getElementById('player-image-upload')?.click()}
+              disabled={isUploading}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {imagePreview ? 'Change Photo' : 'Upload Photo'}
+            </Button>
+            <input
+              id="player-image-upload"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageChange}
+            />
+          </div>
+        </div>
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -149,12 +252,16 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
             <Button 
               type="submit" 
               className={`w-full transition-all ${isSaving ? 'bg-green-500 hover:bg-green-600' : ''}`}
-              disabled={isSaving}
+              disabled={isSaving || isUploading}
             >
               {isSaving ? (
                 <span className="flex items-center gap-2">
                   <Check className="h-4 w-4" />
                   Saved!
+                </span>
+              ) : isUploading ? (
+                <span className="flex items-center gap-2">
+                  Uploading image...
                 </span>
               ) : (
                 'Save Changes'

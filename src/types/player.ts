@@ -1,3 +1,4 @@
+
 export type PlayerType = "OUTFIELD" | "GOALKEEPER";
 
 export type AttributeCategory = "TECHNICAL" | "MENTAL" | "PHYSICAL" | "GOALKEEPING";
@@ -31,6 +32,7 @@ export interface Player {
   playerType: PlayerType;
   age: number;
   teamCategory?: string;
+  profileImage?: string;
   attributes: Attribute[];
   attributeHistory?: Record<string, { date: string; value: number }[]>;
   objectives?: PlayerObjective;

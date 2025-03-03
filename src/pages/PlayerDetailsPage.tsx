@@ -65,6 +65,7 @@ const PlayerDetailsPage = () => {
         dateOfBirth: playerResult.date_of_birth,
         squadNumber: playerResult.squad_number,
         playerType: playerResult.player_type as PlayerType,
+        profileImage: playerResult.profile_image,
         attributes: playerResult.attributes.map((attr: any) => ({
           id: attr.id,
           name: attr.name,

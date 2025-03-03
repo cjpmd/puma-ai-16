@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +18,7 @@ import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 type SortField = "squadNumber" | "technical" | "mental" | "physical" | "goalkeeping";
 type SortOrder = "asc" | "desc";
@@ -58,6 +60,7 @@ const SquadManagement = () => {
         dateOfBirth: player.date_of_birth,
         squadNumber: player.squad_number,
         playerType: player.player_type,
+        profileImage: player.profile_image,
         attributes: player.player_attributes?.map((attr: any) => ({
           id: attr.id,
           name: attr.name,
@@ -175,6 +178,7 @@ const SquadManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[60px]"></TableHead>
                 <TableHead onClick={() => handleSort("squadNumber")} className="cursor-pointer">
                   Squad # <ArrowUpDown className="inline h-4 w-4" />
                 </TableHead>
@@ -207,6 +211,17 @@ const SquadManagement = () => {
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleRowClick(player.id)}
                   >
+                    <TableCell>
+                      <Avatar className="h-8 w-8">
+                        {player.profileImage ? (
+                          <AvatarImage src={player.profileImage} alt={player.name} />
+                        ) : (
+                          <AvatarFallback>
+                            {player.name.charAt(0)}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                    </TableCell>
                     <TableCell className="font-medium">
                       {player.squadNumber}
                     </TableCell>
