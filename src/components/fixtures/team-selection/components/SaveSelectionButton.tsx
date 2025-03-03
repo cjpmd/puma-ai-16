@@ -5,6 +5,7 @@ import { useTeamSelection } from "../context/TeamSelectionContext";
 import { useTeamSelectionSave } from "../hooks/useTeamSelectionSave";
 import { SaveIcon } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 interface SaveSelectionButtonProps {
   onSuccess?: () => void;
@@ -20,6 +21,7 @@ export const SaveSelectionButton = ({
   const { toast } = useToast();
   const { fixture, convertToSaveFormat } = useTeamSelection();
   const queryClient = useQueryClient();
+  const [preventMultipleClicks, setPreventMultipleClicks] = useState(false);
   
   // Convert the structure for saving
   const saveData = convertToSaveFormat();
@@ -35,7 +37,13 @@ export const SaveSelectionButton = ({
 
   // Save all selections
   const handleSaveSelections = async () => {
+    if (preventMultipleClicks) {
+      console.log("Preventing multiple save clicks");
+      return;
+    }
+    
     try {
+      setPreventMultipleClicks(true);
       console.log("SaveSelectionButton: Starting save operation with data:", saveData);
       const result = await handleSave();
       
@@ -43,6 +51,8 @@ export const SaveSelectionButton = ({
         // Invalidate queries to ensure updated data is fetched
         if (fixture?.id) {
           console.log("SaveSelectionButton: Invalidating queries for fixture:", fixture.id);
+          
+          // Invalidate the specific fixture selections
           await queryClient.invalidateQueries({ 
             queryKey: ["fixture-selections", fixture.id] 
           });
@@ -55,6 +65,13 @@ export const SaveSelectionButton = ({
           await queryClient.invalidateQueries({
             queryKey: ["calendar-data"]
           });
+          
+          // If the fixture has a date, also invalidate that specific date's fixtures
+          if (fixture.date) {
+            await queryClient.invalidateQueries({
+              queryKey: ["fixtures", fixture.date]
+            });
+          }
         }
         
         toast({
@@ -73,6 +90,11 @@ export const SaveSelectionButton = ({
         title: "Error",
         description: `Failed to save team selections: ${error.message || "Unknown error"}`,
       });
+    } finally {
+      // Allow clicking again after a short delay to prevent accidental double-clicks
+      setTimeout(() => {
+        setPreventMultipleClicks(false);
+      }, 1000);
     }
   };
 
@@ -82,7 +104,7 @@ export const SaveSelectionButton = ({
   return (
     <Button 
       onClick={handleSaveSelections} 
-      disabled={isSaving}
+      disabled={isSaving || preventMultipleClicks}
       size={size}
       className={className}
     >

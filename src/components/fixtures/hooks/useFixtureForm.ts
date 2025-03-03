@@ -16,9 +16,18 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
+  const [preventDuplicateSubmission, setPreventDuplicateSubmission] = useState(false);
 
   const handleSubmit = async (data: FixtureFormData) => {
+    // Prevent duplicate submissions
+    if (preventDuplicateSubmission) {
+      console.log("Preventing duplicate submission in useFixtureForm");
+      return;
+    }
+    
+    setPreventDuplicateSubmission(true);
     setIsSubmitting(true);
+    
     try {
       // Determine the correct date to use
       const dateToUse = selectedDate 
@@ -101,6 +110,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
               
             if (deleteError) {
               console.error("Error deleting existing team times:", deleteError);
+              // Continue with insert despite error
             }
           }
 
@@ -142,6 +152,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
             
           if (deleteScoresError) {
             console.error("Error deleting existing team scores:", deleteScoresError);
+            // Continue with insert despite error
           }
         }
 
@@ -186,18 +197,18 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
 
             if (attendanceError) {
               console.error("Error creating attendance:", attendanceError);
-              throw attendanceError;
+              // Continue despite attendance error
+            } else {
+              console.log("Attendance created for all team players");
             }
-
-            console.log("Attendance created for all team players");
           }
         }
 
-        // Invalidate queries to trigger UI updates
-        queryClient.invalidateQueries({ queryKey: ["fixtures"] });
+        // Invalidate queries to trigger UI updates - ensure these run even if there were non-fatal errors
+        await queryClient.invalidateQueries({ queryKey: ["fixtures"] });
         
         if (dateToUse) {
-          queryClient.invalidateQueries({ queryKey: ["fixtures", dateToUse] });
+          await queryClient.invalidateQueries({ queryKey: ["fixtures", dateToUse] });
         }
 
         // Include the team times and MOTM player IDs in the returned fixture
@@ -230,6 +241,8 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
       throw error;
     } finally {
       setIsSubmitting(false);
+      // We intentionally don't reset preventDuplicateSubmission here to prevent multiple submissions
+      // It will be reset when the component is unmounted or the dialog is closed
     }
   };
 

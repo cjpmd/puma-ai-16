@@ -40,6 +40,7 @@ export const AddFixtureDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialSelectedDate);
   const [newFixture, setNewFixture] = useState<Fixture | null>(null);
+  const [preventDuplicateSubmission, setPreventDuplicateSubmission] = useState(false);
 
   // Log when component mounts and when editing fixture changes
   useEffect(() => {
@@ -50,6 +51,11 @@ export const AddFixtureDialog = ({
       setSelectedDate(new Date(editingFixture.date));
     } else if (initialSelectedDate) {
       setSelectedDate(initialSelectedDate);
+    }
+    
+    // Reset prevention of duplicate submissions when dialog opens/closes
+    if (isOpen) {
+      setPreventDuplicateSubmission(false);
     }
   }, [editingFixture, initialSelectedDate, isOpen]);
 
@@ -135,6 +141,13 @@ export const AddFixtureDialog = ({
 
   const onSubmit = async (data: FixtureFormData) => {
     try {
+      // Prevent duplicate submissions
+      if (preventDuplicateSubmission) {
+        console.log("Preventing duplicate submission");
+        return null;
+      }
+      
+      setPreventDuplicateSubmission(true);
       setIsSubmitting(true);
       
       if (!selectedDate && !editingFixture?.date) {
@@ -244,7 +257,7 @@ export const AddFixtureDialog = ({
         console.log("Team times saved:", teamTimesResults);
       }
 
-      // Save team scores, but skip the motm_player_id field since it doesn't exist
+      // Save team scores
       if (savedFixture) {
         // Delete existing scores first if editing
         if (editingFixture?.id) {
@@ -265,7 +278,6 @@ export const AddFixtureDialog = ({
           const teamScore = data[`team_${index + 1}_score` as keyof typeof data];
           const opponentScore = data[`opponent_${index + 1}_score` as keyof typeof data];
           
-          // We skip the motm_player_id field since it doesn't exist in the table
           console.log(`Building team ${index + 1} score:`, {
             teamScore,
             opponentScore
@@ -276,7 +288,7 @@ export const AddFixtureDialog = ({
             team_number: index + 1,
             score: teamScore === undefined ? null : teamScore,
             opponent_score: opponentScore === undefined ? null : opponentScore
-            // motm_player_id removed since it doesn't exist in the database table
+            // No motm_player_id field as it doesn't exist in the database table
           };
         });
 
@@ -291,11 +303,13 @@ export const AddFixtureDialog = ({
 
             if (scoresError) {
               console.error("Error saving team scores:", scoresError);
+              throw scoresError; // Throw the error to be caught by the catch block
             } else {
               console.log("Team scores saved with MOTM player IDs:", scoresResult);
             }
           } catch (error) {
             console.error("Exception saving team scores:", error);
+            throw error;
           }
         }
       }
@@ -342,6 +356,7 @@ export const AddFixtureDialog = ({
       throw error;
     } finally {
       setIsSubmitting(false);
+      // We do not reset preventDuplicateSubmission here to prevent multiple clicks
     }
   };
 
@@ -349,7 +364,13 @@ export const AddFixtureDialog = ({
   const isLoading = isLoadingFixtureDetails || isLoadingPlayers;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      onOpenChange(open);
+      // Reset prevention when dialog closes
+      if (!open) {
+        setPreventDuplicateSubmission(false);
+      }
+    }}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editingFixture ? "Edit Fixture" : "Add New Fixture"}</DialogTitle>
@@ -369,7 +390,7 @@ export const AddFixtureDialog = ({
             selectedDate={selectedDate}
             editingFixture={completeFixture}
             players={players || []}
-            isSubmitting={isSubmitting}
+            isSubmitting={isSubmitting || preventDuplicateSubmission}
             showDateSelector={showDateSelector}
           />
         ) : (

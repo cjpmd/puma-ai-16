@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   AllSelections, 
   PeriodsPerTeam, 
-  PerformanceCategories, 
   TeamCaptains 
 } from "../types";
 
@@ -67,10 +66,9 @@ export const useTeamSelectionSave = (
                 position: selection.position || slotId,
                 performance_category: selection.performanceCategory || "MESSI",
                 team_number: parseInt(teamId),
-                is_captain: teamCaptains[teamId] === selection.playerId,
+                is_captain: teamCaptains[teamId] === selection.playerId ? true : false,
                 period_id: periodId,
-                duration: period.duration
-                // Note: is_substitution field has been removed as it doesn't exist in DB
+                duration: period.duration || 45
               });
             }
           });
@@ -91,6 +89,11 @@ export const useTeamSelectionSave = (
         }
         
         console.log("Team selections saved successfully:", data);
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+        
         return true;
       } else {
         console.log("No selections to save");

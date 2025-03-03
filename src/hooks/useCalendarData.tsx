@@ -152,14 +152,15 @@ export const useCalendarData = (date: Date) => {
           return [];
         }
 
-        // Use seen IDs to prevent duplicates
-        const seen = new Set();
-        const uniqueFixtures = fixturesData.filter(fixture => {
-          const duplicate = seen.has(fixture.id);
-          seen.add(fixture.id);
-          return !duplicate;
+        // Use seen IDs to prevent duplicates - using a Map instead of a Set for better tracking
+        const fixturesMap = new Map();
+        fixturesData.forEach(fixture => {
+          if (!fixturesMap.has(fixture.id)) {
+            fixturesMap.set(fixture.id, fixture);
+          }
         });
-
+        
+        const uniqueFixtures = Array.from(fixturesMap.values());
         console.log("Unique fixtures after deduplication:", uniqueFixtures.length, "items");
 
         const fixtureIds = uniqueFixtures.map(f => f.id);
@@ -195,7 +196,7 @@ export const useCalendarData = (date: Date) => {
     },
     staleTime: 0, // Always refetch when requested
     gcTime: 60000, // 1 minute garbage collection time
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false, // Don't refetch on window focus to avoid duplicates
     refetchOnMount: true,
     refetchOnReconnect: true
   });
