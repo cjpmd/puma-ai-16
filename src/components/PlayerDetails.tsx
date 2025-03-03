@@ -10,6 +10,7 @@ import { Player } from "@/types/player";
 import { PlayerObjectives } from "@/components/coaching/PlayerObjectives";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { CoachingComments } from "@/components/coaching/CoachingComments";
 
 interface PlayerDetailsProps {
   player: Player;
@@ -67,6 +68,7 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
         <TabsList className="w-full">
           <TabsTrigger value="attributes" className="flex-1">Attributes</TabsTrigger>
           <TabsTrigger value="objectives" className="flex-1">Objectives</TabsTrigger>
+          <TabsTrigger value="comments" className="flex-1">Comments</TabsTrigger>
           <TabsTrigger value="stats" className="flex-1">Match Stats</TabsTrigger>
           <TabsTrigger value="trends" className="flex-1">Trends</TabsTrigger>
           <TabsTrigger value="parents" className="flex-1">Parents</TabsTrigger>
@@ -83,6 +85,10 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
         
         <TabsContent value="objectives">
           <PlayerObjectives playerId={player.id} />
+        </TabsContent>
+        
+        <TabsContent value="comments">
+          <CoachingComments playerId={player.id} />
         </TabsContent>
         
         <TabsContent value="stats">
