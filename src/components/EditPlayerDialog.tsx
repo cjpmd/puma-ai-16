@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
-import { Edit, Check, Upload, X } from "lucide-react";
+import { Edit, Check, Upload, X, Loader2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { differenceInYears } from "date-fns";
 
@@ -79,21 +80,8 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
       const fileName = `${player.id}-${Date.now()}.${fileExt}`;
       const filePath = `player-images/${fileName}`;
       
-      console.log("Creating bucket if it doesn't exist...");
-      // Create the bucket if it doesn't exist
-      const { error: bucketError } = await supabase.storage
-        .createBucket('player-assets', {
-          public: true,
-          fileSizeLimit: 5242880, // 5MB
-        });
-      
-      if (bucketError && bucketError.message !== 'Bucket already exists') {
-        console.error("Error creating bucket:", bucketError);
-        throw bucketError;
-      }
-      
-      console.log("Uploading file to bucket...");
-      const { error: uploadError } = await supabase.storage
+      // Upload file to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('player-assets')
         .upload(filePath, imageFile, {
           cacheControl: '3600',
@@ -105,12 +93,12 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         throw uploadError;
       }
       
-      console.log("Getting public URL...");
+      // Get public URL
       const { data: urlData } = supabase.storage
         .from('player-assets')
         .getPublicUrl(filePath);
       
-      console.log("Public URL:", urlData.publicUrl);
+      console.log("Image uploaded, URL:", urlData.publicUrl);
       return urlData.publicUrl;
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -128,26 +116,37 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
     setIsSaving(true);
     try {
       // Upload image if there's a new one
-      console.log("Starting image upload process...");
-      const profileImage = await uploadImage();
-      console.log("Image uploaded, URL:", profileImage);
+      let profileImageUrl = player.profileImage;
+      if (imageFile) {
+        profileImageUrl = await uploadImage();
+      } else if (imagePreview === null) {
+        // User removed the image
+        profileImageUrl = null;
+      }
       
       // Calculate age based on date of birth
-      const age = differenceInYears(new Date(), new Date(values.dateOfBirth));
+      const age = values.dateOfBirth ? 
+        differenceInYears(new Date(), new Date(values.dateOfBirth)) : 
+        player.age;
       
-      console.log("Updating player record with profile image:", profileImage);
+      console.log("Updating player record with profile image:", profileImageUrl);
+      
+      // Update player record
       const { error } = await supabase
         .from("players")
         .update({
           squad_number: values.squadNumber,
           player_type: values.playerType,
           date_of_birth: values.dateOfBirth,
-          profile_image: profileImage,
-          age: age // Update age based on the date of birth
+          age: age,
+          profile_image: profileImageUrl,
         })
         .eq("id", player.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating player:", error);
+        throw error;
+      }
 
       toast({
         description: "Player details updated successfully",
@@ -162,7 +161,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
       console.error("Error updating player:", error);
       toast({
         variant: "destructive",
-        description: "Failed to update player details",
+        description: "Failed to update player details. Please check console for details.",
       });
       setIsSaving(false);
     }
@@ -178,6 +177,9 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Player: {player.name}</DialogTitle>
+          <DialogDescription>
+            Update player details and profile image
+          </DialogDescription>
         </DialogHeader>
         
         {/* Image Upload Section */}
@@ -211,7 +213,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
               onClick={() => document.getElementById('player-image-upload')?.click()}
               disabled={isUploading}
             >
-              <Upload className="h-4 w-4 mr-2" />
+              {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
               {imagePreview ? 'Change Photo' : 'Upload Photo'}
             </Button>
             <input
@@ -291,6 +293,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
                 </span>
               ) : isUploading ? (
                 <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   Uploading image...
                 </span>
               ) : (

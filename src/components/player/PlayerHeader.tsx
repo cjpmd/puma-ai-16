@@ -17,8 +17,6 @@ export const PlayerHeader = ({
   showAttributeVisuals,
   onPlayerUpdated = () => window.location.reload()
 }: PlayerHeaderProps) => {
-  console.log("PlayerHeader rendering with profileImage:", player.profileImage);
-  
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-4">
@@ -56,7 +54,7 @@ export const PlayerHeader = ({
                   variant="outline" 
                   className={`${index === 0 ? 'bg-green-500/10' : index === 1 ? 'bg-blue-500/10' : 'bg-amber-500/10'}`}
                 >
-                  {pos.position_definitions?.abbreviation || pos.position} 
+                  {pos.role_definitions?.abbreviation || pos.position} 
                   {pos.suitability_score && ` (${Number(pos.suitability_score).toFixed(1)}%)`}
                 </Badge>
               ))}
