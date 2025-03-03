@@ -20,19 +20,19 @@ export const AvailableSquadPlayers = ({
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    e.currentTarget.classList.add('bg-green-100');
+    e.currentTarget.classList.add('bg-green-100', 'ring-2', 'ring-green-500');
   };
   
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    e.currentTarget.classList.remove('bg-green-100');
+    e.currentTarget.classList.remove('bg-green-100', 'ring-2', 'ring-green-500');
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    e.currentTarget.classList.remove('bg-green-100');
+    e.currentTarget.classList.remove('bg-green-100', 'ring-2', 'ring-green-500');
     
     // Get the source slot ID
     const fromSlotId = e.dataTransfer.getData('fromSlotId');

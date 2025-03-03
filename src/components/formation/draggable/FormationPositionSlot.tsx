@@ -32,14 +32,14 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
   // Make the player slot draggable when player exists
   const handleDragStart = (e: React.DragEvent) => {
     if (player) {
-      console.log(`Starting drag for player ${player.id} from slot ${slotId}`);
+      console.log(`Starting drag for player ${player.id} from slot ${slotId} (${position})`);
       e.dataTransfer.setData('playerId', player.id);
       e.dataTransfer.setData('fromSlotId', slotId);
       e.dataTransfer.effectAllowed = 'move';
       
-      // Set a custom drag image if needed
+      // Set a custom drag image
       const dragImage = document.createElement('div');
-      dragImage.className = 'bg-blue-500 text-white rounded-full p-1 text-xs font-bold';
+      dragImage.className = 'bg-blue-500 text-white rounded-full p-2 text-xs font-bold';
       dragImage.textContent = player.squad_number?.toString() || player.name.charAt(0);
       document.body.appendChild(dragImage);
       e.dataTransfer.setDragImage(dragImage, 15, 15);

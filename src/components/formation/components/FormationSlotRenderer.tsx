@@ -32,25 +32,27 @@ export const FormationSlotRenderer: React.FC<FormationSlotRendererProps> = ({
     onDragOver: (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      e.currentTarget.classList.add('bg-blue-200', 'bg-opacity-50');
+      // Make drop target more visible
+      e.currentTarget.classList.add('bg-blue-200', 'bg-opacity-50', 'ring-2', 'ring-blue-400');
     },
     onDragLeave: (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      e.currentTarget.classList.remove('bg-blue-200', 'bg-opacity-50');
+      e.currentTarget.classList.remove('bg-blue-200', 'bg-opacity-50', 'ring-2', 'ring-blue-400');
     },
     onDrop: (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      e.currentTarget.classList.remove('bg-blue-200', 'bg-opacity-50');
+      e.currentTarget.classList.remove('bg-blue-200', 'bg-opacity-50', 'ring-2', 'ring-blue-400');
       
       // Get the player ID and source slot from dataTransfer
       const playerId = e.dataTransfer.getData('playerId');
       const fromSlotId = e.dataTransfer.getData('fromSlotId');
       
+      console.log(`Dropping player ${playerId} to slot ${slot.id} (${slot.label}), from slot: ${fromSlotId || 'none'}`);
+      
       // Ensure the onDrop callback is called with correct parameters
       if (playerId) {
-        console.log(`Dropping player ${playerId} to slot ${slot.id} (${slot.label})`);
         onDrop?.(slot.id, slot.label, fromSlotId || undefined);
       } else {
         onDrop?.(slot.id, slot.label);
