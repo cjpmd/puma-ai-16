@@ -31,7 +31,7 @@ export const DragDropFormation: React.FC<DragDropFormationProps> = ({
   const renderPositionShadows = () => {
     // Show all positions regardless of format
     return (
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 pointer-events-none">
         {/* GK Position */}
         <div className="absolute bottom-[5%] left-1/2 transform -translate-x-1/2 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-xs text-white/50">
           GK

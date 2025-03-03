@@ -26,10 +26,11 @@ export const DraggableFormation = ({
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>(initialSelections || {});
   const formationRef = useRef<HTMLDivElement>(null);
+  const [draggingPlayer, setDraggingPlayer] = useState<string | null>(null);
 
   // Update state when initialSelections change
   useEffect(() => {
-    if (initialSelections) {
+    if (initialSelections && Object.keys(initialSelections).length > 0) {
       setSelections(initialSelections);
     }
   }, [initialSelections]);
@@ -41,11 +42,13 @@ export const DraggableFormation = ({
 
   // Handle drop onto a formation slot
   const handleDrop = (slotId: string, position: string) => {
-    if (!selectedPlayerId) return;
+    // Use either dragging player or selected player
+    const playerToAssign = draggingPlayer || selectedPlayerId;
+    if (!playerToAssign) return;
 
     // Get the current slot that this player is assigned to (if any)
     const currentSlotId = Object.entries(selections).find(
-      ([_, selection]) => selection.playerId === selectedPlayerId
+      ([_, selection]) => selection.playerId === playerToAssign
     )?.[0];
 
     // Get the player currently in the target slot (if any)
@@ -61,14 +64,14 @@ export const DraggableFormation = ({
 
     // Assign the player to the new slot
     newSelections[slotId] = {
-      playerId: selectedPlayerId,
+      playerId: playerToAssign,
       position,
       isSubstitution: position.includes('SUB')
     };
 
     // If there was a player in the target slot, and it's not the same player,
     // then we need to make that player unassigned
-    if (currentPlayerInSlot && currentPlayerInSlot !== selectedPlayerId) {
+    if (currentPlayerInSlot && currentPlayerInSlot !== playerToAssign) {
       // Find any other slots this player might be in and remove them
       Object.entries(newSelections).forEach(([sid, sel]) => {
         if (sid !== slotId && sel.playerId === currentPlayerInSlot) {
@@ -79,6 +82,7 @@ export const DraggableFormation = ({
 
     setSelections(newSelections);
     setSelectedPlayerId(null);
+    setDraggingPlayer(null);
 
     // Notify parent of change
     onSelectionChange?.(newSelections);
@@ -96,6 +100,16 @@ export const DraggableFormation = ({
     
     setSelections(newSelections);
     onSelectionChange?.(newSelections);
+  };
+
+  // Handle drag start for a player
+  const handleDragStart = (playerId: string) => {
+    setDraggingPlayer(playerId);
+  };
+
+  // Handle drag end
+  const handleDragEnd = () => {
+    setDraggingPlayer(null);
   };
 
   // Get all players assigned to positions
@@ -123,7 +137,7 @@ export const DraggableFormation = ({
         {/* Helper text for interaction */}
         <div className="absolute top-2 left-0 right-0 text-center z-20">
           <span className="px-2 py-1 bg-white/80 rounded text-xs text-gray-700">
-            {selectedPlayerId ? "Now click on a position to place player" : "Select a player below first"}
+            {draggingPlayer ? "Drag player to a position" : selectedPlayerId ? "Now click on a position to place player" : "Select or drag a player from below"}
           </span>
         </div>
         
@@ -193,6 +207,8 @@ export const DraggableFormation = ({
         availableSquadPlayers={getAvailableSquadPlayers()}
         handlePlayerSelect={handlePlayerSelect}
         selectedPlayerId={selectedPlayerId}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
       />
     </div>
   );

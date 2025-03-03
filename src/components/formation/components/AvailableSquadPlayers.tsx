@@ -5,12 +5,16 @@ interface AvailableSquadPlayersProps {
   availableSquadPlayers: any[];
   handlePlayerSelect: (playerId: string) => void;
   selectedPlayerId: string | null;
+  onDragStart?: (playerId: string) => void;
+  onDragEnd?: () => void;
 }
 
 export const AvailableSquadPlayers = ({
   availableSquadPlayers,
   handlePlayerSelect,
-  selectedPlayerId
+  selectedPlayerId,
+  onDragStart,
+  onDragEnd
 }: AvailableSquadPlayersProps) => {
   return (
     <div className="w-full bg-gray-100 p-3 rounded-md">
@@ -23,6 +27,9 @@ export const AvailableSquadPlayers = ({
               selectedPlayerId === player.id ? 'bg-blue-100 ring-2 ring-blue-500' : 'bg-white hover:bg-gray-50'
             }`}
             onClick={() => handlePlayerSelect(player.id)}
+            draggable={true}
+            onDragStart={() => onDragStart?.(player.id)}
+            onDragEnd={onDragEnd}
           >
             <div className="w-6 h-6 flex items-center justify-center bg-blue-500 text-white rounded-full text-xs font-bold mr-1">
               {player.squad_number || player.name.charAt(0)}
