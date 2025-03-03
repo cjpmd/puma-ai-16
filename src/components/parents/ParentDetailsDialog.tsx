@@ -30,15 +30,19 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
   const { toast } = useToast();
 
   useEffect(() => {
-    if (existingParents.length > 0) {
-      setParents([...existingParents]);
-    } else {
-      setParents([{
-        id: 'new-' + Date.now(),
-        name: '',
-        email: '',
-        phone: ''
-      }]);
+    // Initialize the form with existing parents or a new blank one
+    if (open) {
+      console.log("Initializing parent form with:", existingParents);
+      if (existingParents.length > 0) {
+        setParents([...existingParents]);
+      } else {
+        setParents([{
+          id: 'new-' + Date.now(),
+          name: '',
+          email: '',
+          phone: ''
+        }]);
+      }
     }
   }, [existingParents, open]);
 
@@ -85,31 +89,32 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
         throw new Error("At least one parent must have a name");
       }
       
-      // Handle existing parents (update)
+      console.log("Saving parents:", parents);
+      
+      // Delete parents that were removed (exist in database but not in current list)
       const existingIds = existingParents?.map(p => p.id) || [];
       const currentIds = parents.filter(p => !p.id.startsWith('new-')).map(p => p.id);
-      
-      // Find deleted parents (existed before but not in current list)
       const deletedIds = existingIds.filter(id => !currentIds.includes(id));
       
-      // Delete removed parents
       if (deletedIds.length > 0) {
         console.log("Deleting parents with IDs:", deletedIds);
-        const { error: deleteError } = await supabase
-          .from('player_parents')
-          .delete()
-          .in('id', deletedIds);
-          
-        if (deleteError) {
-          console.error("Error deleting parents:", deleteError);
-          throw deleteError;
+        for (const id of deletedIds) {
+          const { error } = await supabase
+            .from('player_parents')
+            .delete()
+            .eq('id', id);
+            
+          if (error) {
+            console.error(`Error deleting parent ${id}:`, error);
+            throw error;
+          }
         }
       }
       
-      // Update existing parents
+      // Update existing parents one by one
       for (const parent of parents.filter(p => !p.id.startsWith('new-'))) {
         console.log("Updating parent:", parent);
-        const { error: updateError } = await supabase
+        const { error } = await supabase
           .from('player_parents')
           .update({ 
             name: parent.name, 
@@ -118,33 +123,32 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
           })
           .eq('id', parent.id);
           
-        if (updateError) {
-          console.error("Error updating parent:", updateError);
-          throw updateError;
+        if (error) {
+          console.error(`Error updating parent ${parent.id}:`, error);
+          throw error;
         }
       }
       
-      // Insert new parents
+      // Insert new parents individually to better track errors
       const newParents = parents.filter(p => p.id.startsWith('new-') && p.name.trim() !== '');
-      if (newParents.length > 0) {
-        console.log("Adding new parents:", newParents);
-        const { error: insertError } = await supabase
+      for (const parent of newParents) {
+        console.log("Adding new parent:", parent);
+        const { error } = await supabase
           .from('player_parents')
-          .insert(
-            newParents.map(parent => ({
-              player_id: playerId,
-              name: parent.name,
-              email: parent.email,
-              phone: parent.phone
-            }))
-          );
+          .insert({
+            player_id: playerId,
+            name: parent.name,
+            email: parent.email || null,
+            phone: parent.phone || null
+          });
           
-        if (insertError) {
-          console.error("Error inserting parents:", insertError);
-          throw insertError;
+        if (error) {
+          console.error(`Error inserting parent:`, error);
+          throw error;
         }
       }
       
+      console.log("All parent updates completed successfully");
       setSaveSuccess(true);
       
       // Show success toast and close dialog after a short delay
@@ -154,7 +158,7 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
       });
       
       setTimeout(() => {
-        onSave();
+        onSave(); // Refresh the parent list
         setOpen(false);
         setSaveSuccess(false);
       }, 1000);

@@ -11,7 +11,7 @@ import { PlayerObjectives } from "@/components/coaching/PlayerObjectives";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CoachingComments } from "@/components/coaching/CoachingComments";
-import { addColumnIfNotExists } from "@/utils/databaseUtils";
+import { columnExists } from "@/utils/databaseUtils";
 import { useEffect } from "react";
 
 interface PlayerDetailsProps {
@@ -59,13 +59,14 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
   });
 
   useEffect(() => {
-    // Check if necessary columns exist and add them if they don't
+    // Check if necessary columns exist using the safer approach
     const checkAndUpdateSchema = async () => {
       if (hasCheckedSchema) return;
 
       try {
-        // Check if the profile_image column exists in players table
-        await addColumnIfNotExists('players', 'profile_image', 'text');
+        // Just try to use the profile_image column - don't try to create it if missing
+        const exists = await columnExists('players', 'profile_image');
+        console.log(`profile_image column exists: ${exists}`);
         setHasCheckedSchema(true);
       } catch (error) {
         console.error("Error checking schema:", error);

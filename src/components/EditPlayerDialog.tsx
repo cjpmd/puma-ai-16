@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +31,7 @@ import { useForm } from "react-hook-form";
 import { Edit, Check, Upload, X, Loader2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { differenceInYears } from "date-fns";
+import { columnExists } from "@/utils/databaseUtils";
 
 interface EditPlayerDialogProps {
   player: Player;
@@ -76,8 +76,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
     
     setIsUploading(true);
     try {
-      // Store image as base64 string in the player record instead of using Storage
-      // This is a workaround for the missing bucket
+      // Store image as base64 string in the player record
       const reader = new FileReader();
       return new Promise((resolve, reject) => {
         reader.onloadend = () => {
@@ -114,16 +113,10 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         profileImageUrl = null;
       }
       
-      console.log("Updating player record with profile image type:", typeof profileImageUrl);
+      console.log("Updating player record with profile image:", profileImageUrl ? "Image data available" : "No image");
       
-      // First check if the profile_image column exists
-      const { data: columnData, error: columnError } = await supabase
-        .rpc('get_table_columns', { table_name: 'players' });
-      
-      if (columnError) {
-        console.error("Error checking columns:", columnError);
-        throw new Error("Failed to check table structure");
-      }
+      // Check if the profile_image column exists
+      const hasProfileImage = await columnExists('players', 'profile_image');
       
       let updateData: any = {
         squad_number: values.squadNumber,
@@ -131,11 +124,12 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         date_of_birth: values.dateOfBirth,
       };
       
-      // Only include profile_image if the column exists
-      if (columnData && columnData.includes('profile_image')) {
+      // Only include profile_image if the column exists or we assume it does
+      if (hasProfileImage) {
         updateData.profile_image = profileImageUrl;
       } else {
-        console.log("profile_image column not found, skipping this field in update");
+        console.log("Assuming profile_image column exists, including in update");
+        updateData.profile_image = profileImageUrl;
       }
       
       // Calculate age based on date of birth

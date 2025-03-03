@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Edit, Save, Sliders, Loader2, Check } from "lucide-react";
@@ -7,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { AttributeCategory } from "@/types/player";
 import { Label } from "@/components/ui/label";
 
 interface PlayerAttributesProps {
@@ -49,23 +47,23 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
     setIsSaving(true);
     setSaveSuccess(false);
     try {
-      // Update each edited attribute
-      const promises = Object.entries(editedAttributes).map(([id, value]) => {
-        return supabase
+      console.log("Saving attributes:", editedAttributes);
+      
+      // Update each edited attribute one by one
+      for (const [id, value] of Object.entries(editedAttributes)) {
+        console.log(`Updating attribute ${id} with value ${value}`);
+        const { error } = await supabase
           .from('player_attributes')
           .update({ value })
           .eq('id', id);
-      });
-      
-      const results = await Promise.all(promises);
-      
-      // Check for any errors
-      const errors = results.filter(result => result.error).map(result => result.error);
-      if (errors.length > 0) {
-        console.error('Errors updating attributes:', errors);
-        throw new Error(`${errors.length} attributes failed to update`);
+          
+        if (error) {
+          console.error(`Error updating attribute ${id}:`, error);
+          throw error;
+        }
       }
       
+      console.log("All attributes updated successfully");
       setSaveSuccess(true);
       
       toast({
