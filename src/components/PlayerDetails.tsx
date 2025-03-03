@@ -74,9 +74,10 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
         
         <TabsContent value="attributes">
           <PlayerAttributes 
-            player={player} 
-            showVisuals={showAttributeVisuals} 
-            onVisualsToggle={() => setShowAttributeVisuals(!showAttributeVisuals)} 
+            attributes={player.attributes} 
+            playerId={player.id}
+            playerType={player.playerType}
+            playerCategory={player.teamCategory || ""}
           />
         </TabsContent>
         
@@ -85,15 +86,28 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
         </TabsContent>
         
         <TabsContent value="stats">
-          <GameMetricsSection playerId={player.id} />
+          <GameMetricsSection 
+            gameMetrics={{ 
+              stats: { 
+                total_appearances: 0, 
+                captain_appearances: 0, 
+                total_minutes_played: 0, 
+                positions_played: {} 
+              }, 
+              recentGames: [], 
+              motmCount: 0 
+            }} 
+            positionMappings={{}} 
+            playerCategory={player.teamCategory || ""}
+          />
         </TabsContent>
         
         <TabsContent value="trends">
-          <AttributeTrends attributeHistory={player.attributeHistory} />
+          {player.attributeHistory && <AttributeTrends attributeHistory={player.attributeHistory} />}
         </TabsContent>
         
         <TabsContent value="parents">
-          <ParentDetails playerId={player.id} parents={parentsData || []} />
+          <ParentDetails playerId={player.id} />
         </TabsContent>
       </Tabs>
     </div>
