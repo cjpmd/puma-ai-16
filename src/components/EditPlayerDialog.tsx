@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -152,21 +151,18 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
     console.log("Starting player update with values:", JSON.stringify(values));
     
     try {
-      // Build the base update data without the profile image
       const updateData: any = {
         squad_number: values.squadNumber,
         player_type: values.playerType,
         date_of_birth: values.dateOfBirth,
       };
       
-      // Calculate age from date of birth if present
       if (values.dateOfBirth) {
         const age = differenceInYears(new Date(), new Date(values.dateOfBirth));
         updateData.age = age;
         console.log(`Calculated age: ${age} years`);
       }
       
-      // Only add profile_image if the column exists and we have a new image
       if (columnVerified && imageFile) {
         console.log("Processing profile image for database update");
         const profileImageUrl = await uploadImage();
@@ -175,12 +171,11 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
           console.log("Profile image added to update data");
         }
       } else if (imageFile && !columnVerified) {
-        // Image selected but column doesn't exist
         console.log("Profile image column not verified, skipping image update");
         toast({
           title: "Image not saved",
           description: "Profile image could not be saved due to database configuration",
-          variant: "warning"
+          variant: "destructive"
         });
       }
       
