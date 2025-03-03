@@ -1,3 +1,4 @@
+
 import React from "react";
 import { FormationSlot } from "../types";
 
@@ -24,7 +25,7 @@ export const FormationSlotRenderer: React.FC<FormationSlotRendererProps> = ({
   if (!renderSlot) return null;
   
   // Apply proper positioning to align with the visual position markers
-  const positionClasses = `absolute ${slot.className}`;
+  const positionClasses = `absolute ${slot.className} transform -translate-x-1/2 -translate-y-1/2`;
   
   const dropProps = {
     className: `${positionClasses} z-10`,
@@ -34,6 +35,8 @@ export const FormationSlotRenderer: React.FC<FormationSlotRendererProps> = ({
       e.currentTarget.classList.add('bg-blue-200', 'bg-opacity-50');
     },
     onDragLeave: (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
       e.currentTarget.classList.remove('bg-blue-200', 'bg-opacity-50');
     },
     onDrop: (e: React.DragEvent) => {
@@ -41,7 +44,7 @@ export const FormationSlotRenderer: React.FC<FormationSlotRendererProps> = ({
       e.stopPropagation();
       e.currentTarget.classList.remove('bg-blue-200', 'bg-opacity-50');
       
-      // Get the player ID from dataTransfer
+      // Get the player ID and source slot from dataTransfer
       const playerId = e.dataTransfer.getData('playerId');
       const fromSlotId = e.dataTransfer.getData('fromSlotId');
       

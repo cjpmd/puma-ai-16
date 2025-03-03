@@ -7,7 +7,7 @@ interface FormationPositionSlotProps {
   selection: { playerId: string; position: string; isSubstitution?: boolean } | undefined;
   player: any | null;
   selectedPlayerId: string | null;
-  onDrop: (slotId: string, position: string) => void;
+  onDrop: (slotId: string, position: string, fromSlotId?: string) => void;
   onRemovePlayer: (slotId: string) => void;
   renderSubstitutionIndicator?: (position: string) => React.ReactNode;
   dropProps: {
@@ -34,6 +34,7 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
     if (player) {
       e.dataTransfer.setData('playerId', player.id);
       e.dataTransfer.setData('fromSlotId', slotId);
+      e.dataTransfer.effectAllowed = 'move';
       e.stopPropagation();
     }
   };

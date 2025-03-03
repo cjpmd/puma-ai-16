@@ -12,8 +12,37 @@ export const SubstitutesSection = ({
   getPlayer,
   handleRemovePlayer
 }: SubstitutesSectionProps) => {
+  // Handle dropping players back to substitutes
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.add('bg-yellow-100');
+  };
+  
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('bg-yellow-100');
+  };
+
   return (
-    <div className="w-full bg-gray-100 p-3 rounded-md mb-4">
+    <div 
+      className="w-full bg-gray-100 p-3 rounded-md mb-4"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.remove('bg-yellow-100');
+        
+        // Get the source slot ID
+        const fromSlotId = e.dataTransfer.getData('fromSlotId');
+        if (fromSlotId) {
+          // Remove the player from the position
+          handleRemovePlayer(fromSlotId);
+        }
+      }}
+    >
       <h3 className="text-sm font-medium mb-2">Substitutes</h3>
       <div className="flex flex-wrap gap-2">
         {Object.entries(selections)
@@ -25,8 +54,14 @@ export const SubstitutesSection = ({
             return (
               <div
                 key={slotId}
-                className="bg-white rounded-md p-1 flex items-center gap-1 shadow-sm"
+                className="bg-white rounded-md p-1 flex items-center gap-1 shadow-sm cursor-pointer"
                 onClick={() => handleRemovePlayer(slotId)}
+                draggable={true}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('playerId', player.id);
+                  e.dataTransfer.setData('fromSlotId', slotId);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
               >
                 <div className="w-5 h-5 flex items-center justify-center bg-amber-500 text-white rounded-full text-[9px] font-bold">
                   {player.squad_number || player.name.charAt(0)}

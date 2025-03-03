@@ -16,8 +16,37 @@ export const AvailableSquadPlayers = ({
   onDragStart,
   onDragEnd
 }: AvailableSquadPlayersProps) => {
+  // Handle dropping players back to squad
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.add('bg-green-100');
+  };
+  
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('bg-green-100');
+  };
+
   return (
-    <div className="w-full bg-gray-100 p-3 rounded-md">
+    <div 
+      className="w-full bg-gray-100 p-3 rounded-md"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.remove('bg-green-100');
+        
+        // Get the source slot ID
+        const fromSlotId = e.dataTransfer.getData('fromSlotId');
+        if (fromSlotId) {
+          // Find the associated onDragEnd handler and use it to remove the player
+          onDragEnd?.();
+        }
+      }}
+    >
       <h3 className="text-sm font-medium mb-2">Squad Players</h3>
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
         {availableSquadPlayers.map(player => (
