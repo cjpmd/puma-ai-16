@@ -1,3 +1,4 @@
+
 import React from "react";
 import { FormationFormat, FormationSlot, PlayerSelection } from "./types";
 import { getFormationSlots } from "./utils/formationUtils";
@@ -39,6 +40,7 @@ export const FormationSlots: React.FC<FormationSlotsProps> = ({
     return (
       <DragDropFormation
         formationSlots={formationSlots}
+        format={format}
         onDrop={onDrop}
         renderSlot={renderSlot}
       />

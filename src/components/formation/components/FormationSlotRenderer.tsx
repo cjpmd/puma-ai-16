@@ -25,17 +25,17 @@ export const FormationSlotRenderer: React.FC<FormationSlotRendererProps> = ({
   if (!renderSlot) return null;
   
   const dropProps = {
-    className: slot.className,
+    className: `${slot.className} transition-colors duration-200`,
     onDragOver: (e: React.DragEvent) => {
       e.preventDefault();
-      e.currentTarget.classList.add('bg-blue-200');
+      e.currentTarget.classList.add('bg-blue-200', 'bg-opacity-50');
     },
     onDragLeave: (e: React.DragEvent) => {
-      e.currentTarget.classList.remove('bg-blue-200');
+      e.currentTarget.classList.remove('bg-blue-200', 'bg-opacity-50');
     },
     onDrop: (e: React.DragEvent) => {
       e.preventDefault();
-      e.currentTarget.classList.remove('bg-blue-200');
+      e.currentTarget.classList.remove('bg-blue-200', 'bg-opacity-50');
       onDrop?.(slot.id, slot.label);
     }
   };
