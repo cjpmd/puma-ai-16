@@ -94,7 +94,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         selections={selections}
         getPlayer={getPlayer}
         handleRemovePlayer={handleRemovePlayer}
-        onSubstituteDrop={handleSubstituteDrop}
+        onSubstituteDrop={(playerId, fromSlotId) => handleSubstituteDrop(playerId, fromSlotId || '')}
       />
       
       {/* Available Squad Players */}

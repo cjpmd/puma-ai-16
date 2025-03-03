@@ -27,13 +27,13 @@ export const useSubstitutionManager = (
   };
 
   // Handle dragging to substitutes section
-  const handleSubstituteDrop = (playerId: string, fromSlotId: string) => {
-    if (!playerId || !fromSlotId) {
-      console.log("Missing playerId or fromSlotId, cannot create substitute");
+  const handleSubstituteDrop = (playerId: string, fromSlotId: string = '') => {
+    if (!playerId) {
+      console.log("Missing playerId, cannot create substitute");
       return;
     }
     
-    console.log(`Player ${playerId} dropped to substitutes section from ${fromSlotId}`);
+    console.log(`Player ${playerId} dropped to substitutes section from ${fromSlotId || 'direct selection'}`);
     
     // Initialize the counter if needed
     if (subCounterRef.current === 0) {
@@ -43,22 +43,25 @@ export const useSubstitutionManager = (
     // Generate a new substitute slot ID
     const subSlotId = `sub-${subCounterRef.current++}`;
     
-    // Get the player's current position for debugging
-    const currentPosition = selections[fromSlotId]?.position;
-    console.log(`Moving player from position ${currentPosition} to SUB`);
+    // Get the player's current position if they're being moved from another slot
+    let currentPosition = 'SUB';
+    if (fromSlotId && selections[fromSlotId]) {
+      currentPosition = selections[fromSlotId]?.position || 'SUB';
+      console.log(`Moving player from position ${currentPosition} to SUB`);
+    }
     
     // Create a new selections object
     const newSelections = { ...selections };
     
-    // Remove the player from their current position
-    if (selections[fromSlotId]) {
+    // Remove the player from their current position if they're being moved
+    if (fromSlotId && selections[fromSlotId]) {
       delete newSelections[fromSlotId];
     }
     
     // Add them to the substitutes
     newSelections[subSlotId] = {
       playerId,
-      position: 'SUB',
+      position: currentPosition,
       isSubstitution: true
     };
     

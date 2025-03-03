@@ -6,7 +6,7 @@ interface SubstitutesSectionProps {
   selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>;
   getPlayer: (playerId: string) => any;
   handleRemovePlayer: (slotId: string) => void;
-  onSubstituteDrop: (playerId: string) => void;
+  onSubstituteDrop: (playerId: string, fromSlotId?: string) => void;
 }
 
 export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
@@ -45,19 +45,9 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
     const playerId = e.dataTransfer.getData('playerId');
     const fromSlotId = e.dataTransfer.getData('fromSlotId');
     
-    if (playerId && !fromSlotId) {
-      // If it's coming directly from available players
-      onSubstituteDrop(playerId);
-    } else if (playerId && fromSlotId) {
-      // If it's coming from an existing position
-      // Check if it's not already a substitute
-      const isAlreadySubstitute = selections[fromSlotId]?.isSubstitution;
-      
-      if (!isAlreadySubstitute) {
-        // Remove from current position and add as substitute
-        handleRemovePlayer(fromSlotId);
-        onSubstituteDrop(playerId);
-      }
+    if (playerId) {
+      // Pass both parameters to onSubstituteDrop
+      onSubstituteDrop(playerId, fromSlotId || undefined);
     }
   };
 
