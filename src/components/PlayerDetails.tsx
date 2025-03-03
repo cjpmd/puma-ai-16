@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlayerHeader } from "@/components/player/PlayerHeader";
 import { PlayerAttributes } from "@/components/player/PlayerAttributes";
@@ -11,8 +11,8 @@ import { PlayerObjectives } from "@/components/coaching/PlayerObjectives";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CoachingComments } from "@/components/coaching/CoachingComments";
-import { columnExists } from "@/utils/databaseUtils";
-import { useEffect } from "react";
+import { ensureColumnExists } from "@/utils/databaseUtils";
+import { useToast } from "@/hooks/use-toast";
 
 interface PlayerDetailsProps {
   player: Player;
@@ -22,11 +22,13 @@ interface PlayerDetailsProps {
 export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) => {
   const [showAttributeVisuals, setShowAttributeVisuals] = useState(true);
   const [hasCheckedSchema, setHasCheckedSchema] = useState(false);
+  const { toast } = useToast();
 
   // Query for player position suitability
-  const { data: positionsData } = useQuery({
+  const { data: positionsData, refetch: refetchPositions } = useQuery({
     queryKey: ["player-positions", player.id],
     queryFn: async () => {
+      console.log("Fetching player positions for:", player.id);
       const { data, error } = await supabase
         .from("role_suitability")
         .select(`
@@ -39,34 +41,52 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
         .eq("player_id", player.id)
         .order("suitability_score", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching positions:", error);
+        throw error;
+      }
+      console.log("Fetched positions data:", data);
       return data;
     },
   });
 
   // Query for parents data
-  const { data: parentsData } = useQuery({
+  const { data: parentsData, refetch: refetchParents } = useQuery({
     queryKey: ["player-parents", player.id],
     queryFn: async () => {
+      console.log("Fetching player parents for:", player.id);
       const { data, error } = await supabase
         .from("player_parents")
         .select("*")
         .eq("player_id", player.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching parents:", error);
+        throw error;
+      }
+      console.log("Fetched parents data:", data);
       return data;
     },
   });
 
   useEffect(() => {
-    // Check if necessary columns exist using the safer approach
+    // Check if necessary columns exist
     const checkAndUpdateSchema = async () => {
       if (hasCheckedSchema) return;
 
       try {
-        // Just try to use the profile_image column - don't try to create it if missing
-        const exists = await columnExists('players', 'profile_image');
+        // Check if profile_image column exists
+        const exists = await ensureColumnExists('players', 'profile_image');
         console.log(`profile_image column exists: ${exists}`);
+        
+        if (!exists) {
+          toast({
+            title: "Database Schema Notice",
+            description: "The profile_image column may be missing. Some features might not work correctly.",
+            variant: "destructive",
+          });
+        }
+        
         setHasCheckedSchema(true);
       } catch (error) {
         console.error("Error checking schema:", error);
@@ -74,7 +94,18 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
     };
     
     checkAndUpdateSchema();
-  }, [hasCheckedSchema]);
+  }, [hasCheckedSchema, toast]);
+
+  const handleLocalUpdate = () => {
+    console.log("Local update triggered, refreshing queries");
+    refetchPositions();
+    refetchParents();
+    
+    // Call parent callback if provided
+    if (onPlayerUpdated) {
+      onPlayerUpdated();
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -82,7 +113,7 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
         player={player} 
         topPositions={positionsData} 
         showAttributeVisuals={showAttributeVisuals}
-        onPlayerUpdated={onPlayerUpdated}
+        onPlayerUpdated={handleLocalUpdate}
       />
 
       <Tabs defaultValue="attributes" className="w-full">

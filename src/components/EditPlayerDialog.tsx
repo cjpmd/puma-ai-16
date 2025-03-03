@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from "@/types/player";
@@ -31,7 +32,7 @@ import { useForm } from "react-hook-form";
 import { Edit, Check, Upload, X, Loader2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { differenceInYears } from "date-fns";
-import { columnExists } from "@/utils/databaseUtils";
+import { ensureColumnExists } from "@/utils/databaseUtils";
 
 interface EditPlayerDialogProps {
   player: Player;
@@ -42,9 +43,16 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
   const [open, setOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(player.profileImage || null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) {
+      // Initialize image preview when dialog opens
+      setImagePreview(player.profileImage);
+    }
+  }, [open, player.profileImage]);
 
   const form = useForm({
     defaultValues: {
@@ -57,25 +65,30 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log("New image selected:", file.name);
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        const result = reader.result as string;
+        console.log("Image preview created");
+        setImagePreview(result);
       };
       reader.readAsDataURL(file);
     }
   };
 
   const removeImage = () => {
+    console.log("Removing image");
     setImagePreview(null);
     setImageFile(null);
   };
 
   const uploadImage = async (): Promise<string | null> => {
-    if (!imageFile) return player.profileImage || null;
+    if (!imageFile) return imagePreview;
     
     setIsUploading(true);
     try {
+      console.log("Converting image to base64");
       // Store image as base64 string in the player record
       const reader = new FileReader();
       return new Promise((resolve, reject) => {
@@ -85,6 +98,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
           resolve(base64String);
         };
         reader.onerror = () => {
+          console.error("Failed to convert image to base64");
           reject(new Error("Failed to convert image to base64"));
         };
         reader.readAsDataURL(imageFile);
@@ -95,7 +109,7 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
         variant: "destructive",
         description: "Failed to process image",
       });
-      return player.profileImage || null;
+      return imagePreview;
     } finally {
       setIsUploading(false);
     }
@@ -104,66 +118,71 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
   const onSubmit = async (values: any) => {
     setIsSaving(true);
     try {
-      // Process image if there's a new one
-      let profileImageUrl = player.profileImage;
+      console.log("Starting player update process");
+      
+      // Process image if there's a new one or if it was removed
+      let profileImageUrl = imagePreview;
       if (imageFile) {
+        console.log("Uploading new image");
         profileImageUrl = await uploadImage();
-      } else if (imagePreview === null) {
-        // User removed the image
-        profileImageUrl = null;
       }
       
-      console.log("Updating player record with profile image:", profileImageUrl ? "Image data available" : "No image");
+      console.log("Ensuring profile_image column exists");
+      // Make sure the profile_image column exists
+      const hasProfileImage = await ensureColumnExists('players', 'profile_image');
       
-      // Check if the profile_image column exists
-      const hasProfileImage = await columnExists('players', 'profile_image');
+      if (!hasProfileImage) {
+        console.log("profile_image column doesn't exist, but proceeding anyway");
+      }
       
-      let updateData: any = {
+      // Prepare update data
+      const updateData: any = {
         squad_number: values.squadNumber,
         player_type: values.playerType,
         date_of_birth: values.dateOfBirth,
       };
       
-      // Only include profile_image if the column exists or we assume it does
-      if (hasProfileImage) {
-        updateData.profile_image = profileImageUrl;
-      } else {
-        console.log("Assuming profile_image column exists, including in update");
+      // Only include profile_image if we have a value or we're explicitly clearing it
+      if (hasProfileImage || profileImageUrl !== undefined) {
+        console.log("Including profile_image in update data:", profileImageUrl ? "Has image" : "No image");
         updateData.profile_image = profileImageUrl;
       }
       
       // Calculate age based on date of birth
-      const age = values.dateOfBirth ? 
-        differenceInYears(new Date(), new Date(values.dateOfBirth)) : 
-        player.age;
+      if (values.dateOfBirth) {
+        const age = differenceInYears(new Date(), new Date(values.dateOfBirth));
+        updateData.age = age;
+        console.log(`Calculated age: ${age} years`);
+      }
       
-      updateData.age = age;
+      console.log("Sending update to database:", updateData);
       
       // Update player record
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("players")
         .update(updateData)
-        .eq("id", player.id);
+        .eq("id", player.id)
+        .select();
 
       if (error) {
         console.error("Error updating player:", error);
         throw error;
       }
 
+      console.log("Player updated successfully:", data);
+      
       toast({
         description: "Player details updated successfully",
       });
       
       onPlayerUpdated();
-      setTimeout(() => {
-        setIsSaving(false);
-        setOpen(false);
-      }, 1000);
+      setIsSaving(false);
+      setOpen(false);
     } catch (error) {
       console.error("Error updating player:", error);
       toast({
         variant: "destructive",
-        description: "Failed to update player details. Please check console for details.",
+        description: "Failed to update player details. Please try again.",
       });
       setIsSaving(false);
     }

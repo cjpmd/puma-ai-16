@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Edit, Save, Sliders, Loader2, Check } from "lucide-react";
@@ -37,46 +38,71 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
   };
 
   const handleAttributeChange = (id: string, value: number) => {
+    // Ensure value is between 1 and 100
+    const clampedValue = Math.min(100, Math.max(1, value));
+    
     setEditedAttributes(prev => ({
       ...prev,
-      [id]: value
+      [id]: clampedValue
     }));
   };
 
   const saveAttributes = async () => {
     setIsSaving(true);
     setSaveSuccess(false);
+    
+    // Array to collect any errors during save
+    const errors: string[] = [];
+    
     try {
       console.log("Saving attributes:", editedAttributes);
       
       // Update each edited attribute one by one
       for (const [id, value] of Object.entries(editedAttributes)) {
         console.log(`Updating attribute ${id} with value ${value}`);
-        const { error } = await supabase
-          .from('player_attributes')
-          .update({ value })
-          .eq('id', id);
-          
-        if (error) {
-          console.error(`Error updating attribute ${id}:`, error);
-          throw error;
+        
+        try {
+          const { error } = await supabase
+            .from('player_attributes')
+            .update({ value })
+            .eq('id', id);
+            
+          if (error) {
+            console.error(`Error updating attribute ${id}:`, error);
+            errors.push(`Failed to update ${attributes.find(a => a.id === id)?.name || id}: ${error.message}`);
+          }
+        } catch (err) {
+          console.error(`Exception updating attribute ${id}:`, err);
+          errors.push(`Exception updating ${attributes.find(a => a.id === id)?.name || id}`);
         }
       }
       
-      console.log("All attributes updated successfully");
-      setSaveSuccess(true);
-      
-      toast({
-        title: "Success",
-        description: "Attributes updated successfully",
-      });
-      
-      // Delay resetting the form to show success state
-      setTimeout(() => {
-        setIsEditing(false);
-        setEditedAttributes({});
-        setSaveSuccess(false);
-      }, 1000);
+      if (errors.length > 0) {
+        // Some attributes failed to save
+        console.error("Some attributes failed to save:", errors);
+        toast({
+          title: "Partial success",
+          description: "Some attributes could not be saved. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        console.log("All attributes updated successfully");
+        setSaveSuccess(true);
+        
+        toast({
+          title: "Success",
+          description: "Attributes updated successfully",
+        });
+        
+        // Delay resetting the form to show success state
+        setTimeout(() => {
+          setIsEditing(false);
+          setEditedAttributes({});
+          setSaveSuccess(false);
+          // Force page refresh to show updated values
+          window.location.reload();
+        }, 1000);
+      }
     } catch (error) {
       console.error('Error updating attributes:', error);
       toast({
@@ -200,7 +226,7 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
                               max="100" 
                               className="w-16 text-right"
                               value={editedAttributes[attr.id] !== undefined ? editedAttributes[attr.id] : attr.value}
-                              onChange={(e) => handleAttributeChange(attr.id, parseInt(e.target.value))}
+                              onChange={(e) => handleAttributeChange(attr.id, parseInt(e.target.value) || 1)}
                             />
                           </div>
                         )}

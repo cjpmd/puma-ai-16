@@ -112,14 +112,17 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
       }
       
       // Update existing parents one by one
-      for (const parent of parents.filter(p => !p.id.startsWith('new-'))) {
+      const existingParentsToUpdate = parents.filter(p => !p.id.startsWith('new-') && p.name.trim() !== '');
+      console.log("Updating existing parents:", existingParentsToUpdate.length);
+      
+      for (const parent of existingParentsToUpdate) {
         console.log("Updating parent:", parent);
         const { error } = await supabase
           .from('player_parents')
           .update({ 
             name: parent.name, 
-            email: parent.email, 
-            phone: parent.phone 
+            email: parent.email || null, 
+            phone: parent.phone || null 
           })
           .eq('id', parent.id);
           
@@ -131,6 +134,8 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
       
       // Insert new parents individually to better track errors
       const newParents = parents.filter(p => p.id.startsWith('new-') && p.name.trim() !== '');
+      console.log("Adding new parents:", newParents.length);
+      
       for (const parent of newParents) {
         console.log("Adding new parent:", parent);
         const { error } = await supabase
@@ -157,8 +162,11 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
         description: "Parent details saved successfully",
       });
       
+      // Run the onSave callback to refresh the parent list
+      onSave();
+      
+      // Close dialog after a short delay to show success state
       setTimeout(() => {
-        onSave(); // Refresh the parent list
         setOpen(false);
         setSaveSuccess(false);
       }, 1000);
@@ -168,7 +176,7 @@ export const ParentDetailsDialog = ({ playerId, existingParents = [], onSave }: 
       toast({
         title: "Error",
         description: typeof error === 'object' && error !== null && 'message' in error 
-          ? String(error.message)
+          ? String((error as any).message)
           : "Failed to save parent details",
         variant: "destructive",
       });

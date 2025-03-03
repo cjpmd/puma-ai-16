@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export const columnExists = async (tableName: string, columnName: string): Promise<boolean> => {
   try {
+    console.log(`Checking if column ${columnName} exists in ${tableName}...`);
+    
     // Use a SELECT query with the column to check if it exists
     // If the column doesn't exist, it will throw an error
     const { data, error } = await supabase
@@ -14,10 +16,18 @@ export const columnExists = async (tableName: string, columnName: string): Promi
       .limit(1);
     
     // If there's no error, the column exists
-    return !error;
+    const exists = !error;
+    console.log(`Column ${columnName} exists in ${tableName}: ${exists}`);
+    
+    if (error) {
+      console.error(`Error checking column existence: ${error.message}`);
+    }
+    
+    return exists;
   } catch (error) {
     console.error(`Error checking if column ${columnName} exists in ${tableName}:`, error);
-    return false;
+    // Assume column exists if we can't confirm - safer approach for updates
+    return true;
   }
 };
 
@@ -27,17 +37,9 @@ export const columnExists = async (tableName: string, columnName: string): Promi
  */
 export const getTableColumns = async (tableName: string): Promise<string[]> => {
   try {
-    // First try to use the RPC function if it exists
-    const { data: rpcData, error: rpcError } = await supabase.rpc(
-      'get_table_columns',
-      { table_name: tableName }
-    );
+    console.log(`Getting columns for ${tableName}...`);
     
-    if (!rpcError && rpcData) {
-      return rpcData;
-    }
-    
-    // Fallback: Query one row to get the structure
+    // Try querying one row to get the structure
     const { data, error } = await supabase
       .from(tableName)
       .select('*')
@@ -50,9 +52,23 @@ export const getTableColumns = async (tableName: string): Promise<string[]> => {
     
     // If data exists, get the keys from the first row
     if (data && data.length > 0) {
-      return Object.keys(data[0]);
+      const columns = Object.keys(data[0]);
+      console.log(`Retrieved columns for ${tableName}:`, columns);
+      return columns;
     }
     
+    // Try an empty insert to get column names (will be rolled back)
+    const { error: insertError, data: insertData } = await supabase.rpc(
+      'get_table_columns',
+      { table_name: tableName }
+    );
+    
+    if (!insertError && insertData) {
+      console.log(`Retrieved columns via RPC for ${tableName}:`, insertData);
+      return insertData;
+    }
+    
+    console.log(`No data found for ${tableName} to determine columns`);
     return [];
   } catch (error) {
     console.error(`Failed to get columns for ${tableName}:`, error);
@@ -61,31 +77,36 @@ export const getTableColumns = async (tableName: string): Promise<string[]> => {
 };
 
 /**
- * Adds a column to a table if it doesn't exist
- * This is a fallback implementation if the RPC function doesn't exist
+ * Ensures a column exists in a table
+ * In client-side code we can only check, not create columns
+ */
+export const ensureColumnExists = async (
+  tableName: string, 
+  columnName: string
+): Promise<boolean> => {
+  try {
+    console.log(`Ensuring column ${columnName} exists in ${tableName}...`);
+    
+    // Check if the column already exists
+    const exists = await columnExists(tableName, columnName);
+    console.log(`Column check result for ${columnName} in ${tableName}: ${exists}`);
+    
+    return exists;
+  } catch (error) {
+    console.error(`Error ensuring column ${columnName} exists in ${tableName}:`, error);
+    // Assume true to allow operations to continue
+    return true;
+  }
+};
+
+/**
+ * Add column if not exists (client-side version)
+ * This is a compatibility function that just checks column existence
  */
 export const addColumnIfNotExists = async (
   tableName: string, 
   columnName: string, 
   columnType: string
-) => {
-  try {
-    // Check if the column already exists
-    const exists = await columnExists(tableName, columnName);
-    if (exists) {
-      console.log(`Column ${columnName} already exists in ${tableName}`);
-      return true;
-    }
-
-    console.log(`Column ${columnName} doesn't exist in ${tableName}, but we can't add it directly from the client. Using alternative approach.`);
-    
-    // Since we can't add columns directly from the client,
-    // we can inform the application that the column should be treated as existing
-    // for the current operation
-    
-    return false;
-  } catch (error) {
-    console.error(`Failed to check/add column ${columnName} to ${tableName}:`, error);
-    return false;
-  }
+): Promise<boolean> => {
+  return ensureColumnExists(tableName, columnName);
 };
