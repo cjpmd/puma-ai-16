@@ -1,11 +1,14 @@
 
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Edit, Save } from "lucide-react";
+import { ChevronDown, Edit, Save, Sliders } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { AttributeCategory } from "@/types/player";
+import { Label } from "@/components/ui/label";
 
 interface PlayerAttributesProps {
   attributes: Array<{
@@ -72,6 +75,29 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
     }
   };
 
+  // Group attributes by category
+  const groupedAttributes = attributes.reduce((acc, attr) => {
+    const category = attr.category || 'Uncategorized';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(attr);
+    return acc;
+  }, {} as Record<string, typeof attributes>);
+
+  // Sort categories in a specific order
+  const sortedCategories = Object.keys(groupedAttributes).sort((a, b) => {
+    const order = ['TECHNICAL', 'MENTAL', 'PHYSICAL', 'GOALKEEPING'];
+    return order.indexOf(a) - order.indexOf(b);
+  });
+
+  const categoryNames: Record<string, string> = {
+    TECHNICAL: 'Technical',
+    MENTAL: 'Mental',
+    PHYSICAL: 'Physical',
+    GOALKEEPING: 'Goalkeeping'
+  };
+
   return (
     <div className="border rounded-lg shadow-sm bg-white">
       <Collapsible defaultOpen>
@@ -109,25 +135,53 @@ export function PlayerAttributes({ attributes, playerId, playerType, playerCateg
             )}
           </div>
           
-          <ul className="space-y-2">
-            {attributes?.map((attr) => (
-              <li key={attr.id} className="flex justify-between items-center">
-                <span className="text-gray-700">{attr.name}</span>
-                {isEditing ? (
-                  <Input 
-                    type="number" 
-                    min="1" 
-                    max="100" 
-                    className="w-20 text-right"
-                    value={editedAttributes[attr.id] !== undefined ? editedAttributes[attr.id] : attr.value}
-                    onChange={(e) => handleAttributeChange(attr.id, parseInt(e.target.value))}
-                  />
-                ) : (
-                  <span className="font-semibold">{attr.value}</span>
-                )}
-              </li>
+          <Accordion type="multiple" defaultValue={sortedCategories} className="space-y-4">
+            {sortedCategories.map((category) => (
+              <AccordionItem key={category} value={category} className="border rounded-md overflow-hidden">
+                <AccordionTrigger className="px-4 py-2 hover:bg-accent/5">
+                  <span className="font-semibold">{categoryNames[category] || category}</span>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4 pt-2">
+                  <ul className="space-y-4">
+                    {groupedAttributes[category].map((attr) => (
+                      <li key={attr.id} className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <Label htmlFor={`attr-${attr.id}`} className="text-sm text-gray-700">
+                            {attr.name}
+                          </Label>
+                          <span className="font-semibold text-sm">
+                            {editedAttributes[attr.id] !== undefined ? editedAttributes[attr.id] : attr.value}
+                          </span>
+                        </div>
+                        {isEditing && (
+                          <div className="flex items-center gap-2">
+                            <Sliders className="h-4 w-4 text-gray-500" />
+                            <input
+                              id={`attr-${attr.id}`}
+                              type="range"
+                              min="1"
+                              max="100"
+                              value={editedAttributes[attr.id] !== undefined ? editedAttributes[attr.id] : attr.value}
+                              onChange={(e) => handleAttributeChange(attr.id, parseInt(e.target.value))}
+                              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                            />
+                            <Input 
+                              type="number" 
+                              min="1" 
+                              max="100" 
+                              className="w-16 text-right"
+                              value={editedAttributes[attr.id] !== undefined ? editedAttributes[attr.id] : attr.value}
+                              onChange={(e) => handleAttributeChange(attr.id, parseInt(e.target.value))}
+                            />
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </ul>
+          </Accordion>
         </CollapsibleContent>
       </Collapsible>
     </div>
