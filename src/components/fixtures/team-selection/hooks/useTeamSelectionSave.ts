@@ -68,7 +68,8 @@ export const useTeamSelectionSave = (
                 team_number: parseInt(teamId),
                 is_captain: teamCaptains[teamId] === selection.playerId ? true : false,
                 period_id: periodId,
-                duration: period.duration || 45
+                duration: period.duration || 45,
+                is_substitution: slotId.startsWith('sub-') || selection.isSubstitution === true
               });
             }
           });
