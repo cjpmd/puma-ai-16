@@ -53,41 +53,70 @@ export const EventsList = ({
 }: EventsListProps) => {
   // Use useMemo to deduplicate fixtures by ID
   const uniqueFixtures = useMemo(() => {
-    const fixtureMap = new Map<string, Fixture>();
+    if (!fixtures?.length) return [];
     
-    fixtures?.forEach(fixture => {
-      if (!fixtureMap.has(fixture.id)) {
-        fixtureMap.set(fixture.id, fixture);
+    const fixtureIds = new Set();
+    const deduplicatedFixtures = [];
+    
+    // Only add each fixture once, based on its ID
+    fixtures.forEach(fixture => {
+      if (!fixtureIds.has(fixture.id)) {
+        fixtureIds.add(fixture.id);
+        deduplicatedFixtures.push(fixture);
       }
     });
     
-    return Array.from(fixtureMap.values());
+    return deduplicatedFixtures;
   }, [fixtures]);
 
   // Also deduplicate festivals and tournaments to be safe
   const uniqueFestivals = useMemo(() => {
     if (!festivals?.length) return [];
-    const festivalMap = new Map();
+    const festivalIds = new Set();
+    const deduplicatedFestivals = [];
+    
     festivals.forEach(festival => {
-      if (!festivalMap.has(festival.id)) {
-        festivalMap.set(festival.id, festival);
+      if (!festivalIds.has(festival.id)) {
+        festivalIds.add(festival.id);
+        deduplicatedFestivals.push(festival);
       }
     });
-    return Array.from(festivalMap.values());
+    
+    return deduplicatedFestivals;
   }, [festivals]);
 
   const uniqueTournaments = useMemo(() => {
     if (!tournaments?.length) return [];
-    const tournamentMap = new Map();
+    const tournamentIds = new Set();
+    const deduplicatedTournaments = [];
+    
     tournaments.forEach(tournament => {
-      if (!tournamentMap.has(tournament.id)) {
-        tournamentMap.set(tournament.id, tournament);
+      if (!tournamentIds.has(tournament.id)) {
+        tournamentIds.add(tournament.id);
+        deduplicatedTournaments.push(tournament);
       }
     });
-    return Array.from(tournamentMap.values());
+    
+    return deduplicatedTournaments;
   }, [tournaments]);
 
-  const hasEvents = uniqueFestivals?.length || uniqueTournaments?.length || uniqueFixtures?.length || sessions?.length;
+  // Also deduplicate sessions to be consistent
+  const uniqueSessions = useMemo(() => {
+    if (!sessions?.length) return [];
+    const sessionIds = new Set();
+    const deduplicatedSessions = [];
+    
+    sessions.forEach(session => {
+      if (!sessionIds.has(session.id)) {
+        sessionIds.add(session.id);
+        deduplicatedSessions.push(session);
+      }
+    });
+    
+    return deduplicatedSessions;
+  }, [sessions]);
+
+  const hasEvents = uniqueFestivals?.length || uniqueTournaments?.length || uniqueFixtures?.length || uniqueSessions?.length;
 
   console.log("EventsList rendering fixtures:", uniqueFixtures?.map(f => f.id));
   console.log("EventsList rendering festivals:", uniqueFestivals?.length);
@@ -141,7 +170,7 @@ export const EventsList = ({
             />
           ))}
           
-          {sessions?.map((session) => (
+          {uniqueSessions?.map((session) => (
             <SessionCard 
               key={session.id}
               session={{

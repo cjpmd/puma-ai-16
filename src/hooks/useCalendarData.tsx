@@ -155,23 +155,23 @@ export const useCalendarData = (date: Date) => {
         // Create a Map to store unique fixtures by ID
         const fixturesMap = new Map();
         
-        // First pass: add all fixtures to the map by their ID
+        // Process all fixtures
         fixturesData.forEach(fixture => {
-          if (!fixturesMap.has(fixture.id)) {
-            fixturesMap.set(fixture.id, { 
-              ...fixture, 
-              // Initialize with empty arrays that will be populated in the second pass
+          const fixtureId = fixture.id;
+          
+          if (!fixturesMap.has(fixtureId)) {
+            // If this is the first time we're seeing this fixture, add it to the map
+            fixturesMap.set(fixtureId, {
+              ...fixture,
               fixture_team_times: [],
               fixture_team_scores: []
             });
           }
-        });
-        
-        // Second pass: populate the fixture_team_times and fixture_team_scores arrays
-        fixturesData.forEach(fixture => {
-          const uniqueFixture = fixturesMap.get(fixture.id);
           
-          // Add team times if they're not already in the array
+          // Get the stored unique fixture
+          const uniqueFixture = fixturesMap.get(fixtureId);
+          
+          // Collect team times if they exist and aren't already in the array
           if (fixture.fixture_team_times && fixture.fixture_team_times.length > 0) {
             fixture.fixture_team_times.forEach(teamTime => {
               if (!uniqueFixture.fixture_team_times.some(tt => tt.id === teamTime.id)) {
@@ -180,7 +180,7 @@ export const useCalendarData = (date: Date) => {
             });
           }
           
-          // Add team scores if they're not already in the array
+          // Collect team scores if they exist and aren't already in the array
           if (fixture.fixture_team_scores && fixture.fixture_team_scores.length > 0) {
             fixture.fixture_team_scores.forEach(teamScore => {
               if (!uniqueFixture.fixture_team_scores.some(ts => ts.id === teamScore.id)) {
@@ -190,12 +190,15 @@ export const useCalendarData = (date: Date) => {
           }
         });
         
+        // Convert the Map values to an array
         const uniqueFixtures = Array.from(fixturesMap.values());
         console.log("Unique fixtures after deduplication:", uniqueFixtures.length, "items");
 
+        // Get fixture IDs for attendance query
         const fixtureIds = uniqueFixtures.map(f => f.id);
         console.log("Fetching attendance for fixture IDs:", fixtureIds);
 
+        // Fetch attendance data for these fixtures
         const { data: attendanceData, error: attendanceError } = await supabase
           .from("event_attendance")
           .select("status, player_id, responded_by, event_id")
@@ -207,6 +210,7 @@ export const useCalendarData = (date: Date) => {
           throw attendanceError;
         }
         
+        // Add attendance data to each fixture
         const result = uniqueFixtures.map(fixture => ({
           ...fixture,
           event_attendance: (attendanceData || []).filter(a => a.event_id === fixture.id)

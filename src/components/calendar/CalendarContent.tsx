@@ -64,9 +64,31 @@ export const CalendarContent = ({
   
   // Update local state when props change
   useEffect(() => {
-    setLocalFixtures(fixtures);
-    setLocalFestivals(festivals);
-    setLocalTournaments(tournaments);
+    // Ensure we deduplicate fixtures by ID here as well
+    const uniqueFixturesMap = new Map();
+    fixtures?.forEach(fixture => {
+      if (!uniqueFixturesMap.has(fixture.id)) {
+        uniqueFixturesMap.set(fixture.id, fixture);
+      }
+    });
+    setLocalFixtures(Array.from(uniqueFixturesMap.values()));
+    
+    // Do the same for festivals and tournaments
+    const uniqueFestivalsMap = new Map();
+    festivals?.forEach(festival => {
+      if (!uniqueFestivalsMap.has(festival.id)) {
+        uniqueFestivalsMap.set(festival.id, festival);
+      }
+    });
+    setLocalFestivals(Array.from(uniqueFestivalsMap.values()));
+    
+    const uniqueTournamentsMap = new Map();
+    tournaments?.forEach(tournament => {
+      if (!uniqueTournamentsMap.has(tournament.id)) {
+        uniqueTournamentsMap.set(tournament.id, tournament);
+      }
+    });
+    setLocalTournaments(Array.from(uniqueTournamentsMap.values()));
   }, [fixtures, festivals, tournaments]);
 
   const handleFixtureDelete = async (fixtureId: string) => {
