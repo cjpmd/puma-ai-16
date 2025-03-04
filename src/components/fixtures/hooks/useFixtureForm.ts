@@ -7,7 +7,7 @@ import { FixtureFormData } from "../schemas/fixtureFormSchema";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface UseFixtureFormProps {
-  onSubmit?: (data: FixtureFormData) => void;
+  onSubmit?: (data: FixtureFormData) => Promise<FixtureFormData>;
   editingFixture?: any;
   selectedDate?: Date;
 }
@@ -247,7 +247,12 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         console.log("Final fixture data with MOTM player IDs:", savedFixture);
         
         if (onSubmit) {
-          await onSubmit(savedFixture);
+          // Call the onSubmit callback with the saved fixture data
+          const result = await onSubmit(savedFixture);
+          // We will return the original fixture data if the onSubmit doesn't return anything
+          if (result) {
+            return result;
+          }
         }
         
         toast({
@@ -257,6 +262,9 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         
         return savedFixture;
       }
+      
+      // Return the original data if we couldn't save the fixture
+      return data;
     } catch (error) {
       console.error("Error saving fixture:", error);
       toast({

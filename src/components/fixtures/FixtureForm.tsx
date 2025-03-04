@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,33 +30,28 @@ export const FixtureForm = ({
   isSubmitting: externalIsSubmitting,
   showDateSelector = false
 }: FixtureFormProps) => {
-  // Get initial MOTM player IDs from fixture_team_scores
   const getInitialMotmPlayerIds = () => {
     if (editingFixture?.fixture_team_scores && editingFixture.fixture_team_scores.length > 0) {
-      // Map the MOTM player IDs from team scores, maintaining the team order
       const sortedScores = [...editingFixture.fixture_team_scores].sort((a, b) => a.team_number - b.team_number);
       const motmPlayerIds = sortedScores.map(score => score.motm_player_id || "");
       console.log("Initial MOTM player IDs from team scores:", motmPlayerIds);
       return motmPlayerIds;
     }
 
-    // If we don't have team scores but have a single MOTM/POTM player
     if (editingFixture?.motm_player_id || editingFixture?.potm_player_id) {
       const playerId = editingFixture?.motm_player_id || editingFixture?.potm_player_id;
       const numberOfTeams = editingFixture?.number_of_teams || 1;
       const motmPlayerIds = Array(numberOfTeams).fill("");
-      motmPlayerIds[0] = playerId; // Set for first team only
+      motmPlayerIds[0] = playerId;
       console.log("Initial MOTM player IDs from single MOTM:", motmPlayerIds);
       return motmPlayerIds;
     }
 
-    // Default to empty array with correct length
     const emptyIds = Array(editingFixture?.number_of_teams || 1).fill("");
     console.log("Default empty MOTM player IDs:", emptyIds);
     return emptyIds;
   };
 
-  // Initialize the form with the editing fixture data if available
   const getInitialTeamTimes = () => {
     if (editingFixture?.fixture_team_times && editingFixture?.fixture_team_times.length > 0) {
       return editingFixture.fixture_team_times.map((time: any) => ({
@@ -97,16 +91,19 @@ export const FixtureForm = ({
     },
   });
 
-  const { handleSubmit, isSubmitting: localIsSubmitting } = useFixtureForm({ onSubmit, editingFixture, selectedDate });
+  const { handleSubmit, isSubmitting: localIsSubmitting } = useFixtureForm({ 
+    onSubmit, 
+    editingFixture, 
+    selectedDate 
+  });
+
   const watchNumberOfTeams = parseInt(form.watch("number_of_teams") || "1");
   const watchOpponent = form.watch("opponent");
   const watchIsHome = form.watch("is_home");
   const watchMotmPlayerIds = form.watch("motm_player_ids");
   
-  // Combine both local and external isSubmitting state for better feedback
   const isSubmitting = localIsSubmitting || externalIsSubmitting;
 
-  // Log form values when they change for debugging
   useEffect(() => {
     console.log("Current form values:", form.getValues());
     console.log("MOTM player IDs:", watchMotmPlayerIds);
@@ -114,16 +111,12 @@ export const FixtureForm = ({
 
   useTeamTimes(form, editingFixture, watchNumberOfTeams);
 
-  // When number of teams changes, ensure motm_player_ids array has correct length
   useEffect(() => {
     const currentMotmIds = [...(form.getValues().motm_player_ids || [])];
     
-    // If we need to resize the array
     if (currentMotmIds.length !== watchNumberOfTeams) {
-      // Create a new array with the correct size
       const newMotmIds = Array(watchNumberOfTeams).fill("");
       
-      // Copy existing values
       for (let i = 0; i < Math.min(currentMotmIds.length, watchNumberOfTeams); i++) {
         newMotmIds[i] = currentMotmIds[i] || "";
       }
@@ -133,7 +126,6 @@ export const FixtureForm = ({
     }
   }, [watchNumberOfTeams, form]);
 
-  // Force reset form values when editingFixture changes
   useEffect(() => {
     if (editingFixture) {
       const motmIds = getInitialMotmPlayerIds();

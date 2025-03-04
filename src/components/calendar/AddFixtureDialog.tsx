@@ -86,12 +86,12 @@ export const AddFixtureDialog = ({
     }
   }, [completeFixture]);
 
-  const onSubmit = async (data: FixtureFormData) => {
+  const onSubmit = async (data: FixtureFormData): Promise<FixtureFormData> => {
     try {
       // Prevent duplicate submissions
       if (preventDuplicateSubmission) {
         console.log("Preventing duplicate submission");
-        return null;
+        return data; // Return the original data if we're preventing duplicate submission
       }
       
       setPreventDuplicateSubmission(true);
@@ -106,23 +106,19 @@ export const AddFixtureDialog = ({
         throw new Error("Date is required");
       }
 
-      // We'll let the useFixtureForm handle the actual saving
-      const enhancedFixture = await onSuccess();
+      // Let the parent component know about the submission
+      onSuccess();
       
-      if (enhancedFixture) {
-        setNewFixture(enhancedFixture);
-      }
+      // We'll treat data as the enhanced fixture for our purposes
+      setNewFixture(data as unknown as Fixture);
       
       if (!showTeamSelection) {
         onOpenChange(false);
       }
 
-      // No need for a success toast here as useFixtureForm will show one
-      
-      return enhancedFixture;
+      return data;
     } catch (error) {
       console.error("Error in onSubmit:", error);
-      // No need for error toast here as useFixtureForm will show one
       throw error;
     } finally {
       setIsSubmitting(false);
