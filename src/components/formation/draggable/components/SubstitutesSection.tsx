@@ -45,7 +45,7 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
             onClick={() => handleRemovePlayer(slotId)}
             className="text-red-500 hover:text-red-700"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
       );

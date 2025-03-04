@@ -39,10 +39,16 @@ export const useDraggableFormation = ({
   });
   
   const { 
-    handleDragStart, 
+    handleDragStart: originalHandleDragStart, 
     handleDragEnd, 
     handlePlayerSelect: originalHandlePlayerSelect 
   } = useDragOperations();
+  
+  // Wrapper for handleDragStart to update draggingPlayer
+  const handleDragStart = (e: React.DragEvent, playerId: string) => {
+    originalHandleDragStart(e, playerId);
+    setDraggingPlayer(playerId);
+  };
   
   // Wrapper for handlePlayerSelect to update selectedPlayerId
   const handlePlayerSelect = (playerId: string) => {
@@ -68,6 +74,11 @@ export const useDraggableFormation = ({
     updateSelections: setSelections,
     onSelectionChange
   });
+
+  // Initialize substitution counter
+  useEffect(() => {
+    initializeSubCounter();
+  }, []);
 
   // Update parent component when selections change
   useEffect(() => {
