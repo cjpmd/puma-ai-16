@@ -19,11 +19,11 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
   const [preventDuplicateSubmission, setPreventDuplicateSubmission] = useState(false);
   const [submissionId, setSubmissionId] = useState<string>("");
 
-  const handleSubmit = async (data: FixtureFormData) => {
+  const handleSubmit = async (data: FixtureFormData): Promise<FixtureFormData> => {
     // Prevent duplicate submissions
     if (preventDuplicateSubmission) {
       console.log("Preventing duplicate submission in useFixtureForm");
-      return;
+      return data;
     }
     
     setPreventDuplicateSubmission(true);
@@ -248,10 +248,15 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         
         if (onSubmit) {
           // Call the onSubmit callback with the saved fixture data
-          const result = await onSubmit(savedFixture);
-          // We will return the original fixture data if the onSubmit doesn't return anything
-          if (result) {
-            return result;
+          try {
+            const result = await onSubmit(savedFixture);
+            // Return the result from onSubmit if it returns something
+            if (result) {
+              return result;
+            }
+          } catch (error) {
+            console.error("Error in onSubmit callback:", error);
+            // Continue and return the savedFixture even if onSubmit fails
           }
         }
         
@@ -272,7 +277,8 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
         title: "Error",
         description: "Failed to save fixture: " + (error.message || "Unknown error"),
       });
-      throw error;
+      // Return the original data on error
+      return data;
     } finally {
       setIsSubmitting(false);
       // We intentionally don't reset preventDuplicateSubmission here to prevent multiple submissions
