@@ -16,38 +16,37 @@ export const AvailablePlayersSection: React.FC<AvailablePlayersSectionProps> = (
   handleDragStart,
   handleDragEnd
 }) => {
-  if (availableSquadPlayers.length === 0) {
-    return (
-      <div className="mt-4">
-        <h3 className="font-bold mb-2">Available Players</h3>
-        <div className="text-gray-400 text-center py-4 border-2 border-dashed border-gray-300 rounded">
-          All players have been assigned
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="mt-4">
       <h3 className="font-bold mb-2">Available Players</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
         {availableSquadPlayers.map(player => (
           <div
             key={player.id}
-            className={`p-2 rounded cursor-pointer flex items-center ${
-              selectedPlayerId === player.id ? 'bg-blue-100 border-2 border-blue-500' : 'bg-gray-100 hover:bg-gray-200'
-            }`}
-            onClick={() => handlePlayerSelect(player.id)}
+            className={`
+              flex flex-col items-center p-2 border rounded cursor-pointer
+              ${selectedPlayerId === player.id ? 'bg-blue-100 border-blue-500' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
+            `}
             draggable
             onDragStart={(e) => handleDragStart(e, player.id)}
             onDragEnd={handleDragEnd}
+            onClick={() => handlePlayerSelect(player.id)}
           >
-            <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center mr-2">
+            <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center mb-1">
               {player.squad_number || player.name.charAt(0)}
             </div>
-            <span className="truncate">{player.name}</span>
+            <span className="text-xs font-medium text-center">{player.name}</span>
+            {player.squad_number && (
+              <span className="text-xs text-gray-500">#{player.squad_number}</span>
+            )}
           </div>
         ))}
+        
+        {availableSquadPlayers.length === 0 && (
+          <div className="col-span-full text-center text-gray-500 py-4">
+            No available players. All players are assigned to positions.
+          </div>
+        )}
       </div>
     </div>
   );
