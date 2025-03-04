@@ -1,10 +1,8 @@
-
 import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
 import { EventsList } from "@/components/calendar/events/EventsList";
-import { ObjectivesList } from "@/components/calendar/ObjectivesList";
-import { useCalendarEventHandlers } from "@/components/calendar/hooks/useCalendarEventHandlers";
-import { useState, useEffect } from "react";
+import { CalendarSection } from "@/components/calendar/CalendarSection";
+import { useCalendarContentState } from "@/components/calendar/hooks/useCalendarContentState";
+import { useContentEventHandlers } from "@/components/calendar/hooks/useContentEventHandlers";
 
 interface CalendarContentProps {
   date: Date;
@@ -47,136 +45,54 @@ export const CalendarContent = ({
   onRefetchTournaments,
   onEditObjective
 }: CalendarContentProps) => {
+  // Use the extracted hook for state management
   const {
-    handleDeleteFixture,
-    handleUpdateFixtureDate,
-    handleDeleteSession,
-    handleUpdateFestivalDate,
-    handleDeleteFestival,
-    handleDeleteTournament,
+    localFixtures,
+    setLocalFixtures,
+    localFestivals,
+    setLocalFestivals,
+    localTournaments,
+    setLocalTournaments
+  } = useCalendarContentState({
+    fixtures,
+    festivals,
+    tournaments,
+    onRefetchFixtures,
+    onRefetchFestivals,
+    onRefetchTournaments
+  });
+
+  // Use the extracted hook for event handlers
+  const {
+    handleFixtureDelete,
+    handleFixtureEdit,
+    handleFestivalDelete,
+    handleTournamentDelete,
+    handleFixtureDateChange,
+    handleSessionDelete,
     handleUpdateTournamentDate
-  } = useCalendarEventHandlers();
-  
-  // Add a local state to ensure we can force updates
-  const [localFixtures, setLocalFixtures] = useState(fixtures);
-  const [localFestivals, setLocalFestivals] = useState(festivals);
-  const [localTournaments, setLocalTournaments] = useState(tournaments);
-  
-  // Update local state when props change
-  useEffect(() => {
-    // Ensure we deduplicate fixtures by ID here as well
-    const uniqueFixturesMap = new Map();
-    fixtures?.forEach(fixture => {
-      if (!uniqueFixturesMap.has(fixture.id)) {
-        uniqueFixturesMap.set(fixture.id, fixture);
-      }
-    });
-    setLocalFixtures(Array.from(uniqueFixturesMap.values()));
-    
-    // Do the same for festivals and tournaments
-    const uniqueFestivalsMap = new Map();
-    festivals?.forEach(festival => {
-      if (!uniqueFestivalsMap.has(festival.id)) {
-        uniqueFestivalsMap.set(festival.id, festival);
-      }
-    });
-    setLocalFestivals(Array.from(uniqueFestivalsMap.values()));
-    
-    const uniqueTournamentsMap = new Map();
-    tournaments?.forEach(tournament => {
-      if (!uniqueTournamentsMap.has(tournament.id)) {
-        uniqueTournamentsMap.set(tournament.id, tournament);
-      }
-    });
-    setLocalTournaments(Array.from(uniqueTournamentsMap.values()));
-  }, [fixtures, festivals, tournaments]);
-
-  const handleFixtureDelete = async (fixtureId: string) => {
-    // Optimistic UI update - remove the fixture immediately
-    setLocalFixtures((prevFixtures) => 
-      prevFixtures.filter((fixture) => fixture.id !== fixtureId)
-    );
-    
-    const success = await handleDeleteFixture(fixtureId);
-    if (success) {
-      // Refetch to ensure data is up to date
-      onRefetchFixtures();
-    } else {
-      // If failed, revert the optimistic update
-      setLocalFixtures(fixtures);
-    }
-  };
-
-  const handleFixtureEdit = (fixture: any) => {
-    console.log("Handling fixture edit in CalendarContent for fixture:", fixture.id);
-    onEditFixture(fixture);
-  };
-
-  const handleFestivalDelete = async (festivalId: string) => {
-    // Optimistic UI update
-    setLocalFestivals((prevFestivals) => 
-      prevFestivals.filter((festival) => festival.id !== festivalId)
-    );
-    
-    const success = await handleDeleteFestival(festivalId);
-    if (success) {
-      onRefetchFestivals();
-    } else {
-      setLocalFestivals(festivals);
-    }
-  };
-
-  const handleTournamentDelete = async (tournamentId: string) => {
-    // Optimistic UI update
-    setLocalTournaments((prevTournaments) => 
-      prevTournaments.filter((tournament) => tournament.id !== tournamentId)
-    );
-    
-    const success = await handleDeleteTournament(tournamentId);
-    if (success && onRefetchTournaments) {
-      onRefetchTournaments();
-    } else {
-      setLocalTournaments(tournaments);
-    }
-  };
-
-  // Handle fixture date change with optimistic update
-  const handleFixtureDateChange = async (fixtureId: string, newDate: Date) => {
-    // Create an optimistic update for the fixture date
-    const updatedFixtures = localFixtures.filter(fixture => fixture.id !== fixtureId);
-    setLocalFixtures(updatedFixtures);
-    
-    // Call the real update function
-    await handleUpdateFixtureDate(fixtureId, newDate);
-    
-    // Refresh the data
-    onRefetchFixtures();
-  };
-
-  // Default handler for objective editing if none is provided
-  const handleEditObjective = (objective: any) => {
-    if (onEditObjective) {
-      onEditObjective(objective);
-    } else {
-      console.log("Edit objective handler not provided", objective);
-    }
-  };
+  } = useContentEventHandlers({
+    localFixtures,
+    setLocalFixtures,
+    localFestivals,
+    setLocalFestivals,
+    localTournaments,
+    setLocalTournaments,
+    onRefetchFixtures,
+    onRefetchSessions,
+    onRefetchFestivals,
+    onRefetchTournaments,
+    fixtures
+  });
 
   return (
     <div className="grid md:grid-cols-3 gap-6">
-      <div>
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={(newDate) => newDate && setDate(newDate)}
-          className="rounded-md border shadow"
-        />
-        <ObjectivesList 
-          date={date}
-          objectives={objectives} 
-          onEditObjective={handleEditObjective} 
-        />
-      </div>
+      <CalendarSection
+        date={date}
+        setDate={setDate}
+        objectives={objectives}
+        onEditObjective={onEditObjective}
+      />
 
       <EventsList
         date={date}
@@ -185,7 +101,7 @@ export const CalendarContent = ({
         fixtures={localFixtures}
         sessions={sessions}
         fileUrls={fileUrls}
-        onEditFixture={handleFixtureEdit}
+        onEditFixture={(fixture) => handleFixtureEdit(fixture, onEditFixture)}
         onDeleteFixture={handleFixtureDelete}
         onUpdateFixtureDate={handleFixtureDateChange}
         onAddDrill={(sessionId) => {
@@ -194,17 +110,12 @@ export const CalendarContent = ({
         onEditDrill={(sessionId, drill) => {
           // Handle edit drill logic
         }}
-        onDeleteSession={async (sessionId) => {
-          const success = await handleDeleteSession(sessionId);
-          if (success) {
-            onRefetchSessions();
-          }
-        }}
+        onDeleteSession={handleSessionDelete}
         onEditFestival={onEditFestival}
-        onDeleteFestival={handleFestivalDelete}
+        onDeleteFestival={(festivalId) => handleFestivalDelete(festivalId, festivals)}
         onTeamSelectionFestival={onTeamSelectionFestival}
         onEditTournament={onEditTournament}
-        onDeleteTournament={handleTournamentDelete}
+        onDeleteTournament={(tournamentId) => handleTournamentDelete(tournamentId, tournaments)}
         onTeamSelectionTournament={onTeamSelectionTournament}
         onUpdateTournamentDate={handleUpdateTournamentDate}
       />
