@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDraggableFormation } from "./hooks/useDraggableFormation";
 import { FormationHelperText } from "./FormationHelperText";
 import { FormationFormat } from "../types";
@@ -8,6 +8,7 @@ import { SubstitutesSection } from "./components/SubstitutesSection";
 import { AvailablePlayersSection } from "./components/AvailablePlayersSection";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getFormationTemplatesByFormat } from "../utils/formationFormatUtils";
 
 interface DraggableFormationProps {
   format: FormationFormat;
@@ -27,6 +28,8 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   renderSubstitutionIndicator
 }) => {
   const [selectedFormat, setSelectedFormat] = useState<FormationFormat>(format);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("All");
+  const formationTemplates = getFormationTemplatesByFormat(selectedFormat);
   
   const {
     selectedPlayerId,
@@ -48,6 +51,11 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     squadPlayers
   });
 
+  // Update template when format changes
+  useEffect(() => {
+    setSelectedTemplate("All");
+  }, [selectedFormat]);
+
   const availableSquadPlayers = getAvailableSquadPlayers();
 
   const handleFormatChange = (newFormat: FormationFormat) => {
@@ -60,20 +68,38 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex justify-between items-center">
             <span>Team Formation</span>
-            <Select
-              value={selectedFormat}
-              onValueChange={(value) => handleFormatChange(value as FormationFormat)}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select format" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5-a-side">5-a-side</SelectItem>
-                <SelectItem value="7-a-side">7-a-side</SelectItem>
-                <SelectItem value="9-a-side">9-a-side</SelectItem>
-                <SelectItem value="11-a-side">11-a-side</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex space-x-2">
+              <Select
+                value={selectedTemplate}
+                onValueChange={setSelectedTemplate}
+              >
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Formation" />
+                </SelectTrigger>
+                <SelectContent>
+                  {formationTemplates.map(template => (
+                    <SelectItem key={template.name} value={template.name}>
+                      {template.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select
+                value={selectedFormat}
+                onValueChange={(value) => handleFormatChange(value as FormationFormat)}
+              >
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5-a-side">5-a-side</SelectItem>
+                  <SelectItem value="7-a-side">7-a-side</SelectItem>
+                  <SelectItem value="9-a-side">9-a-side</SelectItem>
+                  <SelectItem value="11-a-side">11-a-side</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -93,6 +119,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
             handleDragStart={handleDragStart}
             handleDragEnd={handleDragEnd}
             renderSubstitutionIndicator={renderSubstitutionIndicator}
+            formationTemplate={selectedTemplate}
           />
         </CardContent>
       </Card>

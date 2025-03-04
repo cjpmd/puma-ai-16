@@ -15,6 +15,7 @@ interface FormationGridProps {
   handleDragStart: (e: React.DragEvent, playerId: string) => void;
   handleDragEnd: () => void;
   renderSubstitutionIndicator?: (position: string) => React.ReactNode;
+  formationTemplate?: string;
 }
 
 export const FormationGrid: React.FC<FormationGridProps> = ({
@@ -27,9 +28,10 @@ export const FormationGrid: React.FC<FormationGridProps> = ({
   getPlayer,
   handleDragStart,
   handleDragEnd,
-  renderSubstitutionIndicator
+  renderSubstitutionIndicator,
+  formationTemplate
 }) => {
-  const formationLayout = getFormationLayout(format);
+  const formationLayout = getFormationLayout(format, formationTemplate);
 
   return (
     <div 
@@ -38,14 +40,29 @@ export const FormationGrid: React.FC<FormationGridProps> = ({
     >
       {/* Field markings */}
       <div className="absolute inset-0 rounded-lg">
-        <div className="absolute top-0 left-0 right-0 border-t-4 border-white/70"></div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 border-b-4 border-white/70 rounded-b-full"></div>
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-32 border-4 border-white/70 border-b-0"></div>
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-12 border-4 border-white/70 border-b-0"></div>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/70"></div>
+        {/* Pitch outline */}
+        <div className="absolute inset-0 border-2 border-white/70 rounded-lg"></div>
+        
+        {/* Center circle */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-1/3 h-1/3 border-2 border-white/70 rounded-full"></div>
+          <div className="w-24 h-24 border-2 border-white/70 rounded-full"></div>
+          <div className="absolute w-2 h-2 bg-white/70 rounded-full"></div>
         </div>
+        
+        {/* Center line */}
+        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/70 -translate-y-1/2"></div>
+        
+        {/* Penalty areas */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-16 border-b-2 border-l-2 border-r-2 border-white/70"></div>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-16 border-t-2 border-l-2 border-r-2 border-white/70"></div>
+        
+        {/* Goal areas */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 border-b-2 border-l-2 border-r-2 border-white/70"></div>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-6 border-t-2 border-l-2 border-r-2 border-white/70"></div>
+        
+        {/* Penalty spots */}
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-white/70 rounded-full"></div>
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-white/70 rounded-full"></div>
       </div>
       
       {/* Position slots */}
@@ -61,7 +78,7 @@ export const FormationGrid: React.FC<FormationGridProps> = ({
           onRemovePlayer={handleRemovePlayer}
           renderSubstitutionIndicator={renderSubstitutionIndicator}
           dropProps={{
-            className: `absolute ${slot.gridArea}`,
+            className: `absolute`,
             style: { left: slot.x, top: slot.y, transform: 'translate(-50%, -50%)' },
             onDragOver: (e) => e.preventDefault(),
             onDragLeave: (e) => e.preventDefault(),

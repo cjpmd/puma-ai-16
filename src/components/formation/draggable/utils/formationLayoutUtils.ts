@@ -1,6 +1,7 @@
 
 import { FormationFormat } from "../../types";
 import { positionDefinitions } from "../../utils/positionDefinitions";
+import { FORMATION_7_A_SIDE, FORMATION_9_A_SIDE } from "../../utils/formationTemplates";
 
 interface FormationSlot {
   id: string;
@@ -16,89 +17,75 @@ interface FormationLayout {
   slots: FormationSlot[];
 }
 
-// Get formation layout based on format
-export const getFormationLayout = (format: FormationFormat): FormationLayout => {
+// Get formation layout based on format and template
+export const getFormationLayout = (format: FormationFormat, template?: string): FormationLayout => {
+  let defaultPositions: string[] = [];
+  let customPositions: string[] = [];
+  
+  // Apply template if specified
+  if (template && template !== "All") {
+    if (format === "7-a-side") {
+      customPositions = FORMATION_7_A_SIDE[template as keyof typeof FORMATION_7_A_SIDE] || [];
+    } else if (format === "9-a-side") {
+      customPositions = FORMATION_9_A_SIDE[template as keyof typeof FORMATION_9_A_SIDE] || [];
+    }
+  }
+  
   switch (format) {
     case '5-a-side':
-      return {
-        positions: ['GK', 'DEF', 'DEF', 'MID', 'ATT'],
-        layout: 'grid-cols-3 grid-rows-3',
-        slots: [
-          { id: 'gk', position: 'GK', gridArea: 'col-start-2 row-start-3', x: '50%', y: '90%' },
-          { id: 'def-l', position: 'DEF', gridArea: 'col-start-1 row-start-2', x: '25%', y: '70%' },
-          { id: 'def-r', position: 'DEF', gridArea: 'col-start-3 row-start-2', x: '75%', y: '70%' },
-          { id: 'mid', position: 'MID', gridArea: 'col-start-2 row-start-2', x: '50%', y: '50%' },
-          { id: 'att', position: 'ATT', gridArea: 'col-start-2 row-start-1', x: '50%', y: '20%' },
-        ]
-      };
+      defaultPositions = ['GK', 'DL', 'DR', 'MC', 'STC'];
+      break;
     case '7-a-side':
-      return {
-        positions: ['GK', 'DEF', 'DEF', 'MID', 'MID', 'ATT', 'ATT'],
-        layout: 'grid-cols-3 grid-rows-4',
-        slots: [
-          { id: 'gk', position: 'GK', gridArea: '', x: '50%', y: '90%' },
-          { id: 'def-l', position: 'DEF', gridArea: '', x: '25%', y: '75%' },
-          { id: 'def-r', position: 'DEF', gridArea: '', x: '75%', y: '75%' },
-          { id: 'mid-l', position: 'MID', gridArea: '', x: '30%', y: '50%' },
-          { id: 'mid-r', position: 'MID', gridArea: '', x: '70%', y: '50%' },
-          { id: 'att-l', position: 'ATT', gridArea: '', x: '35%', y: '25%' },
-          { id: 'att-r', position: 'ATT', gridArea: '', x: '65%', y: '25%' },
-        ]
-      };
+      defaultPositions = ['GK', 'DL', 'DC', 'DR', 'ML', 'MC', 'STC'];
+      break;
     case '9-a-side':
-      return {
-        positions: ['GK', 'DEF', 'DEF', 'DEF', 'MID', 'MID', 'MID', 'ATT', 'ATT'],
-        layout: 'grid-cols-5 grid-rows-4',
-        slots: [
-          { id: 'gk', position: 'GK', gridArea: '', x: '50%', y: '90%' },
-          { id: 'def-l', position: 'DEF', gridArea: '', x: '20%', y: '75%' },
-          { id: 'def-c', position: 'DEF', gridArea: '', x: '50%', y: '75%' },
-          { id: 'def-r', position: 'DEF', gridArea: '', x: '80%', y: '75%' },
-          { id: 'mid-l', position: 'MID', gridArea: '', x: '25%', y: '50%' },
-          { id: 'mid-c', position: 'MID', gridArea: '', x: '50%', y: '50%' },
-          { id: 'mid-r', position: 'MID', gridArea: '', x: '75%', y: '50%' },
-          { id: 'att-l', position: 'ATT', gridArea: '', x: '35%', y: '25%' },
-          { id: 'att-r', position: 'ATT', gridArea: '', x: '65%', y: '25%' },
-        ]
-      };
+      defaultPositions = ['GK', 'DL', 'DCL', 'DCR', 'DR', 'MC', 'ML', 'MR', 'STC'];
+      break;
     case '11-a-side':
-      return {
-        positions: ['GK', 'DEF', 'DEF', 'DEF', 'DEF', 'MID', 'MID', 'MID', 'MID', 'ATT', 'ATT'],
-        layout: 'grid-cols-5 grid-rows-4',
-        slots: [
-          { id: 'gk', position: 'GK', gridArea: '', x: '50%', y: '90%' },
-          { id: 'def-l', position: 'DEF', gridArea: '', x: '15%', y: '75%' },
-          { id: 'def-cl', position: 'DEF', gridArea: '', x: '35%', y: '75%' },
-          { id: 'def-cr', position: 'DEF', gridArea: '', x: '65%', y: '75%' },
-          { id: 'def-r', position: 'DEF', gridArea: '', x: '85%', y: '75%' },
-          { id: 'mid-l', position: 'MID', gridArea: '', x: '20%', y: '50%' },
-          { id: 'mid-cl', position: 'MID', gridArea: '', x: '40%', y: '50%' },
-          { id: 'mid-cr', position: 'MID', gridArea: '', x: '60%', y: '50%' },
-          { id: 'mid-r', position: 'MID', gridArea: '', x: '80%', y: '50%' },
-          { id: 'att-l', position: 'ATT', gridArea: '', x: '35%', y: '25%' },
-          { id: 'att-r', position: 'ATT', gridArea: '', x: '65%', y: '25%' },
-        ]
-      };
+      defaultPositions = ['GK', 'DL', 'DCL', 'DCR', 'DR', 'ML', 'MC', 'MR', 'AML', 'STC', 'AMR'];
+      break;
     default:
-      return {
-        positions: ['GK', 'DEF', 'DEF', 'MID', 'MID', 'ATT', 'ATT'],
-        layout: 'grid-cols-3 grid-rows-4',
-        slots: [
-          { id: 'gk', position: 'GK', gridArea: '', x: '50%', y: '90%' },
-          { id: 'def-l', position: 'DEF', gridArea: '', x: '25%', y: '75%' },
-          { id: 'def-r', position: 'DEF', gridArea: '', x: '75%', y: '75%' },
-          { id: 'mid-l', position: 'MID', gridArea: '', x: '30%', y: '50%' },
-          { id: 'mid-r', position: 'MID', gridArea: '', x: '70%', y: '50%' },
-          { id: 'att-l', position: 'ATT', gridArea: '', x: '35%', y: '25%' },
-          { id: 'att-r', position: 'ATT', gridArea: '', x: '65%', y: '25%' },
-        ]
-      };
+      defaultPositions = ['GK', 'DL', 'DC', 'DR', 'ML', 'MC', 'MR', 'STC'];
   }
+  
+  // Use template positions if available, otherwise use default
+  const positions = customPositions.length > 0 ? customPositions : defaultPositions;
+  
+  // Generate slots based on positions
+  const slots = positions.map(pos => {
+    const id = pos.toLowerCase();
+    const posData = positionDefinitions[pos];
+    
+    if (!posData) {
+      console.warn(`Position ${pos} not found in definitions`);
+      return {
+        id,
+        position: pos,
+        gridArea: '',
+        x: '50%',
+        y: '50%'
+      };
+    }
+    
+    return {
+      id,
+      position: pos,
+      gridArea: '',
+      x: posData.x,
+      y: posData.y
+    };
+  });
+  
+  return {
+    positions,
+    layout: `grid-cols-${format === '5-a-side' ? 3 : 5} grid-rows-4`,
+    slots
+  };
 };
 
 // Helper function to get specific positions for a formation type
-export const getPositionsForFormation = (format: FormationFormat): string[] => {
-  const layout = getFormationLayout(format);
+export const getPositionsForFormation = (format: FormationFormat, template?: string): string[] => {
+  const layout = getFormationLayout(format, template);
   return layout.positions;
 };
 
