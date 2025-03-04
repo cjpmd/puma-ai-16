@@ -34,12 +34,18 @@ export const FormationGrid: React.FC<FormationGridProps> = ({
   return (
     <div 
       ref={formationRef}
-      className={`grid ${formationLayout.layout} gap-4 max-w-3xl mx-auto h-[400px] bg-green-100 rounded-lg p-4 relative`}
+      className="relative w-full h-[400px] bg-green-600 rounded-lg p-4"
     >
       {/* Field markings */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-1/2 h-1/2 border-2 border-white rounded-full opacity-30"></div>
-        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/3 h-1/4 border-2 border-white border-b-0 opacity-30"></div>
+      <div className="absolute inset-0 rounded-lg">
+        <div className="absolute top-0 left-0 right-0 border-t-4 border-white/70"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 border-b-4 border-white/70 rounded-b-full"></div>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-32 border-4 border-white/70 border-b-0"></div>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-12 border-4 border-white/70 border-b-0"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/70"></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-1/3 h-1/3 border-2 border-white/70 rounded-full"></div>
+        </div>
       </div>
       
       {/* Position slots */}
@@ -56,6 +62,7 @@ export const FormationGrid: React.FC<FormationGridProps> = ({
           renderSubstitutionIndicator={renderSubstitutionIndicator}
           dropProps={{
             className: `absolute ${slot.gridArea}`,
+            style: { left: slot.x, top: slot.y, transform: 'translate(-50%, -50%)' },
             onDragOver: (e) => e.preventDefault(),
             onDragLeave: (e) => e.preventDefault(),
             onDrop: (e) => {

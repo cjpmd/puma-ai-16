@@ -13,6 +13,7 @@ export interface FormationPositionSlotProps {
   renderSubstitutionIndicator?: (position: string) => React.ReactNode;
   dropProps: {
     className: string;
+    style?: React.CSSProperties;
     onDragOver: (e: React.DragEvent) => void;
     onDragLeave: (e: React.DragEvent) => void;
     onDrop: (e: React.DragEvent) => void;
@@ -51,8 +52,8 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
   return (
     <div
       {...dropProps}
-      className={`${dropProps.className} w-16 h-16 rounded-full flex items-center justify-center ${
-        !player ? 'border-2 border-dashed border-white/50 hover:border-white/80' : ''
+      className={`${dropProps.className} w-16 h-16 flex items-center justify-center z-10 ${
+        !player ? 'hover:cursor-pointer' : ''
       }`}
       onClick={() => {
         if (selectedPlayerId) {

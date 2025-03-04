@@ -1,11 +1,13 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useDraggableFormation } from "./hooks/useDraggableFormation";
 import { FormationHelperText } from "./FormationHelperText";
 import { FormationFormat } from "../types";
 import { FormationGrid } from "./components/FormationGrid";
 import { SubstitutesSection } from "./components/SubstitutesSection";
 import { AvailablePlayersSection } from "./components/AvailablePlayersSection";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface DraggableFormationProps {
   format: FormationFormat;
@@ -24,6 +26,8 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   onSelectionChange,
   renderSubstitutionIndicator
 }) => {
+  const [selectedFormat, setSelectedFormat] = useState<FormationFormat>(format);
+  
   const {
     selectedPlayerId,
     selections,
@@ -46,25 +50,52 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
 
   const availableSquadPlayers = getAvailableSquadPlayers();
 
+  const handleFormatChange = (newFormat: FormationFormat) => {
+    setSelectedFormat(newFormat);
+  };
+
   return (
     <div className="space-y-6">
-      <FormationHelperText 
-        draggingPlayer={draggingPlayer}
-        selectedPlayerId={selectedPlayerId}
-      />
-      
-      <FormationGrid 
-        format={format}
-        formationRef={formationRef}
-        selections={selections}
-        selectedPlayerId={selectedPlayerId}
-        handleDrop={handleDrop}
-        handleRemovePlayer={handleRemovePlayer}
-        getPlayer={getPlayer}
-        handleDragStart={handleDragStart}
-        handleDragEnd={handleDragEnd}
-        renderSubstitutionIndicator={renderSubstitutionIndicator}
-      />
+      <Card className="bg-white shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex justify-between items-center">
+            <span>Team Formation</span>
+            <Select
+              value={selectedFormat}
+              onValueChange={(value) => handleFormatChange(value as FormationFormat)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5-a-side">5-a-side</SelectItem>
+                <SelectItem value="7-a-side">7-a-side</SelectItem>
+                <SelectItem value="9-a-side">9-a-side</SelectItem>
+                <SelectItem value="11-a-side">11-a-side</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FormationHelperText 
+            draggingPlayer={draggingPlayer}
+            selectedPlayerId={selectedPlayerId}
+          />
+          
+          <FormationGrid 
+            format={selectedFormat}
+            formationRef={formationRef}
+            selections={selections}
+            selectedPlayerId={selectedPlayerId}
+            handleDrop={handleDrop}
+            handleRemovePlayer={handleRemovePlayer}
+            getPlayer={getPlayer}
+            handleDragStart={handleDragStart}
+            handleDragEnd={handleDragEnd}
+            renderSubstitutionIndicator={renderSubstitutionIndicator}
+          />
+        </CardContent>
+      </Card>
       
       <SubstitutesSection 
         selections={selections}
