@@ -1,3 +1,4 @@
+
 import React from "react";
 import { FormationFormat, FormationSlot, PlayerSelection } from "./types";
 import { getFormationSlots, getAllPositionSlots } from "./utils/formationUtils";
@@ -12,6 +13,7 @@ interface FormationSlotsProps {
   selectedPlayers?: Set<string>;
   onDrop?: (slotId: string, position: string) => void;
   showAllPositions?: boolean;
+  visiblePositions?: string[];
   renderSlot?: (
     slotId: string, 
     position: string, 
@@ -32,10 +34,16 @@ export const FormationSlots: React.FC<FormationSlotsProps> = ({
   selectedPlayers = new Set(),
   onDrop,
   showAllPositions = true,
+  visiblePositions = [],
   renderSlot
 }) => {
   // Get all formation slots
-  const formationSlots = getAllPositionSlots();
+  const allSlots = getAllPositionSlots();
+  
+  // Filter by visible positions if provided and not showing all positions
+  const formationSlots = visiblePositions.length > 0 && !showAllPositions
+    ? allSlots.filter(slot => visiblePositions.includes(slot.label))
+    : allSlots;
 
   // If renderSlot is provided, we're in drag-and-drop mode
   if (renderSlot) {

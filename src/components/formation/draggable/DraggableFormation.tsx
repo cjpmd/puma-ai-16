@@ -8,6 +8,8 @@ import { useDraggableFormation } from "./hooks/useDraggableFormation";
 import { FormationHelperText } from "./FormationHelperText";
 import { FormationPositionSlot } from "./FormationPositionSlot";
 import { FormationFormat } from "../types";
+import { FormationTemplateSelector } from "../FormationTemplateSelector";
+import { useFormationTemplate } from "../hooks/useFormationTemplate";
 
 interface DraggableFormationProps {
   format: FormationFormat;
@@ -46,8 +48,18 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     squadPlayers
   });
 
+  // Use the formation template hook
+  const { selectedTemplate, visiblePositions, handleTemplateChange } = useFormationTemplate(format);
+
   return (
     <div className="relative flex flex-col items-center">
+      {/* Formation Template Selector */}
+      <FormationTemplateSelector 
+        format={format}
+        selectedTemplate={selectedTemplate}
+        onTemplateChange={handleTemplateChange}
+      />
+      
       <div 
         ref={formationRef}
         className="relative w-[40%] mx-auto aspect-[2/3] bg-green-600 overflow-hidden mb-6 rounded-lg"
@@ -65,7 +77,8 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         <div className="absolute inset-0 z-10">
           <FormationSlots
             format={format}
-            showAllPositions={true}
+            showAllPositions={selectedTemplate === "All"}
+            visiblePositions={visiblePositions}
             onDrop={handleDrop}
             renderSlot={(slotId, position, dropProps) => {
               const selection = selections[slotId];
