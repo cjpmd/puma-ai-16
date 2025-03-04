@@ -10,10 +10,10 @@ interface TeamSectionsProps {
 
 export const TeamSections = ({ availablePlayers }: TeamSectionsProps) => {
   const { activeTeamId } = useTeamSelection();
-  const { periodsForTeam } = usePeriods();
+  const { periodsPerTeam } = usePeriods();
   
   // Get periods for the active team
-  const activePeriods = periodsForTeam(activeTeamId);
+  const activePeriods = periodsPerTeam[activeTeamId] || [];
   
   return (
     <div className="space-y-4">

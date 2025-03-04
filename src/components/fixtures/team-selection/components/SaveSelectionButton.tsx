@@ -12,17 +12,19 @@ interface SaveSelectionButtonProps {
 }
 
 export const SaveSelectionButton = ({ onSuccess, className }: SaveSelectionButtonProps) => {
-  const { fixture } = useTeamSelection();
+  const { fixture, convertToSaveFormat } = useTeamSelection();
   const { processSelections } = useProcessSelections();
   const { periodsPerTeam } = usePeriods();
-  const { selections, teamCaptains } = useTeamSelection();
+  const { teamCaptains } = useTeamSelection();
   
-  // Get all the processed selections
+  // Get the formatted data for saving
+  const { allSelections, periodsPerTeam: formattedPeriodsPerTeam, teamCaptains: formattedTeamCaptains } = convertToSaveFormat();
+  
   const { isSaving, handleSave } = useTeamSelectionSave(
     fixture?.id,
-    selections,
-    periodsPerTeam,
-    teamCaptains,
+    allSelections,
+    formattedPeriodsPerTeam,
+    formattedTeamCaptains,
     onSuccess
   );
 

@@ -27,7 +27,7 @@ export const useProcessSelections = () => {
         Object.entries(teamSelections).forEach(([slotId, selection]) => {
           // Safely check if selection is a valid object with the correct properties
           if (selection && typeof selection === 'object' && 'playerId' in selection) {
-            const { playerId, position } = selection as TeamSelection;
+            const { playerId, position } = selection;
             
             if (playerId && playerId !== "unassigned") {
               // Extract substitution status from slot ID or explicit flag
@@ -40,7 +40,7 @@ export const useProcessSelections = () => {
               selectionsToSave.push({
                 player_id: playerId,
                 position: position || slotId,
-                performance_category: selection.performanceCategory || "MESSI",
+                performance_category: 'performanceCategory' in selection ? selection.performanceCategory : "MESSI",
                 team_number: parseInt(teamId),
                 is_captain: teamCaptains[teamId] === playerId ? true : false,
                 period_id: periodId,

@@ -126,6 +126,6 @@ export const TeamSelectionManager = ({ fixture, onSuccess, onCancel }: TeamSelec
 
 // Wrap the hook in a component
 const TeamInitializationWrapper = () => {
-  useTeamInitialization();
+  const initTeams = useTeamInitialization();
   return null;
 };

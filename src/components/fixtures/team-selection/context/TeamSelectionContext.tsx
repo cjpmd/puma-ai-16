@@ -12,6 +12,8 @@ interface TeamSelectionContextType {
   setSelections: React.Dispatch<React.SetStateAction<Record<string, Record<string, Record<string, Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>>>>>; 
   activeTab: string;
   setActiveTab: React.Dispatch<React.SetStateAction<string>>;
+  activeTeamId: string;
+  setActiveTeamId: React.Dispatch<React.SetStateAction<string>>;
   handleSquadSelection: (teamId: string, playerIds: string[]) => void;
   handleCaptainChange: (teamId: string, playerId: string) => void;
   handleFormationChange: (teamId: string, halfId: string, periodId: string, newSelections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => void;
@@ -41,6 +43,7 @@ interface TeamSelectionProviderProps {
 
 export const TeamSelectionProvider = ({ children, fixture }: TeamSelectionProviderProps) => {
   const [activeTab, setActiveTab] = useState("0");
+  const [activeTeamId, setActiveTeamId] = useState("0");
   const [teams, setTeams] = useState<Record<string, { name: string; squadPlayers: string[] }>>({});
   const [teamCaptains, setTeamCaptains] = useState<Record<string, string>>({});
   const [selections, setSelections] = useState<Record<string, Record<string, Record<string, Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>>>>({}); 
@@ -193,6 +196,8 @@ export const TeamSelectionProvider = ({ children, fixture }: TeamSelectionProvid
     setSelections,
     activeTab,
     setActiveTab,
+    activeTeamId,
+    setActiveTeamId,
     handleSquadSelection,
     handleCaptainChange,
     handleFormationChange,

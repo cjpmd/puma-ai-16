@@ -51,7 +51,7 @@ const TeamSelectionContent = ({ onSuccess }: { onSuccess?: () => void }) => {
       <div className="flex justify-end mt-8">
         <SaveSelectionButton 
           onSuccess={onSuccess} 
-          size="lg"
+          className="px-6 py-2"
         />
       </div>
     </div>
