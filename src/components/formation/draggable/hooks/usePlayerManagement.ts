@@ -1,9 +1,13 @@
 
-export const usePlayerManagement = (
-  availablePlayers: any[],
-  squadPlayers: string[] = [],
-  selections: Record<string, { playerId: string; position: string }>
-) => {
+export const usePlayerManagement = ({
+  availablePlayers,
+  squadPlayers = [],
+  selections
+}: {
+  availablePlayers: any[];
+  squadPlayers?: string[];
+  selections: Record<string, { playerId: string; position: string }>;
+}) => {
   // Get player object from ID
   const getPlayer = (playerId: string) => {
     return availablePlayers.find(p => p.id === playerId);
