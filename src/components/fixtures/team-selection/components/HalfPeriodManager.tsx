@@ -1,17 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { ViewToggleButton } from "./ViewToggleButton";
-import { AllPeriodsView } from "./AllPeriodsView";
-import { PeriodSelector } from "./PeriodSelector";
-import { PeriodDurationInput } from "./PeriodDurationInput";
-import { SinglePeriodView } from "./SinglePeriodView";
-import { getFormationFormat } from "../utils/formationUtils";
-
-interface Period {
-  id: string;
-  duration: number;
-}
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Plus, Trash2 } from "lucide-react";
+import { DraggableFormation } from "@/components/formation/draggable";
+import { FormationFormat } from "@/components/formation/types";
 
 interface HalfPeriodManagerProps {
   title: string;
@@ -20,8 +15,9 @@ interface HalfPeriodManagerProps {
   availablePlayers: any[];
   squadPlayers: string[];
   onFormationChange: (halfId: string, periodId: string, selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => void;
-  performanceCategory?: string;
-  onPerformanceCategoryChange?: (value: string) => void;
+  performanceCategory: string;
+  onPerformanceCategoryChange: (value: string) => void;
+  selections?: Record<string, Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>;
 }
 
 export const HalfPeriodManager = ({
@@ -31,133 +27,141 @@ export const HalfPeriodManager = ({
   availablePlayers,
   squadPlayers,
   onFormationChange,
-  performanceCategory = "MESSI"
+  performanceCategory,
+  onPerformanceCategoryChange,
+  selections = {}
 }: HalfPeriodManagerProps) => {
-  const [activePeriod, setActivePeriod] = useState("period-1");
-  const [periods, setPeriods] = useState<Period[]>([
-    { id: "period-1", duration: 20 }
-  ]);
-  const [isGridView, setIsGridView] = useState(false);
-  const [periodSelections, setPeriodSelections] = useState<Record<string, Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>>({});
+  const [periodIds, setPeriodIds] = useState<string[]>(['period-1']);
+  const [activePeriod, setActivePeriod] = useState<string>('period-1');
+  const [format, setFormat] = useState<FormationFormat>('7-a-side');
   
-  const halfId = title.toLowerCase().replace(/\s+/g, '-');
+  // Initialize format based on fixture
+  useEffect(() => {
+    if (fixture?.format) {
+      const fixtureFormat = fixture.format.toLowerCase();
+      if (fixtureFormat.includes('5-a-side') || fixtureFormat.includes('5a')) {
+        setFormat('5-a-side');
+      } else if (fixtureFormat.includes('7-a-side') || fixtureFormat.includes('7a')) {
+        setFormat('7-a-side');
+      } else if (fixtureFormat.includes('9-a-side') || fixtureFormat.includes('9a')) {
+        setFormat('9-a-side');
+      } else if (fixtureFormat.includes('11-a-side') || fixtureFormat.includes('11a')) {
+        setFormat('11-a-side');
+      }
+    }
+  }, [fixture]);
   
-  const handleFormationChange = (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => {
-    // Store selections locally
-    setPeriodSelections(prev => ({
-      ...prev,
-      [activePeriod]: selections
-    }));
-    
-    // Pass to parent
-    onFormationChange(halfId, activePeriod, selections);
-    console.log(`Formation changed for ${title}, period ${activePeriod}:`, selections);
-  };
+  // Normalize half ID for internal use
+  const halfId = title.toLowerCase().replace(' ', '-');
 
-  const handleAllViewFormationChange = (periodId: string, selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => {
-    // Store selections locally
-    setPeriodSelections(prev => ({
-      ...prev,
-      [periodId]: selections
-    }));
-    
-    // Pass to parent
-    onFormationChange(halfId, periodId, selections);
-  };
-
-  const addNewPeriod = () => {
-    const newPeriodNumber = periods.length + 1;
+  // Handle adding a period
+  const handleAddPeriod = () => {
+    const newPeriodNumber = periodIds.length + 1;
     const newPeriodId = `period-${newPeriodNumber}`;
-    setPeriods([...periods, { id: newPeriodId, duration: 20 }]);
+    setPeriodIds(prev => [...prev, newPeriodId]);
     setActivePeriod(newPeriodId);
   };
 
-  const deletePeriod = (periodId: string) => {
-    if (periods.length <= 1) {
-      return; // Don't allow deleting the last period
+  // Handle removing a period
+  const handleRemovePeriod = (periodId: string) => {
+    if (periodIds.length <= 1) {
+      return; // Don't remove last period
     }
     
-    const newPeriods = periods.filter(p => p.id !== periodId);
-    setPeriods(newPeriods);
+    setPeriodIds(prev => prev.filter(id => id !== periodId));
     
-    // If we're deleting the active period, switch to the first available period
+    // If we're removing the active period, switch to the first period
     if (activePeriod === periodId) {
-      setActivePeriod(newPeriods[0].id);
+      setActivePeriod(periodIds.filter(id => id !== periodId)[0]);
     }
-    
-    // Remove selections for this period
-    const newSelections = { ...periodSelections };
-    delete newSelections[periodId];
-    setPeriodSelections(newSelections);
   };
 
-  const updatePeriodDuration = (periodId: string, duration: number) => {
-    setPeriods(periods.map(p => 
-      p.id === periodId ? { ...p, duration } : p
-    ));
+  // Handle formation changes
+  const handleFormationChange = (periodId: string, formationSelections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => {
+    // Add performance category to each selection
+    const selectionsWithCategory = Object.entries(formationSelections).reduce((acc, [slotId, selection]) => {
+      acc[slotId] = {
+        ...selection,
+        performanceCategory
+      };
+      return acc;
+    }, {});
+    
+    console.log(`Formation changed for ${title}, period ${periodId}:`, selectionsWithCategory);
+    onFormationChange(halfId, periodId, selectionsWithCategory);
   };
-  
-  // Get selections for a specific period
-  const getSelectionsForPeriod = (periodId: string) => {
-    return periodSelections[periodId] || {};
+
+  // Get selections for current period
+  const getCurrentPeriodSelections = () => {
+    return selections[activePeriod] || {};
   };
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>{title}</CardTitle>
-        <div className="flex items-center gap-2">
-          {!isGridView && (
-            <>
-              <PeriodSelector
-                periods={periods}
-                activePeriod={activePeriod}
-                onPeriodChange={setActivePeriod}
-                onAddPeriod={addNewPeriod}
-                onDeletePeriod={deletePeriod}
-              />
-              
-              <PeriodDurationInput
-                periodId={activePeriod}
-                duration={periods.find(p => p.id === activePeriod)?.duration || 20}
-                onDurationChange={updatePeriodDuration}
-              />
-            </>
-          )}
-          
-          <ViewToggleButton 
-            isGridView={isGridView} 
-            onToggle={() => setIsGridView(!isGridView)} 
-          />
+        <div className="flex items-center space-x-2">
+          <Select
+            value={performanceCategory}
+            onValueChange={onPerformanceCategoryChange}
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Performance" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="MESSI">Messi</SelectItem>
+              <SelectItem value="RONALDO">Ronaldo</SelectItem>
+              <SelectItem value="JAGS">Jags</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent>
-        {isGridView ? (
-          <AllPeriodsView
-            title={title}
-            teamId={teamId}
-            fixture={fixture}
-            periods={periods}
-            availablePlayers={availablePlayers}
-            squadPlayers={squadPlayers}
-            performanceCategory={performanceCategory}
-            getSelections={getSelectionsForPeriod}
-            onFormationChange={handleAllViewFormationChange}
-          />
-        ) : (
-          periods.map((period) => (
-            <SinglePeriodView
-              key={period.id}
-              period={period}
-              isActive={period.id === activePeriod}
-              format={getFormationFormat(fixture)}
-              availablePlayers={availablePlayers}
-              squadPlayers={squadPlayers}
-              selections={periodSelections[period.id] || {}}
-              onFormationChange={handleFormationChange}
-            />
-          ))
-        )}
+        <Tabs value={activePeriod} onValueChange={setActivePeriod}>
+          <div className="flex items-center justify-between mb-4">
+            <TabsList>
+              {periodIds.map(periodId => (
+                <TabsTrigger key={periodId} value={periodId}>
+                  Period {periodId.split('-')[1]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleAddPeriod}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Period
+              </Button>
+              
+              {periodIds.length > 1 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleRemovePeriod(activePeriod)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Remove
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {periodIds.map(periodId => (
+            <TabsContent key={periodId} value={periodId}>
+              <DraggableFormation
+                format={format}
+                availablePlayers={availablePlayers}
+                squadPlayers={squadPlayers}
+                initialSelections={getCurrentPeriodSelections()}
+                onSelectionChange={(selections) => handleFormationChange(periodId, selections)}
+              />
+            </TabsContent>
+          ))}
+        </Tabs>
       </CardContent>
     </Card>
   );

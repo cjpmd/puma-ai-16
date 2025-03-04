@@ -1,7 +1,8 @@
 
-import { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from "react";
 import { Fixture } from "@/types/fixture";
 import { areSelectionsEmpty } from "../utils/selectionUtils";
+import { useFixtureSelections } from "../hooks/useFixtureSelections";
 
 interface TeamSelectionContextType {
   teams: Record<string, { name: string; squadPlayers: string[] }>;
@@ -22,6 +23,7 @@ interface TeamSelectionContextType {
     teamCaptains: any;
   };
   fixture: Fixture | null;
+  existingSelectionsLoaded: boolean;
 }
 
 const TeamSelectionContext = createContext<TeamSelectionContextType | undefined>(undefined);
@@ -44,6 +46,103 @@ export const TeamSelectionProvider = ({ children, fixture }: TeamSelectionProvid
   const [teams, setTeams] = useState<Record<string, { name: string; squadPlayers: string[] }>>({});
   const [teamCaptains, setTeamCaptains] = useState<Record<string, string>>({});
   const [selections, setSelections] = useState<Record<string, Record<string, Record<string, Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>>>>({}); 
+  const [existingSelectionsLoaded, setExistingSelectionsLoaded] = useState(false);
+  
+  // Fetch existing selections for this fixture
+  const { data: existingSelections = [], isLoading } = useFixtureSelections(fixture?.id);
+
+  // Effect to load existing selections
+  useEffect(() => {
+    if (existingSelections.length > 0 && fixture) {
+      console.log("Loading existing selections into context:", existingSelections);
+      
+      // Process existing selections to populate state
+      const newTeams: Record<string, { name: string; squadPlayers: string[] }> = {};
+      const newTeamCaptains: Record<string, string> = {};
+      const newSelections: Record<string, Record<string, Record<string, Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>>> = {};
+      
+      // Group by team_number
+      const selectionsByTeam = existingSelections.reduce((acc, item) => {
+        const teamId = (item.team_number - 1).toString(); // Convert 1-indexed to 0-indexed
+        if (!acc[teamId]) acc[teamId] = [];
+        acc[teamId].push(item);
+        return acc;
+      }, {});
+      
+      // Process each team's selections
+      Object.entries(selectionsByTeam).forEach(([teamId, teamSelections]) => {
+        // Create team if it doesn't exist
+        if (!newTeams[teamId]) {
+          newTeams[teamId] = {
+            name: `Team ${parseInt(teamId) + 1}`,
+            squadPlayers: []
+          };
+        }
+        
+        // Collect all player IDs for this team's squad
+        const squadPlayers = new Set<string>();
+        
+        // Process each selection
+        teamSelections.forEach(selection => {
+          const periodId = selection.period_id || 'period-1';
+          const halfId = periodId.startsWith('first-half') ? 'first-half' : 'second-half';
+          const mappedPeriodId = periodId.replace(/^(first|second)-half-/, '');
+          
+          // Add player to squad
+          if (selection.player_id) {
+            squadPlayers.add(selection.player_id);
+          }
+          
+          // Set captain if applicable
+          if (selection.is_captain) {
+            newTeamCaptains[teamId] = selection.player_id;
+          }
+          
+          // Initialize structure for this team/half/period if needed
+          if (!newSelections[teamId]) newSelections[teamId] = {};
+          if (!newSelections[teamId][halfId]) newSelections[teamId][halfId] = {};
+          if (!newSelections[teamId][halfId][mappedPeriodId]) newSelections[teamId][halfId][mappedPeriodId] = {};
+          
+          // Determine slot ID based on position
+          const position = selection.position;
+          let slotId = position;
+          
+          // Handle substitute positions
+          if (position === 'SUB') {
+            // Find available sub slot
+            const subSlots = Object.keys(newSelections[teamId][halfId][mappedPeriodId])
+              .filter(key => key.startsWith('sub-'))
+              .map(key => parseInt(key.replace('sub-', '')));
+            
+            const nextSubIndex = subSlots.length > 0 ? Math.max(...subSlots) + 1 : 0;
+            slotId = `sub-${nextSubIndex}`;
+          }
+          
+          // Add selection
+          newSelections[teamId][halfId][mappedPeriodId][slotId] = {
+            playerId: selection.player_id,
+            position: selection.position,
+            isSubstitution: position === 'SUB'
+          };
+        });
+        
+        // Update squad players for this team
+        newTeams[teamId].squadPlayers = Array.from(squadPlayers);
+      });
+      
+      // Update state with processed data
+      setTeams(newTeams);
+      setTeamCaptains(newTeamCaptains);
+      setSelections(newSelections);
+      setExistingSelectionsLoaded(true);
+      
+      console.log("Loaded team selection data:", {
+        teams: newTeams,
+        teamCaptains: newTeamCaptains,
+        selections: newSelections
+      });
+    }
+  }, [existingSelections, fixture]);
 
   // Handle squad selection
   const handleSquadSelection = useCallback((teamId: string, playerIds: string[]) => {
@@ -198,7 +297,8 @@ export const TeamSelectionProvider = ({ children, fixture }: TeamSelectionProvid
     handleFormationChange,
     getPlayerTeams,
     convertToSaveFormat,
-    fixture
+    fixture,
+    existingSelectionsLoaded
   };
 
   return (
