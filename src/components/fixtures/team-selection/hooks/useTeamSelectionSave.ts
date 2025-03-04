@@ -59,17 +59,11 @@ export const useTeamSelectionSave = (
           // Process each player selection for this team/period
           Object.entries(teamSelections).forEach(([slotId, selection]) => {
             if (selection.playerId && selection.playerId !== "unassigned") {
-              // Determine actual position from slot or selection
-              const position = selection.position || slotId;
-              
-              // Is this a substitution?
-              const isSubstitution = slotId.startsWith('sub-') || position === 'SUB';
-              
               // Create a record with period information
               teamSelectionsToSave.push({
                 fixture_id: fixtureId,
                 player_id: selection.playerId,
-                position: isSubstitution ? 'SUB' : position,
+                position: selection.position || slotId,
                 performance_category: selection.performanceCategory || "MESSI",
                 team_number: parseInt(teamId),
                 is_captain: teamCaptains[teamId] === selection.playerId ? true : false,

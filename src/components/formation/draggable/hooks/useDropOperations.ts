@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 
 type SelectionType = {
@@ -7,21 +6,14 @@ type SelectionType = {
   isSubstitution?: boolean;
 };
 
-export const useDropOperations = ({
-  selections,
-  updateSelections,
-  selectedPlayerId,
-  setSelectedPlayerId,
-  draggingPlayer,
-  setDraggingPlayer
-}: {
-  selections: Record<string, SelectionType>;
-  updateSelections: (selections: Record<string, SelectionType>) => void;
-  selectedPlayerId: string | null;
-  setSelectedPlayerId: (id: string | null) => void;
-  draggingPlayer: string | null;
-  setDraggingPlayer: (id: string | null) => void;
-}) => {
+export const useDropOperations = (
+  selections: Record<string, SelectionType>,
+  updateSelections: (selections: Record<string, SelectionType>) => void,
+  selectedPlayerId: string | null,
+  setSelectedPlayerId: (id: string | null) => void,
+  draggingPlayer: string | null,
+  setDraggingPlayer: (id: string | null) => void
+) => {
   // Handle drop onto a formation slot
   const handleDrop = (slotId: string, position: string, fromSlotId?: string) => {
     console.log(`handleDrop: slotId=${slotId}, position=${position}, fromSlotId=${fromSlotId}`);

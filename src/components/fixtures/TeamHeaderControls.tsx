@@ -1,96 +1,114 @@
-// Update imports as needed
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
+
+import { useEffect, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Crown } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-// Default categories if table doesn't exist
-const DEFAULT_CATEGORIES = [
-  { id: "MESSI", name: "Messi" },
-  { id: "RONALDO", name: "Ronaldo" },
-  { id: "JAGS", name: "Jags" }
-];
+interface TeamHeaderControlsProps {
+  teamId: string;
+  teamCaptains: Record<string, string>;
+  availablePlayers: any[];
+  onCaptainChange: (teamId: string, playerId: string) => void;
+  performanceCategory: string;
+  onPerformanceCategoryChange: (value: string) => void;
+  onAddPeriod: () => void;
+}
 
-export const TeamHeaderControls = ({ 
-  teamId, 
+export const TeamHeaderControls = ({
+  teamId,
   teamCaptains,
   availablePlayers,
   onCaptainChange,
   performanceCategory,
   onPerformanceCategoryChange,
   onAddPeriod
-}) => {
-  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
-  
+}: TeamHeaderControlsProps) => {
+  const [categories, setCategories] = useState<{name: string, value: string}[]>([
+    { name: "Messi", value: "MESSI" },
+    { name: "Ronaldo", value: "RONALDO" },
+    { name: "Jags", value: "JAGS" }
+  ]);
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const { data, error } = await supabase
           .from('performance_categories')
           .select('*')
-          .order('name');
-        
+          .order('name', { ascending: true });
+
         if (error) {
-          console.error("Error fetching performance categories:", error);
-          // If table doesn't exist, continue with defaults
+          console.error('Error fetching performance categories:', error);
           return;
         }
-        
+
         if (data && data.length > 0) {
-          setCategories(data);
+          const formattedCategories = data.map(cat => ({
+            name: cat.name,
+            value: cat.id.toUpperCase()
+          }));
+          setCategories(formattedCategories);
         }
       } catch (error) {
-        console.error("Exception fetching categories:", error);
+        console.error('Error in fetchCategories:', error);
       }
     };
-    
+
     fetchCategories();
   }, []);
-  
+
   return (
-    <Card className="mb-4">
-      <CardContent className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Select
-            value={performanceCategory}
-            onValueChange={onPerformanceCategoryChange}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Select
-            value={teamCaptains[teamId] || ""}
-            onValueChange={(value) => onCaptainChange(teamId, value)}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select captain" />
-            </SelectTrigger>
-            <SelectContent>
-              {availablePlayers.map((player) => (
-                <SelectItem key={player.id} value={player.id}>
-                  {player.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <Button variant="outline" size="sm" onClick={onAddPeriod}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Period
-        </Button>
-      </CardContent>
-    </Card>
+    <div className="flex justify-end items-center gap-4 mb-4">
+      <div className="flex-1 flex items-center gap-2">
+        <Label className="text-sm font-medium flex items-center gap-2">
+          <Crown className="h-4 w-4" />
+          Captain
+        </Label>
+        <Select
+          value={teamCaptains[teamId] || "unassigned"}
+          onValueChange={(value) => onCaptainChange(teamId, value)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select captain" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="unassigned">None</SelectItem>
+            {availablePlayers?.map(player => (
+              <SelectItem 
+                key={player.id} 
+                value={player.id}
+              >
+                {player.name} {player.squad_number ? `(${player.squad_number})` : ''}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Select
+        value={performanceCategory || "MESSI"}
+        onValueChange={onPerformanceCategoryChange}
+      >
+        <SelectTrigger className="w-[140px]">
+          <SelectValue placeholder="Select category" />
+        </SelectTrigger>
+        <SelectContent>
+          {categories.map(category => (
+            <SelectItem key={category.value} value={category.value}>
+              {category.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Button 
+        onClick={onAddPeriod}
+        variant="outline"
+      >
+        Add Period
+      </Button>
+    </div>
   );
 };

@@ -1,7 +1,7 @@
+
 import { FormationFormat, FormationSlot } from "../types";
 import { ALL_POSITIONS } from "../constants/positions";
 import { positionDefinitions, getPositionClass } from "./positionDefinitions";
-import { getFormationTemplatesByFormat as getTemplatesByFormat, getPositionsForTemplate } from "./formationTemplates";
 
 // Get all position slots for any formation
 export const getAllPositionSlots = (): FormationSlot[] => {
@@ -21,40 +21,26 @@ export const getAllPositionSlots = (): FormationSlot[] => {
 };
 
 // Get specific formation slots based on format
-export const getFormationSlots = (format: FormationFormat, template?: string): FormationSlot[] => {
+export const getFormationSlots = (format: FormationFormat): FormationSlot[] => {
   let positions: string[] = [];
   
-  // If template is specified and not "All", use it
-  if (template && template !== "All") {
-    positions = getPositionsForTemplate(format, template);
-    if (positions.length > 0) {
-      return createSlotsFromPositions(positions);
-    }
-  }
-  
-  // Otherwise use default positions
   switch (format) {
     case "5-a-side":
-      positions = ["GK", "DL", "DR", "MC", "STC"];
+      positions = ["GK", "DL", "DR", "STC", "STR"];
       break;
     case "7-a-side":
-      positions = ["GK", "DL", "DC", "DR", "ML", "MC", "MR"];
+      positions = ["GK", "DL", "DC", "DR", "MC", "STL", "STC"];
       break;
     case "9-a-side":
-      positions = ["GK", "DL", "DCL", "DCR", "DR", "ML", "MC", "MR", "STC"];
+      positions = ["GK", "DL", "DCL", "DCR", "DR", "MC", "AMC", "STL", "STC"];
       break;
     case "11-a-side":
       positions = ["GK", "DL", "DCL", "DCR", "DR", "ML", "MC", "MR", "AML", "STC", "AMR"];
       break;
     default:
-      positions = ["GK", "DL", "DC", "DR", "ML", "MC", "MR"];
+      positions = ["GK", "DL", "DC", "DR", "MC", "STL", "STC"];
   }
   
-  return createSlotsFromPositions(positions);
-};
-
-// Create slots from position codes
-function createSlotsFromPositions(positions: string[]): FormationSlot[] {
   // Filter the positions to only include the ones we want for this formation
   return positions.map(pos => {
     const position = positionDefinitions[pos];
@@ -69,7 +55,4 @@ function createSlotsFromPositions(positions: string[]): FormationSlot[] {
       className: getPositionClass(position.x, position.y)
     };
   }).filter(Boolean) as FormationSlot[];
-}
-
-// Export the template functions for use in other components
-export const getFormationTemplatesByFormat = getTemplatesByFormat;
+};

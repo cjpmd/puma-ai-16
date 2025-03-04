@@ -1,9 +1,12 @@
+
+// Utility functions for handling selections
+
 import { AllSelections } from "../types";
 
-export function extractSelectedPlayers(selections: AllSelections): Set<string> {
+// Extract all selected players across all periods and teams
+export const extractSelectedPlayers = (selections: AllSelections): Set<string> => {
   const selectedPlayers = new Set<string>();
   
-  // Iterate through all periods, teams, and slots
   Object.values(selections).forEach(periodSelections => {
     Object.values(periodSelections).forEach(teamSelections => {
       Object.values(teamSelections).forEach(selection => {
@@ -15,96 +18,90 @@ export function extractSelectedPlayers(selections: AllSelections): Set<string> {
   });
   
   return selectedPlayers;
-}
+};
 
-export function mapPositionToSlot(position: string): string | null {
-  // Common position mappings
+// Map from database position to formation slot ID
+export const mapPositionToSlot = (position: string): string => {
+  // Strip any whitespace and convert to uppercase for consistency
+  const cleanPosition = position?.trim().toUpperCase() || '';
+  
+  // Map of standard positions to slot IDs
   const positionMap: Record<string, string> = {
-    // Goalkeepers
     'GK': 'GK',
-    'GOALKEEPER': 'GK',
-    
-    // Defenders
-    'LB': 'LB',
-    'RB': 'RB',
-    'CB': 'CB',
-    'LCB': 'LCB',
-    'RCB': 'RCB',
-    'LWB': 'LWB',
-    'RWB': 'RWB',
-    'DC': 'DC',
     'DL': 'DL',
-    'DR': 'DR',
     'DCL': 'DCL',
+    'DC': 'DC',
     'DCR': 'DCR',
-    
-    // Midfielders
-    'DM': 'DM',
-    'CM': 'CM',
-    'LM': 'LM',
-    'RM': 'RM',
-    'CAM': 'CAM',
-    'CDM': 'CDM',
-    'LCM': 'LCM',
-    'RCM': 'RCM',
-    'MC': 'MC',
+    'DR': 'DR',
     'ML': 'ML',
+    'MC': 'MC',
     'MR': 'MR',
     'MCL': 'MCL',
     'MCR': 'MCR',
-    'AMC': 'AMC',
-    'AML': 'AML',
-    'AMR': 'AMR',
-    'AMCL': 'AMCL',
-    'AMCR': 'AMCR',
-    'DMC': 'DMC',
-    'DMCL': 'DMCL',
-    'DMCR': 'DMCR',
-    
-    // Forwards
-    'LW': 'LW',
-    'RW': 'RW',
     'ST': 'ST',
-    'CF': 'CF',
-    'LS': 'LS',
-    'RS': 'RS',
-    'STC': 'STC',
-    'STCL': 'STCL',
-    'STCR': 'STCR',
-    
-    // Special positions
-    'SW': 'SW',
-    'SUB': 'SUB',
+    'STL': 'STL',
+    'STR': 'STR',
+    'SUB1': 'SUB1',
+    'SUB2': 'SUB2',
+    'SUB3': 'SUB3',
+    'SUB4': 'SUB4',
+    'SUB5': 'SUB5',
   };
   
-  // Try direct mapping
-  if (position in positionMap) {
-    return positionMap[position];
+  // If we have a direct match, return it
+  if (positionMap[cleanPosition]) {
+    return positionMap[cleanPosition];
   }
   
-  // If the position is already a slot ID (e.g., 'sub-0'), return it as is
-  if (position.startsWith('sub-') || Object.values(positionMap).includes(position)) {
-    return position;
-  }
-  
-  // For substitutes, we'll handle them differently (in the calling code)
-  if (position.toLowerCase().includes('sub')) {
-    return 'SUB';
-  }
-  
-  // If we can't map the position, return the original position
-  return position;
-}
+  // Otherwise, return the position as the slot ID (will be inserted as-is)
+  return cleanPosition;
+};
 
-export function areSelectionsEmpty(selections: AllSelections): boolean {
-  if (!selections) return true;
+// Map from formation slot ID to database position
+export const mapSlotToPosition = (slotId: string): string => {
+  // For now, we'll use the slot ID directly as the position
+  return slotId;
+};
+
+// Convert the selections to a simplified format for direct comparison
+export const simplifySelections = (selections: AllSelections): string => {
+  return JSON.stringify(
+    Object.entries(selections).map(([periodId, periodData]) => ({
+      periodId,
+      teams: Object.entries(periodData).map(([teamId, teamData]) => ({
+        teamId,
+        positions: Object.entries(teamData).map(([position, data]) => ({
+          position,
+          playerId: data.playerId
+        }))
+      }))
+    }))
+  );
+};
+
+// Check if selections are empty
+export const areSelectionsEmpty = (selections: AllSelections): boolean => {
+  if (!selections || Object.keys(selections).length === 0) {
+    return true;
+  }
   
-  // Check if any periods have selections
-  return Object.keys(selections).length === 0 || 
-    Object.values(selections).every(periodSelections => 
-      Object.keys(periodSelections).length === 0 || 
-      Object.values(periodSelections).every(teamSelections => 
-        Object.keys(teamSelections).length === 0
-      )
-    );
-}
+  // Check each period
+  for (const periodId in selections) {
+    // Check each team in the period
+    for (const teamId in selections[periodId]) {
+      // Check if there are any player assignments
+      const teamSelections = selections[periodId][teamId];
+      if (Object.keys(teamSelections).length > 0) {
+        // Check if any player is assigned (not unassigned)
+        for (const slotId in teamSelections) {
+          if (teamSelections[slotId].playerId && teamSelections[slotId].playerId !== 'unassigned') {
+            return false; // Found at least one assigned player
+          }
+        }
+      }
+    }
+  }
+  
+  // No assigned players found
+  return true;
+};

@@ -2,32 +2,45 @@
 import { useState } from "react";
 
 export const useDragOperations = () => {
-  const [draggingPlayerId, setDraggingPlayerId] = useState<string | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [draggingPlayer, setDraggingPlayer] = useState<string | null>(null);
 
-  // Handle the start of a drag operation
-  const handleDragStart = (e: React.DragEvent, playerId: string) => {
-    console.log(`Starting drag for player ${playerId}`);
+  // Handle player selection for dragging
+  const handlePlayerSelect = (playerId: string) => {
+    console.log(`Selected player: ${playerId}`);
+    setSelectedPlayerId(playerId === selectedPlayerId ? null : playerId);
+  };
+
+  // Handle drag start for a player
+  const handleDragStart = (e: React.DragEvent, playerId: string, getPlayer: (playerId: string) => any) => {
+    console.log(`Drag start for player ${playerId}`);
+    setDraggingPlayer(playerId);
+    // Set dataTransfer data for compatibility
     e.dataTransfer.setData('playerId', playerId);
-    setDraggingPlayerId(playerId);
-    e.dataTransfer.effectAllowed = 'move';
+    // Set a custom drag image if needed
+    const player = getPlayer(playerId);
+    if (player) {
+      const dragImage = document.createElement('div');
+      dragImage.className = 'bg-blue-500 text-white rounded-full p-1 text-xs font-bold';
+      dragImage.textContent = player.squad_number?.toString() || player.name.charAt(0);
+      document.body.appendChild(dragImage);
+      e.dataTransfer.setDragImage(dragImage, 15, 15);
+      setTimeout(() => document.body.removeChild(dragImage), 0);
+    }
   };
 
-  // Handle the end of a drag operation
+  // Handle drag end
   const handleDragEnd = () => {
-    console.log('Drag operation ended');
-    setDraggingPlayerId(null);
-  };
-
-  // Handle player selection from the available players list
-  const handlePlayerSelect = (playerId: string, event?: React.MouseEvent, additionalData?: any) => {
-    console.log(`Selected player ${playerId}`);
-    return playerId;
+    console.log('Drag ended');
+    setDraggingPlayer(null);
   };
 
   return {
-    draggingPlayerId,
+    selectedPlayerId,
+    setSelectedPlayerId,
+    draggingPlayer,
+    handlePlayerSelect,
     handleDragStart,
-    handleDragEnd,
-    handlePlayerSelect
+    handleDragEnd
   };
 };

@@ -1,38 +1,35 @@
 
-interface UsePlayerManagementProps {
-  availablePlayers: any[];
-  squadPlayers: string[];
-  selections: Record<string, { playerId: string; position: string }>;
-}
-
-export const usePlayerManagement = ({
-  availablePlayers,
-  squadPlayers,
-  selections
-}: UsePlayerManagementProps) => {
-  // Get player data by ID
+export const usePlayerManagement = (
+  availablePlayers: any[],
+  squadPlayers: string[] = [],
+  selections: Record<string, { playerId: string; position: string }>
+) => {
+  // Get player object from ID
   const getPlayer = (playerId: string) => {
-    return availablePlayers.find(player => player.id === playerId);
+    return availablePlayers.find(p => p.id === playerId);
   };
 
-  // Get available players for the squad that aren't already selected
+  // Get all players assigned to positions
+  const getAssignedPlayers = () => {
+    return Object.values(selections).map(s => s.playerId);
+  };
+
+  // Get squad players that haven't been assigned yet
   const getAvailableSquadPlayers = () => {
-    // If squadPlayers is provided, filter to only those players
-    const eligiblePlayers = squadPlayers.length > 0
-      ? availablePlayers.filter(player => squadPlayers.includes(player.id))
-      : availablePlayers;
-    
-    // Get all player IDs that are currently selected
-    const selectedPlayerIds = new Set(
-      Object.values(selections).map(selection => selection.playerId)
-    );
-    
-    // Filter out players that are already selected
-    return eligiblePlayers.filter(player => !selectedPlayerIds.has(player.id));
+    const assignedPlayerIds = new Set(getAssignedPlayers());
+    // If squadPlayers is provided, filter by that, otherwise use all available players
+    if (squadPlayers.length > 0) {
+      return availablePlayers.filter(player => 
+        squadPlayers.includes(player.id) && !assignedPlayerIds.has(player.id)
+      );
+    } else {
+      return availablePlayers.filter(player => !assignedPlayerIds.has(player.id));
+    }
   };
 
   return {
     getPlayer,
+    getAssignedPlayers,
     getAvailableSquadPlayers
   };
 };

@@ -74,32 +74,10 @@ export const useProcessSelections = () => {
           periodSelections.forEach(selection => {
             // Get the position from DB and map it to a slot
             const position = selection.position || '';
-            const isSubstitute = position === 'SUB';
+            const slotId = mapPositionToSlot(position);
             
-            // Generate slot ID
-            let slotId;
-            
-            if (isSubstitute) {
-              // Find an available substitute slot
-              const existingSubSlots = Object.keys(loadedSelections[periodId][teamId])
-                .filter(id => id.startsWith('sub-'))
-                .map(id => parseInt(id.split('-')[1]));
-              
-              const nextSubIndex = existingSubSlots.length > 0 
-                ? Math.max(...existingSubSlots) + 1 
-                : 0;
-                
-              slotId = `sub-${nextSubIndex}`;
-            } else {
-              // Use the mapped position for regular positions
-              slotId = mapPositionToSlot(position) || position;
-            }
-            
-            // Skip if we couldn't determine a slot
-            if (!slotId) {
-              console.warn(`Couldn't map position ${position} to a slot`);
-              return;
-            }
+            // Skip invalid slots
+            if (!slotId) return;
             
             // Add the selection with the original position preserved
             loadedSelections[periodId][teamId][slotId] = {
