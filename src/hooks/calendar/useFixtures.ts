@@ -35,16 +35,15 @@ export const useFixtures = (date: Date) => {
           return [];
         }
 
-        // Create a Map to store unique fixtures by ID
-        const fixturesMap = new Map();
+        // Create a Map to store unique fixtures by ID with ALL their data
+        const fixturesById = new Map();
         
-        // Process all fixtures
         fixturesData.forEach(fixture => {
           const fixtureId = fixture.id;
           
-          if (!fixturesMap.has(fixtureId)) {
-            // If this is the first time we're seeing this fixture, add it to the map
-            fixturesMap.set(fixtureId, {
+          // If we haven't seen this fixture yet, add it to our map
+          if (!fixturesById.has(fixtureId)) {
+            fixturesById.set(fixtureId, {
               ...fixture,
               fixture_team_times: [],
               fixture_team_scores: []
@@ -52,9 +51,9 @@ export const useFixtures = (date: Date) => {
           }
           
           // Get the stored unique fixture
-          const uniqueFixture = fixturesMap.get(fixtureId);
+          const uniqueFixture = fixturesById.get(fixtureId);
           
-          // Collect team times if they exist and aren't already in the array
+          // Add team times if they exist and aren't duplicates
           if (fixture.fixture_team_times && fixture.fixture_team_times.length > 0) {
             fixture.fixture_team_times.forEach(teamTime => {
               if (!uniqueFixture.fixture_team_times.some(tt => tt.id === teamTime.id)) {
@@ -63,7 +62,7 @@ export const useFixtures = (date: Date) => {
             });
           }
           
-          // Collect team scores if they exist and aren't already in the array
+          // Add team scores if they exist and aren't duplicates
           if (fixture.fixture_team_scores && fixture.fixture_team_scores.length > 0) {
             fixture.fixture_team_scores.forEach(teamScore => {
               if (!uniqueFixture.fixture_team_scores.some(ts => ts.id === teamScore.id)) {
@@ -74,7 +73,7 @@ export const useFixtures = (date: Date) => {
         });
         
         // Convert the Map values to an array
-        const uniqueFixtures = Array.from(fixturesMap.values());
+        const uniqueFixtures = Array.from(fixturesById.values());
         console.log("Unique fixtures after deduplication:", uniqueFixtures.length, "items");
 
         // Get fixture IDs for attendance query

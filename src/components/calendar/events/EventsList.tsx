@@ -52,6 +52,9 @@ export const EventsList = ({
   onTeamSelectionTournament,
   onUpdateTournamentDate,
 }: EventsListProps) => {
+  // Add console logs to debug duplicate fixtures
+  console.log("Raw fixture IDs in EventsList:", fixtures?.map(f => f.id));
+  
   const {
     uniqueFixtures,
     uniqueFestivals,
