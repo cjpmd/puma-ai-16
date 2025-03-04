@@ -10,11 +10,13 @@ type SelectionType = {
 interface SubstitutionManagerProps {
   selections: Record<string, SelectionType>;
   updateSelections: (selections: Record<string, SelectionType>) => void;
+  onSelectionChange?: (selections: Record<string, SelectionType>) => void;
 }
 
 export const useSubstitutionManager = ({
   selections,
-  updateSelections
+  updateSelections,
+  onSelectionChange
 }: SubstitutionManagerProps) => {
   // Substitution counter for generating unique slot IDs
   const subCounterRef = useRef<number>(0);
@@ -34,6 +36,18 @@ export const useSubstitutionManager = ({
     if (subIds.length > 0) {
       subCounterRef.current = Math.max(...subIds) + 1;
       console.log(`Initialized sub counter to ${subCounterRef.current}`);
+    }
+  };
+
+  // Handle removing a player from a position
+  const handleRemovePlayer = (slotId: string) => {
+    console.log(`Removing player from slot ${slotId}`);
+    const newSelections = { ...selections };
+    delete newSelections[slotId];
+    
+    updateSelections(newSelections);
+    if (onSelectionChange) {
+      onSelectionChange(newSelections);
     }
   };
 
@@ -74,10 +88,14 @@ export const useSubstitutionManager = ({
     console.log('New selections after substitution:', newSelections);
     
     updateSelections(newSelections);
+    if (onSelectionChange) {
+      onSelectionChange(newSelections);
+    }
   };
 
   return {
     handleSubstituteDrop,
-    initializeSubCounter
+    initializeSubCounter,
+    handleRemovePlayer
   };
 };

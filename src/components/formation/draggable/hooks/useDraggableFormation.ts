@@ -31,7 +31,11 @@ export const useDraggableFormation = ({
     selections
   });
   
-  const { handleDragStart, handleDragEnd, handlePlayerSelect } = useDragOperations();
+  const { 
+    handleDragStart, 
+    handleDragEnd, 
+    handlePlayerSelect 
+  } = useDragOperations();
   
   const { handleDrop } = useDropOperations({
     selections,
@@ -44,24 +48,14 @@ export const useDraggableFormation = ({
   
   const { 
     handleSubstituteDrop,
-    initializeSubCounter
+    initializeSubCounter,
+    handleRemovePlayer // Making sure this is included in the destructuring
   } = useSubstitutionManager({
     selections,
-    updateSelections: setSelections
+    updateSelections: setSelections,
+    onSelectionChange
   });
 
-  // Handle removing a player from a position
-  const handleRemovePlayer = (slotId: string) => {
-    console.log(`Removing player from slot ${slotId}`);
-    const newSelections = { ...selections };
-    delete newSelections[slotId];
-    
-    setSelections(newSelections);
-    if (onSelectionChange) {
-      onSelectionChange(newSelections);
-    }
-  };
-  
   // Update parent component when selections change
   useEffect(() => {
     if (onSelectionChange && Object.keys(selections).length > 0) {
