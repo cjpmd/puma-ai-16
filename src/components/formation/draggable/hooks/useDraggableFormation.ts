@@ -49,7 +49,7 @@ export const useDraggableFormation = ({
   const { 
     handleSubstituteDrop,
     initializeSubCounter,
-    handleRemovePlayer // Making sure this is included in the destructuring
+    handleRemovePlayer
   } = useSubstitutionManager({
     selections,
     updateSelections: setSelections,
