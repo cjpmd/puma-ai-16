@@ -6,6 +6,7 @@ import { TournamentEvent } from "./TournamentEvent";
 import { FixtureCard } from "@/components/calendar/FixtureCard";
 import { SessionCard } from "@/components/training/SessionCard";
 import type { Fixture } from "@/types/fixture";
+import { useMemo } from "react";
 
 interface EventsListProps {
   date: Date;
@@ -50,11 +51,47 @@ export const EventsList = ({
   onTeamSelectionTournament,
   onUpdateTournamentDate,
 }: EventsListProps) => {
-  const hasEvents = festivals?.length || tournaments?.length || fixtures?.length || sessions?.length;
+  // Use useMemo to deduplicate fixtures by ID
+  const uniqueFixtures = useMemo(() => {
+    const fixtureMap = new Map<string, Fixture>();
+    
+    fixtures?.forEach(fixture => {
+      if (!fixtureMap.has(fixture.id)) {
+        fixtureMap.set(fixture.id, fixture);
+      }
+    });
+    
+    return Array.from(fixtureMap.values());
+  }, [fixtures]);
 
-  console.log("EventsList rendering fixtures:", fixtures?.map(f => f.id));
-  console.log("EventsList rendering festivals:", festivals?.length);
-  console.log("EventsList rendering tournaments:", tournaments?.length);
+  // Also deduplicate festivals and tournaments to be safe
+  const uniqueFestivals = useMemo(() => {
+    if (!festivals?.length) return [];
+    const festivalMap = new Map();
+    festivals.forEach(festival => {
+      if (!festivalMap.has(festival.id)) {
+        festivalMap.set(festival.id, festival);
+      }
+    });
+    return Array.from(festivalMap.values());
+  }, [festivals]);
+
+  const uniqueTournaments = useMemo(() => {
+    if (!tournaments?.length) return [];
+    const tournamentMap = new Map();
+    tournaments.forEach(tournament => {
+      if (!tournamentMap.has(tournament.id)) {
+        tournamentMap.set(tournament.id, tournament);
+      }
+    });
+    return Array.from(tournamentMap.values());
+  }, [tournaments]);
+
+  const hasEvents = uniqueFestivals?.length || uniqueTournaments?.length || uniqueFixtures?.length || sessions?.length;
+
+  console.log("EventsList rendering fixtures:", uniqueFixtures?.map(f => f.id));
+  console.log("EventsList rendering festivals:", uniqueFestivals?.length);
+  console.log("EventsList rendering tournaments:", uniqueTournaments?.length);
 
   // Convert string dates to Date objects
   const handleFixtureDateChange = (fixtureId: string, newDate: Date) => {
@@ -70,7 +107,7 @@ export const EventsList = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {festivals?.map((festival) => (
+          {uniqueFestivals?.map((festival) => (
             <FestivalEvent
               key={festival.id}
               festival={festival}
@@ -80,7 +117,7 @@ export const EventsList = ({
             />
           ))}
           
-          {tournaments?.map((tournament) => (
+          {uniqueTournaments?.map((tournament) => (
             <TournamentEvent
               key={tournament.id}
               tournament={tournament}
@@ -91,7 +128,7 @@ export const EventsList = ({
             />
           ))}
 
-          {fixtures?.map((fixture) => (
+          {uniqueFixtures?.map((fixture) => (
             <FixtureCard 
               key={fixture.id} 
               fixture={fixture}

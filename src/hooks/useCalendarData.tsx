@@ -152,11 +152,41 @@ export const useCalendarData = (date: Date) => {
           return [];
         }
 
-        // Use seen IDs to prevent duplicates - using a Map instead of a Set for better tracking
+        // Create a Map to store unique fixtures by ID
         const fixturesMap = new Map();
+        
+        // First pass: add all fixtures to the map by their ID
         fixturesData.forEach(fixture => {
           if (!fixturesMap.has(fixture.id)) {
-            fixturesMap.set(fixture.id, fixture);
+            fixturesMap.set(fixture.id, { 
+              ...fixture, 
+              // Initialize with empty arrays that will be populated in the second pass
+              fixture_team_times: [],
+              fixture_team_scores: []
+            });
+          }
+        });
+        
+        // Second pass: populate the fixture_team_times and fixture_team_scores arrays
+        fixturesData.forEach(fixture => {
+          const uniqueFixture = fixturesMap.get(fixture.id);
+          
+          // Add team times if they're not already in the array
+          if (fixture.fixture_team_times && fixture.fixture_team_times.length > 0) {
+            fixture.fixture_team_times.forEach(teamTime => {
+              if (!uniqueFixture.fixture_team_times.some(tt => tt.id === teamTime.id)) {
+                uniqueFixture.fixture_team_times.push(teamTime);
+              }
+            });
+          }
+          
+          // Add team scores if they're not already in the array
+          if (fixture.fixture_team_scores && fixture.fixture_team_scores.length > 0) {
+            fixture.fixture_team_scores.forEach(teamScore => {
+              if (!uniqueFixture.fixture_team_scores.some(ts => ts.id === teamScore.id)) {
+                uniqueFixture.fixture_team_scores.push(teamScore);
+              }
+            });
           }
         });
         
