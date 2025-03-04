@@ -41,8 +41,14 @@ export const useDraggableFormation = ({
   const { 
     handleDragStart, 
     handleDragEnd, 
-    handlePlayerSelect 
+    handlePlayerSelect: originalHandlePlayerSelect 
   } = useDragOperations();
+  
+  // Wrapper for handlePlayerSelect to update selectedPlayerId
+  const handlePlayerSelect = (playerId: string) => {
+    setSelectedPlayerId(originalHandlePlayerSelect(playerId));
+    return playerId;
+  };
   
   const { handleDrop } = useDropOperations({
     selections,

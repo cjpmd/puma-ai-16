@@ -19,7 +19,7 @@ export const useDragOperations = () => {
   };
 
   // Handle player selection from the available players list
-  const handlePlayerSelect = (playerId: string) => {
+  const handlePlayerSelect = (playerId: string, event?: React.MouseEvent, additionalData?: any) => {
     console.log(`Selected player ${playerId}`);
     return playerId;
   };
