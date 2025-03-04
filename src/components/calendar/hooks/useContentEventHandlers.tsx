@@ -3,11 +3,11 @@ import { useCalendarEventHandlers } from "@/components/calendar/hooks/useCalenda
 
 interface UseContentEventHandlersProps {
   localFixtures: any[];
-  setLocalFixtures: (fixtures: any[]) => void;
+  setLocalFixtures: React.Dispatch<React.SetStateAction<any[]>>;
   localFestivals: any[];
-  setLocalFestivals: (festivals: any[]) => void;
+  setLocalFestivals: React.Dispatch<React.SetStateAction<any[]>>;
   localTournaments: any[];
-  setLocalTournaments: (tournaments: any[]) => void;
+  setLocalTournaments: React.Dispatch<React.SetStateAction<any[]>>;
   onRefetchFixtures: () => void;
   onRefetchSessions: () => void;
   onRefetchFestivals: () => void;
@@ -40,7 +40,7 @@ export const useContentEventHandlers = ({
 
   const handleFixtureDelete = async (fixtureId: string) => {
     // Optimistic UI update - remove the fixture immediately
-    setLocalFixtures((prevFixtures) => 
+    setLocalFixtures(prevFixtures => 
       prevFixtures.filter((fixture) => fixture.id !== fixtureId)
     );
     
@@ -61,7 +61,7 @@ export const useContentEventHandlers = ({
 
   const handleFestivalDelete = async (festivalId: string, festivals: any[]) => {
     // Optimistic UI update
-    setLocalFestivals((prevFestivals) => 
+    setLocalFestivals(prevFestivals => 
       prevFestivals.filter((festival) => festival.id !== festivalId)
     );
     
@@ -75,7 +75,7 @@ export const useContentEventHandlers = ({
 
   const handleTournamentDelete = async (tournamentId: string, tournaments: any[]) => {
     // Optimistic UI update
-    setLocalTournaments((prevTournaments) => 
+    setLocalTournaments(prevTournaments => 
       prevTournaments.filter((tournament) => tournament.id !== tournamentId)
     );
     
