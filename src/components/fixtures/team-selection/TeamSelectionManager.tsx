@@ -111,7 +111,8 @@ export const TeamSelectionManager = ({ fixture, onSuccess, onCancel }: TeamSelec
           </div>
         </div>
         
-        <useTeamInitialization />
+        {/* Use the hook within a function component wrapper */}
+        <TeamInitializationWrapper />
         
         <TeamTabs />
         
@@ -121,4 +122,10 @@ export const TeamSelectionManager = ({ fixture, onSuccess, onCancel }: TeamSelec
       </div>
     </TeamSelectionProvider>
   );
+};
+
+// Wrap the hook in a component
+const TeamInitializationWrapper = () => {
+  useTeamInitialization();
+  return null;
 };

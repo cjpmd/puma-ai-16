@@ -58,7 +58,7 @@ export const useTeamSelectionSave = (
           
           // Process each player selection for this team/period
           Object.entries(teamSelections).forEach(([slotId, selection]) => {
-            if (selection.playerId && selection.playerId !== "unassigned") {
+            if (selection && selection.playerId && selection.playerId !== "unassigned") {
               // Create a record with period information
               teamSelectionsToSave.push({
                 fixture_id: fixtureId,
@@ -69,7 +69,7 @@ export const useTeamSelectionSave = (
                 is_captain: teamCaptains[teamId] === selection.playerId ? true : false,
                 period_id: periodId,
                 duration: period.duration || 45,
-                is_substitution: slotId.startsWith('sub-') || selection.isSubstitution === true
+                is_substitution: slotId.startsWith('sub-') || (selection.isSubstitution === true)
               });
             }
           });
@@ -91,6 +91,11 @@ export const useTeamSelectionSave = (
         
         console.log("Team selections saved successfully:", data);
         
+        toast({
+          title: "Success",
+          description: "Team selections saved successfully",
+        });
+        
         if (onSuccess) {
           onSuccess();
         }
@@ -98,6 +103,11 @@ export const useTeamSelectionSave = (
         return true;
       } else {
         console.log("No selections to save");
+        toast({
+          variant: "default",
+          title: "Info",
+          description: "No selections to save",
+        });
         return true;
       }
     } catch (error) {
