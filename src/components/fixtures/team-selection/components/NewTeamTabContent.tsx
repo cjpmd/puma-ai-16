@@ -14,7 +14,7 @@ interface NewTeamTabContentProps {
   availablePlayers: any[];
   onCaptainChange: (teamId: string, playerId: string) => void;
   onSquadSelection: (teamId: string, playerIds: string[]) => void;
-  onFormationChange: (teamId: string, halfId: string, periodId: string, selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => void;
+  onFormationChange: (teamId: string, halfId: string, periodId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string; isSubstitution?: boolean }>) => void;
   getPlayerTeams: (playerId: string) => string[];
 }
 
@@ -83,7 +83,7 @@ export const NewTeamTabContent = ({
   };
 
   // Handle formation changes
-  const handleFormationChange = (halfId: string, periodId: string, selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => {
+  const handleFormationChange = (halfId: string, periodId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string; isSubstitution?: boolean }>) => {
     onFormationChange(teamId, halfId, periodId, selections);
   };
 

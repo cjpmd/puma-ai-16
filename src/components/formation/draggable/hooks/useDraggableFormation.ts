@@ -31,36 +31,34 @@ export const useDraggableFormation = ({
     selections
   });
   
-  const { handleDragStart, handleDragEnd } = useDragOperations({
-    setDraggingPlayer
-  });
+  const { handleDragStart, handleDragEnd, handlePlayerSelect } = useDragOperations();
   
   const { handleDrop } = useDropOperations({
     selections,
-    setSelections,
-    draggingPlayer,
-    setDraggingPlayer, 
+    updateSelections: setSelections,
     selectedPlayerId,
     setSelectedPlayerId,
-    getPlayer,
-    onSelectionChange
+    draggingPlayer,
+    setDraggingPlayer
   });
   
   const { 
     handleSubstituteDrop,
-    handleRemovePlayer 
+    initializeSubCounter
   } = useSubstitutionManager({
     selections,
-    setSelections,
-    onSelectionChange
+    updateSelections: setSelections
   });
-  
-  // Handle player selection
-  const handlePlayerSelect = (playerId: string) => {
-    if (selectedPlayerId === playerId) {
-      setSelectedPlayerId(null);
-    } else {
-      setSelectedPlayerId(playerId);
+
+  // Handle removing a player from a position
+  const handleRemovePlayer = (slotId: string) => {
+    console.log(`Removing player from slot ${slotId}`);
+    const newSelections = { ...selections };
+    delete newSelections[slotId];
+    
+    setSelections(newSelections);
+    if (onSelectionChange) {
+      onSelectionChange(newSelections);
     }
   };
   

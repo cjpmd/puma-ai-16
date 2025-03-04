@@ -12,21 +12,18 @@ export const useDragOperations = () => {
   };
 
   // Handle drag start for a player
-  const handleDragStart = (e: React.DragEvent, playerId: string, getPlayer: (playerId: string) => any) => {
+  const handleDragStart = (e: React.DragEvent, playerId: string) => {
     console.log(`Drag start for player ${playerId}`);
     setDraggingPlayer(playerId);
     // Set dataTransfer data for compatibility
     e.dataTransfer.setData('playerId', playerId);
     // Set a custom drag image if needed
-    const player = getPlayer(playerId);
-    if (player) {
-      const dragImage = document.createElement('div');
-      dragImage.className = 'bg-blue-500 text-white rounded-full p-1 text-xs font-bold';
-      dragImage.textContent = player.squad_number?.toString() || player.name.charAt(0);
-      document.body.appendChild(dragImage);
-      e.dataTransfer.setDragImage(dragImage, 15, 15);
-      setTimeout(() => document.body.removeChild(dragImage), 0);
-    }
+    const dragImage = document.createElement('div');
+    dragImage.className = 'bg-blue-500 text-white rounded-full p-1 text-xs font-bold';
+    dragImage.textContent = playerId.charAt(0);
+    document.body.appendChild(dragImage);
+    e.dataTransfer.setDragImage(dragImage, 15, 15);
+    setTimeout(() => document.body.removeChild(dragImage), 0);
   };
 
   // Handle drag end
@@ -39,6 +36,7 @@ export const useDragOperations = () => {
     selectedPlayerId,
     setSelectedPlayerId,
     draggingPlayer,
+    setDraggingPlayer,
     handlePlayerSelect,
     handleDragStart,
     handleDragEnd

@@ -7,10 +7,15 @@ type SelectionType = {
   isSubstitution?: boolean;
 };
 
-export const useSubstitutionManager = (
-  updateSelections: (selections: Record<string, SelectionType>) => void,
-  selections: Record<string, SelectionType>
-) => {
+interface SubstitutionManagerProps {
+  selections: Record<string, SelectionType>;
+  updateSelections: (selections: Record<string, SelectionType>) => void;
+}
+
+export const useSubstitutionManager = ({
+  selections,
+  updateSelections
+}: SubstitutionManagerProps) => {
   // Substitution counter for generating unique slot IDs
   const subCounterRef = useRef<number>(0);
 

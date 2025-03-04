@@ -14,10 +14,10 @@ interface HalfPeriodManagerProps {
   fixture: any;
   availablePlayers: any[];
   squadPlayers: string[];
-  onFormationChange: (halfId: string, periodId: string, selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => void;
+  onFormationChange: (halfId: string, periodId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string; isSubstitution?: boolean }>) => void;
   performanceCategory: string;
   onPerformanceCategoryChange: (value: string) => void;
-  selections?: Record<string, Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>;
+  selections?: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string; isSubstitution?: boolean }>>;
 }
 
 export const HalfPeriodManager = ({
