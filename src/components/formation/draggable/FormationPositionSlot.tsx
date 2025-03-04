@@ -2,7 +2,7 @@
 import React from "react";
 import { X } from "lucide-react";
 
-interface FormationPositionSlotProps {
+export interface FormationPositionSlotProps {
   slotId: string;
   position: string;
   selection: { playerId: string; position: string; isSubstitution?: boolean } | undefined;

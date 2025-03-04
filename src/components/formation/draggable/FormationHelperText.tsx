@@ -1,7 +1,7 @@
 
 import React from "react";
 
-interface FormationHelperTextProps {
+export interface FormationHelperTextProps {
   draggingPlayer: string | null;
   selectedPlayerId: string | null;
 }

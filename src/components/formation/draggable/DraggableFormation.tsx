@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect } from "react";
 import { useDraggableFormation } from "./hooks/useDraggableFormation";
 import { FormationPositionSlot } from "./FormationPositionSlot";
@@ -10,6 +11,7 @@ interface DraggableFormationProps {
   squadPlayers?: string[];
   initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
   onSelectionChange?: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
+  renderSubstitutionIndicator?: (position: string) => React.ReactNode;
 }
 
 export const DraggableFormation: React.FC<DraggableFormationProps> = ({
@@ -17,7 +19,8 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   availablePlayers = [],
   squadPlayers = [],
   initialSelections = {},
-  onSelectionChange
+  onSelectionChange,
+  renderSubstitutionIndicator
 }) => {
   const {
     selectedPlayerId,
@@ -226,7 +229,10 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
 
   return (
     <div className="space-y-6">
-      <FormationHelperText />
+      <FormationHelperText 
+        draggingPlayer={draggingPlayer}
+        selectedPlayerId={selectedPlayerId}
+      />
       
       {/* Formation grid */}
       <div 
@@ -243,15 +249,29 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         {formationLayout.slots.map(slot => (
           <FormationPositionSlot
             key={slot.id}
-            id={slot.id}
+            slotId={slot.id}
             position={slot.position}
-            gridArea={slot.gridArea}
             selection={selections[slot.id]}
+            player={selections[slot.id] ? getPlayer(selections[slot.id].playerId) : null}
+            selectedPlayerId={selectedPlayerId}
             onDrop={handleDrop}
             onRemovePlayer={handleRemovePlayer}
-            getPlayer={getPlayer}
-            handleDragStart={handleDragStart}
-            handleDragEnd={handleDragEnd}
+            renderSubstitutionIndicator={renderSubstitutionIndicator}
+            dropProps={{
+              className: `absolute ${slot.gridArea}`,
+              onDragOver: (e) => e.preventDefault(),
+              onDragLeave: (e) => e.preventDefault(),
+              onDrop: (e) => {
+                e.preventDefault();
+                const playerId = e.dataTransfer.getData('playerId');
+                const fromSlotId = e.dataTransfer.getData('fromSlotId');
+                if (playerId) {
+                  handleDrop(slot.id, slot.position, fromSlotId);
+                } else if (selectedPlayerId) {
+                  handleDrop(slot.id, slot.position);
+                }
+              }
+            }}
           />
         ))}
       </div>

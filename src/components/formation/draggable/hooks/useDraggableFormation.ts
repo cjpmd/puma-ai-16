@@ -5,14 +5,21 @@ import { useDragOperations } from "./useDragOperations";
 import { useDropOperations } from "./useDropOperations";
 import { useSubstitutionManager } from "./useSubstitutionManager";
 
+interface UseDraggableFormationProps {
+  initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
+  onSelectionChange?: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
+  availablePlayers: any[];
+  squadPlayers?: string[];
+}
+
 export const useDraggableFormation = ({
   initialSelections = {},
   onSelectionChange,
   availablePlayers,
   squadPlayers = []
-}) => {
+}: UseDraggableFormationProps) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>(initialSelections);
+  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>>(initialSelections);
   const [draggingPlayer, setDraggingPlayer] = useState<string | null>(null);
   const formationRef = useRef<HTMLDivElement>(null);
   
