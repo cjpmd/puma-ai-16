@@ -7,7 +7,7 @@ import { FixtureFormData } from "../schemas/fixtureFormSchema";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface UseFixtureFormProps {
-  onSubmit: (data: FixtureFormData) => void;
+  onSubmit?: (data: FixtureFormData) => void;
   editingFixture?: any;
   selectedDate?: Date;
 }
@@ -17,6 +17,7 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
   const [preventDuplicateSubmission, setPreventDuplicateSubmission] = useState(false);
+  const [submissionId, setSubmissionId] = useState<string>("");
 
   const handleSubmit = async (data: FixtureFormData) => {
     // Prevent duplicate submissions
@@ -71,11 +72,34 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           .select('*, fixture_team_times(*), fixture_team_scores(*)')
           .maybeSingle();
       } else {
-        fixtureResult = await supabase
-          .from('fixtures')
-          .insert(fixtureData)
-          .select('*, fixture_team_times(*), fixture_team_scores(*)')
-          .maybeSingle();
+        // Add a check to prevent creating duplicate fixtures
+        if (submissionId) {
+          console.log("Duplicate submission detected, using existing submission ID:", submissionId);
+          // Try to get the fixture with this submission ID
+          const { data: existingFixture } = await supabase
+            .from('fixtures')
+            .select('*, fixture_team_times(*), fixture_team_scores(*)')
+            .eq('id', submissionId)
+            .maybeSingle();
+            
+          if (existingFixture) {
+            console.log("Found existing fixture, not creating duplicate:", existingFixture);
+            fixtureResult = { data: existingFixture, error: null };
+          }
+        }
+        
+        // If we don't have a valid result yet, create the fixture
+        if (!fixtureResult || !fixtureResult.data) {
+          fixtureResult = await supabase
+            .from('fixtures')
+            .insert(fixtureData)
+            .select('*, fixture_team_times(*), fixture_team_scores(*)')
+            .maybeSingle();
+            
+          if (fixtureResult.data?.id) {
+            setSubmissionId(fixtureResult.data.id);
+          }
+        }
       }
 
       if (fixtureResult.error) {
@@ -222,7 +246,9 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
 
         console.log("Final fixture data with MOTM player IDs:", savedFixture);
         
-        await onSubmit(savedFixture);
+        if (onSubmit) {
+          await onSubmit(savedFixture);
+        }
         
         toast({
           title: "Success",

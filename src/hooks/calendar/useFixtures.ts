@@ -35,23 +35,21 @@ export const useFixtures = (date: Date) => {
           return [];
         }
 
-        // Create a Map to store unique fixtures by ID with ALL their data
+        // Create a Map to deduplicate fixtures by ID
         const fixturesById = new Map();
         
         fixturesData.forEach(fixture => {
-          const fixtureId = fixture.id;
-          
-          // If we haven't seen this fixture yet, add it to our map
-          if (!fixturesById.has(fixtureId)) {
-            fixturesById.set(fixtureId, {
-              ...fixture,
-              fixture_team_times: [],
-              fixture_team_scores: []
-            });
-          }
-          
-          // Get the stored unique fixture
-          const uniqueFixture = fixturesById.get(fixtureId);
+          // Store fixtures by ID to automatically deduplicate
+          fixturesById.set(fixture.id, {
+            ...fixture,
+            fixture_team_times: [],
+            fixture_team_scores: []
+          });
+        });
+        
+        // Now go through and add the relation data for each unique fixture
+        fixturesData.forEach(fixture => {
+          const uniqueFixture = fixturesById.get(fixture.id);
           
           // Add team times if they exist and aren't duplicates
           if (fixture.fixture_team_times && fixture.fixture_team_times.length > 0) {

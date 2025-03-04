@@ -8,6 +8,7 @@ import { TournamentsSection } from "./sections/TournamentsSection";
 import { FixturesSection } from "./sections/FixturesSection";
 import { SessionsSection } from "./sections/SessionsSection";
 import { EmptyEventsMessage } from "./sections/EmptyEventsMessage";
+import { useMemo } from "react";
 
 interface EventsListProps {
   date: Date;
@@ -52,6 +53,20 @@ export const EventsList = ({
   onTeamSelectionTournament,
   onUpdateTournamentDate,
 }: EventsListProps) => {
+  // Deduplicate fixtures by ID before passing to the hook
+  const uniqueRawFixtures = useMemo(() => {
+    if (!fixtures || fixtures.length === 0) return [];
+    
+    const fixtureMap = new Map();
+    fixtures.forEach(fixture => {
+      if (!fixtureMap.has(fixture.id)) {
+        fixtureMap.set(fixture.id, fixture);
+      }
+    });
+    
+    return Array.from(fixtureMap.values());
+  }, [fixtures]);
+  
   // Add console logs to debug duplicate fixtures
   console.log("Raw fixture IDs in EventsList:", fixtures?.map(f => f.id));
   
@@ -62,15 +77,11 @@ export const EventsList = ({
     uniqueSessions,
     hasEvents
   } = useEventDeduplication({
-    fixtures,
+    fixtures: uniqueRawFixtures,
     festivals,
     tournaments,
     sessions
   });
-
-  console.log("EventsList rendering fixtures:", uniqueFixtures?.map(f => f.id));
-  console.log("EventsList rendering festivals:", uniqueFestivals?.length);
-  console.log("EventsList rendering tournaments:", uniqueTournaments?.length);
 
   return (
     <Card className="md:col-span-2">

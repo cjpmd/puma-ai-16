@@ -18,26 +18,27 @@ export const useEventDeduplication = ({
 }) => {
   // Deduplicate fixtures by ID
   const uniqueFixtures = useMemo(() => {
-    if (!fixtures?.length) return [];
+    if (!fixtures || !fixtures.length) return [];
     
-    // Use a Map instead of a Set to maintain only one instance of each fixture by ID
-    const fixtureMap = new Map();
+    console.log("Raw fixture IDs in EventsList:", fixtures?.map(f => f.id));
     
-    // Only add each fixture once, based on its ID
+    // Use a Map to get unique fixtures by ID
+    const fixturesMap = new Map();
+    
     fixtures.forEach(fixture => {
-      // If the fixture ID isn't in the map yet, add it
-      if (!fixtureMap.has(fixture.id)) {
-        fixtureMap.set(fixture.id, fixture);
+      if (!fixturesMap.has(fixture.id)) {
+        fixturesMap.set(fixture.id, fixture);
       }
     });
     
-    // Convert the Map values to an array
-    return Array.from(fixtureMap.values());
+    const result = Array.from(fixturesMap.values());
+    console.log("EventsList rendering fixtures:", result.map(f => f.id));
+    return result;
   }, [fixtures]);
 
   // Deduplicate festivals
   const uniqueFestivals = useMemo(() => {
-    if (!festivals?.length) return [];
+    if (!festivals || !festivals.length) return [];
     
     const festivalMap = new Map();
     
@@ -47,12 +48,14 @@ export const useEventDeduplication = ({
       }
     });
     
-    return Array.from(festivalMap.values());
+    const result = Array.from(festivalMap.values());
+    console.log("EventsList rendering festivals:", result.length);
+    return result;
   }, [festivals]);
 
   // Deduplicate tournaments
   const uniqueTournaments = useMemo(() => {
-    if (!tournaments?.length) return [];
+    if (!tournaments || !tournaments.length) return [];
     
     const tournamentMap = new Map();
     
@@ -62,12 +65,14 @@ export const useEventDeduplication = ({
       }
     });
     
-    return Array.from(tournamentMap.values());
+    const result = Array.from(tournamentMap.values());
+    console.log("EventsList rendering tournaments:", result.length);
+    return result;
   }, [tournaments]);
 
   // Deduplicate sessions
   const uniqueSessions = useMemo(() => {
-    if (!sessions?.length) return [];
+    if (!sessions || !sessions.length) return [];
     
     const sessionMap = new Map();
     
