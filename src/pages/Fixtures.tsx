@@ -14,13 +14,13 @@ import { AddFixtureDialog } from "@/components/calendar/AddFixtureDialog";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { TeamSelectionManager } from "@/components/fixtures/TeamSelectionManager";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { TeamSelectionManager } from "@/components/TeamSelectionManager";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
