@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { PeriodDurationInput } from "./PeriodDurationInput";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
