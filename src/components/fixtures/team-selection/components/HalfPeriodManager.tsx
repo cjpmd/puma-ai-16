@@ -91,7 +91,7 @@ export const HalfPeriodManager = ({
     setPeriodSelections(newSelections);
   };
 
-  const updatePeriodDuration = (periodId: string, duration: number) => {
+  const updatePeriodDuration = (teamId: string, periodId: string, duration: number) => {
     setPeriods(periods.map(p => 
       p.id === periodId ? { ...p, duration } : p
     ));
@@ -118,9 +118,10 @@ export const HalfPeriodManager = ({
               />
               
               <PeriodDurationInput
+                teamId={teamId}
                 periodId={activePeriod}
                 duration={periods.find(p => p.id === activePeriod)?.duration || 20}
-                onDurationChange={updatePeriodDuration}
+                onChange={updatePeriodDuration}
               />
             </>
           )}

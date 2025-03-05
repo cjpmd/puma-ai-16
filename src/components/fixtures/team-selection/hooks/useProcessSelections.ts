@@ -42,7 +42,7 @@ export const useProcessSelections = () => {
                 position: position || slotId,
                 performance_category: 'performanceCategory' in selection ? selection.performanceCategory : "MESSI",
                 team_number: parseInt(teamId),
-                is_captain: teamCaptains[teamId] === playerId ? true : false,
+                is_captain: teamCaptains[teamId] === playerId,
                 period_id: periodId,
                 duration: period.duration || 45,
                 is_substitution: isSubstitution
