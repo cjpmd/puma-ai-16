@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { PlayerSelection } from "../types";
+import { PerformanceCategory } from "@/types/player";
 
 export function useFormationSelections({
   initialSelections,
@@ -49,7 +50,7 @@ export function useFormationSelections({
       [slotId]: {
         playerId,
         position,
-        performanceCategory: localPerformanceCategory
+        performanceCategory: localPerformanceCategory as PerformanceCategory
       }
     };
     
@@ -66,7 +67,7 @@ export function useFormationSelections({
       const updatedSelections = Object.fromEntries(
         Object.entries(selections).map(([key, value]) => [
           key,
-          { ...value, performanceCategory: localPerformanceCategory }
+          { ...value, performanceCategory: localPerformanceCategory as PerformanceCategory }
         ])
       );
       

@@ -149,10 +149,24 @@ export const FestivalTeamSelection = ({
                 <FormationSelector
                   format={festival.format as any}
                   teamName={team.category}
-                  onSelectionChange={(selections) => handleSelectionChange(team.id, selections)}
+                  onSelectionChange={(selections) => {
+                    // Type casting to ensure compatibility with PerformanceCategory
+                    const typedSelections = Object.entries(selections).reduce((acc, [key, value]) => {
+                      return {
+                        ...acc,
+                        [key]: {
+                          ...value,
+                          performanceCategory: value.performanceCategory as PerformanceCategory
+                        }
+                      };
+                    }, {} as Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>);
+                    
+                    handleSelectionChange(team.id, typedSelections);
+                  }}
                   selectedPlayers={selectedPlayers}
                   availablePlayers={players || []}
                   formationTemplate={teamFormationTemplates[team.id] || "All"}
+                  onTemplateChange={(template) => handleTemplateChange(team.id, template)}
                 />
               </CardContent>
             </Card>

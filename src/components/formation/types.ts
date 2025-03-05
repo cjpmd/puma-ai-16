@@ -11,7 +11,7 @@ export interface FormationSlot {
 export interface PlayerSelection {
   playerId: string;
   position: string;
-  performanceCategory?: string;
+  performanceCategory?: import("@/types/player").PerformanceCategory;
 }
 
 export interface FormationSelectionProps {
@@ -20,7 +20,7 @@ export interface FormationSelectionProps {
   onSelectionChange: (selections: Record<string, PlayerSelection>) => void;
   selectedPlayers: Set<string>;
   availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
-  performanceCategory?: string;
+  performanceCategory?: import("@/types/player").PerformanceCategory;
   initialSelections?: Record<string, PlayerSelection>;
   viewMode?: ViewMode;
   duration?: number;
