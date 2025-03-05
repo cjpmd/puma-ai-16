@@ -62,6 +62,15 @@ export const TeamSelectionCard = ({
 
   const squadPlayers = squadSelection.length > 0 ? squadSelection : Array.from(selectedPlayers);
 
+  // Custom substitution indicator for positions
+  const renderSubstitutionIndicator = (position: string) => {
+    return position.startsWith('sub-') ? (
+      <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
+        S
+      </div>
+    ) : null;
+  };
+
   return (
     <Card key={team.id} className="mb-6">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -94,6 +103,7 @@ export const TeamSelectionCard = ({
             onSquadPlayersChange={onSquadSelectionChange}
             formationTemplate={formationTemplate}
             onTemplateChange={onTemplateChange}
+            renderSubstitutionIndicator={renderSubstitutionIndicator}
           />
         ) : (
           <FormationSelector
