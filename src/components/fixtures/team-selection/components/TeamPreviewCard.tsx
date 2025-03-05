@@ -8,27 +8,35 @@ import { TeamSelections } from "../types";
 import { FormationView } from "@/components/fixtures/FormationView";
 
 interface TeamPreviewCardProps {
+  periodId: string; // Added this missing prop
+  index: number;
   teamId: string;
-  teamName: string;
-  format: FormationFormat;
-  players: any[];
-  selections: TeamSelections;
-  performanceCategory: PerformanceCategory;
+  fixture: any;
+  teamSelections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string; }>>;
+  availablePlayers: any[];
+  teamSquadPlayers: string[];
+  performanceCategories: Record<string, string>;
   onPerformanceCategoryChange: (value: PerformanceCategory) => void;
-  periodNumber?: number;
-  duration?: number;
+  onDurationChange: (teamId: string, periodId: string, duration: number) => void;
+  onDeletePeriod: (teamId: string, periodId: string) => void;
+  handleFormationChange: (teamId: string, periodId: string, selections: Record<string, { playerId: string; position: string }>) => void;
+  checkIsSubstitution: (teamId: string, periodIndex: number, position: string) => boolean;
 }
 
 export const TeamPreviewCard: React.FC<TeamPreviewCardProps> = ({
+  periodId,
+  index,
   teamId,
-  teamName,
-  format,
-  players,
-  selections,
-  performanceCategory,
+  fixture,
+  teamSelections,
+  availablePlayers,
+  teamSquadPlayers,
+  performanceCategories,
   onPerformanceCategoryChange,
-  periodNumber = 1,
-  duration = 45
+  onDurationChange,
+  onDeletePeriod,
+  handleFormationChange,
+  checkIsSubstitution
 }) => {
   const formatSelectionsForFormation = (selections: TeamSelections) => {
     return Object.entries(selections)
@@ -39,23 +47,45 @@ export const TeamPreviewCard: React.FC<TeamPreviewCardProps> = ({
       }));
   };
 
+  // Get the current performanceCategory for this period
+  const performanceCategory = performanceCategories[`${teamId}-${periodId}`] as PerformanceCategory || "MESSI";
+  const selections = teamSelections[`${teamId}-${periodId}`] || {};
   const positions = formatSelectionsForFormation(selections);
 
   return (
     <Card className="mb-6">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Formation Preview</CardTitle>
-        <PerformanceCategorySelector
-          value={performanceCategory}
-          onChange={onPerformanceCategoryChange}
-        />
+        <CardTitle>Period {index + 1} Formation</CardTitle>
+        <div className="flex items-center space-x-4">
+          <PerformanceCategorySelector
+            value={performanceCategory}
+            onChange={onPerformanceCategoryChange}
+          />
+          <button 
+            className="text-red-500 hover:text-red-700"
+            onClick={() => onDeletePeriod(teamId, periodId)}
+          >
+            Delete Period
+          </button>
+        </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+          <input
+            type="number"
+            min="1"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            defaultValue={45}
+            onChange={(e) => onDurationChange(teamId, periodId, parseInt(e.target.value))}
+          />
+        </div>
+        
         <FormationView
           positions={positions}
-          players={players}
-          periodNumber={periodNumber}
-          duration={duration}
+          players={availablePlayers}
+          periodNumber={index + 1}
+          duration={45} // Default duration
         />
       </CardContent>
     </Card>
