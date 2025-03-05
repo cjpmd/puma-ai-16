@@ -51,7 +51,7 @@ export const FormationTemplateSelector: React.FC<FormationTemplateSelectorProps>
         </div>
         
         {/* Formation name */}
-        <div className="absolute bottom-1 left-0 right-0 text-center text-xs font-medium">
+        <div className="absolute bottom-1 left-0 right-0 text-center text-xs font-medium text-black">
           {templateName}
         </div>
         
@@ -181,9 +181,9 @@ export const FormationTemplateSelector: React.FC<FormationTemplateSelectorProps>
     <div className="mb-4 border p-3 rounded-md bg-white shadow-sm">
       <div className="text-sm font-medium mb-2">Formation:</div>
       <div className="flex justify-between items-center">
-        <div className="flex space-x-3 overflow-x-auto pb-2">
+        <div className="flex space-x-3 overflow-x-auto pb-2 w-full">
           {Object.keys(templates).map((templateName) => (
-            <div key={templateName}>
+            <div key={templateName} className="flex-shrink-0">
               {renderMiniPitch(templateName, selectedTemplate === templateName)}
             </div>
           ))}

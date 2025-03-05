@@ -28,7 +28,7 @@ export const FormationSlots: React.FC<FormationSlotsProps> = ({
   console.log(`Position slots for template ${formationTemplate}:`, positionSlots.map(slot => slot.id));
 
   return (
-    <div className="rounded-md border p-4">
+    <div className="rounded-md border p-4 bg-white shadow-sm">
       <h3 className="text-sm font-medium mb-4">Starting Players</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {positionSlots.map((slot) => {

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FormationView } from "@/components/fixtures/FormationView";
@@ -24,6 +24,13 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
   formationTemplate
 }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>(formationTemplate || "All");
+  
+  useEffect(() => {
+    if (formationTemplate) {
+      setSelectedTemplate(formationTemplate);
+    }
+  }, [formationTemplate]);
+  
   const { selections, localPerformanceCategory, handlePlayerSelection } = useFormationSelections({
     initialSelections,
     performanceCategory,

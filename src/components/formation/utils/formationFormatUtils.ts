@@ -30,8 +30,8 @@ export const getFormationSlots = (format: FormationFormat, template?: string): F
   
   console.log(`Getting formation slots for format: ${format}, template: ${template}`);
   
-  // If template is specified, use it to get positions
-  if (template) {
+  // If template is specified and not the default, use it to get positions
+  if (template && template !== "default") {
     positions = getPositionsForTemplate(format, template);
     console.log(`Got positions from template ${template}: ${positions.join(', ')}`);
     
