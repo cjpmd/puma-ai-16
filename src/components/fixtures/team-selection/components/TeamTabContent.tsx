@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TeamHeaderControls } from "../../TeamHeaderControls";
 import { SquadSelectionCard } from "./SquadSelectionCard";
-import { TeamPreviewCard } from "./TeamPreviewCard";
+import TeamPreviewCard from "./TeamPreviewCard";
 
 interface TeamTabContentProps {
   teamId: string;
