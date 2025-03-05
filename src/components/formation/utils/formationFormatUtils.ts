@@ -30,10 +30,11 @@ export const getFormationSlots = (format: FormationFormat, template?: string): F
   
   console.log(`Getting formation slots for format: ${format}, template: ${template}`);
   
-  // If template is specified and not "All", use it
-  if (template && template !== "All") {
+  // If template is specified, use it to get positions
+  if (template) {
     positions = getPositionsForTemplate(format, template);
-    console.log(`Got positions from template: ${positions.join(', ')}`);
+    console.log(`Got positions from template ${template}: ${positions.join(', ')}`);
+    
     if (positions.length > 0) {
       return createSlotsFromPositions(positions);
     }

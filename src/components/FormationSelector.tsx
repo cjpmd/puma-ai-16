@@ -75,6 +75,8 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
     );
   }
 
+  console.log(`FormationSelector rendering with format: ${format}, template: ${selectedTemplate}`);
+
   return (
     <div className="space-y-4">
       <FormationTemplateSelector

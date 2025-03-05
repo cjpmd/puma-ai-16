@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useTeamSelection } from "@/hooks/useTeamSelection";
 import { FormationSelector } from "@/components/FormationSelector";
@@ -64,6 +63,7 @@ export const TournamentTeamSelection = ({
   };
 
   const handleTemplateChange = (teamId: string, template: string) => {
+    console.log(`Changing template for team ${teamId} to ${template}`);
     setTeamFormationTemplates(prev => ({
       ...prev,
       [teamId]: template

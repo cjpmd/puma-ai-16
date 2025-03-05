@@ -24,6 +24,7 @@ export const FormationTemplateSelector: React.FC<FormationTemplateSelectorProps>
   const templates = getFormationTemplatesForFormat(format);
   
   console.log(`Rendering FormationTemplateSelector for format: ${format} with templates:`, templates);
+  console.log(`Selected template: ${selectedTemplate}`);
   
   if (!templates || Object.keys(templates).length === 0) {
     console.warn(`No templates found for format: ${format}`);
@@ -177,7 +178,7 @@ export const FormationTemplateSelector: React.FC<FormationTemplateSelectorProps>
   };
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 border p-3 rounded-md bg-white shadow-sm">
       <div className="text-sm font-medium mb-2">Formation:</div>
       <div className="flex justify-between items-center">
         <div className="flex space-x-3 overflow-x-auto pb-2">

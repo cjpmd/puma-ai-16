@@ -25,6 +25,7 @@ export const FormationSlots: React.FC<FormationSlotsProps> = ({
   const positionSlots = getFormationSlots(format, formationTemplate);
   
   console.log(`Rendering FormationSlots with format: ${format}, template: ${formationTemplate}, slots: ${positionSlots.length}`);
+  console.log(`Position slots for template ${formationTemplate}:`, positionSlots.map(slot => slot.id));
 
   return (
     <div className="rounded-md border p-4">
