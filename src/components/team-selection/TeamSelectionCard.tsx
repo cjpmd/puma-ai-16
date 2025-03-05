@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormationSelector } from "@/components/FormationSelector";
+import { FormationFormat } from "@/components/formation/types";
 
 interface TeamSelectionCardProps {
   team: {
@@ -9,7 +10,7 @@ interface TeamSelectionCardProps {
     name: string;
     category: string;
   };
-  format: string;
+  format: FormationFormat;
   players: any[];
   selectedPlayers: Set<string>;
   performanceCategory: string;
@@ -48,6 +49,7 @@ export const TeamSelectionCard = ({
           availablePlayers={players}
           performanceCategory={performanceCategory}
           formationTemplate={formationTemplate}
+          onTemplateChange={onTemplateChange}
         />
       </CardContent>
     </Card>

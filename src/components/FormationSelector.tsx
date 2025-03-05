@@ -10,7 +10,11 @@ import { formatSelectionsForFormation } from "./formation/utils/selectionFormatU
 import { FormationSelectionProps } from "./formation/types";
 import { FormationTemplateSelector } from "./formation/FormationTemplateSelector";
 
-export const FormationSelector: React.FC<FormationSelectionProps> = ({
+export interface ExtendedFormationSelectionProps extends FormationSelectionProps {
+  onTemplateChange?: (template: string) => void;
+}
+
+export const FormationSelector: React.FC<ExtendedFormationSelectionProps> = ({
   format,
   teamName,
   onSelectionChange,
@@ -21,7 +25,8 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
   viewMode = "team-sheet",
   duration = 20,
   periodNumber = 1,
-  formationTemplate
+  formationTemplate,
+  onTemplateChange
 }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>(formationTemplate || "All");
   
@@ -56,6 +61,9 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
   const handleTemplateChange = (template: string) => {
     console.log(`Formation template changed to: ${template}`);
     setSelectedTemplate(template);
+    if (onTemplateChange) {
+      onTemplateChange(template);
+    }
   };
 
   // Adapter function to handle the selection change with the correct parameters

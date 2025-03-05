@@ -4,22 +4,40 @@ import { Button } from "@/components/ui/button";
 import { TeamSelectionCard } from "./TeamSelectionCard";
 import { usePlayersWithAttendance } from "./hooks/usePlayersWithAttendance";
 import { useTeamSelections } from "./hooks/useTeamSelections";
+import { Fixture } from "@/types/fixture";
+import { FormationFormat } from "@/components/formation/types";
 
 interface TeamSelectionManagerProps {
-  teams: Array<{
+  teams?: Array<{
     id: string;
     name: string;
     category: string;
   }>;
-  format: string;
+  format?: FormationFormat;
+  fixture?: Fixture | null;
   onTeamSelectionsChange?: (selections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>) => void;
+  onSuccess?: () => void;
 }
 
 export const TeamSelectionManager = ({
-  teams,
-  format,
-  onTeamSelectionsChange 
+  teams: providedTeams,
+  format: providedFormat,
+  fixture,
+  onTeamSelectionsChange,
+  onSuccess
 }: TeamSelectionManagerProps) => {
+  // Use teams from fixture if available, otherwise use provided teams
+  const teams = fixture ? [
+    {
+      id: fixture.id,
+      name: fixture.category || "Team",
+      category: fixture.category || ""
+    }
+  ] : providedTeams || [];
+  
+  // Use format from fixture if available, otherwise use provided format
+  const format = fixture?.format as FormationFormat || providedFormat || "7-a-side";
+  
   const { 
     teamSelections, 
     selectedPlayers, 
@@ -44,7 +62,9 @@ export const TeamSelectionManager = ({
       // Save team selections logic here
       await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
       
-      // Success toast is now handled in the hook
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
       console.error("Error saving team selections:", error);
     } finally {
