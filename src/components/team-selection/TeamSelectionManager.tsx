@@ -101,7 +101,7 @@ export const TeamSelectionManager = ({
               format={validFormat}
               players={playersWithStatus}
               selectedPlayers={selectedPlayers}
-              performanceCategory={performanceCategories[team.id] || "MESSI"}
+              performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
               onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
               onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
               formationTemplate={teamFormationTemplates[team.id] || "All"}
@@ -123,7 +123,7 @@ export const TeamSelectionManager = ({
                     format={validFormat}
                     players={playersWithStatus}
                     selectedPlayers={selectedPlayers}
-                    performanceCategory={performanceCategories[team.id] || "MESSI"}
+                    performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
                     onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
                     onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
                     formationTemplate={teamFormationTemplates[team.id] || "All"}
@@ -140,7 +140,7 @@ export const TeamSelectionManager = ({
                     format={validFormat}
                     players={playersWithStatus}
                     selectedPlayers={selectedPlayers}
-                    performanceCategory={performanceCategories[team.id] || "MESSI"}
+                    performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
                     onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
                     onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
                     formationTemplate={teamFormationTemplates[team.id] || "All"}

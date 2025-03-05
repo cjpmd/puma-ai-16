@@ -84,7 +84,7 @@ interface PerformanceCategorySelectorProps {
 
 const PerformanceCategorySelector = ({ value, onChange }: PerformanceCategorySelectorProps) => {
   return (
-    <Select value={value} onValueChange={onChange as (value: string) => void}>
+    <Select value={value} onValueChange={(newValue: string) => onChange(newValue as PerformanceCategory)}>
       <SelectTrigger className="w-[180px]">
         <SelectValue placeholder="Select category" />
       </SelectTrigger>

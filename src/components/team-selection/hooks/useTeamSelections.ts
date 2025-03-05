@@ -84,7 +84,7 @@ export const useTeamSelections = (
           playerId: selection.playerId,
           position: selection.position,
           is_substitute: selection.position.startsWith('sub-'),
-          performanceCategory: selection.performanceCategory || performanceCategories[teamId] || 'MESSI'
+          performanceCategory: selection.performanceCategory || performanceCategories[teamId] || 'MESSI' as PerformanceCategory
         }));
         return acc;
       }, {} as Record<string, Array<{ playerId: string; position: string; is_substitute: boolean; performanceCategory?: PerformanceCategory }>>);

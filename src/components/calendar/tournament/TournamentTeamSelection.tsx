@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useTeamSelection } from "@/hooks/useTeamSelection";
 import { FormationSelector } from "@/components/FormationSelector";
@@ -7,12 +8,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { PerformanceCategory } from "@/types/player";
 
 interface TeamSelection {
   playerId: string;
   position: string;
   is_substitute: boolean;
-  performanceCategory?: string;
+  performanceCategory?: PerformanceCategory;
 }
 
 interface TournamentTeamSelectionProps {
@@ -33,7 +35,7 @@ export const TournamentTeamSelection = ({
   onSuccess,
 }: TournamentTeamSelectionProps) => {
   const { selectedPlayers, clearSelectedPlayers } = useTeamSelection();
-  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
+  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [teamFormationTemplates, setTeamFormationTemplates] = useState<Record<string, string>>({});
 
@@ -54,7 +56,7 @@ export const TournamentTeamSelection = ({
     }
   }, [isOpen, clearSelectedPlayers]);
 
-  const handleSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
+  const handleSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
     // Update local state
     setTeamSelections(prev => ({
       ...prev,
@@ -90,7 +92,7 @@ export const TournamentTeamSelection = ({
           playerId: value.playerId,
           position: value.position,
           is_substitute: value.position.startsWith('sub-'),
-          performanceCategory: value.performanceCategory || 'MESSI'
+          performanceCategory: value.performanceCategory || 'MESSI' as PerformanceCategory
         }));
       });
       

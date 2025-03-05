@@ -4,12 +4,13 @@ import { FestivalForm } from "./FestivalForm";
 import { TeamSelectionManager } from "@/components/team-selection/TeamSelectionManager";
 import { useToast } from "@/hooks/use-toast";
 import { FormationFormat } from "@/components/formation/types";
+import { PerformanceCategory } from "@/types/player";
 
 interface TeamSelection {
   playerId: string;
   position: string;
   is_substitute: boolean;
-  performanceCategory?: string;
+  performanceCategory?: PerformanceCategory;
 }
 
 interface FestivalDialogContentProps {
@@ -73,7 +74,7 @@ export const FestivalDialogContent = ({
                       playerId: selection.playerId,
                       position: selection.position,
                       is_substitute: selection.position.startsWith('sub-'),
-                      performanceCategory: selection.performanceCategory || 'MESSI'
+                      performanceCategory: selection.performanceCategory || 'MESSI' as PerformanceCategory
                     }));
                     return acc;
                   }, 

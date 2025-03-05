@@ -2,11 +2,13 @@
 import { DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { TournamentForm } from "./TournamentForm";
 import { TournamentTeamSelection } from "./TournamentTeamSelection";
+import { PerformanceCategory } from "@/types/player";
 
 interface TeamSelection {
   playerId: string;
   position: string;
   is_substitute: boolean;
+  performanceCategory?: PerformanceCategory;
 }
 
 interface TournamentDialogContentProps {
