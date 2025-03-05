@@ -53,12 +53,8 @@ export const TeamTabContent = ({
         availablePlayers={availablePlayers}
         onCaptainChange={(teamId, playerId) => handleCaptainChange(teamId, playerId)}
         performanceCategory={performanceCategories[`${teamId}-${periods[0]?.id}`] || "MESSI"}
-        onPerformanceCategoryChange={(value: PerformanceCategory) => {
-          if (periods[0]?.id) {
-            // Create an adapter function that translates between the two function signatures
-            handlePerformanceCategoryChange(teamId, periods[0].id, value);
-          }
-        }}
+        onPerformanceCategoryChange={handlePerformanceCategoryChange}
+        currentPeriodId={periods[0]?.id || ""}
         onAddPeriod={() => handleAddPeriod(teamId)}
       />
       

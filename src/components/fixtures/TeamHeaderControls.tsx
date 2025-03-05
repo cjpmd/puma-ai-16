@@ -1,3 +1,4 @@
+
 // Update imports as needed
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
+import { PerformanceCategory } from "@/types/player";
 
 // Default categories if table doesn't exist
 const DEFAULT_CATEGORIES = [
@@ -13,6 +15,17 @@ const DEFAULT_CATEGORIES = [
   { id: "JAGS", name: "Jags" }
 ];
 
+interface TeamHeaderControlsProps {
+  teamId: string;
+  teamCaptains: Record<string, string>;
+  availablePlayers: any[];
+  onCaptainChange: (teamId: string, playerId: string) => void;
+  performanceCategory: PerformanceCategory;
+  onPerformanceCategoryChange: (teamId: string, periodId: string, category: string) => void;
+  onAddPeriod: () => void;
+  currentPeriodId?: string;
+}
+
 export const TeamHeaderControls = ({ 
   teamId, 
   teamCaptains,
@@ -20,8 +33,9 @@ export const TeamHeaderControls = ({
   onCaptainChange,
   performanceCategory,
   onPerformanceCategoryChange,
-  onAddPeriod
-}) => {
+  onAddPeriod,
+  currentPeriodId = ""
+}: TeamHeaderControlsProps) => {
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   
   useEffect(() => {
@@ -55,7 +69,7 @@ export const TeamHeaderControls = ({
         <div className="flex items-center space-x-4">
           <Select
             value={performanceCategory}
-            onValueChange={onPerformanceCategoryChange}
+            onValueChange={(value) => onPerformanceCategoryChange(teamId, currentPeriodId, value)}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select category" />
