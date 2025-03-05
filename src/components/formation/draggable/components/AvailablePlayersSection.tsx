@@ -70,8 +70,8 @@ export const AvailablePlayersSection: React.FC<AvailablePlayersSectionProps> = (
                   ${selectedPlayerId === player.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-card hover:bg-accent border-border'}
                 `}
                 onClick={() => onPlayerClick(player.id)}
-                draggable={squadMode && handleDragStart}
-                onDragStart={(e) => handleDragStart && handleDragStart(e, player.id)}
+                draggable={handleDragStart ? true : false}
+                onDragStart={handleDragStart ? (e) => handleDragStart(e, player.id) : undefined}
                 onDragEnd={handleDragEnd}
               >
                 <div className="flex items-center space-x-2">
