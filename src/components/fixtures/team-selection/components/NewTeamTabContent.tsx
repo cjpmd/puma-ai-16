@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { TeamHeaderControls } from "../../TeamHeaderControls";
 import { SquadSelectionCard } from "./SquadSelectionCard";
-import { PeriodCard } from "./PeriodCard";
+import { AlternatePeriodCard } from "./PeriodCard";
 import { PeriodSelector } from "./PeriodSelector";
 import { ViewToggleButton } from "./ViewToggleButton";
 import { Button } from "@/components/ui/button";
@@ -12,14 +12,14 @@ import { FormationFormat } from "@/components/formation/types";
 interface NewTeamTabContentProps {
   teamId: string;
   teamName?: string;
-  fixture: any;
+  fixture?: any;
   availablePlayers: any[];
   selectedPlayers: Set<string>;
   periodSelections: Record<string, Record<string, { playerId: string; position: string }>>;
   performanceCategories: Record<string, PerformanceCategory | string>;
   setPeriodSelections: (teamId: string, periodNumber: string, selections: Record<string, { playerId: string; position: string }>) => void;
   onPerformanceCategoryChange: (teamId: string, value: PerformanceCategory) => void;
-  format: FormationFormat;
+  format: FormationFormat | string;
   captainId?: string;
   setCaptainId: (teamId: string, playerId: string) => void;
   getPlayerTeams?: (playerId: string) => string[];
@@ -124,10 +124,10 @@ export const NewTeamTabContent = ({
         onPeriodChange={handlePeriodChange}
       />
       
-      <PeriodCard
+      <AlternatePeriodCard
         periodNumber={activePeriod}
         teamId={teamId}
-        format={format}
+        format={format as FormationFormat}
         duration={periodDurations[activePeriod] || 45}
         onDurationChange={(duration) => handleDurationChange(activePeriod, duration)}
         availablePlayers={availablePlayers}

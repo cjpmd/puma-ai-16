@@ -35,12 +35,15 @@ export const useTeamSelections = (
     setSelectedPlayers(selectedPlayerIds);
   };
 
-  const handlePeriodSelectionChange = (teamId: string, periodNumber: number, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
+  const handlePeriodSelectionChange = (teamId: string, periodNumber: number | string, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
+    // Convert periodNumber to number if it's a string
+    const periodNum = typeof periodNumber === 'string' ? parseInt(periodNumber, 10) : periodNumber;
+    
     setPeriodSelections(prev => ({
       ...prev,
       [teamId]: {
         ...(prev[teamId] || {}),
-        [periodNumber]: selections
+        [periodNum]: selections
       }
     }));
   };
@@ -122,6 +125,7 @@ export const useTeamSelections = (
     handlePeriodSelectionChange,
     handlePerformanceCategoryChange,
     handleTemplateChange,
-    saveSelections
+    saveSelections,
+    setPeriodSelections
   };
 };

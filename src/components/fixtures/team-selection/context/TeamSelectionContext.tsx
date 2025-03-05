@@ -1,6 +1,7 @@
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from "react";
 import { Fixture } from "@/types/fixture";
+import { PerformanceCategory } from "@/types/player";
 import { areSelectionsEmpty } from "../utils/selectionUtils";
 import { useFixtureSelections } from "../hooks/useFixtureSelections";
 
