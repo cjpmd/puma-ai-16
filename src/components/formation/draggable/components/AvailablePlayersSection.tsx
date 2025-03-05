@@ -1,16 +1,24 @@
 
 import React from "react";
+import { UserPlus, Users, MoveHorizontal } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export interface AvailablePlayersSectionProps {
   players: any[];
   selectedPlayerId: string | null;
   onPlayerClick: (playerId: string) => void;
+  squadPlayers?: string[];
+  onAddToSquad?: (playerId: string) => void;
+  squadMode?: boolean;
 }
 
 export const AvailablePlayersSection: React.FC<AvailablePlayersSectionProps> = ({
   players,
   selectedPlayerId,
-  onPlayerClick
+  onPlayerClick,
+  squadPlayers = [],
+  onAddToSquad,
+  squadMode = false
 }) => {
   if (!players || players.length === 0) {
     return (
@@ -21,21 +29,36 @@ export const AvailablePlayersSection: React.FC<AvailablePlayersSectionProps> = (
     );
   }
 
+  // Filter out players who are already in the squad when in squad mode
+  const availablePlayers = squadMode 
+    ? players.filter(player => !squadPlayers.includes(player.id)) 
+    : players;
+
   return (
     <div className="border rounded-md p-4 bg-white">
-      <h3 className="text-sm font-medium mb-2">Available Players</h3>
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-sm font-medium">Available Players</h3>
+        {squadMode && (
+          <div className="text-xs text-gray-500 flex items-center">
+            <UserPlus size={14} className="mr-1" />
+            Select to add to squad
+          </div>
+        )}
+      </div>
+      
       <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-        {players.map(player => (
+        {availablePlayers.map(player => (
           <div
             key={player.id}
-            onClick={() => onPlayerClick(player.id)}
+            onClick={() => squadMode && onAddToSquad ? onAddToSquad(player.id) : onPlayerClick(player.id)}
             className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${
               selectedPlayerId === player.id 
                 ? 'bg-blue-100 border border-blue-300' 
                 : 'hover:bg-gray-100 border border-gray-200'
             }`}
-            draggable
+            draggable={!squadMode}
             onDragStart={(e) => {
+              if (squadMode) return;
               e.dataTransfer.setData('playerId', player.id);
               e.dataTransfer.setData('playerName', player.name);
               e.dataTransfer.effectAllowed = 'move';
@@ -49,11 +72,26 @@ export const AvailablePlayersSection: React.FC<AvailablePlayersSectionProps> = (
               </div>
               <span className="font-medium text-sm">{player.name}</span>
             </div>
-            {player.squad_number && (
-              <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">
-                #{player.squad_number}
-              </span>
-            )}
+            <div className="flex items-center">
+              {player.squad_number && (
+                <span className="text-xs bg-gray-200 px-2 py-1 rounded-full mr-2">
+                  #{player.squad_number}
+                </span>
+              )}
+              {squadMode && onAddToSquad && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6 rounded-full hover:bg-blue-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddToSquad(player.id);
+                  }}
+                >
+                  <UserPlus size={14} className="text-blue-600" />
+                </Button>
+              )}
+            </div>
           </div>
         ))}
       </div>

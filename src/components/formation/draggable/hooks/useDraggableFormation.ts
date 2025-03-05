@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { FormationFormat } from "../../types";
 import { PerformanceCategory } from "@/types/player";
@@ -32,6 +33,8 @@ export const useDraggableFormation = ({
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>>(initialSelections || {});
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>(formationTemplate);
+  const [localSquadPlayers, setLocalSquadPlayers] = useState<string[]>(squadPlayers || []);
+  const [squadMode, setSquadMode] = useState<boolean>(true);
   const formationRef = useRef<HTMLDivElement>(null);
 
   // Get drag operations from the hook
@@ -77,6 +80,14 @@ export const useDraggableFormation = ({
       onSquadPlayersChange(uniquePlayerIds);
     }
   }, [selections, onSelectionChange, onSquadPlayersChange]);
+  
+  // Initialize squad with props
+  useEffect(() => {
+    if (squadPlayers && squadPlayers.length > 0) {
+      setLocalSquadPlayers(squadPlayers);
+      setSquadMode(false);
+    }
+  }, [squadPlayers]);
 
   // Handle player click in the available players list
   const handlePlayerClick = (playerId: string) => {
@@ -114,8 +125,8 @@ export const useDraggableFormation = ({
 
   // Get available players for the squad
   const getAvailableSquadPlayers = () => {
-    return squadPlayers.length > 0
-      ? availablePlayers.filter(player => squadPlayers.includes(player.id))
+    return localSquadPlayers.length > 0
+      ? availablePlayers.filter(player => localSquadPlayers.includes(player.id))
       : availablePlayers;
   };
 
@@ -127,6 +138,57 @@ export const useDraggableFormation = ({
     }
   };
 
+  // Toggle squad mode
+  const toggleSquadMode = () => {
+    setSquadMode(prev => !prev);
+  };
+
+  // Add player to squad
+  const addPlayerToSquad = (playerId: string) => {
+    if (!localSquadPlayers.includes(playerId)) {
+      const updatedSquad = [...localSquadPlayers, playerId];
+      setLocalSquadPlayers(updatedSquad);
+      
+      if (onSquadPlayersChange) {
+        onSquadPlayersChange(updatedSquad);
+      }
+    }
+  };
+
+  // Remove player from squad
+  const removePlayerFromSquad = (playerId: string) => {
+    if (localSquadPlayers.includes(playerId)) {
+      const updatedSquad = localSquadPlayers.filter(id => id !== playerId);
+      setLocalSquadPlayers(updatedSquad);
+      
+      // Also remove from selections if present
+      const updatedSelections = { ...selections };
+      Object.entries(updatedSelections).forEach(([key, value]) => {
+        if (value.playerId === playerId) {
+          delete updatedSelections[key];
+        }
+      });
+      
+      setSelections(updatedSelections);
+      
+      if (onSquadPlayersChange) {
+        onSquadPlayersChange(updatedSquad);
+      }
+    }
+  };
+
+  // Finished squad selection
+  const finishSquadSelection = () => {
+    if (localSquadPlayers.length > 0) {
+      setSquadMode(false);
+    }
+  };
+
+  // Return to squad selection
+  const returnToSquadSelection = () => {
+    setSquadMode(true);
+  };
+
   // Show all players by default
   const showPlayers = true;
 
@@ -136,6 +198,8 @@ export const useDraggableFormation = ({
     selectedTemplate,
     selections,
     formationRef,
+    squadMode,
+    squadPlayers: localSquadPlayers,
     handleDrop,
     handlePlayerClick,
     handleRemovePlayer,
@@ -149,6 +213,11 @@ export const useDraggableFormation = ({
     getAvailableSquadPlayers,
     addSubstitute,
     removeSubstitute,
-    showPlayers
+    showPlayers,
+    toggleSquadMode,
+    addPlayerToSquad,
+    removePlayerFromSquad,
+    finishSquadSelection,
+    returnToSquadSelection
   };
 };
