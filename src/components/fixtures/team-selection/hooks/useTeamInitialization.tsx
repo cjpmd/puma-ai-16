@@ -5,7 +5,7 @@ import { usePeriods } from "./usePeriods";
 
 export const useTeamInitialization = () => {
   const { fixture, setTeams, setActiveTeamId } = useTeamSelection();
-  const { initializeTeamPeriods } = usePeriods();
+  const { periodsPerTeam, handleAddPeriod, initializeTeamPeriods } = usePeriods();
   
   useEffect(() => {
     if (!fixture) return;
@@ -34,7 +34,15 @@ export const useTeamInitialization = () => {
     initializeTeamPeriods(fixture);
     
     console.log("Teams initialized:", newTeams);
-  }, [fixture, setTeams, setActiveTeamId, initializeTeamPeriods]);
+    
+    // Add a default period to each team if none exist
+    Object.keys(newTeams).forEach(teamId => {
+      if (!periodsPerTeam[teamId] || periodsPerTeam[teamId].length === 0) {
+        handleAddPeriod(teamId);
+      }
+    });
+    
+  }, [fixture, setTeams, setActiveTeamId, initializeTeamPeriods, handleAddPeriod, periodsPerTeam]);
   
   return null;
 };
