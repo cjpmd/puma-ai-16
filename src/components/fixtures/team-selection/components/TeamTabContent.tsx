@@ -55,6 +55,7 @@ export const TeamTabContent = ({
         performanceCategory={performanceCategories[`${teamId}-${periods[0]?.id}`] || "MESSI"}
         onPerformanceCategoryChange={(value: PerformanceCategory) => {
           if (periods[0]?.id) {
+            // Create an adapter function that translates between the two function signatures
             handlePerformanceCategoryChange(teamId, periods[0].id, value);
           }
         }}
