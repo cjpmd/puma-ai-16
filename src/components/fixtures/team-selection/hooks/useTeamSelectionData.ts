@@ -12,7 +12,7 @@ export const useTeamSelectionData = (fixtureId: string | undefined) => {
   const [availablePlayers, setAvailablePlayers] = useState<Player[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [periodsPerTeam, setPeriodsPerTeam] = useState<PeriodsPerTeam>({});
-  const [selections, setSelections] = useState<Record<string, Record<string, Record<string, Record<string, { playerId: string; position: string; isSubstitution?: boolean; }>>>>({});
+  const [selections, setSelections] = useState<Record<string, Record<string, Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>>>({}); 
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
   const [teamCaptains, setTeamCaptains] = useState<Record<string, string>>({});
   const [existingSelections, setExistingSelections] = useState<AllSelections>({});

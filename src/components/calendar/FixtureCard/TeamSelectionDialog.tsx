@@ -46,6 +46,7 @@ export const TeamSelectionDialog = ({
         <TeamSelectionManager 
           fixture={fixture}
           onSuccess={handleSuccess}
+          onCancel={() => onOpenChange(false)}
         />
       </DialogContent>
     </Dialog>
