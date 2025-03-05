@@ -9,6 +9,7 @@ import { AvailablePlayersSection } from "./components/AvailablePlayersSection";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getFormationTemplatesByFormat } from "../utils/formationTemplates";
+import { PerformanceCategory } from "@/types/player";
 
 interface DraggableFormationProps {
   format: FormationFormat;
@@ -17,6 +18,10 @@ interface DraggableFormationProps {
   initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
   onSelectionChange?: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
   renderSubstitutionIndicator?: (position: string) => React.ReactNode;
+  performanceCategory?: PerformanceCategory; // Added this property to fix the type error
+  onSquadPlayersChange?: (playerIds: string[]) => void; // Added this property to maintain consistency
+  formationTemplate?: string; // Added this property to maintain consistency
+  onTemplateChange?: (template: string) => void; // Added this property to maintain consistency
 }
 
 export const DraggableFormation: React.FC<DraggableFormationProps> = ({
@@ -25,10 +30,14 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   squadPlayers = [],
   initialSelections = {},
   onSelectionChange,
-  renderSubstitutionIndicator
+  renderSubstitutionIndicator,
+  performanceCategory,
+  onSquadPlayersChange,
+  formationTemplate = "All",
+  onTemplateChange
 }) => {
   const [selectedFormat, setSelectedFormat] = useState<FormationFormat>(format);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("All");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>(formationTemplate);
   const templates = getFormationTemplatesByFormat(selectedFormat);
   
   const {
@@ -53,13 +62,27 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
 
   // Update template when format changes
   useEffect(() => {
-    setSelectedTemplate("All");
-  }, [selectedFormat]);
+    setSelectedTemplate(formationTemplate || "All");
+  }, [formationTemplate]);
+
+  // Update template when a new one is selected
+  useEffect(() => {
+    if (onTemplateChange && selectedTemplate !== formationTemplate) {
+      onTemplateChange(selectedTemplate);
+    }
+  }, [selectedTemplate, onTemplateChange]);
 
   const availableSquadPlayers = getAvailableSquadPlayers();
 
   const handleFormatChange = (newFormat: FormationFormat) => {
     setSelectedFormat(newFormat);
+  };
+
+  const handleTemplateChange = (template: string) => {
+    setSelectedTemplate(template);
+    if (onTemplateChange) {
+      onTemplateChange(template);
+    }
   };
 
   return (
@@ -71,7 +94,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
             <div className="flex space-x-2">
               <Select
                 value={selectedTemplate}
-                onValueChange={setSelectedTemplate}
+                onValueChange={handleTemplateChange}
               >
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Formation" />

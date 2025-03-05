@@ -4,19 +4,22 @@ import { usePlayerManagement } from "./usePlayerManagement";
 import { useDragOperations } from "./useDragOperations";
 import { useDropOperations } from "./useDropOperations";
 import { useSubstitutionManager } from "./useSubstitutionManager";
+import { PerformanceCategory } from "@/types/player";
 
 interface UseDraggableFormationProps {
   initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
   onSelectionChange?: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
   availablePlayers: any[];
   squadPlayers?: string[];
+  performanceCategory?: PerformanceCategory;
 }
 
 export const useDraggableFormation = ({
   initialSelections = {},
   onSelectionChange,
   availablePlayers,
-  squadPlayers = []
+  squadPlayers = [],
+  performanceCategory
 }: UseDraggableFormationProps) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>>(initialSelections);
@@ -62,7 +65,8 @@ export const useDraggableFormation = ({
     selectedPlayerId,
     setSelectedPlayerId,
     draggingPlayer,
-    setDraggingPlayer
+    setDraggingPlayer,
+    performanceCategory
   });
   
   const { 
@@ -72,7 +76,8 @@ export const useDraggableFormation = ({
   } = useSubstitutionManager({
     selections,
     updateSelections: setSelections,
-    onSelectionChange
+    onSelectionChange,
+    performanceCategory
   });
 
   // Initialize substitution counter
