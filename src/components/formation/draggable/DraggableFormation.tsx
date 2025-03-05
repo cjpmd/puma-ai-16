@@ -35,30 +35,35 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   renderSubstitutionIndicator
 }) => {
   const {
-    selectedTemplate,
     selectedPlayerId,
     draggingPlayer,
+    selectedTemplate,
     selections,
+    formationRef,
     handleDrop,
     handlePlayerClick,
     handleRemovePlayer,
     handleDragStart,
     handleDragEnd,
+    handleSubstituteDrop,
     handleTemplateChange,
+    getPlayer,
     getPlayerById,
     getAvailablePlayers,
+    getAvailableSquadPlayers,
     addSubstitute,
-    removeSubstitute
+    removeSubstitute,
+    showPlayers
   } = useDraggableFormation({
-    format,
-    availablePlayers,
-    squadPlayers,
     initialSelections,
     onSelectionChange,
+    availablePlayers,
+    squadPlayers,
     performanceCategory,
-    onSquadPlayersChange,
+    format,
     formationTemplate,
-    onTemplateChange
+    onTemplateChange,
+    onSquadPlayersChange
   });
 
   return (
@@ -115,6 +120,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         handleDragStart={handleDragStart}
         handleDragEnd={handleDragEnd}
         renderSubstitutionIndicator={renderSubstitutionIndicator}
+        format={format}
       />
     </div>
   );

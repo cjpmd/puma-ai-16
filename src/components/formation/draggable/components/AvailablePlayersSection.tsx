@@ -34,6 +34,11 @@ export const AvailablePlayersSection: React.FC<AvailablePlayersSectionProps> = (
                 ? 'bg-blue-100 border border-blue-300' 
                 : 'hover:bg-gray-100 border border-gray-200'
             }`}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData('playerId', player.id);
+              e.dataTransfer.effectAllowed = 'move';
+            }}
           >
             <div className="flex items-center space-x-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${

@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { usePlayerManagement } from "./usePlayerManagement";
 import { useDragOperations } from "./useDragOperations";
@@ -92,7 +93,7 @@ export const useDraggableFormation = ({
 
   useEffect(() => {
     initializeSubCounter();
-  }, []);
+  }, [initializeSubCounter]);
 
   useEffect(() => {
     if (onSelectionChange && Object.keys(selections).length > 0) {
@@ -101,6 +102,7 @@ export const useDraggableFormation = ({
   }, [selections, onSelectionChange]);
   
   const handleTemplateChange = (template: string) => {
+    console.log(`Changing formation template to: ${template}`);
     setSelectedTemplate(template);
     if (onTemplateChange) {
       onTemplateChange(template);

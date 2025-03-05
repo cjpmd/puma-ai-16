@@ -1,7 +1,7 @@
 
 import { FormationFormat } from "../../types";
 import { positionDefinitions } from "../../utils/positionDefinitions";
-import { FORMATION_7_A_SIDE, FORMATION_9_A_SIDE } from "../../utils/formationTemplates";
+import { FORMATION_7_A_SIDE, FORMATION_9_A_SIDE, FORMATION_5_A_SIDE, FORMATION_11_A_SIDE } from "../../utils/formationTemplates";
 
 interface FormationSlot {
   id: string;
@@ -24,15 +24,39 @@ export const getFormationLayout = (format: FormationFormat, template?: string): 
   
   console.log(`Getting formation layout for format: ${format}, template: ${template}`);
   
-  // Apply template if specified
-  if (template && template !== "All") {
+  // If the All template is selected, return all available positions for the format
+  if (template === "All") {
+    switch (format) {
+      case '5-a-side':
+        customPositions = FORMATION_5_A_SIDE[template];
+        break;
+      case '7-a-side':
+        customPositions = FORMATION_7_A_SIDE[template];
+        break;
+      case '9-a-side':
+        customPositions = FORMATION_9_A_SIDE[template];
+        break;
+      case '11-a-side':
+        customPositions = FORMATION_11_A_SIDE[template];
+        break;
+      default:
+        customPositions = FORMATION_7_A_SIDE[template] || [];
+    }
+  } 
+  // Apply specific template if specified
+  else if (template && template !== "All") {
     if (format === "7-a-side") {
       customPositions = FORMATION_7_A_SIDE[template as keyof typeof FORMATION_7_A_SIDE] || [];
     } else if (format === "9-a-side") {
       customPositions = FORMATION_9_A_SIDE[template as keyof typeof FORMATION_9_A_SIDE] || [];
+    } else if (format === "5-a-side") {
+      customPositions = FORMATION_5_A_SIDE[template as keyof typeof FORMATION_5_A_SIDE] || [];
+    } else if (format === "11-a-side") {
+      customPositions = FORMATION_11_A_SIDE[template as keyof typeof FORMATION_11_A_SIDE] || [];
     }
   }
   
+  // Set default positions based on format
   switch (format) {
     case '5-a-side':
       defaultPositions = ['GK', 'DL', 'DR', 'MC', 'STC'];

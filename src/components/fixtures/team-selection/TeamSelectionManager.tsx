@@ -22,6 +22,7 @@ export const TeamSelectionManager = ({
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [performanceCategory, setPerformanceCategory] = useState<PerformanceCategory>("MESSI");
   const [formationTemplate, setFormationTemplate] = useState("All");
+  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>({});
   
   // Always use drag and drop mode
   const [forceDragEnabled] = useState(true);
@@ -43,12 +44,13 @@ export const TeamSelectionManager = ({
     },
   });
 
-  const handleSelectionChange = (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => {
-    console.log("Team selections changed:", selections);
+  const handleSelectionChange = (newSelections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => {
+    console.log("Team selections changed:", newSelections);
+    setSelections(newSelections);
     
     // Update selected players set
     const newSelectedPlayers = new Set<string>();
-    Object.values(selections).forEach(selection => {
+    Object.values(newSelections).forEach(selection => {
       if (selection.playerId && selection.playerId !== "unassigned") {
         newSelectedPlayers.add(selection.playerId);
       }
@@ -92,6 +94,12 @@ export const TeamSelectionManager = ({
     }
   };
 
+  const handleSquadSelectionChange = (playerIds: string[]) => {
+    console.log("Squad selection changed:", playerIds);
+    // Update the selected players set
+    setSelectedPlayers(new Set(playerIds));
+  };
+
   if (isLoading) {
     return <div>Loading players...</div>;
   }
@@ -123,29 +131,18 @@ export const TeamSelectionManager = ({
           </Select>
         </CardHeader>
         <CardContent>
-          {forceDragEnabled ? (
-            <DraggableFormation 
-              format={format}
-              availablePlayers={players || []}
-              squadPlayers={squadPlayers}
-              onSelectionChange={handleSelectionChange}
-              performanceCategory={performanceCategory}
-              formationTemplate={formationTemplate}
-              onTemplateChange={setFormationTemplate}
-              renderSubstitutionIndicator={renderSubstitutionIndicator}
-            />
-          ) : (
-            <FormationSelector
-              format={format}
-              teamName={fixture.category || "Team"}
-              onSelectionChange={handleSelectionChange}
-              selectedPlayers={selectedPlayers}
-              availablePlayers={players || []}
-              performanceCategory={performanceCategory}
-              formationTemplate={formationTemplate}
-              onTemplateChange={setFormationTemplate}
-            />
-          )}
+          <DraggableFormation 
+            format={format}
+            availablePlayers={players || []}
+            squadPlayers={squadPlayers}
+            initialSelections={selections}
+            onSelectionChange={handleSelectionChange}
+            performanceCategory={performanceCategory}
+            formationTemplate={formationTemplate}
+            onTemplateChange={setFormationTemplate}
+            renderSubstitutionIndicator={renderSubstitutionIndicator}
+            onSquadPlayersChange={handleSquadSelectionChange}
+          />
         </CardContent>
       </Card>
       
