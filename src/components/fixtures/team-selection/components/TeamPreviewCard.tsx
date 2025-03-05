@@ -8,14 +8,14 @@ import { TeamSelections } from "../types";
 import { FormationView } from "@/components/fixtures/FormationView";
 
 interface TeamPreviewCardProps {
-  periodId: string; // Added this missing prop
+  periodId: string;
   index: number;
   teamId: string;
   fixture: any;
-  teamSelections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string; }>>;
+  teamSelections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>;
   availablePlayers: any[];
   teamSquadPlayers: string[];
-  performanceCategories: Record<string, string>;
+  performanceCategories: Record<string, PerformanceCategory>;
   onPerformanceCategoryChange: (value: PerformanceCategory) => void;
   onDurationChange: (teamId: string, periodId: string, duration: number) => void;
   onDeletePeriod: (teamId: string, periodId: string) => void;
@@ -38,7 +38,7 @@ export const TeamPreviewCard: React.FC<TeamPreviewCardProps> = ({
   handleFormationChange,
   checkIsSubstitution
 }) => {
-  const formatSelectionsForFormation = (selections: TeamSelections) => {
+  const formatSelectionsForFormation = (selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
     return Object.entries(selections)
       .filter(([_, value]) => !value.position.startsWith('sub-'))
       .map(([_, value]) => ({
@@ -48,7 +48,7 @@ export const TeamPreviewCard: React.FC<TeamPreviewCardProps> = ({
   };
 
   // Get the current performanceCategory for this period
-  const performanceCategory = performanceCategories[`${teamId}-${periodId}`] as PerformanceCategory || "MESSI";
+  const performanceCategory = performanceCategories[`${teamId}-${periodId}`] || "MESSI" as PerformanceCategory;
   const selections = teamSelections[`${teamId}-${periodId}`] || {};
   const positions = formatSelectionsForFormation(selections);
 
