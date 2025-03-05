@@ -1,70 +1,55 @@
 
 import React from "react";
-import { FormationFormat, FormationSlot, PlayerSelection } from "./types";
-import { getFormationSlots, getAllPositionSlots } from "./utils/formationUtils";
-import { DragDropFormation } from "./components/DragDropFormation";
-import { StandardSelectionGrid } from "./components/StandardSelectionGrid";
+import { FormationFormat } from "./types";
+import { PlayerPositionSelect } from "./PlayerPositionSelect";
+import { getFormationSlots } from "./utils/formationFormatUtils";
 
 interface FormationSlotsProps {
   format: FormationFormat;
-  selections?: Record<string, PlayerSelection>;
-  availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
-  onPlayerSelection?: (slotId: string, playerId: string, position: string) => void;
-  selectedPlayers?: Set<string>;
-  onDrop?: (slotId: string, position: string) => void;
-  showAllPositions?: boolean;
-  visiblePositions?: string[];
-  renderSlot?: (
-    slotId: string, 
-    position: string, 
-    dropProps: {
-      className: string;
-      onDragOver: (e: React.DragEvent) => void;
-      onDragLeave: (e: React.DragEvent) => void;
-      onDrop: (e: React.DragEvent) => void;
-    }
-  ) => React.ReactNode;
+  selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>;
+  availablePlayers: Array<{ id: string; name: string; squad_number?: number }>;
+  onPlayerSelection: (slotId: string, playerId: string) => void;
+  selectedPlayers: Set<string>;
+  formationTemplate?: string;
 }
 
 export const FormationSlots: React.FC<FormationSlotsProps> = ({
   format,
-  selections = {},
-  availablePlayers = [],
+  selections,
+  availablePlayers,
   onPlayerSelection,
-  selectedPlayers = new Set(),
-  onDrop,
-  showAllPositions = true,
-  visiblePositions = [],
-  renderSlot
+  selectedPlayers,
+  formationTemplate = "All"
 }) => {
-  // Get all formation slots
-  const allSlots = getAllPositionSlots();
-  
-  // Filter by visible positions if provided and not showing all positions
-  const formationSlots = visiblePositions.length > 0 && !showAllPositions
-    ? allSlots.filter(slot => visiblePositions.includes(slot.label))
-    : allSlots;
+  // Get appropriate position slots based on formation format
+  const positionSlots = getFormationSlots(format, formationTemplate);
 
-  // If renderSlot is provided, we're in drag-and-drop mode
-  if (renderSlot) {
-    return (
-      <DragDropFormation
-        formationSlots={formationSlots}
-        format={format}
-        onDrop={onDrop}
-        renderSlot={renderSlot}
-      />
-    );
-  }
-
-  // Otherwise, we're in standard selection mode
   return (
-    <StandardSelectionGrid
-      formationSlots={formationSlots}
-      selections={selections}
-      availablePlayers={availablePlayers}
-      onPlayerSelection={onPlayerSelection}
-      selectedPlayers={selectedPlayers}
-    />
+    <div className="rounded-md border p-4">
+      <h3 className="text-sm font-medium mb-4">Starting Players</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {positionSlots.map((slot) => {
+          const slotId = slot.id.toLowerCase();
+          const selection = selections[slotId] || { playerId: "unassigned", position: slot.id };
+          
+          return (
+            <div key={slotId} className="flex flex-col gap-1">
+              <label htmlFor={`player-${slotId}`} className="text-xs font-medium">
+                {slot.label}
+              </label>
+              <PlayerPositionSelect
+                id={`player-${slotId}`}
+                value={selection.playerId}
+                onChange={(playerId) => onPlayerSelection(slotId, playerId)}
+                players={availablePlayers.filter(
+                  (player) => !selectedPlayers.has(player.id) || player.id === selection.playerId
+                )}
+                position={slot.id}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 };

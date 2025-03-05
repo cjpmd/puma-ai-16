@@ -1,66 +1,59 @@
 
 import { FormationFormat } from "../types";
 
-// Define position sets for 7-a-side formations
+// Formation templates for 7-a-side
 export const FORMATION_7_A_SIDE = {
-  "1-1-3-1": ["GK", "DC", "DM", "ML", "MC", "MR", "STC"],
+  "3-2-1": ["GK", "DL", "DC", "DR", "ML", "MR", "STC"],
+  "3-3": ["GK", "DL", "DC", "DR", "ML", "MC", "MR"],
   "2-3-1": ["GK", "DL", "DR", "ML", "MC", "MR", "STC"],
-  "3-2-1": ["GK", "DL", "DC", "DR", "MCL", "MCR", "STC"],
-  "2-1-2-1": ["GK", "DL", "DR", "DM", "AML", "AMR", "STC"],
-  "All": [] // Empty array means use all available positions
+  "2-1-3": ["GK", "DL", "DR", "DMC", "AML", "AMC", "AMR"],
 };
 
-// Define position sets for 9-a-side formations
+// Formation templates for 9-a-side
 export const FORMATION_9_A_SIDE = {
-  "3-2-3": ["GK", "DL", "DC", "DR", "MCL", "MCR", "AML", "STC", "AMR"],
-  "2-4-2": ["GK", "DCL", "DCR", "ML", "MCL", "MCR", "MR", "STL", "STR"],
-  "3-3-2": ["GK", "DL", "DC", "DR", "ML", "MC", "MR", "STL", "STR"],
-  "3-1-3-1": ["GK", "DL", "DC", "DR", "DM", "ML", "MC", "MR", "STC"],
-  "All": [] // Empty array means use all available positions
+  "3-3-2": ["GK", "DL", "DC", "DR", "ML", "MC", "MR", "STCL", "STCR"],
+  "3-4-1": ["GK", "DL", "DC", "DR", "ML", "MCL", "MCR", "MR", "STC"],
+  "3-2-3": ["GK", "DL", "DC", "DR", "MCL", "MCR", "AML", "AMC", "AMR"],
+  "4-3-1": ["GK", "DL", "DCL", "DCR", "DR", "ML", "MC", "MR", "STC"],
 };
 
-// Define position sets for 11-a-side formations
+// Formation templates for 11-a-side
 export const FORMATION_11_A_SIDE = {
-  "4-4-2": ["GK", "DL", "DCL", "DCR", "DR", "ML", "MCL", "MCR", "MR", "STL", "STR"],
-  "4-3-3": ["GK", "DL", "DCL", "DCR", "DR", "DM", "MCL", "MCR", "AML", "STC", "AMR"],
-  "3-5-2": ["GK", "DCL", "DC", "DCR", "ML", "MCL", "MC", "MCR", "MR", "STL", "STR"],
-  "4-2-3-1": ["GK", "DL", "DCL", "DCR", "DR", "DML", "DMR", "AML", "AMC", "AMR", "STC"],
-  "All": [] // Empty array means use all available positions
+  "4-4-2": ["GK", "DL", "DCL", "DCR", "DR", "ML", "MCL", "MCR", "MR", "STCL", "STCR"],
+  "4-3-3": ["GK", "DL", "DCL", "DCR", "DR", "ML", "MC", "MR", "AML", "STC", "AMR"],
+  "4-2-3-1": ["GK", "DL", "DCL", "DCR", "DR", "DMCL", "DMCR", "AML", "AMC", "AMR", "STC"],
+  "3-5-2": ["GK", "DCL", "DC", "DCR", "ML", "MCL", "MC", "MCR", "MR", "STCL", "STCR"],
+  "5-3-2": ["GK", "WBL", "DCL", "DC", "DCR", "WBR", "MCL", "MC", "MCR", "STCL", "STCR"],
 };
 
-// Get formation templates by format
-export const getFormationTemplatesByFormat = (format: FormationFormat) => {
+// Formation templates for 5-a-side
+export const FORMATION_5_A_SIDE = {
+  "1-2-1": ["GK", "DC", "ML", "MR", "STC"],
+  "2-1-1": ["GK", "DL", "DR", "MC", "STC"],
+  "1-1-2": ["GK", "DC", "MC", "STCL", "STCR"],
+};
+
+// Returns formation templates based on format
+export const getFormationTemplatesByFormat = (format: FormationFormat): Record<string, string[]> => {
   switch (format) {
     case "5-a-side":
-      return [{ name: "All", positions: [] }];
+      return FORMATION_5_A_SIDE;
     case "7-a-side":
-      return Object.keys(FORMATION_7_A_SIDE).map(name => ({
-        name,
-        positions: FORMATION_7_A_SIDE[name as keyof typeof FORMATION_7_A_SIDE]
-      }));
+      return FORMATION_7_A_SIDE;
     case "9-a-side":
-      return Object.keys(FORMATION_9_A_SIDE).map(name => ({
-        name,
-        positions: FORMATION_9_A_SIDE[name as keyof typeof FORMATION_9_A_SIDE]
-      }));
+      return FORMATION_9_A_SIDE;
     case "11-a-side":
-      return Object.keys(FORMATION_11_A_SIDE).map(name => ({
-        name,
-        positions: FORMATION_11_A_SIDE[name as keyof typeof FORMATION_11_A_SIDE]
-      }));
+      return FORMATION_11_A_SIDE;
     default:
-      return [{ name: "All", positions: [] }];
+      return {};
   }
 };
 
 // Get positions for a specific template
-export const getPositionsForTemplate = (format: FormationFormat, templateName: string): string[] => {
-  if (format === "7-a-side" && templateName in FORMATION_7_A_SIDE) {
-    return FORMATION_7_A_SIDE[templateName as keyof typeof FORMATION_7_A_SIDE] || [];
-  } else if (format === "9-a-side" && templateName in FORMATION_9_A_SIDE) {
-    return FORMATION_9_A_SIDE[templateName as keyof typeof FORMATION_9_A_SIDE] || [];
-  } else if (format === "11-a-side" && templateName in FORMATION_11_A_SIDE) {
-    return FORMATION_11_A_SIDE[templateName as keyof typeof FORMATION_11_A_SIDE] || [];
-  }
-  return [];
+export const getPositionsForTemplate = (
+  format: FormationFormat,
+  template: string
+): string[] => {
+  const templates = getFormationTemplatesByFormat(format);
+  return templates[template] || [];
 };

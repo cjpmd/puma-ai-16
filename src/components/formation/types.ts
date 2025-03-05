@@ -25,4 +25,5 @@ export interface FormationSelectionProps {
   viewMode?: ViewMode;
   duration?: number;
   periodNumber?: number;
+  formationTemplate?: string;
 }

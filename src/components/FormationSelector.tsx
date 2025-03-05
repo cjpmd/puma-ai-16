@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FormationView } from "@/components/fixtures/FormationView";
@@ -8,6 +8,7 @@ import { FormationSlots } from "./formation/FormationSlots";
 import { useFormationSelections } from "./formation/hooks/useFormationSelections";
 import { formatSelectionsForFormation } from "./formation/utils/formationUtils";
 import { FormationSelectionProps } from "./formation/types";
+import { FormationTemplateSelector } from "./formation/FormationTemplateSelector";
 
 export const FormationSelector: React.FC<FormationSelectionProps> = ({
   format,
@@ -21,6 +22,7 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
   duration = 20,
   periodNumber = 1
 }) => {
+  const [formationTemplate, setFormationTemplate] = useState<string>("All");
   const { selections, localPerformanceCategory, handlePlayerSelection } = useFormationSelections({
     initialSelections,
     performanceCategory,
@@ -43,6 +45,10 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
 
   const players = initialPlayers || fetchedPlayers || [];
 
+  const handleTemplateChange = (template: string) => {
+    setFormationTemplate(template);
+  };
+
   if (viewMode === "formation") {
     return (
       <FormationView
@@ -64,12 +70,19 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
 
   return (
     <div className="space-y-4">
+      <FormationTemplateSelector
+        format={format}
+        selectedTemplate={formationTemplate}
+        onTemplateChange={handleTemplateChange}
+      />
+      
       <FormationSlots
         format={format}
         selections={selections}
         availablePlayers={players}
         onPlayerSelection={handlePlayerSelection}
         selectedPlayers={selectedPlayers}
+        formationTemplate={formationTemplate}
       />
 
       <SubstitutesList

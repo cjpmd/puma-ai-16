@@ -1,25 +1,22 @@
 
-import { useState, useEffect } from "react";
-import { FormationFormat } from "../types";
-import { getPositionsForTemplate } from "../utils/formationTemplates";
+import { useState } from 'react';
+import { FormationFormat } from '../types';
+import { getFormationTemplatesByFormat } from '../utils/formationTemplates';
 
-export function useFormationTemplate(format: FormationFormat) {
+export const useFormationTemplate = (format: FormationFormat) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("All");
-  const [visiblePositions, setVisiblePositions] = useState<string[]>([]);
-
-  useEffect(() => {
-    const positions = getPositionsForTemplate(format, selectedTemplate);
-    setVisiblePositions(positions);
-  }, [format, selectedTemplate]);
-
+  
+  const templates = getFormationTemplatesByFormat(format);
+  const hasTemplates = Object.keys(templates).length > 0;
+  
   const handleTemplateChange = (template: string) => {
-    console.log(`Selecting formation template: ${template}`);
     setSelectedTemplate(template);
   };
-
+  
   return {
     selectedTemplate,
-    visiblePositions,
-    handleTemplateChange
+    handleTemplateChange,
+    hasTemplates,
+    templates
   };
-}
+};

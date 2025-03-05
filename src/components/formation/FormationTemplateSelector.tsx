@@ -1,44 +1,52 @@
 
 import React from "react";
+import { Button } from "@/components/ui/button";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { FormationFormat } from "./types";
 import { getFormationTemplatesByFormat } from "./utils/formationTemplates";
-import { cn } from "@/lib/utils";
 
 interface FormationTemplateSelectorProps {
   format: FormationFormat;
-  selectedTemplate: string;
   onTemplateChange: (template: string) => void;
+  selectedTemplate: string;
 }
 
 export const FormationTemplateSelector: React.FC<FormationTemplateSelectorProps> = ({
   format,
-  selectedTemplate,
-  onTemplateChange
+  onTemplateChange,
+  selectedTemplate
 }) => {
   const templates = getFormationTemplatesByFormat(format);
+  
+  if (!templates || Object.keys(templates).length === 0) {
+    return null;
+  }
 
   return (
     <div className="mb-4">
-      <h4 className="text-sm font-medium mb-2">Formation Template</h4>
-      <div className="grid grid-cols-4 gap-2">
-        {templates.map((template) => (
-          <button
-            key={template.name}
-            onClick={() => onTemplateChange(template.name)}
-            className={cn(
-              "p-2 h-16 flex flex-col items-center justify-center rounded-md text-xs transition-colors",
-              selectedTemplate === template.name
-                ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-1"
-                : "bg-muted hover:bg-muted/80"
-            )}
-          >
-            <div className="relative w-8 h-10 bg-green-600/60 rounded-sm mb-1 flex items-center justify-center">
-              {/* Mini pitch visualization */}
-              <span className="text-[6px] text-white">{template.name}</span>
-            </div>
-            <span>{template.name}</span>
-          </button>
-        ))}
+      <div className="flex items-center gap-2">
+        <div className="text-sm font-medium">Formation:</div>
+        <Select
+          value={selectedTemplate}
+          onValueChange={onTemplateChange}
+        >
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Select formation" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.keys(templates).map((template) => (
+              <SelectItem key={template} value={template}>
+                {template}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
