@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useTeamSelections = (
   onTeamSelectionsChange?: (selections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>) => void
@@ -10,6 +11,7 @@ export const useTeamSelections = (
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
   const [teamFormationTemplates, setTeamFormationTemplates] = useState<Record<string, string>>({});
+  const [periodSelections, setPeriodSelections] = useState<Record<string, Record<number, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>>({});
 
   const handleTeamSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
     const newSelections = {
@@ -30,6 +32,16 @@ export const useTeamSelections = (
       });
     });
     setSelectedPlayers(selectedPlayerIds);
+  };
+
+  const handlePeriodSelectionChange = (teamId: string, periodNumber: number, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
+    setPeriodSelections(prev => ({
+      ...prev,
+      [teamId]: {
+        ...(prev[teamId] || {}),
+        [periodNumber]: selections
+      }
+    }));
   };
 
   const handlePerformanceCategoryChange = (teamId: string, category: string) => {
@@ -65,8 +77,22 @@ export const useTeamSelections = (
 
   const saveSelections = async () => {
     try {
-      // Save team selections logic here
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+      // Format selections for saving to database
+      const formattedSelections = Object.entries(teamSelections).reduce((acc, [teamId, selections]) => {
+        acc[teamId] = Object.entries(selections).map(([positionKey, selection]) => ({
+          playerId: selection.playerId,
+          position: selection.position,
+          is_substitute: selection.position.startsWith('sub-'),
+          performanceCategory: selection.performanceCategory || performanceCategories[teamId] || 'MESSI'
+        }));
+        return acc;
+      }, {} as Record<string, Array<{ playerId: string; position: string; is_substitute: boolean; performanceCategory?: string }>>);
+
+      // Example API call - replace with your actual implementation
+      console.log("Saving team selections:", formattedSelections);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       toast({
         title: "Success",
@@ -87,10 +113,12 @@ export const useTeamSelections = (
 
   return {
     teamSelections,
+    periodSelections,
     selectedPlayers,
     performanceCategories,
     teamFormationTemplates,
     handleTeamSelectionChange,
+    handlePeriodSelectionChange,
     handlePerformanceCategoryChange,
     handleTemplateChange,
     saveSelections

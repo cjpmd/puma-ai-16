@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormationSelector } from "@/components/FormationSelector";
+import { FormationView } from "@/components/fixtures/FormationView";
 import { FormationFormat } from "@/components/formation/types";
 
 interface TeamSelectionCardProps {
@@ -18,6 +19,9 @@ interface TeamSelectionCardProps {
   onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => void;
   formationTemplate: string;
   onTemplateChange: (template: string) => void;
+  viewMode?: "formation" | "team-sheet";
+  periodNumber?: number;
+  duration?: number;
 }
 
 export const TeamSelectionCard = ({
@@ -29,12 +33,26 @@ export const TeamSelectionCard = ({
   onPerformanceCategoryChange,
   onSelectionChange,
   formationTemplate,
-  onTemplateChange
+  onTemplateChange,
+  viewMode = "team-sheet",
+  periodNumber = 1,
+  duration = 20
 }: TeamSelectionCardProps) => {
+  const formatSelectionsForFormation = (selections: Record<string, { playerId: string; position: string }>) => {
+    return Object.entries(selections)
+      .filter(([_, value]) => !value.position.startsWith('sub-'))
+      .map(([_, value]) => ({
+        position: value.position.split('-')[0].toUpperCase(),
+        playerId: value.playerId
+      }));
+  };
+
+  const formationSelections: Record<string, { playerId: string; position: string }> = {};
+
   return (
     <Card key={team.id} className="mb-6">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{team.name}</CardTitle>
+        <CardTitle>{viewMode === "formation" ? team.name : `Period ${periodNumber} (${duration} min)`}</CardTitle>
         <PerformanceCategorySelector
           value={performanceCategory}
           onChange={onPerformanceCategoryChange}
@@ -50,6 +68,9 @@ export const TeamSelectionCard = ({
           performanceCategory={performanceCategory}
           formationTemplate={formationTemplate}
           onTemplateChange={onTemplateChange}
+          viewMode={viewMode}
+          periodNumber={periodNumber}
+          duration={duration}
         />
       </CardContent>
     </Card>
