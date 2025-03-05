@@ -2,11 +2,17 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Player } from "@/types/player";
+
+interface PlayerWithAttendance extends Player {
+  status?: "available" | "unavailable" | "maybe";
+  attending?: boolean;
+}
 
 export const usePlayersWithAttendance = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [playersWithStatus, setPlayersWithStatus] = useState<any[]>([]);
+  const [playersWithStatus, setPlayersWithStatus] = useState<PlayerWithAttendance[]>([]);
 
   const { data: players, isLoading: playersLoading, error: playersError } = useQuery({
     queryKey: ["all-players"],

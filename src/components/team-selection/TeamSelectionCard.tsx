@@ -4,6 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FormationSelector } from "@/components/FormationSelector";
 import { FormationView } from "@/components/fixtures/FormationView";
 import { FormationFormat } from "@/components/formation/types";
+import { PerformanceCategory } from "@/types/player";
+import { TeamSelections } from "@/components/fixtures/team-selection/types";
 
 interface TeamSelectionCardProps {
   team: {
@@ -38,7 +40,7 @@ export const TeamSelectionCard = ({
   periodNumber = 1,
   duration = 20
 }: TeamSelectionCardProps) => {
-  const formatSelectionsForFormation = (selections: Record<string, { playerId: string; position: string }>) => {
+  const formatSelectionsForFormation = (selections: TeamSelections) => {
     return Object.entries(selections)
       .filter(([_, value]) => !value.position.startsWith('sub-'))
       .map(([_, value]) => ({
@@ -46,8 +48,6 @@ export const TeamSelectionCard = ({
         playerId: value.playerId
       }));
   };
-
-  const formationSelections: Record<string, { playerId: string; position: string }> = {};
 
   return (
     <Card key={team.id} className="mb-6">
