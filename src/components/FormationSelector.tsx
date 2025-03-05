@@ -49,7 +49,7 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
     setFormationTemplate(template);
   };
 
-  // Adapter function to match the expected signature
+  // Adapter function to handle the selection change with the correct parameters
   const handleSelectionChange = (slotId: string, playerId: string) => {
     handlePlayerSelection(slotId, playerId, selections[slotId]?.position || slotId);
   };

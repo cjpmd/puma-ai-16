@@ -1,7 +1,8 @@
+
 import { FormationFormat, FormationSlot } from "../types";
 import { ALL_POSITIONS } from "../constants/positions";
 import { positionDefinitions, getPositionClass } from "./positionDefinitions";
-import { getFormationTemplatesByFormat as getTemplatesByFormat, getPositionsForTemplate } from "./formationTemplates";
+import { getFormationTemplatesByFormat, getPositionsForTemplate } from "./formationTemplates";
 
 // Get all position slots for any formation
 export const getAllPositionSlots = (): FormationSlot[] => {
@@ -72,4 +73,4 @@ function createSlotsFromPositions(positions: string[]): FormationSlot[] {
 }
 
 // Export the template functions for use in other components
-export const getFormationTemplatesByFormat = getTemplatesByFormat;
+export const getFormationTemplatesByFormat = getFormationTemplatesByFormat;
