@@ -3,7 +3,7 @@ import React from "react";
 
 export interface FormationHelperTextProps {
   selectedPlayerId: string | null;
-  draggingPlayer?: string | null;
+  draggingPlayer: string | null;
 }
 
 export const FormationHelperText: React.FC<FormationHelperTextProps> = ({ 

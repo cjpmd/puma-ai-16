@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { usePlayerManagement } from "./usePlayerManagement";
 import { useDragOperations } from "./useDragOperations";
@@ -16,6 +15,7 @@ interface UseDraggableFormationProps {
   format?: FormationFormat;
   formationTemplate?: string;
   onTemplateChange?: (template: string) => void;
+  onSquadPlayersChange?: (playerIds: string[]) => void;
 }
 
 export const useDraggableFormation = ({
@@ -26,7 +26,8 @@ export const useDraggableFormation = ({
   performanceCategory,
   format = "7-a-side",
   formationTemplate = "All",
-  onTemplateChange
+  onTemplateChange,
+  onSquadPlayersChange
 }: UseDraggableFormationProps) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>>(initialSelections);
@@ -34,7 +35,6 @@ export const useDraggableFormation = ({
   const [selectedTemplate, setSelectedTemplate] = useState<string>(formationTemplate);
   const formationRef = useRef<HTMLDivElement>(null);
   
-  // Initialize with saved selections
   useEffect(() => {
     if (Object.keys(initialSelections).length > 0) {
       console.log("Initializing formation with saved selections:", initialSelections);
@@ -42,7 +42,6 @@ export const useDraggableFormation = ({
     }
   }, [initialSelections]);
 
-  // Helper functions from custom hooks
   const { getPlayer, getAvailableSquadPlayers } = usePlayerManagement({
     availablePlayers,
     squadPlayers,
@@ -55,18 +54,15 @@ export const useDraggableFormation = ({
     handlePlayerSelect: originalHandlePlayerSelect 
   } = useDragOperations();
   
-  // Wrapper for handleDragStart to update draggingPlayer
   const handleDragStart = (e: React.DragEvent, playerId: string) => {
     originalHandleDragStart(e, playerId);
     setDraggingPlayer(playerId);
   };
   
-  // Wrapper for handlePlayerSelect to update selectedPlayerId
   const handlePlayerSelect = (playerId: string) => {
     return originalHandlePlayerSelect(playerId);
   };
   
-  // Handler for player click
   const handlePlayerClick = (playerId: string) => {
     setSelectedPlayerId(playerId === selectedPlayerId ? null : playerId);
   };
@@ -94,19 +90,16 @@ export const useDraggableFormation = ({
     performanceCategory
   });
 
-  // Initialize substitution counter
   useEffect(() => {
     initializeSubCounter();
   }, []);
 
-  // Update parent component when selections change
   useEffect(() => {
     if (onSelectionChange && Object.keys(selections).length > 0) {
       onSelectionChange(selections);
     }
   }, [selections, onSelectionChange]);
   
-  // Handle template change
   const handleTemplateChange = (template: string) => {
     setSelectedTemplate(template);
     if (onTemplateChange) {
@@ -114,19 +107,27 @@ export const useDraggableFormation = ({
     }
   };
   
-  // Get player by ID
   const getPlayerById = (playerId: string) => {
     return availablePlayers.find(player => player.id === playerId);
   };
   
-  // Get available players
   const getAvailablePlayers = () => {
     return getAvailableSquadPlayers();
   };
   
-  // Show players state function
+  useEffect(() => {
+    if (onSquadPlayersChange) {
+      const playerIds = Object.values(selections)
+        .map(selection => selection.playerId)
+        .filter(id => id && id !== "unassigned");
+        
+      const uniquePlayerIds = [...new Set(playerIds)];
+      
+      onSquadPlayersChange(uniquePlayerIds);
+    }
+  }, [selections, onSquadPlayersChange]);
+  
   const showPlayers = () => {
-    // Implementation can be added later if needed
     return true;
   };
 

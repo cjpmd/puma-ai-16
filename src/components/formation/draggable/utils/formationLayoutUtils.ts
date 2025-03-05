@@ -56,15 +56,15 @@ export const getFormationLayout = (format: FormationFormat, template?: string): 
   console.log(`Positions selected for formation: ${positions.join(', ')}`);
   
   // Generate slots based on positions
-  const slots = positions.map(pos => {
-    const id = pos.toLowerCase();
-    const posData = positionDefinitions[pos];
+  const slots = positions.map(position => {
+    const id = position.toLowerCase();
+    const posData = positionDefinitions[position];
     
     if (!posData) {
-      console.warn(`Position ${pos} not found in definitions`);
+      console.warn(`Position ${position} not found in definitions`);
       return {
         id,
-        position: pos,
+        position,
         gridArea: '',
         x: '50%',
         y: '50%'
@@ -73,7 +73,7 @@ export const getFormationLayout = (format: FormationFormat, template?: string): 
     
     return {
       id,
-      position: pos,
+      position,
       gridArea: '',
       x: posData.x,
       y: posData.y
