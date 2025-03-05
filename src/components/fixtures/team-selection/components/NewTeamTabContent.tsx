@@ -7,25 +7,27 @@ import { PeriodSelector } from "./PeriodSelector";
 import { ViewToggleButton } from "./ViewToggleButton";
 import { Button } from "@/components/ui/button";
 import { PerformanceCategory } from "@/types/player";
+import { FormationFormat } from "@/components/formation/types";
 
 interface NewTeamTabContentProps {
   teamId: string;
-  teamName: string;
+  teamName?: string;
   fixture: any;
   availablePlayers: any[];
   selectedPlayers: Set<string>;
-  periodSelections: Record<number, Record<string, { playerId: string; position: string }>>;
+  periodSelections: Record<string, Record<string, { playerId: string; position: string }>>;
   performanceCategories: Record<string, PerformanceCategory | string>;
-  setPeriodSelections: (teamId: string, periodNumber: number, selections: Record<string, { playerId: string; position: string }>) => void;
+  setPeriodSelections: (teamId: string, periodNumber: string, selections: Record<string, { playerId: string; position: string }>) => void;
   onPerformanceCategoryChange: (teamId: string, value: PerformanceCategory) => void;
-  format: string;
+  format: FormationFormat;
   captainId?: string;
   setCaptainId: (teamId: string, playerId: string) => void;
+  getPlayerTeams?: (playerId: string) => string[];
 }
 
 export const NewTeamTabContent = ({
   teamId,
-  teamName,
+  teamName = "Team",
   fixture,
   availablePlayers,
   selectedPlayers,
@@ -35,17 +37,18 @@ export const NewTeamTabContent = ({
   onPerformanceCategoryChange,
   format,
   captainId,
-  setCaptainId
+  setCaptainId,
+  getPlayerTeams = () => []
 }: NewTeamTabContentProps) => {
-  const [activePeriod, setActivePeriod] = useState<number>(1);
+  const [activePeriod, setActivePeriod] = useState<string>("1");
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [squadPlayers, setSquadPlayers] = useState<string[]>([]);
   const [showSquadSelector, setShowSquadSelector] = useState(false);
   
   // Map of period numbers to durations
-  const [periodDurations, setPeriodDurations] = useState<Record<number, number>>({
-    1: 45,
-    2: 45
+  const [periodDurations, setPeriodDurations] = useState<Record<string, number>>({
+    "1": 45,
+    "2": 45
   });
 
   // Get current performance category
@@ -54,11 +57,11 @@ export const NewTeamTabContent = ({
   // Calculate total number of periods (minimum 2)
   const totalPeriods = Math.max(2, Object.keys(periodSelections).length);
   
-  const handlePeriodSelectionChange = (periodNumber: number, selections: Record<string, { playerId: string; position: string }>) => {
+  const handlePeriodSelectionChange = (periodNumber: string, selections: Record<string, { playerId: string; position: string }>) => {
     setPeriodSelections(teamId, periodNumber, selections);
   };
   
-  const handleDurationChange = (periodNumber: number, duration: number) => {
+  const handleDurationChange = (periodNumber: string, duration: number) => {
     setPeriodDurations(prev => ({
       ...prev,
       [periodNumber]: duration
@@ -70,7 +73,7 @@ export const NewTeamTabContent = ({
   };
   
   const handleAddPeriod = () => {
-    const newPeriodNumber = totalPeriods + 1;
+    const newPeriodNumber = (totalPeriods + 1).toString();
     // Set an initial duration for the new period
     setPeriodDurations(prev => ({
       ...prev,
@@ -80,6 +83,10 @@ export const NewTeamTabContent = ({
   
   const handleCaptainChange = (playerId: string) => {
     setCaptainId(teamId, playerId);
+  };
+
+  const handlePeriodChange = (periodId: string) => {
+    setActivePeriod(periodId);
   };
   
   return (
@@ -107,14 +114,14 @@ export const NewTeamTabContent = ({
           availablePlayers={availablePlayers}
           selectedPlayers={squadPlayers}
           onSelectionChange={handleSquadSelectionChange}
-          getPlayerTeams={() => []}
+          getPlayerTeams={getPlayerTeams}
         />
       )}
       
       <PeriodSelector 
         periodCount={totalPeriods}
         activePeriod={activePeriod}
-        onPeriodChange={setActivePeriod}
+        onPeriodChange={handlePeriodChange}
       />
       
       <PeriodCard

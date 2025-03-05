@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { NewTeamTabContent } from "./NewTeamTabContent";
 import { useTeamSelection } from "../context/TeamSelectionContext";
 import { useTeamSelectionData } from "../hooks/useTeamSelectionData";
+import { FormationFormat } from "@/components/formation/types";
 
 export const TeamSelectionTabs = () => {
   const { 
@@ -10,11 +11,15 @@ export const TeamSelectionTabs = () => {
     activeTab, 
     setActiveTab,
     teamCaptains,
+    periodSelections,
+    performanceCategories,
     handleCaptainChange,
     handleSquadSelection,
     handleFormationChange,
     getPlayerTeams,
-    fixture
+    fixture,
+    selectedPlayers = new Set<string>(),
+    setPeriodSelections
   } = useTeamSelection();
 
   const { availablePlayers } = useTeamSelectionData(fixture?.id);
@@ -33,13 +38,20 @@ export const TeamSelectionTabs = () => {
         <TabsContent key={teamId} value={teamId}>
           <NewTeamTabContent
             teamId={teamId}
-            team={team}
+            teamName={team.name}
             fixture={fixture}
-            teamCaptains={teamCaptains}
             availablePlayers={availablePlayers}
-            onCaptainChange={handleCaptainChange}
-            onSquadSelection={handleSquadSelection}
-            onFormationChange={handleFormationChange}
+            selectedPlayers={selectedPlayers}
+            periodSelections={periodSelections?.[teamId] || {}}
+            performanceCategories={performanceCategories}
+            setPeriodSelections={setPeriodSelections}
+            onPerformanceCategoryChange={(teamId, category) => {
+              // This needs to be implemented in your context
+              console.log("Change performance category", teamId, category);
+            }}
+            format={(fixture?.format || "7-a-side") as FormationFormat}
+            captainId={teamCaptains[teamId]}
+            setCaptainId={handleCaptainChange}
             getPlayerTeams={getPlayerTeams}
           />
         </TabsContent>
