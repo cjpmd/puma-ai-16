@@ -38,13 +38,13 @@ export const FormationSlots: React.FC<FormationSlotsProps> = ({
                 {slot.label}
               </label>
               <PlayerPositionSelect
-                id={`player-${slotId}`}
-                value={selection.playerId}
-                onChange={(playerId) => onPlayerSelection(slotId, playerId)}
-                players={availablePlayers.filter(
+                playerId={selection.playerId}
+                position={slot.id}
+                onSelectionChange={(playerId) => onPlayerSelection(slotId, playerId)}
+                availablePlayers={availablePlayers.filter(
                   (player) => !selectedPlayers.has(player.id) || player.id === selection.playerId
                 )}
-                position={slot.id}
+                selectedPlayers={selectedPlayers}
               />
             </div>
           );

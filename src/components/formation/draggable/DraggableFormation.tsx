@@ -8,7 +8,7 @@ import { SubstitutesSection } from "./components/SubstitutesSection";
 import { AvailablePlayersSection } from "./components/AvailablePlayersSection";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getFormationTemplatesByFormat } from "../utils/formationFormatUtils";
+import { getFormationTemplatesByFormat } from "../utils/formationTemplates";
 
 interface DraggableFormationProps {
   format: FormationFormat;
@@ -29,7 +29,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
 }) => {
   const [selectedFormat, setSelectedFormat] = useState<FormationFormat>(format);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("All");
-  const formationTemplates = getFormationTemplatesByFormat(selectedFormat);
+  const templates = getFormationTemplatesByFormat(selectedFormat);
   
   const {
     selectedPlayerId,
@@ -77,9 +77,9 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
                   <SelectValue placeholder="Formation" />
                 </SelectTrigger>
                 <SelectContent>
-                  {formationTemplates.map(template => (
-                    <SelectItem key={template.name} value={template.name}>
-                      {template.name}
+                  {Object.keys(templates).map(template => (
+                    <SelectItem key={template} value={template}>
+                      {template}
                     </SelectItem>
                   ))}
                 </SelectContent>

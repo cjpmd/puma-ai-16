@@ -8,7 +8,7 @@ interface SubstitutesListProps {
   maxSubstitutes: number;
   selections: Record<string, { playerId: string; position: string }>;
   availablePlayers?: any[];
-  onSelectionChange: (slotId: string, playerId: string, position: string) => void;
+  onSelectionChange: (slotId: string, playerId: string) => void;
   selectedPlayers?: Set<string>;
 }
 
@@ -40,7 +40,7 @@ export const SubstitutesList = ({
           initializedSlotsRef.current.add(targetSlot);
           
           // This will trigger a selection change that the parent will save
-          onSelectionChange(targetSlot, selection.playerId, "sub");
+          onSelectionChange(targetSlot, selection.playerId);
         }
       }
     });
@@ -59,7 +59,7 @@ export const SubstitutesList = ({
               <Label className="text-xs text-muted-foreground">Substitute {index + 1}</Label>
               <Select
                 value={currentPlayerId}
-                onValueChange={(value) => onSelectionChange(slotId, value, "sub")}
+                onValueChange={(value) => onSelectionChange(slotId, value)}
               >
                 <SelectTrigger className="text-left h-9">
                   <SelectValue placeholder="Select substitute" />

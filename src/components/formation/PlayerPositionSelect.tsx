@@ -7,7 +7,7 @@ interface PlayerPositionSelectProps {
   position: string;
   playerId: string;
   availablePlayers?: Array<{ id: string; name: string; squad_number?: number }>;
-  onSelectionChange: (playerId: string, position: string) => void;
+  onSelectionChange: (playerId: string) => void;
   selectedPlayers: Set<string>;
 }
 
@@ -43,13 +43,14 @@ export const PlayerPositionSelect = ({
   const handlePositionChange = (newPosition: string) => {
     console.log(`Position selection changed from ${currentPosition} to: ${newPosition}`);
     setCurrentPosition(newPosition);
-    onSelectionChange(currentPlayerId, newPosition);
+    // We're simplifying this component to only handle player selection
+    // Position changes are handled at a higher level
   };
 
   const handlePlayerChange = (newPlayerId: string) => {
     console.log(`Player selection changed from ${currentPlayerId} to: ${newPlayerId}`);
     setCurrentPlayerId(newPlayerId);
-    onSelectionChange(newPlayerId, currentPosition);
+    onSelectionChange(newPlayerId);
   };
 
   return (

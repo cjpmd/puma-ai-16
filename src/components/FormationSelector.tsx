@@ -6,7 +6,7 @@ import { FormationView } from "@/components/fixtures/FormationView";
 import { SubstitutesList } from "./formation/SubstitutesList";
 import { FormationSlots } from "./formation/FormationSlots";
 import { useFormationSelections } from "./formation/hooks/useFormationSelections";
-import { formatSelectionsForFormation } from "./formation/utils/formationUtils";
+import { formatSelectionsForFormation } from "./formation/utils/selectionFormatUtils";
 import { FormationSelectionProps } from "./formation/types";
 import { FormationTemplateSelector } from "./formation/FormationTemplateSelector";
 
@@ -49,6 +49,11 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
     setFormationTemplate(template);
   };
 
+  // Adapter function to match the expected signature
+  const handleSelectionChange = (slotId: string, playerId: string) => {
+    handlePlayerSelection(slotId, playerId, selections[slotId]?.position || slotId);
+  };
+
   if (viewMode === "formation") {
     return (
       <FormationView
@@ -80,7 +85,7 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
         format={format}
         selections={selections}
         availablePlayers={players}
-        onPlayerSelection={handlePlayerSelection}
+        onPlayerSelection={handleSelectionChange}
         selectedPlayers={selectedPlayers}
         formationTemplate={formationTemplate}
       />
@@ -89,7 +94,7 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
         maxSubstitutes={format === "11-a-side" ? 5 : 3}
         selections={selections}
         availablePlayers={players}
-        onSelectionChange={handlePlayerSelection}
+        onSelectionChange={handleSelectionChange}
         selectedPlayers={selectedPlayers}
       />
     </div>
