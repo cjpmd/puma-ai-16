@@ -60,12 +60,9 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
         onDrop={(e) => {
           e.preventDefault();
           const playerId = e.dataTransfer.getData('playerId') || draggingPlayer;
+          const fromSlotId = e.dataTransfer.getData('fromSlotId');
           if (playerId) {
-            // Find the slot ID this player is currently in
-            const currentSlot = Object.entries(selections).find(
-              ([_, selection]) => selection.playerId === playerId
-            );
-            handleSubstituteDrop(playerId, currentSlot?.[0]);
+            handleSubstituteDrop(playerId, fromSlotId);
           }
         }}
       >

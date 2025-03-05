@@ -21,9 +21,7 @@ export const useDropOperations = ({
   performanceCategory
 }: UseDropOperationsProps) => {
   
-  const handleDrop = (e: React.DragEvent, slotId: string, position: string) => {
-    e.preventDefault();
-    
+  const handleDrop = (slotId: string, position: string, fromSlotId?: string) => {
     // Identify which player is being dropped - either a dragged player or a selected player
     const playerId = draggingPlayer || selectedPlayerId;
     

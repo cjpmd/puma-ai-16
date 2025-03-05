@@ -46,9 +46,7 @@ export const useSubstitutionManager = ({
   };
   
   // Handle drop on the substitutes section
-  const handleSubstituteDrop = (e: React.DragEvent, playerId: string) => {
-    e.preventDefault();
-    
+  const handleSubstituteDrop = (playerId: string, fromSlotId?: string) => {
     if (!playerId) return;
     
     // Check if player is already assigned

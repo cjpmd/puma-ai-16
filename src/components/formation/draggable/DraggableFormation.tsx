@@ -18,10 +18,10 @@ interface DraggableFormationProps {
   initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
   onSelectionChange?: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
   renderSubstitutionIndicator?: (position: string) => React.ReactNode;
-  performanceCategory?: PerformanceCategory; // Added this property to fix the type error
-  onSquadPlayersChange?: (playerIds: string[]) => void; // Added this property to maintain consistency
-  formationTemplate?: string; // Added this property to maintain consistency
-  onTemplateChange?: (template: string) => void; // Added this property to maintain consistency
+  performanceCategory?: PerformanceCategory;
+  onSquadPlayersChange?: (playerIds: string[]) => void;
+  formationTemplate?: string;
+  onTemplateChange?: (template: string) => void;
 }
 
 export const DraggableFormation: React.FC<DraggableFormationProps> = ({
@@ -45,20 +45,30 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     selections,
     formationRef,
     draggingPlayer,
-    handleDrop,
+    handleDrop: originalHandleDrop,
     handlePlayerSelect,
     handleRemovePlayer,
     handleDragStart,
     handleDragEnd,
-    handleSubstituteDrop,
+    handleSubstituteDrop: originalHandleSubstituteDrop,
     getPlayer,
     getAvailableSquadPlayers
   } = useDraggableFormation({
     initialSelections,
     onSelectionChange,
     availablePlayers,
-    squadPlayers
+    squadPlayers,
+    performanceCategory
   });
+
+  // Wrapper functions to match the expected signatures
+  const handleDrop = (slotId: string, position: string, fromSlotId?: string) => {
+    originalHandleDrop(slotId, position, fromSlotId);
+  };
+
+  const handleSubstituteDrop = (playerId: string, fromSlotId?: string) => {
+    originalHandleSubstituteDrop(playerId, fromSlotId);
+  };
 
   // Update template when format changes
   useEffect(() => {
@@ -70,7 +80,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     if (onTemplateChange && selectedTemplate !== formationTemplate) {
       onTemplateChange(selectedTemplate);
     }
-  }, [selectedTemplate, onTemplateChange]);
+  }, [selectedTemplate, onTemplateChange, formationTemplate]);
 
   const availableSquadPlayers = getAvailableSquadPlayers();
 
