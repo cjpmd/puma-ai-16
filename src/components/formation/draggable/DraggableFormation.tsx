@@ -11,6 +11,9 @@ import { SubstitutesSection } from "./components/SubstitutesSection";
 import { useDraggableFormation } from "./hooks/useDraggableFormation";
 import { Button } from "@/components/ui/button";
 import { Users, UserPlus, Grip } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 export interface DraggableFormationProps {
   format: FormationFormat;
@@ -23,6 +26,10 @@ export interface DraggableFormationProps {
   formationTemplate?: string;
   onTemplateChange?: (template: string) => void;
   renderSubstitutionIndicator?: (position: string) => React.ReactNode;
+  periodNumber?: number;
+  periodDuration?: number;
+  onPeriodChange?: (periodNumber: number) => void;
+  onDurationChange?: (duration: number) => void;
 }
 
 export const DraggableFormation: React.FC<DraggableFormationProps> = ({
@@ -35,8 +42,15 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   onSquadPlayersChange,
   formationTemplate = "All",
   onTemplateChange,
-  renderSubstitutionIndicator
+  renderSubstitutionIndicator,
+  periodNumber = 1,
+  periodDuration = 45,
+  onPeriodChange,
+  onDurationChange
 }) => {
+  const [localPeriod, setLocalPeriod] = useState(periodNumber);
+  const [localDuration, setLocalDuration] = useState(periodDuration);
+
   const {
     selectedPlayerId,
     draggingPlayer,
@@ -73,31 +87,82 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     format,
     formationTemplate,
     onTemplateChange,
-    onSquadPlayersChange
+    onSquadPlayersChange,
+    periodNumber: localPeriod,
+    periodDuration: localDuration
   });
+
+  // Handle period change
+  const handlePeriodChange = (value: string) => {
+    const period = parseInt(value);
+    setLocalPeriod(period);
+    if (onPeriodChange) {
+      onPeriodChange(period);
+    }
+  };
+
+  // Handle duration change
+  const handleDurationChange = (value: number) => {
+    setLocalDuration(value);
+    if (onDurationChange) {
+      onDurationChange(value);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Squad mode toggle button */}
-      <div className="flex justify-between items-center">
-        <Button 
-          variant={squadMode ? "default" : "outline"}
-          onClick={squadMode ? finishSquadSelection : returnToSquadSelection}
-          className="flex items-center"
-          disabled={squadMode && localSquadPlayers.length === 0}
-        >
-          {squadMode ? (
+      {/* Top controls - Squad mode toggle and Period/Duration selector */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+          <Button 
+            variant={squadMode ? "default" : "outline"}
+            onClick={squadMode ? finishSquadSelection : returnToSquadSelection}
+            className="flex items-center"
+            disabled={squadMode && localSquadPlayers.length === 0}
+          >
+            {squadMode ? (
+              <>
+                <Grip className="mr-2 h-4 w-4" />
+                Proceed to Position Assignment
+              </>
+            ) : (
+              <>
+                <Users className="mr-2 h-4 w-4" />
+                Return to Squad Selection
+              </>
+            )}
+          </Button>
+          
+          {!squadMode && (
             <>
-              <Grip className="mr-2 h-4 w-4" />
-              Proceed to Position Assignment
-            </>
-          ) : (
-            <>
-              <Users className="mr-2 h-4 w-4" />
-              Return to Squad Selection
+              <div className="flex items-center gap-2">
+                <Label htmlFor="period-select">Period:</Label>
+                <Select value={String(localPeriod)} onValueChange={handlePeriodChange}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Select period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">First Half</SelectItem>
+                    <SelectItem value="2">Second Half</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Label htmlFor="duration-input">Duration (min):</Label>
+                <Input
+                  id="duration-input"
+                  type="number"
+                  min="1"
+                  max="90"
+                  className="w-[80px]"
+                  value={localDuration}
+                  onChange={(e) => handleDurationChange(parseInt(e.target.value) || 45)}
+                />
+              </div>
             </>
           )}
-        </Button>
+        </div>
         
         {!squadMode && (
           <FormationTemplateSelector
@@ -113,6 +178,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         selectedPlayerId={selectedPlayerId}
         draggingPlayer={draggingPlayer}
         squadMode={squadMode}
+        periodNumber={localPeriod}
       />
       
       {/* Squad selection mode vs Position assignment mode */}

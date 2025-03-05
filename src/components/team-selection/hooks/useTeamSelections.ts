@@ -11,6 +11,7 @@ export const useTeamSelections = (onTeamSelectionsChange?: (selections: any) => 
   const [teamFormationTemplates, setTeamFormationTemplates] = useState<Record<string, string>>({});
   const [squadSelections, setSquadSelections] = useState<Record<string, string[]>>({});
   const [dragEnabled, setDragEnabled] = useState<boolean>(true); // Default to true
+  const [periodDurations, setPeriodDurations] = useState<Record<string, Record<number, number>>>({});
 
   // Handler for team selection changes
   const handleTeamSelectionChange = useCallback((teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
@@ -44,6 +45,17 @@ export const useTeamSelections = (onTeamSelectionsChange?: (selections: any) => 
       [teamId]: {
         ...(prev[teamId] || {}),
         [periodNumber]: selections
+      }
+    }));
+  }, []);
+
+  // Handler for period durations
+  const handlePeriodDurationChange = useCallback((teamId: string, periodNumber: number, duration: number) => {
+    setPeriodDurations(prev => ({
+      ...prev,
+      [teamId]: {
+        ...(prev[teamId] || {}),
+        [periodNumber]: duration
       }
     }));
   }, []);
@@ -102,9 +114,11 @@ export const useTeamSelections = (onTeamSelectionsChange?: (selections: any) => 
     teamFormationTemplates,
     periodSelections,
     squadSelections,
+    periodDurations,
     dragEnabled,
     handleTeamSelectionChange,
     handlePeriodSelectionChange,
+    handlePeriodDurationChange,
     handlePerformanceCategoryChange,
     handleTemplateChange,
     handleSquadSelectionChange,

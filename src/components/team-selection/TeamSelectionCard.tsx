@@ -9,6 +9,7 @@ import { TeamSelections } from "@/components/fixtures/team-selection/types";
 import { DraggableFormation } from "@/components/formation/draggable";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useState } from "react";
 
 interface TeamSelectionCardProps {
   team: {
@@ -31,6 +32,8 @@ interface TeamSelectionCardProps {
   squadSelection?: string[];
   useDragAndDrop?: boolean;
   onToggleDragAndDrop?: (enabled: boolean) => void;
+  onPeriodChange?: (periodNumber: number) => void;
+  onDurationChange?: (duration: number) => void;
 }
 
 export const TeamSelectionCard = ({
@@ -45,12 +48,17 @@ export const TeamSelectionCard = ({
   onTemplateChange,
   viewMode = "team-sheet",
   periodNumber = 1,
-  duration = 20,
+  duration = 45,
   onSquadSelectionChange,
   squadSelection = [],
   useDragAndDrop = true,
-  onToggleDragAndDrop
+  onToggleDragAndDrop,
+  onPeriodChange,
+  onDurationChange
 }: TeamSelectionCardProps) => {
+  const [localPeriod, setLocalPeriod] = useState(periodNumber);
+  const [localDuration, setLocalDuration] = useState(duration);
+
   const formatSelectionsForFormation = (selections: TeamSelections) => {
     return Object.entries(selections)
       .filter(([_, value]) => !value.position.startsWith('sub-'))
@@ -71,10 +79,24 @@ export const TeamSelectionCard = ({
     ) : null;
   };
 
+  const handlePeriodChange = (period: number) => {
+    setLocalPeriod(period);
+    if (onPeriodChange) {
+      onPeriodChange(period);
+    }
+  };
+
+  const handleDurationChange = (newDuration: number) => {
+    setLocalDuration(newDuration);
+    if (onDurationChange) {
+      onDurationChange(newDuration);
+    }
+  };
+
   return (
     <Card key={team.id} className="mb-6">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{viewMode === "formation" ? team.name : `Period ${periodNumber} (${duration} min)`}</CardTitle>
+        <CardTitle>{viewMode === "formation" ? team.name : `${team.name} - ${periodNumber === 1 ? 'First Half' : 'Second Half'}`}</CardTitle>
         <div className="flex items-center gap-4">
           {onToggleDragAndDrop && (
             <div className="flex items-center space-x-2">
@@ -104,6 +126,10 @@ export const TeamSelectionCard = ({
             formationTemplate={formationTemplate}
             onTemplateChange={onTemplateChange}
             renderSubstitutionIndicator={renderSubstitutionIndicator}
+            periodNumber={localPeriod}
+            periodDuration={localDuration}
+            onPeriodChange={handlePeriodChange}
+            onDurationChange={handleDurationChange}
           />
         ) : (
           <FormationSelector
@@ -116,8 +142,8 @@ export const TeamSelectionCard = ({
             formationTemplate={formationTemplate}
             onTemplateChange={onTemplateChange}
             viewMode={viewMode}
-            periodNumber={periodNumber}
-            duration={duration}
+            periodNumber={localPeriod}
+            duration={localDuration}
           />
         )}
       </CardContent>

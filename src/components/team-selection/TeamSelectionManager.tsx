@@ -64,6 +64,7 @@ export const TeamSelectionManager = ({
   const { playersWithStatus, isLoading, error } = usePlayersWithAttendance();
   const [isSaving, setIsSaving] = useState(false);
   const [activeView, setActiveView] = useState("formation"); // "formation" or "periods"
+  const [periodDurations, setPeriodDurations] = useState<Record<string, Record<number, number>>>({});
 
   // Ensure format is one of the allowed values
   const validFormat = (format === "5-a-side" || format === "7-a-side" || format === "9-a-side" || format === "11-a-side") 
@@ -89,6 +90,17 @@ export const TeamSelectionManager = ({
   const handleToggleDragAndDrop = (enabled: boolean) => {
     setForceDragEnabled(enabled);
     toggleDragEnabled(enabled);
+  };
+
+  // Handle period duration change
+  const handlePeriodDurationChange = (teamId: string, periodNumber: number, duration: number) => {
+    setPeriodDurations(prev => ({
+      ...prev,
+      [teamId]: {
+        ...(prev[teamId] || {}),
+        [periodNumber]: duration
+      }
+    }));
   };
 
   if (isLoading) {
@@ -155,11 +167,12 @@ export const TeamSelectionManager = ({
                       onTemplateChange={(template) => handleTemplateChange(team.id, template)}
                       viewMode="team-sheet"
                       periodNumber={1}
-                      duration={20}
+                      duration={periodDurations[team.id]?.[1] || 45}
                       squadSelection={squadSelections[team.id]}
                       onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
                       useDragAndDrop={forceDragEnabled}
                       onToggleDragAndDrop={handleToggleDragAndDrop}
+                      onDurationChange={(duration) => handlePeriodDurationChange(team.id, 1, duration)}
                     />
                   </CardContent>
                 </Card>
@@ -179,11 +192,12 @@ export const TeamSelectionManager = ({
                       onTemplateChange={(template) => handleTemplateChange(team.id, template)}
                       viewMode="team-sheet"
                       periodNumber={2}
-                      duration={20}
+                      duration={periodDurations[team.id]?.[2] || 45}
                       squadSelection={squadSelections[team.id]}
                       onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
                       useDragAndDrop={forceDragEnabled}
                       onToggleDragAndDrop={handleToggleDragAndDrop}
+                      onDurationChange={(duration) => handlePeriodDurationChange(team.id, 2, duration)}
                     />
                   </CardContent>
                 </Card>

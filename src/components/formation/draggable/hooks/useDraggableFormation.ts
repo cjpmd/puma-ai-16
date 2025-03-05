@@ -16,6 +16,8 @@ export interface UseDraggableFormationProps {
   formationTemplate?: string;
   onTemplateChange?: (template: string) => void;
   onSquadPlayersChange?: (playerIds: string[]) => void;
+  periodNumber?: number;
+  periodDuration?: number;
 }
 
 export const useDraggableFormation = ({
@@ -27,7 +29,9 @@ export const useDraggableFormation = ({
   format,
   formationTemplate = "All",
   onTemplateChange,
-  onSquadPlayersChange
+  onSquadPlayersChange,
+  periodNumber = 1,
+  periodDuration = 45
 }: UseDraggableFormationProps) => {
   // State for tracking selections, selected player, and active template
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>>(initialSelections || {});
@@ -35,6 +39,8 @@ export const useDraggableFormation = ({
   const [selectedTemplate, setSelectedTemplate] = useState<string>(formationTemplate);
   const [localSquadPlayers, setLocalSquadPlayers] = useState<string[]>(squadPlayers || []);
   const [squadMode, setSquadMode] = useState<boolean>(true);
+  const [currentPeriod, setCurrentPeriod] = useState<number>(periodNumber);
+  const [periodLength, setPeriodLength] = useState<number>(periodDuration);
   const formationRef = useRef<HTMLDivElement>(null);
 
   // Get drag operations from the hook
@@ -85,9 +91,20 @@ export const useDraggableFormation = ({
   useEffect(() => {
     if (squadPlayers && squadPlayers.length > 0) {
       setLocalSquadPlayers(squadPlayers);
-      setSquadMode(false);
+      
+      // Only set squad mode to false if we have selected players
+      // This ensures new squad selections start in squad mode
+      if (Object.keys(selections).length > 0) {
+        setSquadMode(false);
+      }
     }
-  }, [squadPlayers]);
+  }, [squadPlayers, selections]);
+
+  // Update period settings when props change
+  useEffect(() => {
+    setCurrentPeriod(periodNumber);
+    setPeriodLength(periodDuration);
+  }, [periodNumber, periodDuration]);
 
   // Handle player click in the available players list
   const handlePlayerClick = (playerId: string) => {
@@ -200,6 +217,8 @@ export const useDraggableFormation = ({
     formationRef,
     squadMode,
     squadPlayers: localSquadPlayers,
+    currentPeriod,
+    periodLength,
     handleDrop,
     handlePlayerClick,
     handleRemovePlayer,
