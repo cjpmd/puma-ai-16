@@ -1,20 +1,20 @@
 
-import { useEffect, useState } from "react";
-import { FormationFormat } from "../types";
+import React, { useState, useEffect } from "react";
 import { FormationGrid } from "./components/FormationGrid";
+import { FormationFormat } from "../types";
+import { PerformanceCategory } from "@/types/player";
+import { FormationTemplateSelector } from "../FormationTemplateSelector";
+import { FormationHelperText } from "./FormationHelperText";
 import { AvailablePlayersSection } from "./components/AvailablePlayersSection";
 import { SubstitutesSection } from "./components/SubstitutesSection";
 import { useDraggableFormation } from "./hooks/useDraggableFormation";
-import { PerformanceCategory } from "@/types/player";
-import { FormationTemplateSelector } from "../FormationTemplateSelector";
-import { Button } from "@/components/ui/button";
 
-interface DraggableFormationProps {
+export interface DraggableFormationProps {
   format: FormationFormat;
   availablePlayers: any[];
-  squadPlayers?: string[];
+  squadPlayers: string[];
   initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
-  onSelectionChange?: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
+  onSelectionChange: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
   performanceCategory?: PerformanceCategory;
   onSquadPlayersChange?: (playerIds: string[]) => void;
   formationTemplate?: string;
@@ -22,116 +22,97 @@ interface DraggableFormationProps {
   renderSubstitutionIndicator?: (position: string) => React.ReactNode;
 }
 
-export const DraggableFormation = ({
+export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   format,
   availablePlayers,
-  squadPlayers = [],
-  initialSelections = {},
+  squadPlayers,
+  initialSelections,
   onSelectionChange,
   performanceCategory = "MESSI",
   onSquadPlayersChange,
-  formationTemplate,
+  formationTemplate = "All",
   onTemplateChange,
   renderSubstitutionIndicator
-}: DraggableFormationProps) => {
-  const [selectedTemplate, setSelectedTemplate] = useState(formationTemplate || "All");
-  const [selectedFormat, setSelectedFormat] = useState<FormationFormat>(format);
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  
+}) => {
   const {
+    selectedTemplate,
     selections,
-    formationRef,
-    draggingPlayer,
-    handleDrop,
-    handlePlayerSelect,
-    handleRemovePlayer,
+    selectedPlayerId,
     handleDragStart,
     handleDragEnd,
-    handleSubstituteDrop,
-    getPlayer,
-    getAvailableSquadPlayers
+    handleTemplateChange,
+    handleDrop,
+    handlePlayerClick,
+    handleRemovePlayer,
+    getPlayerById,
+    getAvailablePlayers,
+    addSubstitute,
+    removeSubstitute,
+    showPlayers
   } = useDraggableFormation({
-    initialSelections,
-    onSelectionChange,
+    format,
     availablePlayers,
     squadPlayers,
-    performanceCategory
+    initialSelections,
+    onSelectionChange,
+    performanceCategory,
+    onSquadPlayersChange,
+    formationTemplate,
+    onTemplateChange
   });
 
-  // Update template when format changes
-  useEffect(() => {
-    setSelectedFormat(format);
-  }, [format]);
-
-  // Update selected template when prop changes
-  useEffect(() => {
-    if (formationTemplate) {
-      setSelectedTemplate(formationTemplate);
-    }
-  }, [formationTemplate]);
-
-  // Handler for formation template changes
-  const handleTemplateChange = (template: string) => {
-    setSelectedTemplate(template);
-    if (onTemplateChange) {
-      onTemplateChange(template);
-    }
-  };
-
-  // Default substitution indicator if not provided
-  const defaultSubstitutionIndicator = (position: string) => {
-    return position.startsWith('sub-') ? (
-      <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
-        S
-      </div>
-    ) : null;
-  };
-
-  // Use the provided indicator or fall back to the default
-  const substitutionIndicator = renderSubstitutionIndicator || defaultSubstitutionIndicator;
-
-  console.log("Rendering DraggableFormation, useDragAndDrop enabled");
-
   return (
-    <div className="space-y-4">
-      <FormationTemplateSelector 
-        format={selectedFormat}
+    <div className="space-y-6">
+      {/* Template Selector */}
+      <FormationTemplateSelector
+        format={format}
         selectedTemplate={selectedTemplate}
         onTemplateChange={handleTemplateChange}
       />
       
-      <div className="relative">
-        <FormationGrid 
-          format={selectedFormat}
-          formationRef={formationRef}
-          selections={selections}
-          selectedPlayerId={selectedPlayerId}
-          handleDrop={handleDrop}
-          handleRemovePlayer={handleRemovePlayer}
-          getPlayer={getPlayer}
-          handleDragStart={handleDragStart}
-          handleDragEnd={handleDragEnd}
-          renderSubstitutionIndicator={substitutionIndicator}
-          formationTemplate={selectedTemplate}
-        />
+      {/* Helper text */}
+      <FormationHelperText selectedPlayerId={selectedPlayerId} />
+      
+      {/* The pitch with formation slots */}
+      <div className="flex flex-col gap-4 lg:flex-row">
+        <div className="lg:w-3/4 h-[500px]">
+          <FormationGrid
+            format={format}
+            template={selectedTemplate}
+            selections={selections}
+            selectedPlayerId={selectedPlayerId}
+            onDrop={handleDrop}
+            onRemovePlayer={handleRemovePlayer}
+            getPlayerById={getPlayerById}
+            handleDragStart={handleDragStart}
+            handleDragEnd={handleDragEnd}
+            renderSubstitutionIndicator={renderSubstitutionIndicator}
+          />
+        </div>
+        
+        {/* Available Players List */}
+        <div className="lg:w-1/4 space-y-4">
+          <AvailablePlayersSection
+            players={getAvailablePlayers()}
+            selectedPlayerId={selectedPlayerId}
+            onPlayerClick={handlePlayerClick}
+          />
+        </div>
       </div>
       
-      <SubstitutesSection 
+      {/* Substitutes Section */}
+      <SubstitutesSection
+        format={format}
         selections={selections}
-        handleSubstituteDrop={handleSubstituteDrop}
-        handleRemovePlayer={handleRemovePlayer}
-        getPlayer={getPlayer}
+        availablePlayers={availablePlayers}
+        getPlayerById={getPlayerById}
+        addSubstitute={addSubstitute}
+        removeSubstitute={removeSubstitute}
+        selectedPlayerId={selectedPlayerId}
+        onPlayerClick={handlePlayerClick}
         handleDragStart={handleDragStart}
         handleDragEnd={handleDragEnd}
-        selectedPlayerId={selectedPlayerId}
-        draggingPlayer={draggingPlayer}
-      />
-      
-      <AvailablePlayersSection 
-        availablePlayers={getAvailableSquadPlayers()}
-        handlePlayerSelect={handlePlayerSelect}
-        selectedPlayerId={selectedPlayerId}
-        onSquadPlayersChange={onSquadPlayersChange}
+        renderSubstitutionIndicator={renderSubstitutionIndicator}
       />
     </div>
   );

@@ -44,6 +44,9 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
     ? 'ring-2 ring-green-500 ring-offset-1'
     : '';
 
+  // Check if the position is a substitution position
+  const isSubstitution = selection?.isSubstitution || position.startsWith('sub-');
+
   return (
     <div {...dropProps} 
       className={`${dropProps?.className || ''} ${dropZoneStyle}`}
@@ -77,8 +80,14 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
               </div>
             )}
             
-            {/* Render substitution indicator if provided */}
-            {renderSubstitutionIndicator && renderSubstitutionIndicator(position)}
+            {/* Custom substitution indicator */}
+            {isSubstitution && renderSubstitutionIndicator ? (
+              renderSubstitutionIndicator(position)
+            ) : isSubstitution ? (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
+                S
+              </div>
+            ) : null}
           </>
         ) : (
           <span className="text-xs font-semibold">{position}</span>

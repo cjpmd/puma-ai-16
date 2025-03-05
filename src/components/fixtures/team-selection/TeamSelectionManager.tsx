@@ -11,6 +11,7 @@ import { FormationSelector } from "@/components/FormationSelector";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TeamSelectionManagerProps } from "./types";
 import { PerformanceCategory } from "@/types/player";
+import { DraggableFormation } from "@/components/formation/draggable";
 
 export const TeamSelectionManager = ({ 
   fixture, 
@@ -21,6 +22,9 @@ export const TeamSelectionManager = ({
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [performanceCategory, setPerformanceCategory] = useState<PerformanceCategory>("MESSI");
   const [formationTemplate, setFormationTemplate] = useState("All");
+  
+  // Always use drag and drop mode
+  const [forceDragEnabled] = useState(true);
   
   // Get format from fixture, default to 7-a-side
   const format = (fixture?.format || "7-a-side") as FormationFormat;
@@ -39,7 +43,7 @@ export const TeamSelectionManager = ({
     },
   });
 
-  const handleSelectionChange = (selections: Record<string, { playerId: string; position: string }>) => {
+  const handleSelectionChange = (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>) => {
     console.log("Team selections changed:", selections);
     
     // Update selected players set
@@ -50,6 +54,15 @@ export const TeamSelectionManager = ({
       }
     });
     setSelectedPlayers(newSelectedPlayers);
+  };
+
+  // Custom substitution indicator for positions
+  const renderSubstitutionIndicator = (position: string) => {
+    return position.startsWith('sub-') ? (
+      <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
+        S
+      </div>
+    ) : null;
   };
 
   const handleSave = async () => {
@@ -91,6 +104,8 @@ export const TeamSelectionManager = ({
     return <div>No fixture information provided</div>;
   }
 
+  const squadPlayers = Array.from(selectedPlayers);
+
   return (
     <div className="space-y-6">
       <Card className="mb-6">
@@ -108,16 +123,29 @@ export const TeamSelectionManager = ({
           </Select>
         </CardHeader>
         <CardContent>
-          <FormationSelector
-            format={format}
-            teamName={fixture.category || "Team"}
-            onSelectionChange={handleSelectionChange}
-            selectedPlayers={selectedPlayers}
-            availablePlayers={players}
-            performanceCategory={performanceCategory}
-            formationTemplate={formationTemplate}
-            onTemplateChange={setFormationTemplate}
-          />
+          {forceDragEnabled ? (
+            <DraggableFormation 
+              format={format}
+              availablePlayers={players || []}
+              squadPlayers={squadPlayers}
+              onSelectionChange={handleSelectionChange}
+              performanceCategory={performanceCategory}
+              formationTemplate={formationTemplate}
+              onTemplateChange={setFormationTemplate}
+              renderSubstitutionIndicator={renderSubstitutionIndicator}
+            />
+          ) : (
+            <FormationSelector
+              format={format}
+              teamName={fixture.category || "Team"}
+              onSelectionChange={handleSelectionChange}
+              selectedPlayers={selectedPlayers}
+              availablePlayers={players || []}
+              performanceCategory={performanceCategory}
+              formationTemplate={formationTemplate}
+              onTemplateChange={setFormationTemplate}
+            />
+          )}
         </CardContent>
       </Card>
       

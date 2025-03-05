@@ -38,7 +38,7 @@ export const getFormationLayout = (format: FormationFormat, template?: string): 
       defaultPositions = ['GK', 'DL', 'DR', 'MC', 'STC'];
       break;
     case '7-a-side':
-      defaultPositions = ['GK', 'DL', 'DC', 'DR', 'ML', 'MC', 'STC'];
+      defaultPositions = ['GK', 'DL', 'DC', 'DR', 'ML', 'MC', 'MR'];
       break;
     case '9-a-side':
       defaultPositions = ['GK', 'DL', 'DCL', 'DCR', 'DR', 'MC', 'ML', 'MR', 'STC'];
@@ -99,7 +99,7 @@ export const getPositionsForFormation = (format: FormationFormat, template?: str
 export const getPositionCoordinates = (position: string): { x: string, y: string } => {
   const posData = positionDefinitions[position];
   if (!posData) {
-    console.warn(`Position ${position} not found in definitions`);
+    console.warn(`Position ${pos} not found in definitions`);
     return { x: '50%', y: '50%' };
   }
   
