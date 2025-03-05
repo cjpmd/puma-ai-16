@@ -32,6 +32,9 @@ export const FormationGrid: React.FC<FormationGridProps> = ({
   formationTemplate
 }) => {
   const formationLayout = getFormationLayout(format, formationTemplate);
+  
+  console.log(`Rendering FormationGrid with format: ${format}, template: ${formationTemplate}`);
+  console.log(`Formation slots: ${formationLayout.slots.length}`);
 
   return (
     <div 

@@ -22,6 +22,8 @@ export const getFormationLayout = (format: FormationFormat, template?: string): 
   let defaultPositions: string[] = [];
   let customPositions: string[] = [];
   
+  console.log(`Getting formation layout for format: ${format}, template: ${template}`);
+  
   // Apply template if specified
   if (template && template !== "All") {
     if (format === "7-a-side") {
@@ -51,6 +53,8 @@ export const getFormationLayout = (format: FormationFormat, template?: string): 
   // Use template positions if available, otherwise use default
   const positions = customPositions.length > 0 ? customPositions : defaultPositions;
   
+  console.log(`Positions selected for formation: ${positions.join(', ')}`);
+  
   // Generate slots based on positions
   const slots = positions.map(pos => {
     const id = pos.toLowerCase();
@@ -75,6 +79,8 @@ export const getFormationLayout = (format: FormationFormat, template?: string): 
       y: posData.y
     };
   });
+  
+  console.log(`Created ${slots.length} slots from positions`);
   
   return {
     positions,

@@ -1,146 +1,106 @@
 
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useCallback } from "react";
 import { PerformanceCategory } from "@/types/player";
+import { toast } from "sonner";
 
-export const useTeamSelections = (
-  onTeamSelectionsChange?: (selections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>) => void
-) => {
-  const { toast } = useToast();
+export const useTeamSelections = (onTeamSelectionsChange?: (selections: any) => void) => {
   const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>>({});
+  const [periodSelections, setPeriodSelections] = useState<Record<string, Record<number, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>>>({});
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, PerformanceCategory>>({});
   const [teamFormationTemplates, setTeamFormationTemplates] = useState<Record<string, string>>({});
-  const [periodSelections, setPeriodSelections] = useState<Record<string, Record<string | number, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>>>({});
   const [squadSelections, setSquadSelections] = useState<Record<string, string[]>>({});
-  const [dragEnabled, setDragEnabled] = useState<boolean>(true);
+  const [dragEnabled, setDragEnabled] = useState<boolean>(true); // Default to true
 
-  const handleTeamSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
-    const newSelections = {
-      ...teamSelections,
+  // Handler for team selection changes
+  const handleTeamSelectionChange = useCallback((teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
+    setTeamSelections(prev => ({
+      ...prev,
       [teamId]: selections
-    };
+    }));
 
-    setTeamSelections(newSelections);
-    onTeamSelectionsChange?.(newSelections);
-
-    // Update selected players
-    const selectedPlayerIds = new Set<string>();
-    Object.values(newSelections).forEach(teamSelection => {
-      Object.values(teamSelection).forEach(selection => {
-        if (selection.playerId !== "unassigned") {
-          selectedPlayerIds.add(selection.playerId);
-        }
-      });
+    // Update selectedPlayers set
+    const currentSelectedPlayers = new Set(selectedPlayers);
+    Object.values(selections).forEach(selection => {
+      if (selection.playerId && selection.playerId !== "unassigned") {
+        currentSelectedPlayers.add(selection.playerId);
+      }
     });
-    setSelectedPlayers(selectedPlayerIds);
-  };
+    setSelectedPlayers(currentSelectedPlayers);
 
-  const handlePeriodSelectionChange = (teamId: string, periodNumber: number | string, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
-    // Convert periodNumber to string to ensure consistent key types
-    const periodKey = periodNumber.toString();
-    
+    // Notify parent component if callback is provided
+    if (onTeamSelectionsChange) {
+      onTeamSelectionsChange({
+        ...teamSelections,
+        [teamId]: selections
+      });
+    }
+  }, [teamSelections, selectedPlayers, onTeamSelectionsChange]);
+
+  // Handler for period-specific team selection changes
+  const handlePeriodSelectionChange = useCallback((teamId: string, periodNumber: number, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
     setPeriodSelections(prev => ({
       ...prev,
       [teamId]: {
         ...(prev[teamId] || {}),
-        [periodKey]: selections
+        [periodNumber]: selections
       }
     }));
-  };
+  }, []);
 
-  const handlePerformanceCategoryChange = (teamId: string, category: PerformanceCategory) => {
+  // Handler for performance category changes
+  const handlePerformanceCategoryChange = useCallback((teamId: string, category: PerformanceCategory) => {
     setPerformanceCategories(prev => ({
       ...prev,
       [teamId]: category
     }));
-    
-    // Update existing selections with new performance category
-    if (teamSelections[teamId]) {
-      const updatedSelections = { ...teamSelections[teamId] };
-      
-      // Apply the new performance category to all positions in this team
-      Object.keys(updatedSelections).forEach(positionKey => {
-        updatedSelections[positionKey] = {
-          ...updatedSelections[positionKey],
-          performanceCategory: category
-        };
-      });
-      
-      // Update the team selections
-      handleTeamSelectionChange(teamId, updatedSelections);
-    }
-  };
+  }, []);
 
-  const handleTemplateChange = (teamId: string, template: string) => {
-    console.log(`Changing template for team ${teamId} to ${template}`);
+  // Handler for formation template changes
+  const handleTemplateChange = useCallback((teamId: string, template: string) => {
     setTeamFormationTemplates(prev => ({
       ...prev,
       [teamId]: template
     }));
-  };
+  }, []);
 
-  // Handle squad selection change
-  const handleSquadSelectionChange = (teamId: string, playerIds: string[]) => {
+  // Handler for squad selection changes
+  const handleSquadSelectionChange = useCallback((teamId: string, playerIds: string[]) => {
     setSquadSelections(prev => ({
       ...prev,
       [teamId]: playerIds
     }));
-    
-    // Update selected players as well
-    const newSelectedPlayers = new Set(selectedPlayers);
-    playerIds.forEach(id => newSelectedPlayers.add(id));
-    setSelectedPlayers(newSelectedPlayers);
-  };
+  }, []);
 
-  // Toggle drag functionality
-  const toggleDragEnabled = (enabled: boolean) => {
+  // Toggle drag and drop feature
+  const toggleDragEnabled = useCallback((enabled: boolean) => {
+    console.log(`Toggling drag and drop: ${enabled}`);
     setDragEnabled(enabled);
-  };
+  }, []);
 
-  const saveSelections = async () => {
+  // Save selections
+  const saveSelections = useCallback(async () => {
     try {
-      // Format selections for saving to database
-      const formattedSelections = Object.entries(teamSelections).reduce((acc, [teamId, selections]) => {
-        acc[teamId] = Object.entries(selections).map(([positionKey, selection]) => ({
-          playerId: selection.playerId,
-          position: selection.position,
-          is_substitute: selection.position.startsWith('sub-'),
-          performanceCategory: selection.performanceCategory || performanceCategories[teamId] || 'MESSI' as PerformanceCategory
-        }));
-        return acc;
-      }, {} as Record<string, Array<{ playerId: string; position: string; is_substitute: boolean; performanceCategory?: PerformanceCategory }>>);
-
-      // Example API call - replace with your actual implementation
-      console.log("Saving team selections:", formattedSelections);
-      
-      // Simulate API call
+      // Here you would typically make an API call to save the selections
+      // For now, we'll just simulate a successful save
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      toast({
-        title: "Success",
-        description: "Team selections saved successfully",
-      });
-      
+
+      toast.success("Team selections saved successfully");
+
       return true;
     } catch (error) {
       console.error("Error saving team selections:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save team selections",
-      });
+      toast.error("Failed to save team selections");
       return false;
     }
-  };
+  }, [teamSelections, periodSelections]);
 
   return {
     teamSelections,
-    periodSelections,
     selectedPlayers,
     performanceCategories,
     teamFormationTemplates,
+    periodSelections,
     squadSelections,
     dragEnabled,
     handleTeamSelectionChange,
@@ -149,7 +109,6 @@ export const useTeamSelections = (
     handleTemplateChange,
     handleSquadSelectionChange,
     toggleDragEnabled,
-    saveSelections,
-    setPeriodSelections
+    saveSelections
   };
 };

@@ -90,6 +90,8 @@ export const DraggableFormation = ({
   // Use the provided indicator or fall back to the default
   const substitutionIndicator = renderSubstitutionIndicator || defaultSubstitutionIndicator;
 
+  console.log("Rendering DraggableFormation, useDragAndDrop enabled");
+
   return (
     <div className="space-y-4">
       <FormationTemplateSelector 

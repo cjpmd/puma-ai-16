@@ -58,6 +58,9 @@ export const TeamSelectionManager = ({
     saveSelections
   } = useTeamSelections(onTeamSelectionsChange);
   
+  // Force drag and drop to be enabled by default
+  const [forceDragEnabled, setForceDragEnabled] = useState(true);
+  
   const { playersWithStatus, isLoading, error } = usePlayersWithAttendance();
   const [isSaving, setIsSaving] = useState(false);
   const [activeView, setActiveView] = useState("formation"); // "formation" or "periods"
@@ -80,6 +83,12 @@ export const TeamSelectionManager = ({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Custom toggle function to ensure our local state is updated
+  const handleToggleDragAndDrop = (enabled: boolean) => {
+    setForceDragEnabled(enabled);
+    toggleDragEnabled(enabled);
   };
 
   if (isLoading) {
@@ -116,8 +125,8 @@ export const TeamSelectionManager = ({
               viewMode="formation"
               squadSelection={squadSelections[team.id]}
               onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
-              useDragAndDrop={dragEnabled}
-              onToggleDragAndDrop={toggleDragEnabled}
+              useDragAndDrop={forceDragEnabled}
+              onToggleDragAndDrop={handleToggleDragAndDrop}
             />
           ))}
         </TabsContent>
@@ -149,8 +158,8 @@ export const TeamSelectionManager = ({
                       duration={20}
                       squadSelection={squadSelections[team.id]}
                       onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
-                      useDragAndDrop={dragEnabled}
-                      onToggleDragAndDrop={toggleDragEnabled}
+                      useDragAndDrop={forceDragEnabled}
+                      onToggleDragAndDrop={handleToggleDragAndDrop}
                     />
                   </CardContent>
                 </Card>
@@ -173,8 +182,8 @@ export const TeamSelectionManager = ({
                       duration={20}
                       squadSelection={squadSelections[team.id]}
                       onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
-                      useDragAndDrop={dragEnabled}
-                      onToggleDragAndDrop={toggleDragEnabled}
+                      useDragAndDrop={forceDragEnabled}
+                      onToggleDragAndDrop={handleToggleDragAndDrop}
                     />
                   </CardContent>
                 </Card>
