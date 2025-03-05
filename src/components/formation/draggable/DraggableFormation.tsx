@@ -19,6 +19,7 @@ interface DraggableFormationProps {
   onSquadPlayersChange?: (playerIds: string[]) => void;
   formationTemplate?: string;
   onTemplateChange?: (template: string) => void;
+  renderSubstitutionIndicator?: (position: string) => React.ReactNode;
 }
 
 export const DraggableFormation = ({
@@ -30,7 +31,8 @@ export const DraggableFormation = ({
   performanceCategory = "MESSI",
   onSquadPlayersChange,
   formationTemplate,
-  onTemplateChange
+  onTemplateChange,
+  renderSubstitutionIndicator
 }: DraggableFormationProps) => {
   const [selectedTemplate, setSelectedTemplate] = useState(formationTemplate || "All");
   const [selectedFormat, setSelectedFormat] = useState<FormationFormat>(format);
@@ -76,14 +78,17 @@ export const DraggableFormation = ({
     }
   };
 
-  // Helper to render substitution indicators
-  const renderSubstitutionIndicator = (position: string) => {
+  // Default substitution indicator if not provided
+  const defaultSubstitutionIndicator = (position: string) => {
     return position.startsWith('sub-') ? (
       <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
         S
       </div>
     ) : null;
   };
+
+  // Use the provided indicator or fall back to the default
+  const substitutionIndicator = renderSubstitutionIndicator || defaultSubstitutionIndicator;
 
   return (
     <div className="space-y-4">
@@ -104,7 +109,7 @@ export const DraggableFormation = ({
           getPlayer={getPlayer}
           handleDragStart={handleDragStart}
           handleDragEnd={handleDragEnd}
-          renderSubstitutionIndicator={renderSubstitutionIndicator}
+          renderSubstitutionIndicator={substitutionIndicator}
           formationTemplate={selectedTemplate}
         />
       </div>
