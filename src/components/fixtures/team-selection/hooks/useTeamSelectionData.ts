@@ -1,59 +1,130 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { TeamSelection, AllSelections, PeriodsPerTeam, TeamCaptains } from "../types";
-import { useProcessSelections } from "./useProcessSelections";
 
-export const useTeamSelectionData = (fixtureId?: string) => {
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Player } from '@/types/player';
+import { AllSelections, PeriodsPerTeam, TeamCaptains } from '../types';
+import { useToast } from '@/hooks/use-toast';
+
+export const useTeamSelectionData = (fixtureId: string | undefined) => {
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [availablePlayers, setAvailablePlayers] = useState<Player[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
+  const [periodsPerTeam, setPeriodsPerTeam] = useState<PeriodsPerTeam>({});
+  const [selections, setSelections] = useState<Record<string, Record<string, Record<string, Record<string, { playerId: string; position: string; isSubstitution?: boolean; }>>>>({});
+  const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
+  const [teamCaptains, setTeamCaptains] = useState<Record<string, string>>({});
   const [existingSelections, setExistingSelections] = useState<AllSelections>({});
   const [existingPeriods, setExistingPeriods] = useState<PeriodsPerTeam>({});
   const [existingCaptains, setExistingCaptains] = useState<TeamCaptains>({});
-  const { processSelections } = useProcessSelections();
 
-  // Fetch existing team selections for this fixture
-  const { data: selections, isLoading: isLoadingSelections } = useQuery({
-    queryKey: ["teamSelections", fixtureId],
+  // Fetch players for team selection
+  const { data: players } = useQuery({
+    queryKey: ['players-for-team-selection', fixtureId],
     queryFn: async () => {
-      if (!fixtureId) return [];
-      
       try {
+        if (!fixtureId) return [];
+        
         const { data, error } = await supabase
-          .from("fixture_team_selections")
-          .select("*")
-          .eq("fixture_id", fixtureId);
+          .from('players')
+          .select('*')
+          .order('name');
           
         if (error) throw error;
-        
-        console.log(`Fetched ${data?.length || 0} team selections for fixture ${fixtureId}`);
         return data || [];
       } catch (error) {
-        console.error("Error fetching team selections:", error);
+        console.error('Error fetching players:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load players',
+        });
         return [];
       }
     },
     enabled: !!fixtureId,
   });
 
-  // Process existing data when it's loaded
-  useEffect(() => {
-    if (!isLoadingSelections) {
-      if (selections && selections.length > 0) {
-        // Process selections into the expected format
-        console.log("Processing existing selections:", selections);
+  // Fetch existing selections for this fixture
+  const { data: existingData, isLoading: isLoadingExisting } = useQuery({
+    queryKey: ['fixture-team-selections', fixtureId],
+    queryFn: async () => {
+      try {
+        if (!fixtureId) return { selections: {}, periods: {}, captains: {} };
         
-        // Here we would normally process the selections
-        // Since processExistingSelections isn't implemented, we're using an empty object
-        // This is where you would convert from DB format to app format
+        const { data, error } = await supabase
+          .from('fixture_team_selections')
+          .select('*')
+          .eq('fixture_id', fixtureId);
+          
+        if (error) throw error;
+        
+        // Process the data into the format we need
+        // This is simplified - you would need to adapt to your actual data structure
+        return {
+          selections: {},  // Process data into AllSelections format
+          periods: {},     // Process data into PeriodsPerTeam format
+          captains: {}     // Process data into TeamCaptains format
+        };
+      } catch (error) {
+        console.error('Error fetching existing selections:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load existing team selections',
+        });
+        return { selections: {}, periods: {}, captains: {} };
       }
+    },
+    enabled: !!fixtureId,
+  });
+
+  useEffect(() => {
+    if (players) {
+      setAvailablePlayers(players);
+    }
+  }, [players]);
+
+  useEffect(() => {
+    if (!isLoadingExisting && existingData) {
+      setExistingSelections(existingData.selections);
+      setExistingPeriods(existingData.periods);
+      setExistingCaptains(existingData.captains);
       setIsLoading(false);
     }
-  }, [selections, isLoadingSelections]);
+  }, [isLoadingExisting, existingData]);
+
+  // Actions for managing team selections
+  const actions = {
+    setSelectedPlayers,
+    addSelectedPlayer: (playerId: string) => {
+      setSelectedPlayers(prev => new Set([...prev, playerId]));
+    },
+    removeSelectedPlayer: (playerId: string) => {
+      setSelectedPlayers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(playerId);
+        return newSet;
+      });
+    },
+    updatePeriodsPerTeam: setPeriodsPerTeam,
+    updateSelections: setSelections,
+    updatePerformanceCategories: setPerformanceCategories,
+    updateTeamCaptains: setTeamCaptains
+  };
 
   return {
     isLoading,
+    availablePlayers,
+    selectedPlayers,
+    periodsPerTeam,
+    selections,
+    performanceCategories,
+    teamCaptains,
     existingSelections,
     existingPeriods,
-    existingCaptains
+    existingCaptains,
+    actions
   };
 };

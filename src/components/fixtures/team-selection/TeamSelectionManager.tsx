@@ -8,25 +8,18 @@ import { TeamSelectionProvider } from "./context/TeamSelectionContext";
 import { TeamTabs } from "./components/TeamTabs";
 import { TeamSections } from "./components/TeamSections";
 import { SaveSelectionButton } from "./components/SaveSelectionButton";
-import { Fixture } from "@/types/fixture";
-import { useTeamInitialization } from "./hooks/useTeamInitialization";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { TeamInitializationWrapper } from "./components/TeamInitializationWrapper";
 
-interface TeamSelectionManagerProps {
-  fixture: Fixture | null;
-  onSuccess?: () => void;
-  onCancel?: () => void;
-}
-
-export const TeamSelectionManager = ({ fixture, onSuccess, onCancel }: TeamSelectionManagerProps) => {
+export const TeamSelectionManager = ({ fixture, onSuccess, onCancel }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
-
+  
   // Check if this fixture exists
   const fixtureExists = !!fixture?.id;
-
+  
   // Fetch players for this team category
   const { data: players, isLoading: isLoadingPlayers } = useQuery({
     queryKey: ["players", fixture?.team_name],
@@ -35,18 +28,14 @@ export const TeamSelectionManager = ({ fixture, onSuccess, onCancel }: TeamSelec
         console.log("Fetching players for team category:", fixture?.team_name);
         
         // If team_name is not provided, fetch all players
-        const query = supabase
-          .from("players")
-          .select("*")
-          .order('name');
-          
+        const query = supabase.from("players").select("*").order('name');
         if (fixture?.team_name) {
           query.eq("team_category", fixture.team_name);
         }
         
         const { data, error } = await query;
-        
         if (error) throw error;
+        
         console.log(`Fetched ${data?.length || 0} players for team selection`);
         return data || [];
       } catch (error) {
@@ -54,12 +43,12 @@ export const TeamSelectionManager = ({ fixture, onSuccess, onCancel }: TeamSelec
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load players",
+          description: "Failed to load players"
         });
         return [];
       }
     },
-    enabled: fixtureExists,
+    enabled: fixtureExists
   });
   
   // Remove loading state once all queries are complete
@@ -68,7 +57,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess, onCancel }: TeamSelec
       setIsLoading(false);
     }
   }, [isLoadingPlayers]);
-
+  
   if (!fixture) {
     return (
       <Card>
@@ -81,7 +70,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess, onCancel }: TeamSelec
       </Card>
     );
   }
-
+  
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -90,7 +79,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess, onCancel }: TeamSelec
       </div>
     );
   }
-
+  
   return (
     <TeamSelectionProvider fixture={fixture}>
       <div className="space-y-4">
@@ -98,6 +87,7 @@ export const TeamSelectionManager = ({ fixture, onSuccess, onCancel }: TeamSelec
           <h2 className="text-xl font-bold">
             {fixture.opponent ? `Team Selection - ${fixture.is_home ? 'vs' : '@'} ${fixture.opponent}` : 'Team Selection'}
           </h2>
+          
           <div className="flex gap-2">
             {onCancel && (
               <Button variant="outline" onClick={onCancel}>
@@ -111,21 +101,14 @@ export const TeamSelectionManager = ({ fixture, onSuccess, onCancel }: TeamSelec
           </div>
         </div>
         
-        {/* Use the hook within a function component wrapper */}
         <TeamInitializationWrapper />
         
         <TeamTabs />
         
         <TeamSections 
-          availablePlayers={players || []} 
+          availablePlayers={players || []}
         />
       </div>
     </TeamSelectionProvider>
   );
-};
-
-// Wrap the hook in a component
-const TeamInitializationWrapper = () => {
-  const initTeams = useTeamInitialization();
-  return null;
 };
