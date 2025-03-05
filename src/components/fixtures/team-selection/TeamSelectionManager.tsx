@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormationSelector } from "@/components/FormationSelector";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TeamSelectionManagerProps } from "./types";
+import { PerformanceCategory } from "@/types/player";
 
 export const TeamSelectionManager = ({ 
   fixture, 
@@ -18,7 +19,7 @@ export const TeamSelectionManager = ({
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
-  const [performanceCategory, setPerformanceCategory] = useState("MESSI");
+  const [performanceCategory, setPerformanceCategory] = useState<PerformanceCategory>("MESSI");
   const [formationTemplate, setFormationTemplate] = useState("All");
   
   // Get format from fixture, default to 7-a-side
@@ -95,7 +96,7 @@ export const TeamSelectionManager = ({
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{fixture.category || "Team"}</CardTitle>
-          <Select value={performanceCategory} onValueChange={setPerformanceCategory}>
+          <Select value={performanceCategory} onValueChange={(value) => setPerformanceCategory(value as PerformanceCategory)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select category" />
             </SelectTrigger>

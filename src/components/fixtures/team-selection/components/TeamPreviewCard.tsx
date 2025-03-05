@@ -1,85 +1,86 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FormationSelector } from "@/components/FormationSelector";
-import { PlayerSelection } from "@/components/formation/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormationFormat } from "@/components/formation/types";
+import { PerformanceCategory } from "@/types/player";
+import { TeamSelections } from "../types";
+import { FormationView } from "@/components/fixtures/FormationView";
 
 interface TeamPreviewCardProps {
-  format?: string;
   teamId: string;
-  fixture: any;
-  periodId: string;
-  index: number;
-  availablePlayers: any[];
-  teamSquadPlayers: string[];
-  teamSelections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>;
-  performanceCategories: Record<string, string>;
-  onPerformanceCategoryChange: (teamId: string, periodId: string, category: string) => void;
-  onDurationChange: (teamId: string, periodId: string, duration: number) => void;
-  onDeletePeriod: (teamId: string, periodId: string) => void;
-  handleFormationChange: (teamId: string, periodId: string, selections: Record<string, { playerId: string; position: string }>) => void;
-  checkIsSubstitution: (teamId: string, periodIndex: number, position: string) => boolean;
+  teamName: string;
+  format: FormationFormat;
+  players: any[];
+  selections: TeamSelections;
+  performanceCategory: PerformanceCategory;
+  onPerformanceCategoryChange: (value: PerformanceCategory) => void;
+  periodNumber?: number;
+  duration?: number;
 }
 
-const TeamPreviewCard: React.FC<TeamPreviewCardProps> = ({
-  format = "7-a-side",
+export const TeamPreviewCard: React.FC<TeamPreviewCardProps> = ({
   teamId,
-  fixture,
-  periodId,
-  index,
-  availablePlayers,
-  teamSquadPlayers,
-  teamSelections,
-  performanceCategories,
+  teamName,
+  format,
+  players,
+  selections,
+  performanceCategory,
   onPerformanceCategoryChange,
-  onDurationChange,
-  onDeletePeriod,
-  handleFormationChange,
-  checkIsSubstitution
+  periodNumber = 1,
+  duration = 45
 }) => {
-  // Convert any format string to a valid FormationFormat
-  const validFormat = ["5-a-side", "7-a-side", "9-a-side", "11-a-side"].includes(format)
-    ? format
-    : "7-a-side";
-  
-  // Create a set of already selected player IDs
-  const selectedPlayers = new Set<string>();
-  
-  // Filter availablePlayers to only include those in the team's squad
-  const squadPlayers = availablePlayers.filter(player => 
-    teamSquadPlayers.includes(player.id)
-  );
-  
-  // Get the current period's performance category
-  const performanceCategory = performanceCategories[`${teamId}-${periodId}`] || "MESSI";
-  
-  // Only include players that are selected in THIS period
-  const currentSelections = teamSelections[teamId]?.[periodId] || {};
-  
-  // Adapter function to bridge the gap between FormationSelector and our component
-  const handleSelectionChange = (updatedSelections: Record<string, { playerId: string; position: string }>) => {
-    handleFormationChange(teamId, periodId, updatedSelections);
+  const formatSelectionsForFormation = (selections: TeamSelections) => {
+    return Object.entries(selections)
+      .filter(([_, value]) => !value.position.startsWith('sub-'))
+      .map(([_, value]) => ({
+        position: value.position.split('-')[0].toUpperCase(),
+        playerId: value.playerId
+      }));
   };
-  
+
+  const positions = formatSelectionsForFormation(selections);
+
   return (
-    <Card className="mt-4">
-      <CardHeader>
-        <CardTitle className="text-sm">Period {index + 1} Formation Preview</CardTitle>
+    <Card className="mb-6">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Formation Preview</CardTitle>
+        <PerformanceCategorySelector
+          value={performanceCategory}
+          onChange={onPerformanceCategoryChange}
+        />
       </CardHeader>
       <CardContent>
-        <FormationSelector
-          format={validFormat as any}
-          teamName={fixture.opponent || "Team"}
-          onSelectionChange={handleSelectionChange}
-          selectedPlayers={selectedPlayers}
-          availablePlayers={squadPlayers}
-          initialSelections={currentSelections}
-          performanceCategory={performanceCategory}
-          viewMode="formation"
+        <FormationView
+          positions={positions}
+          players={players}
+          periodNumber={periodNumber}
+          duration={duration}
         />
       </CardContent>
     </Card>
   );
 };
 
-export default TeamPreviewCard;
+interface PerformanceCategorySelectorProps {
+  value: PerformanceCategory;
+  onChange: (value: PerformanceCategory) => void;
+}
+
+const PerformanceCategorySelector: React.FC<PerformanceCategorySelectorProps> = ({ 
+  value, 
+  onChange 
+}) => {
+  return (
+    <Select value={value} onValueChange={(newValue) => onChange(newValue as PerformanceCategory)}>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue placeholder="Select category" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="MESSI">Messi</SelectItem>
+        <SelectItem value="RONALDO">Ronaldo</SelectItem>
+        <SelectItem value="JAGS">Jags</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+};
