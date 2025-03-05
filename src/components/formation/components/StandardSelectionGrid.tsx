@@ -7,7 +7,7 @@ interface StandardSelectionGridProps {
   formationSlots: FormationSlot[];
   selections: Record<string, PlayerSelection>;
   availablePlayers: Array<{ id: string; name: string; squad_number?: number }>;
-  onPlayerSelection?: (slotId: string, playerId: string, position: string) => void;
+  onPlayerSelection: (slotId: string, playerId: string) => void;
   selectedPlayers: Set<string>;
 }
 
@@ -30,8 +30,7 @@ export const StandardSelectionGrid: React.FC<StandardSelectionGridProps> = ({
             position={selection.position}
             playerId={selection.playerId}
             availablePlayers={availablePlayers}
-            onSelectionChange={(playerId, position) => 
-              onPlayerSelection?.(slot.id, playerId, position)}
+            onSelectionChange={(playerId) => onPlayerSelection(slot.id, playerId)}
             selectedPlayers={selectedPlayers}
           />
         );

@@ -9,7 +9,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { FormationFormat } from "./types";
-import { getFormationTemplatesByFormat } from "./utils/formationTemplates";
+import { getFormationTemplatesForFormat } from "./utils/formationFormatUtils";
 
 interface FormationTemplateSelectorProps {
   format: FormationFormat;
@@ -22,7 +22,7 @@ export const FormationTemplateSelector: React.FC<FormationTemplateSelectorProps>
   onTemplateChange,
   selectedTemplate
 }) => {
-  const templates = getFormationTemplatesByFormat(format);
+  const templates = getFormationTemplatesForFormat(format);
   
   if (!templates || Object.keys(templates).length === 0) {
     return null;
