@@ -1,78 +1,85 @@
 
-import { useRef, useEffect } from "react";
+import { useState } from "react";
 
-type SelectionType = {
-  playerId: string;
-  position: string;
-  isSubstitution?: boolean;
-};
+interface UseSubstitutionManagerProps {
+  selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
+  updateSelections: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
+  onSelectionChange?: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
+}
 
-export const useSubstitutionManager = (
-  updateSelections: (selections: Record<string, SelectionType>) => void,
-  selections: Record<string, SelectionType>
-) => {
-  // Substitution counter for generating unique slot IDs
-  const subCounterRef = useRef<number>(0);
+export const useSubstitutionManager = ({
+  selections,
+  updateSelections,
+  onSelectionChange
+}: UseSubstitutionManagerProps) => {
+  const [substitutionCounter, setSubstitutionCounter] = useState(0);
 
-  // Initialize from existing selections when component mounts
-  useEffect(() => {
-    initializeSubCounter();
-  }, []);
-
-  // Initialize from existing selections if any
+  // Initialize the substitution counter based on existing selections
   const initializeSubCounter = () => {
-    // Calculate the highest sub-X ID to continue numbering from there
-    const subIds = Object.keys(selections)
-      .filter(id => id.startsWith('sub-'))
-      .map(id => parseInt(id.replace('sub-', ''), 10));
-    
-    if (subIds.length > 0) {
-      subCounterRef.current = Math.max(...subIds) + 1;
-      console.log(`Initialized sub counter to ${subCounterRef.current}`);
+    const existingSubstitutes = Object.entries(selections)
+      .filter(([_, selection]) => selection.isSubstitution)
+      .map(([slotId]) => {
+        const match = slotId.match(/sub-(\d+)/);
+        return match ? parseInt(match[1], 10) : -1;
+      })
+      .filter(num => num >= 0);
+
+    if (existingSubstitutes.length > 0) {
+      setSubstitutionCounter(Math.max(...existingSubstitutes) + 1);
     }
   };
 
-  // Handle dragging to substitutes section
+  // Handle adding a player to the substitutes area
   const handleSubstituteDrop = (playerId: string, fromSlotId?: string) => {
-    if (!playerId) {
-      console.log("Missing playerId, cannot create substitute");
-      return;
-    }
+    console.log(`Adding player ${playerId} to substitutes from slot ${fromSlotId || 'none'}`);
     
-    console.log(`Player ${playerId} dropped to substitutes section from ${fromSlotId || 'direct selection'}`);
-    
-    // Generate a new substitute slot ID
-    const subSlotId = `sub-${subCounterRef.current++}`;
-    
-    // Get the player's current position if they're being moved from another slot
-    let currentPosition = 'SUB';
-    if (fromSlotId && selections[fromSlotId]) {
-      currentPosition = selections[fromSlotId]?.position || 'SUB';
-      console.log(`Moving player from position ${currentPosition} to SUB`);
-    }
+    // Create a new slot ID for this substitute
+    const substitutionSlotId = `sub-${substitutionCounter}`;
     
     // Create a new selections object
     const newSelections = { ...selections };
     
-    // Remove the player from their current position if they're being moved
-    if (fromSlotId && selections[fromSlotId]) {
+    // If the player is coming from another slot, remove them from that slot
+    if (fromSlotId && newSelections[fromSlotId]) {
       delete newSelections[fromSlotId];
+    } else {
+      // If not from a slot, check if they're already in a position
+      const existingSlot = Object.entries(newSelections).find(
+        ([_, selection]) => selection.playerId === playerId
+      )?.[0];
+      
+      if (existingSlot) {
+        delete newSelections[existingSlot];
+      }
     }
     
-    // Add them to the substitutes
-    newSelections[subSlotId] = {
+    // Add the player to the substitutes
+    newSelections[substitutionSlotId] = {
       playerId,
-      position: currentPosition,
+      position: 'SUB',
       isSubstitution: true
     };
     
-    console.log('New selections after substitution:', newSelections);
+    // Increment the counter
+    setSubstitutionCounter(prev => prev + 1);
+    
+    // Update selections
+    updateSelections(newSelections);
+  };
+
+  // Handle removing a player from any position
+  const handleRemovePlayer = (slotId: string) => {
+    console.log(`Removing player from slot ${slotId}`);
+    
+    const newSelections = { ...selections };
+    delete newSelections[slotId];
     
     updateSelections(newSelections);
   };
 
   return {
     handleSubstituteDrop,
-    initializeSubCounter
+    initializeSubCounter,
+    handleRemovePlayer
   };
 };

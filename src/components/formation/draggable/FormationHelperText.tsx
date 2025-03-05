@@ -1,24 +1,34 @@
 
 import React from "react";
 
-interface FormationHelperTextProps {
+export interface FormationHelperTextProps {
   draggingPlayer: string | null;
   selectedPlayerId: string | null;
 }
 
-export const FormationHelperText: React.FC<FormationHelperTextProps> = ({
-  draggingPlayer,
-  selectedPlayerId
+export const FormationHelperText: React.FC<FormationHelperTextProps> = ({ 
+  draggingPlayer, 
+  selectedPlayerId 
 }) => {
+  if (draggingPlayer) {
+    return (
+      <div className="text-blue-600 p-2 bg-blue-50 rounded mb-4">
+        Drag player to a position on the formation or to the substitutes area
+      </div>
+    );
+  }
+
+  if (selectedPlayerId) {
+    return (
+      <div className="text-blue-600 p-2 bg-blue-50 rounded mb-4">
+        Click on a position to place the selected player
+      </div>
+    );
+  }
+
   return (
-    <div className="absolute top-2 left-0 right-0 text-center z-20">
-      <span className="px-2 py-1 bg-white/80 rounded text-xs text-gray-700">
-        {draggingPlayer 
-          ? "Drag player to a position" 
-          : selectedPlayerId 
-            ? "Now click on a position to place player" 
-            : "Select or drag a player from below"}
-      </span>
+    <div className="text-gray-500 p-2 bg-gray-50 rounded mb-4">
+      Select a player from the list below or drag players directly to positions
     </div>
   );
 };

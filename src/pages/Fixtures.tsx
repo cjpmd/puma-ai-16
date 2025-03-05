@@ -362,11 +362,6 @@ const Fixtures = () => {
           {selectedFixture && (
             <TeamSelectionManager 
               fixture={selectedFixture} 
-              onSuccess={() => {
-                refetch();
-                setShowTeamSelection(false);
-              }}
-              onCancel={() => setShowTeamSelection(false)}
             />
           )}
         </DialogContent>

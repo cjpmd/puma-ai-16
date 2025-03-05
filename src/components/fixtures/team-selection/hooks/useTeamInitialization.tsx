@@ -1,46 +1,34 @@
 
-import { useEffect } from "react";
-import { useTeamSelection } from "../context/TeamSelectionContext";
-import { usePeriods } from "./usePeriods";
+import { useEffect } from 'react';
+import { useTeamSelection } from '../context/TeamSelectionContext';
 
 export const useTeamInitialization = () => {
-  const { fixture, setTeams, setActiveTeamId } = useTeamSelection();
-  const { periodsPerTeam, handleAddPeriod, initializeTeamPeriods } = usePeriods();
-  
-  useEffect(() => {
-    if (!fixture) return;
+  const { 
+    fixture, 
+    setTeams, 
+    teams, 
+    existingSelectionsLoaded 
+  } = useTeamSelection();
 
-    console.log("Initializing teams from fixture:", fixture);
-    
-    const teamCount = fixture.number_of_teams || 1;
-    const newTeams = {};
-    
-    // Create team entries based on the number of teams in the fixture
-    for (let i = 0; i < teamCount; i++) {
-      const teamId = i.toString();
-      newTeams[teamId] = {
-        name: i === 0 ? fixture.team_name : `Team ${i + 1}`,
-        squadPlayers: []
-      };
-    }
-    
-    // Initialize team state
-    setTeams(newTeams);
-    
-    // Set active team to first team
-    setActiveTeamId("0");
-    
-    // Initialize periods for each team
-    initializeTeamPeriods(fixture);
-    
-    console.log("Teams initialized:", newTeams);
-    
-    // Add a default period to each team if none exist
-    Object.keys(newTeams).forEach(teamId => {
-      if (!periodsPerTeam[teamId] || periodsPerTeam[teamId].length === 0) {
-        handleAddPeriod(teamId);
+  // Initialize teams based on fixture
+  useEffect(() => {
+    if (fixture && Object.keys(teams).length === 0 && !existingSelectionsLoaded) {
+      console.log("Initializing teams for fixture:", fixture);
+      
+      const newTeams = {};
+      const numberOfTeams = fixture.number_of_teams || 1;
+      
+      // Create team objects based on number of teams in fixture
+      for (let i = 0; i < numberOfTeams; i++) {
+        const teamId = i.toString();
+        newTeams[teamId] = {
+          name: `Team ${i + 1}`,
+          squadPlayers: []
+        };
       }
-    });
-    
-  }, [fixture, setTeams, setActiveTeamId, initializeTeamPeriods, handleAddPeriod, periodsPerTeam]);
+      
+      setTeams(newTeams);
+      console.log("Initialized teams:", newTeams);
+    }
+  }, [fixture, setTeams, teams, existingSelectionsLoaded]);
 };

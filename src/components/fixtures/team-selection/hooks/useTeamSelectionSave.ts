@@ -58,18 +58,23 @@ export const useTeamSelectionSave = (
           
           // Process each player selection for this team/period
           Object.entries(teamSelections).forEach(([slotId, selection]) => {
-            if (selection && selection.playerId && selection.playerId !== "unassigned") {
+            if (selection.playerId && selection.playerId !== "unassigned") {
+              // Determine actual position from slot or selection
+              const position = selection.position || slotId;
+              
+              // Is this a substitution?
+              const isSubstitution = slotId.startsWith('sub-') || position === 'SUB';
+              
               // Create a record with period information
               teamSelectionsToSave.push({
                 fixture_id: fixtureId,
                 player_id: selection.playerId,
-                position: selection.position || slotId,
+                position: isSubstitution ? 'SUB' : position,
                 performance_category: selection.performanceCategory || "MESSI",
                 team_number: parseInt(teamId),
                 is_captain: teamCaptains[teamId] === selection.playerId ? true : false,
                 period_id: periodId,
-                duration: period.duration || 45,
-                is_substitution: slotId.startsWith('sub-') || (selection.isSubstitution === true)
+                duration: period.duration || 45
               });
             }
           });
@@ -91,11 +96,6 @@ export const useTeamSelectionSave = (
         
         console.log("Team selections saved successfully:", data);
         
-        toast({
-          title: "Success",
-          description: "Team selections saved successfully",
-        });
-        
         if (onSuccess) {
           onSuccess();
         }
@@ -103,11 +103,6 @@ export const useTeamSelectionSave = (
         return true;
       } else {
         console.log("No selections to save");
-        toast({
-          variant: "default",
-          title: "Info",
-          description: "No selections to save",
-        });
         return true;
       }
     } catch (error) {

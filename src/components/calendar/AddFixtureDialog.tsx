@@ -168,8 +168,6 @@ export const AddFixtureDialog = ({
         {!isLoading && showTeamSelection && (
           <TeamSelectionManager 
             fixture={editingFixture || newFixture} 
-            onSuccess={onSuccess}
-            onCancel={() => onOpenChange(false)}
           />
         )}
       </DialogContent>

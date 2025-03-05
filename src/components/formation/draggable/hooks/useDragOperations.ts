@@ -2,45 +2,32 @@
 import { useState } from "react";
 
 export const useDragOperations = () => {
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  const [draggingPlayer, setDraggingPlayer] = useState<string | null>(null);
+  const [draggingPlayerId, setDraggingPlayerId] = useState<string | null>(null);
 
-  // Handle player selection for dragging
-  const handlePlayerSelect = (playerId: string) => {
-    console.log(`Selected player: ${playerId}`);
-    setSelectedPlayerId(playerId === selectedPlayerId ? null : playerId);
-  };
-
-  // Handle drag start for a player
-  const handleDragStart = (e: React.DragEvent, playerId: string, getPlayer: (playerId: string) => any) => {
-    console.log(`Drag start for player ${playerId}`);
-    setDraggingPlayer(playerId);
-    // Set dataTransfer data for compatibility
+  // Handle the start of a drag operation
+  const handleDragStart = (e: React.DragEvent, playerId: string) => {
+    console.log(`Starting drag for player ${playerId}`);
     e.dataTransfer.setData('playerId', playerId);
-    // Set a custom drag image if needed
-    const player = getPlayer(playerId);
-    if (player) {
-      const dragImage = document.createElement('div');
-      dragImage.className = 'bg-blue-500 text-white rounded-full p-1 text-xs font-bold';
-      dragImage.textContent = player.squad_number?.toString() || player.name.charAt(0);
-      document.body.appendChild(dragImage);
-      e.dataTransfer.setDragImage(dragImage, 15, 15);
-      setTimeout(() => document.body.removeChild(dragImage), 0);
-    }
+    setDraggingPlayerId(playerId);
+    e.dataTransfer.effectAllowed = 'move';
   };
 
-  // Handle drag end
+  // Handle the end of a drag operation
   const handleDragEnd = () => {
-    console.log('Drag ended');
-    setDraggingPlayer(null);
+    console.log('Drag operation ended');
+    setDraggingPlayerId(null);
+  };
+
+  // Handle player selection from the available players list
+  const handlePlayerSelect = (playerId: string, event?: React.MouseEvent, additionalData?: any) => {
+    console.log(`Selected player ${playerId}`);
+    return playerId;
   };
 
   return {
-    selectedPlayerId,
-    setSelectedPlayerId,
-    draggingPlayer,
-    handlePlayerSelect,
+    draggingPlayerId,
     handleDragStart,
-    handleDragEnd
+    handleDragEnd,
+    handlePlayerSelect
   };
 };

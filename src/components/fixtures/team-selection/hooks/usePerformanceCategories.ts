@@ -1,80 +1,76 @@
 
 import { useState, useEffect } from "react";
-import { PerformanceCategories } from "../types";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-// Define fallback performance categories since the table doesn't exist
-const DEFAULT_PERFORMANCE_CATEGORIES = ["MESSI", "RONALDO", "JAGS"];
+export interface PerformanceCategory {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+}
+
+// Fallback default categories if table doesn't exist
+const DEFAULT_CATEGORIES = [
+  { id: "MESSI", name: "Messi", description: "High performance", color: "#4CAF50" },
+  { id: "RONALDO", name: "Ronaldo", description: "Medium performance", color: "#2196F3" },
+  { id: "JAGS", name: "Jags", description: "Development focus", color: "#FFC107" }
+];
 
 export const usePerformanceCategories = () => {
-  const [performanceCategories, setPerformanceCategories] = useState<PerformanceCategories>({});
-  const [availableCategories, setAvailableCategories] = useState<string[]>(DEFAULT_PERFORMANCE_CATEGORIES);
-  const [isFetchingCategories, setIsFetchingCategories] = useState(false);
-  const { toast } = useToast();
+  const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
+  const [availableCategories, setAvailableCategories] = useState<PerformanceCategory[]>(DEFAULT_CATEGORIES);
 
-  // Fetch categories from database, fallback to defaults if table doesn't exist
   useEffect(() => {
+    // Attempt to fetch categories from DB
     const fetchCategories = async () => {
-      setIsFetchingCategories(true);
       try {
         const { data, error } = await supabase
           .from("performance_categories")
           .select("*")
           .order("name", { ascending: true });
-          
+        
         if (error) {
-          // Check if this is the "table doesn't exist" error
-          if (error.code === '42P01') {
-            console.error("Error fetching performance categories:", error);
-            // Use default categories
-            setAvailableCategories(DEFAULT_PERFORMANCE_CATEGORIES);
-          } else {
-            throw error;
+          console.error("Error fetching performance categories:", error);
+          // If table doesn't exist, use defaults
+          if (error.code === "42P01") {
+            setAvailableCategories(DEFAULT_CATEGORIES);
           }
-        } else if (data && data.length > 0) {
-          // If we have categories from the database, use those
-          setAvailableCategories(data.map(cat => cat.name));
-        } else {
-          // Fallback to defaults
-          setAvailableCategories(DEFAULT_PERFORMANCE_CATEGORIES);
+          return;
         }
-      } catch (err) {
-        console.error("Exception fetching performance categories:", err);
-        // Fallback to defaults
-        setAvailableCategories(DEFAULT_PERFORMANCE_CATEGORIES);
-      } finally {
-        setIsFetchingCategories(false);
+        
+        if (data && data.length > 0) {
+          setAvailableCategories(data);
+        } else {
+          setAvailableCategories(DEFAULT_CATEGORIES);
+        }
+      } catch (error) {
+        console.error("Exception fetching performance categories:", error);
+        setAvailableCategories(DEFAULT_CATEGORIES);
       }
     };
     
     fetchCategories();
   }, []);
 
-  // Initialize performance categories for a new period
+  // Initialize performance category based on last period
   const initializePerformanceCategory = (
     newPeriodId: string,
     teamId: string,
     lastPeriodId: string | null,
-    existingCategories: PerformanceCategories
+    existingCategories: Record<string, string>
   ) => {
-    // Get the performance category from the last period if available
-    let performanceCategory = availableCategories[0] || "MESSI"; // Default to first category or MESSI
+    const lastPeriodKey = lastPeriodId ? `${lastPeriodId}-${teamId}` : null;
+    const lastCategory = lastPeriodKey && existingCategories[lastPeriodKey] 
+      ? existingCategories[lastPeriodKey] 
+      : "MESSI";
     
-    if (lastPeriodId && existingCategories[`${lastPeriodId}-${teamId}`]) {
-      performanceCategory = existingCategories[`${lastPeriodId}-${teamId}`];
-    }
-    
-    // Update state
     setPerformanceCategories(prev => ({
       ...prev,
-      [`${newPeriodId}-${teamId}`]: performanceCategory
+      [`${newPeriodId}-${teamId}`]: lastCategory
     }));
-    
-    return performanceCategory;
   };
 
-  // Clean up performance category for deleted period
+  // Clean up category for deleted period
   const cleanupPerformanceCategory = (teamId: string, periodId: string) => {
     setPerformanceCategories(prev => {
       const newCategories = { ...prev };
@@ -83,21 +79,11 @@ export const usePerformanceCategories = () => {
     });
   };
 
-  // Set explicit category for a period-team combination
-  const setPerformanceCategory = (periodId: string, teamId: string, category: string) => {
-    setPerformanceCategories(prev => ({
-      ...prev,
-      [`${periodId}-${teamId}`]: category
-    }));
-  };
-
   return {
     performanceCategories,
     setPerformanceCategories,
-    initializePerformanceCategory,
-    cleanupPerformanceCategory,
     availableCategories,
-    setPerformanceCategory,
-    isFetchingCategories
+    initializePerformanceCategory,
+    cleanupPerformanceCategory
   };
 };
