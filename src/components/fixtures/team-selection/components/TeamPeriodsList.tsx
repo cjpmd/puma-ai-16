@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { TeamHeaderControls } from "../../TeamHeaderControls";
 import TeamPeriodCard from "../../TeamPeriodCard";
 import { TeamSelections, AllSelections, PeriodsPerTeam, PerformanceCategories, TeamCaptains } from "../types";
+import { PlayerSelection } from "@/components/formation/types";
 
 interface TeamPeriodsListProps {
   fixture: any;
@@ -84,19 +85,23 @@ export const TeamPeriodsList = ({
               {teamPeriods.map((period, index) => (
                 <TeamPeriodCard
                   key={`${period.id}-${teamId}-${performanceCategories[`${period.id}-${teamId}`] || 'MESSI'}`}
-                  periodId={period.id}
-                  periodNumber={index + 1}
                   teamId={teamId}
-                  format={fixture.format}
                   teamName={fixture.team_name}
-                  onSelectionChange={onTeamSelectionChange}
-                  selectedPlayers={selectedPlayers}
-                  availablePlayers={availablePlayers}
-                  initialSelections={selections[period.id]?.[teamId]}
-                  performanceCategory={performanceCategories[`${period.id}-${teamId}`]}
-                  onDeletePeriod={onDeletePeriod}
+                  periodNumber={index + 1}
                   duration={period.duration}
-                  onDurationChange={(duration) => onDurationChange(teamId, period.id, duration)}
+                  format={fixture.format}
+                  availablePlayers={availablePlayers}
+                  selectedPlayers={selectedPlayers}
+                  performanceCategory={performanceCategories[`${period.id}-${teamId}`] || "MESSI"}
+                  onPerformanceCategoryChange={(value) => 
+                    onPerformanceCategoryChange(`${period.id}-${teamId}`, value)
+                  }
+                  onSelectionChange={(periodNumber, selections) => 
+                    onTeamSelectionChange(period.id, teamId, selections as unknown as TeamSelections)
+                  }
+                  initialSelections={selections[period.id]?.[teamId]}
+                  formationTemplate={"All"}
+                  onTemplateChange={() => {}}
                 />
               ))}
             </div>

@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TeamHeaderControls } from "../../TeamHeaderControls";
 import { SquadSelectionCard } from "./SquadSelectionCard";
 import { TeamPreviewCard } from "./TeamPreviewCard";
+import { PerformanceCategory } from "@/types/player";
 
 interface TeamTabContentProps {
   teamId: string;
@@ -51,7 +53,7 @@ export const TeamTabContent = ({
         availablePlayers={availablePlayers}
         onCaptainChange={(teamId, playerId) => handleCaptainChange(teamId, playerId)}
         performanceCategory={performanceCategories[`${teamId}-${periods[0]?.id}`] || "MESSI"}
-        onPerformanceCategoryChange={(value) => {
+        onPerformanceCategoryChange={(value: PerformanceCategory) => {
           if (periods[0]?.id) {
             handlePerformanceCategoryChange(teamId, periods[0].id, value);
           }
