@@ -38,6 +38,11 @@ export const FormationGrid: React.FC<FormationGridProps> = ({
       ref={formationRef}
       className="relative w-full h-[400px] bg-green-600 rounded-lg p-4"
     >
+      {/* Helper text */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white/80 px-3 py-1 rounded-md text-sm z-10">
+        Drag player to a position
+      </div>
+      
       {/* Field markings */}
       <div className="absolute inset-0 rounded-lg">
         {/* Pitch outline */}
@@ -45,7 +50,7 @@ export const FormationGrid: React.FC<FormationGridProps> = ({
         
         {/* Center circle */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-24 h-24 border-2 border-white/70 rounded-full"></div>
+          <div className="w-32 h-32 border-2 border-white/70 rounded-full"></div>
           <div className="absolute w-2 h-2 bg-white/70 rounded-full"></div>
         </div>
         
@@ -53,16 +58,12 @@ export const FormationGrid: React.FC<FormationGridProps> = ({
         <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/70 -translate-y-1/2"></div>
         
         {/* Penalty areas */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-16 border-b-2 border-l-2 border-r-2 border-white/70"></div>
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-16 border-t-2 border-l-2 border-r-2 border-white/70"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-24 border-b-2 border-l-2 border-r-2 border-white/70"></div>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-24 border-t-2 border-l-2 border-r-2 border-white/70"></div>
         
         {/* Goal areas */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 border-b-2 border-l-2 border-r-2 border-white/70"></div>
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-6 border-t-2 border-l-2 border-r-2 border-white/70"></div>
-        
-        {/* Penalty spots */}
-        <div className="absolute top-12 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-white/70 rounded-full"></div>
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-white/70 rounded-full"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-10 border-b-2 border-l-2 border-r-2 border-white/70"></div>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-10 border-t-2 border-l-2 border-r-2 border-white/70"></div>
       </div>
       
       {/* Position slots */}

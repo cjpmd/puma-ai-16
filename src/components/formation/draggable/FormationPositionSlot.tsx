@@ -38,14 +38,6 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
       e.dataTransfer.setData('playerId', player.id);
       e.dataTransfer.setData('fromSlotId', slotId);
       e.dataTransfer.effectAllowed = 'move';
-      
-      // Set a custom drag image
-      const dragImage = document.createElement('div');
-      dragImage.className = 'bg-blue-500 text-white rounded-full p-2 text-xs font-bold';
-      dragImage.textContent = player.squad_number?.toString() || player.name.charAt(0);
-      document.body.appendChild(dragImage);
-      e.dataTransfer.setDragImage(dragImage, 15, 15);
-      setTimeout(() => document.body.removeChild(dragImage), 0);
     }
   };
 
@@ -64,20 +56,15 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
       {selection && player ? (
         <div className="relative group">
           <div
-            className="relative flex items-center justify-center w-14 h-14 bg-white/90 rounded-full cursor-move hover:bg-white"
+            className="relative flex flex-col items-center justify-center w-14 h-14 bg-white rounded-full cursor-move shadow-md"
             draggable={true}
             onDragStart={handleDragStart}
           >
-            <div className="flex flex-col items-center">
-              <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full text-[10px] font-bold">
-                {player.squad_number || player.name.charAt(0)}
-              </div>
-              <div className="text-[8px] mt-0.5 max-w-12 truncate font-medium">
-                {player.name.split(' ')[0]}
-                {selection.isSubstitution && (
-                  <span className="ml-0.5 text-orange-500">↑</span>
-                )}
-              </div>
+            <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full font-bold">
+              {player.squad_number || player.name.charAt(0)}
+            </div>
+            <div className="text-[10px] mt-1 text-center font-medium">
+              {player.name.split(' ')[0]}
             </div>
             
             {/* Remove player button */}
@@ -96,8 +83,8 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
           {renderSubstitutionIndicator && renderSubstitutionIndicator(position)}
         </div>
       ) : (
-        <div className="flex items-center justify-center w-14 h-14 bg-gray-200 bg-opacity-70 rounded-full cursor-pointer hover:bg-gray-300">
-          <span className="text-[10px] font-medium">{position}</span>
+        <div className="flex items-center justify-center w-14 h-14 bg-gray-100 bg-opacity-70 rounded-full cursor-pointer hover:bg-white">
+          <span className="text-xs font-medium">{position}</span>
         </div>
       )}
     </div>
