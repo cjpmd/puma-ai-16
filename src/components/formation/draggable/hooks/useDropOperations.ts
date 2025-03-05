@@ -37,7 +37,7 @@ export const useDropOperations = ({
     
     // Check if the dropped player is already assigned to a position
     Object.entries(updatedSelections).forEach(([existingSlotId, existingSelection]) => {
-      if (existingSelection.playerId === playerId) {
+      if (existingSelection.playerId === playerId && existingSlotId !== fromSlotId) {
         delete updatedSelections[existingSlotId];
       }
     });

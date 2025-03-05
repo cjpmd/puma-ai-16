@@ -54,7 +54,7 @@ export const useSubstitutionManager = ({
     let existingSlotId = '';
     
     Object.entries(selections).forEach(([slotId, selection]) => {
-      if (selection.playerId === playerId) {
+      if (selection.playerId === playerId && slotId !== fromSlotId) {
         isAlreadyAssigned = true;
         existingSlotId = slotId;
       }

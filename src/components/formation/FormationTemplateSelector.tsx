@@ -25,12 +25,12 @@ export const FormationTemplateSelector: React.FC<FormationTemplateSelectorProps>
   }
 
   return (
-    <div className="flex space-x-2 mb-4">
+    <div className="flex space-x-2 mb-4 overflow-x-auto pb-2">
       {Object.keys(templates).map(template => (
         <button
           key={template}
           onClick={() => onTemplateChange(template)}
-          className={`py-2 px-4 rounded-md border ${
+          className={`py-2 px-4 rounded-md border whitespace-nowrap ${
             selectedTemplate === template 
               ? 'bg-green-600 text-white border-green-700'
               : 'bg-gray-100 hover:bg-gray-200 border-gray-300'

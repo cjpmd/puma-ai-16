@@ -44,12 +44,12 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     selections,
     formationRef,
     draggingPlayer,
-    handleDrop: originalHandleDrop,
+    handleDrop,
     handlePlayerSelect,
     handleRemovePlayer,
     handleDragStart,
     handleDragEnd,
-    handleSubstituteDrop: originalHandleSubstituteDrop,
+    handleSubstituteDrop,
     getPlayer,
     getAvailableSquadPlayers
   } = useDraggableFormation({
@@ -59,15 +59,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     squadPlayers,
     performanceCategory
   });
-
-  // Wrapper functions to match the expected signatures
-  const handleDrop = (slotId: string, position: string, fromSlotId?: string) => {
-    originalHandleDrop(slotId, position, fromSlotId);
-  };
-
-  const handleSubstituteDrop = (playerId: string, fromSlotId?: string) => {
-    originalHandleSubstituteDrop(playerId, fromSlotId);
-  };
 
   // Update template when format changes
   useEffect(() => {
@@ -98,23 +89,21 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         onTemplateChange={handleTemplateChange}
       />
       
-      <Card className="bg-white shadow-sm">
-        <CardContent className="pt-6">
-          <FormationGrid 
-            format={selectedFormat}
-            formationRef={formationRef}
-            selections={selections}
-            selectedPlayerId={selectedPlayerId}
-            handleDrop={handleDrop}
-            handleRemovePlayer={handleRemovePlayer}
-            getPlayer={getPlayer}
-            handleDragStart={handleDragStart}
-            handleDragEnd={handleDragEnd}
-            renderSubstitutionIndicator={renderSubstitutionIndicator}
-            formationTemplate={selectedTemplate}
-          />
-        </CardContent>
-      </Card>
+      <div className="relative">
+        <FormationGrid 
+          format={selectedFormat}
+          formationRef={formationRef}
+          selections={selections}
+          selectedPlayerId={selectedPlayerId}
+          handleDrop={handleDrop}
+          handleRemovePlayer={handleRemovePlayer}
+          getPlayer={getPlayer}
+          handleDragStart={handleDragStart}
+          handleDragEnd={handleDragEnd}
+          renderSubstitutionIndicator={renderSubstitutionIndicator}
+          formationTemplate={selectedTemplate}
+        />
+      </div>
       
       <SubstitutesSection 
         selections={selections}
