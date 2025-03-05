@@ -29,7 +29,8 @@ export const useProcessSelections = () => {
           if (selection && typeof selection === 'object' && 'playerId' in selection) {
             const { playerId, position } = selection;
             
-            if (playerId && playerId !== "unassigned") {
+            // Make sure playerId exists and is not "unassigned" before processing
+            if (playerId && typeof playerId === 'string' && playerId !== "unassigned") {
               // Extract substitution status from slot ID or explicit flag
               const isSubstitution = typeof selection === 'object' && 
                 ('isSubstitution' in selection 
@@ -42,7 +43,7 @@ export const useProcessSelections = () => {
                 position: position || slotId,
                 performance_category: 'performanceCategory' in selection ? selection.performanceCategory : "MESSI",
                 team_number: parseInt(teamId),
-                is_captain: teamCaptains[teamId] === playerId,
+                is_captain: typeof teamCaptains[teamId] === 'string' && teamCaptains[teamId] === playerId,
                 period_id: periodId,
                 duration: period.duration || 45,
                 is_substitution: isSubstitution
