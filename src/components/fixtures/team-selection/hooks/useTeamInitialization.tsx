@@ -43,6 +43,4 @@ export const useTeamInitialization = () => {
     });
     
   }, [fixture, setTeams, setActiveTeamId, initializeTeamPeriods, handleAddPeriod, periodsPerTeam]);
-  
-  return null;
 };

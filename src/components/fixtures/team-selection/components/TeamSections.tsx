@@ -1,10 +1,10 @@
+
 import { Player } from "@/types/player";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTeamSelection } from "../context/TeamSelectionContext";
 import { usePeriods } from "../hooks/usePeriods";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PeriodDurationInput } from "./PeriodDurationInput";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,6 +13,7 @@ import { useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FormationView } from "@/components/fixtures/FormationView";
 
 interface TeamSectionsProps {
   availablePlayers: Player[];
@@ -25,7 +26,8 @@ export const TeamSections = ({ availablePlayers }: TeamSectionsProps) => {
     handleSquadSelection, 
     handleCaptainChange,
     teamCaptains,
-    handleFormationChange
+    handleFormationChange,
+    selections
   } = useTeamSelection();
   
   const { 
@@ -36,6 +38,7 @@ export const TeamSections = ({ availablePlayers }: TeamSectionsProps) => {
   } = usePeriods();
   
   const [selectedFormation, setSelectedFormation] = useState("4-4-2");
+  const [activePeriodId, setActivePeriodId] = useState<string | null>(null);
   
   // Get the current team's squad players
   const currentTeam = teams[activeTeamId] || { name: "", squadPlayers: [] };
@@ -43,6 +46,13 @@ export const TeamSections = ({ availablePlayers }: TeamSectionsProps) => {
   
   // Get periods for the active team
   const activePeriods = periodsPerTeam[activeTeamId] || [];
+
+  // Set the first period as active if none is selected
+  useEffect(() => {
+    if (activePeriods.length > 0 && !activePeriodId) {
+      setActivePeriodId(activePeriods[0].id);
+    }
+  }, [activePeriods, activePeriodId]);
 
   // Handler for squad player selection
   const handlePlayerToggle = (playerId: string) => {
@@ -56,6 +66,42 @@ export const TeamSections = ({ availablePlayers }: TeamSectionsProps) => {
   // Handler for captain selection
   const onCaptainChange = (playerId: string) => {
     handleCaptainChange(activeTeamId, playerId);
+  };
+
+  // Handler for formation selection
+  const onFormationChange = (formation: string, periodId: string) => {
+    setSelectedFormation(formation);
+    
+    // Create default formations based on selection
+    const formationPlayers = {};
+    
+    // Add basic positions based on formation
+    const formationPositions = {
+      "4-4-2": ["GK", "LB", "CB", "CB", "RB", "LM", "CM", "CM", "RM", "ST", "ST"],
+      "4-3-3": ["GK", "LB", "CB", "CB", "RB", "DM", "CM", "CM", "LW", "ST", "RW"],
+      "3-5-2": ["GK", "CB", "CB", "CB", "LWB", "CM", "CM", "CM", "RWB", "ST", "ST"],
+      "5-3-2": ["GK", "LWB", "CB", "CB", "CB", "RWB", "CM", "CM", "CM", "ST", "ST"],
+      "4-2-3-1": ["GK", "LB", "CB", "CB", "RB", "CDM", "CDM", "CAM", "LAM", "RAM", "ST"]
+    };
+    
+    // Apply formation
+    if (formationPositions[formation]) {
+      formationPositions[formation].forEach((pos, index) => {
+        formationPlayers[`${pos.toLowerCase()}-${index+1}`] = { 
+          playerId: "unassigned", 
+          position: pos 
+        };
+      });
+      
+      // Add to team selections for this period (first half)
+      handleFormationChange(activeTeamId, "1", periodId, formationPlayers);
+    }
+  };
+  
+  // Format player name for display
+  const getPlayerName = (playerId: string) => {
+    const player = availablePlayers.find(p => p.id === playerId);
+    return player ? player.name : "Unknown Player";
   };
   
   return (
@@ -144,12 +190,12 @@ export const TeamSections = ({ availablePlayers }: TeamSectionsProps) => {
                   
                   {/* Formation Selection */}
                   <div className="mb-4">
-                    <Label htmlFor="formation">Formation</Label>
+                    <Label htmlFor={`formation-${period.id}`}>Formation</Label>
                     <Select
                       value={selectedFormation}
-                      onValueChange={setSelectedFormation}
+                      onValueChange={(value) => onFormationChange(value, period.id)}
                     >
-                      <SelectTrigger id="formation">
+                      <SelectTrigger id={`formation-${period.id}`}>
                         <SelectValue placeholder="Select formation" />
                       </SelectTrigger>
                       <SelectContent>
@@ -162,41 +208,91 @@ export const TeamSections = ({ availablePlayers }: TeamSectionsProps) => {
                     </Select>
                   </div>
                   
-                  {/* Basic formation display */}
+                  {/* Display formation */}
                   <div className="bg-green-900 rounded-md p-4 min-h-[300px] relative">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <p className="text-white text-lg font-semibold">
-                        {selectedFormation} Formation
-                      </p>
-                    </div>
-                    <div className="grid grid-rows-4 h-full relative">
-                      {/* This is a placeholder for the actual formation slots */}
-                      <div className="flex justify-center items-end">
-                        <div className="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center m-1">GK</div>
+                    {selections[activeTeamId] && 
+                     selections[activeTeamId]["1"] && 
+                     selections[activeTeamId]["1"][period.id] ? (
+                      <div className="grid grid-rows-4 h-full relative">
+                        {/* Show player positions based on formation */}
+                        <div className="flex justify-center items-center">
+                          {Object.entries(selections[activeTeamId]["1"][period.id])
+                            .filter(([key, value]) => value.position === "GK")
+                            .map(([key, value], index) => (
+                              <div key={key} className="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center m-1">
+                                {value.playerId !== "unassigned" 
+                                  ? getPlayerName(value.playerId).substring(0, 2) 
+                                  : "GK"}
+                              </div>
+                            ))}
+                        </div>
+                        
+                        {/* Defenders */}
+                        <div className="flex justify-around items-center">
+                          {Object.entries(selections[activeTeamId]["1"][period.id])
+                            .filter(([key, value]) => 
+                              value.position === "LB" || 
+                              value.position === "CB" || 
+                              value.position === "RB" ||
+                              value.position === "LWB" ||
+                              value.position === "RWB")
+                            .map(([key, value], index) => (
+                              <div key={key} className="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center m-1">
+                                {value.playerId !== "unassigned" 
+                                  ? getPlayerName(value.playerId).substring(0, 2) 
+                                  : value.position}
+                              </div>
+                            ))}
+                        </div>
+                        
+                        {/* Midfielders */}
+                        <div className="flex justify-around items-center">
+                          {Object.entries(selections[activeTeamId]["1"][period.id])
+                            .filter(([key, value]) => 
+                              value.position === "CM" || 
+                              value.position === "CDM" || 
+                              value.position === "CAM" ||
+                              value.position === "LM" ||
+                              value.position === "RM" ||
+                              value.position === "DM")
+                            .map(([key, value], index) => (
+                              <div key={key} className="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center m-1">
+                                {value.playerId !== "unassigned" 
+                                  ? getPlayerName(value.playerId).substring(0, 2) 
+                                  : value.position}
+                              </div>
+                            ))}
+                        </div>
+                        
+                        {/* Forwards */}
+                        <div className="flex justify-around items-start">
+                          {Object.entries(selections[activeTeamId]["1"][period.id])
+                            .filter(([key, value]) => 
+                              value.position === "ST" || 
+                              value.position === "LW" || 
+                              value.position === "RW" ||
+                              value.position === "CF" ||
+                              value.position === "LAM" ||
+                              value.position === "RAM")
+                            .map(([key, value], index) => (
+                              <div key={key} className="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center m-1">
+                                {value.playerId !== "unassigned" 
+                                  ? getPlayerName(value.playerId).substring(0, 2) 
+                                  : value.position}
+                              </div>
+                            ))}
+                        </div>
                       </div>
-                      
-                      {selectedFormation === "4-4-2" && (
-                        <>
-                          <div className="flex justify-around items-center">
-                            {[1, 2, 3, 4].map(i => (
-                              <div key={i} className="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center m-1">D{i}</div>
-                            ))}
-                          </div>
-                          <div className="flex justify-around items-center">
-                            {[1, 2, 3, 4].map(i => (
-                              <div key={i} className="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center m-1">M{i}</div>
-                            ))}
-                          </div>
-                          <div className="flex justify-around items-start">
-                            {[1, 2].map(i => (
-                              <div key={i} className="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center m-1">F{i}</div>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                      
-                      {/* Other formation layouts would go here */}
-                    </div>
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <p className="text-white text-lg font-semibold">
+                          {selectedFormation} Formation
+                        </p>
+                        <p className="text-white text-sm mt-2">
+                          Select a formation to start team setup
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
