@@ -2,7 +2,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { TeamHeaderControls } from "../../TeamHeaderControls";
-import { TeamPeriodCard } from "../../TeamPeriodCard";
+import TeamPeriodCard from "../../TeamPeriodCard";
 import { TeamSelections, AllSelections, PeriodsPerTeam, PerformanceCategories, TeamCaptains } from "../types";
 
 interface TeamPeriodsListProps {
