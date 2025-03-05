@@ -28,12 +28,13 @@ interface TeamSelectionCardProps {
   viewMode?: "formation" | "team-sheet";
   periodNumber?: number;
   duration?: number;
+  onPeriodChange?: (periodNumber: number) => void;
   onSquadSelectionChange?: (playerIds: string[]) => void;
   squadSelection?: string[];
   useDragAndDrop?: boolean;
   onToggleDragAndDrop?: (enabled: boolean) => void;
-  onPeriodChange?: (periodNumber: number) => void;
   onDurationChange?: (duration: number) => void;
+  periodId?: number; // Add support for custom period IDs
 }
 
 export const TeamSelectionCard = ({
@@ -49,12 +50,13 @@ export const TeamSelectionCard = ({
   viewMode = "team-sheet",
   periodNumber = 1,
   duration = 45,
+  onPeriodChange,
+  onDurationChange,
   onSquadSelectionChange,
   squadSelection = [],
   useDragAndDrop = true,
   onToggleDragAndDrop,
-  onPeriodChange,
-  onDurationChange
+  periodId
 }: TeamSelectionCardProps) => {
   const [localPeriod, setLocalPeriod] = useState(periodNumber);
   const [localDuration, setLocalDuration] = useState(duration);
@@ -93,10 +95,20 @@ export const TeamSelectionCard = ({
     }
   };
 
+  // Get a display name for the period
+  const getPeriodDisplayName = () => {
+    if (periodId) {
+      if (periodId === 100) return "First Half";
+      if (periodId === 200) return "Second Half";
+      return `Period ${periodId}`;
+    }
+    return periodNumber === 1 ? 'First Half' : 'Second Half';
+  };
+
   return (
     <Card key={team.id} className="mb-6">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{viewMode === "formation" ? team.name : `${team.name} - ${periodNumber === 1 ? 'First Half' : 'Second Half'}`}</CardTitle>
+        <CardTitle>{viewMode === "formation" ? team.name : `${team.name} - ${getPeriodDisplayName()}`}</CardTitle>
         <div className="flex items-center gap-4">
           {onToggleDragAndDrop && (
             <div className="flex items-center space-x-2">
@@ -130,6 +142,7 @@ export const TeamSelectionCard = ({
             periodDuration={localDuration}
             onPeriodChange={handlePeriodChange}
             onDurationChange={handleDurationChange}
+            periodId={periodId}
           />
         ) : (
           <FormationSelector

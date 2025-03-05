@@ -30,6 +30,7 @@ export interface DraggableFormationProps {
   periodDuration?: number;
   onPeriodChange?: (periodNumber: number) => void;
   onDurationChange?: (duration: number) => void;
+  periodId?: number; // Add support for custom period IDs
 }
 
 export const DraggableFormation: React.FC<DraggableFormationProps> = ({
@@ -46,7 +47,8 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   periodNumber = 1,
   periodDuration = 45,
   onPeriodChange,
-  onDurationChange
+  onDurationChange,
+  periodId
 }) => {
   const [localPeriod, setLocalPeriod] = useState(periodNumber);
   const [localDuration, setLocalDuration] = useState(periodDuration);
@@ -109,8 +111,17 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     }
   };
 
+  const periodDisplayName = () => {
+    if (periodId) {
+      if (periodId === 100) return "First Half";
+      if (periodId === 200) return "Second Half";
+      return `Period ${periodId}`;
+    }
+    return periodNumber === 1 ? "First Half" : "Second Half";
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" id={`team-selection-${periodId || periodNumber}`}>
       {/* Top controls - Squad mode toggle and Period/Duration selector */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
@@ -134,33 +145,23 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
           </Button>
           
           {!squadMode && (
-            <>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="period-select">Period:</Label>
-                <Select value={String(localPeriod)} onValueChange={handlePeriodChange}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Select period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">First Half</SelectItem>
-                    <SelectItem value="2">Second Half</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Label htmlFor="duration-input">Duration (min):</Label>
-                <Input
-                  id="duration-input"
-                  type="number"
-                  min="1"
-                  max="90"
-                  className="w-[80px]"
-                  value={localDuration}
-                  onChange={(e) => handleDurationChange(parseInt(e.target.value) || 45)}
-                />
-              </div>
-            </>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{periodDisplayName()}</span>
+              {onDurationChange && (
+                <>
+                  <Label htmlFor="duration-input" className="ml-4">Duration (min):</Label>
+                  <Input
+                    id="duration-input"
+                    type="number"
+                    min="1"
+                    max="90"
+                    className="w-[80px]"
+                    value={localDuration}
+                    onChange={(e) => handleDurationChange(parseInt(e.target.value) || 45)}
+                  />
+                </>
+              )}
+            </div>
           )}
         </div>
         
@@ -192,6 +193,8 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
             squadPlayers={localSquadPlayers}
             onAddToSquad={addPlayerToSquad}
             squadMode={true}
+            handleDragStart={handleDragStart}
+            handleDragEnd={handleDragEnd}
           />
           
           {/* Squad Players List */}
@@ -202,6 +205,8 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
             selectedPlayerId={selectedPlayerId}
             onPlayerClick={handlePlayerClick}
             squadMode={true}
+            handleDragStart={handleDragStart}
+            handleDragEnd={handleDragEnd}
           />
         </div>
       ) : (
@@ -230,6 +235,8 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
               selectedPlayerId={selectedPlayerId}
               onPlayerClick={handlePlayerClick}
               squadMode={false}
+              handleDragStart={handleDragStart}
+              handleDragEnd={handleDragEnd}
             />
           </div>
         </div>
