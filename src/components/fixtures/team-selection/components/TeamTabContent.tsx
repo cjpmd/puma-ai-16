@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TeamHeaderControls } from "../../TeamHeaderControls";
@@ -69,7 +70,7 @@ export const TeamTabContent = ({
       {periods.map((period, index) => (
         <TeamPreviewCard
           key={`${period.id}-${performanceCategories[`${teamId}-${period.id}`] || 'MESSI'}`}
-          period={period}
+          periodId={period.id}
           index={index}
           teamId={teamId}
           fixture={fixture}
