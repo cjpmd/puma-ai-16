@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { PeriodsPerTeam, AllSelections } from "../types";
+import { Period, PeriodsPerTeam } from "../types";
 
 export const usePeriods = () => {
   const [periodsPerTeam, setPeriodsPerTeam] = useState<PeriodsPerTeam>({});
@@ -9,7 +9,9 @@ export const usePeriods = () => {
   const handleDeletePeriod = (teamId: string, periodId: string) => {
     setPeriodsPerTeam(prev => {
       const newPeriodsPerTeam = { ...prev };
-      newPeriodsPerTeam[teamId] = prev[teamId].filter(p => p.id !== periodId);
+      if (newPeriodsPerTeam[teamId]) {
+        newPeriodsPerTeam[teamId] = newPeriodsPerTeam[teamId].filter(p => p.id !== periodId);
+      }
       return newPeriodsPerTeam;
     });
     
@@ -27,14 +29,18 @@ export const usePeriods = () => {
       [teamId]: [...(prev[teamId] || []), { id: newPeriodId, duration: 20 }]
     }));
     
-    return { teamId, newPeriodId, lastPeriodId: currentPeriods.length > 0 ? currentPeriods[currentPeriods.length - 1].id : null };
+    return { 
+      teamId, 
+      newPeriodId, 
+      lastPeriodId: currentPeriods.length > 0 ? currentPeriods[currentPeriods.length - 1].id : null 
+    };
   };
 
   // Handler for duration changes
   const handleDurationChange = (teamId: string, periodId: string, duration: number) => {
     setPeriodsPerTeam(prev => ({
       ...prev,
-      [teamId]: prev[teamId].map(period => 
+      [teamId]: (prev[teamId] || []).map(period => 
         period.id === periodId ? { ...period, duration } : period
       )
     }));

@@ -2,18 +2,19 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { PerformanceCategory } from "@/types/player";
 
 export const useTeamSelections = (
-  onTeamSelectionsChange?: (selections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>) => void
+  onTeamSelectionsChange?: (selections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>) => void
 ) => {
   const { toast } = useToast();
-  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
+  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>>({});
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
-  const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
+  const [performanceCategories, setPerformanceCategories] = useState<Record<string, PerformanceCategory>>({});
   const [teamFormationTemplates, setTeamFormationTemplates] = useState<Record<string, string>>({});
-  const [periodSelections, setPeriodSelections] = useState<Record<string, Record<number, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>>({});
+  const [periodSelections, setPeriodSelections] = useState<Record<string, Record<number, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>>>({});
 
-  const handleTeamSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
+  const handleTeamSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
     const newSelections = {
       ...teamSelections,
       [teamId]: selections
@@ -34,7 +35,7 @@ export const useTeamSelections = (
     setSelectedPlayers(selectedPlayerIds);
   };
 
-  const handlePeriodSelectionChange = (teamId: string, periodNumber: number, selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => {
+  const handlePeriodSelectionChange = (teamId: string, periodNumber: number, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
     setPeriodSelections(prev => ({
       ...prev,
       [teamId]: {
@@ -44,7 +45,7 @@ export const useTeamSelections = (
     }));
   };
 
-  const handlePerformanceCategoryChange = (teamId: string, category: string) => {
+  const handlePerformanceCategoryChange = (teamId: string, category: PerformanceCategory) => {
     setPerformanceCategories(prev => ({
       ...prev,
       [teamId]: category
@@ -86,7 +87,7 @@ export const useTeamSelections = (
           performanceCategory: selection.performanceCategory || performanceCategories[teamId] || 'MESSI'
         }));
         return acc;
-      }, {} as Record<string, Array<{ playerId: string; position: string; is_substitute: boolean; performanceCategory?: string }>>);
+      }, {} as Record<string, Array<{ playerId: string; position: string; is_substitute: boolean; performanceCategory?: PerformanceCategory }>>);
 
       // Example API call - replace with your actual implementation
       console.log("Saving team selections:", formattedSelections);

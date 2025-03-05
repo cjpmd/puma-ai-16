@@ -7,6 +7,7 @@ import { useTeamSelections } from "./hooks/useTeamSelections";
 import { Fixture } from "@/types/fixture";
 import { FormationFormat } from "@/components/formation/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PerformanceCategory } from "@/types/player";
 
 interface TeamSelectionManagerProps {
   teams?: Array<{
@@ -16,7 +17,7 @@ interface TeamSelectionManagerProps {
   }>;
   format?: FormationFormat;
   fixture?: Fixture | null;
-  onTeamSelectionsChange?: (selections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>) => void;
+  onTeamSelectionsChange?: (selections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>) => void;
   onSuccess?: () => void;
 }
 

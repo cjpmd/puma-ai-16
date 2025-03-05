@@ -16,9 +16,9 @@ interface TeamSelectionCardProps {
   format: FormationFormat;
   players: any[];
   selectedPlayers: Set<string>;
-  performanceCategory: string;
-  onPerformanceCategoryChange: (value: string) => void;
-  onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: string }>) => void;
+  performanceCategory: PerformanceCategory;
+  onPerformanceCategoryChange: (value: PerformanceCategory) => void;
+  onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => void;
   formationTemplate: string;
   onTemplateChange: (template: string) => void;
   viewMode?: "formation" | "team-sheet";
@@ -78,13 +78,13 @@ export const TeamSelectionCard = ({
 };
 
 interface PerformanceCategorySelectorProps {
-  value: string;
-  onChange: (value: string) => void;
+  value: PerformanceCategory;
+  onChange: (value: PerformanceCategory) => void;
 }
 
 const PerformanceCategorySelector = ({ value, onChange }: PerformanceCategorySelectorProps) => {
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value} onValueChange={onChange as (value: string) => void}>
       <SelectTrigger className="w-[180px]">
         <SelectValue placeholder="Select category" />
       </SelectTrigger>

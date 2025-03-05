@@ -26,12 +26,15 @@ export interface AllSelections {
   };
 }
 
+// Structure for a single period
+export interface Period {
+  id: string;
+  duration: number;
+}
+
 // Structure for tracking periods per team
 export interface PeriodsPerTeam {
-  [teamId: string]: {
-    periods: number;
-    durations: number[];
-  };
+  [teamId: string]: Period[];
 }
 
 // Structure for tracking team captains
