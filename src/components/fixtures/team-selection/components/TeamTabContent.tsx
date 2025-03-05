@@ -16,7 +16,7 @@ interface TeamTabContentProps {
   performanceCategories: Record<string, string>;
   periods: { id: string; teamId: string; duration: number }[];
   handleCaptainChange: (teamId: string, playerId: string) => void;
-  handlePerformanceCategoryChange: (teamId: string, periodId: string, category: string) => void;
+  handlePerformanceCategoryChange: (teamId: string, periodId: string, category: PerformanceCategory) => void;
   handleSquadSelection: (teamId: string, playerIds: string[]) => void;
   handleAddPeriod: (teamId: string) => void;
   handleDeletePeriod: (teamId: string, periodId: string) => void;
@@ -52,7 +52,7 @@ export const TeamTabContent = ({
         teamCaptains={teamCaptains}
         availablePlayers={availablePlayers}
         onCaptainChange={(teamId, playerId) => handleCaptainChange(teamId, playerId)}
-        performanceCategory={performanceCategories[`${teamId}-${periods[0]?.id}`] || "MESSI"}
+        performanceCategory={performanceCategories[`${teamId}-${periods[0]?.id}`] as PerformanceCategory || "MESSI"}
         onPerformanceCategoryChange={handlePerformanceCategoryChange}
         currentPeriodId={periods[0]?.id || ""}
         onAddPeriod={() => handleAddPeriod(teamId)}
@@ -76,7 +76,7 @@ export const TeamTabContent = ({
           availablePlayers={availablePlayers}
           teamSquadPlayers={team.squadPlayers}
           performanceCategories={performanceCategories}
-          onPerformanceCategoryChange={handlePerformanceCategoryChange}
+          onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(teamId, period.id, value as PerformanceCategory)}
           onDurationChange={handleDurationChange}
           onDeletePeriod={handleDeletePeriod}
           handleFormationChange={handleFormationChange}

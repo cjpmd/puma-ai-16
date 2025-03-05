@@ -5,6 +5,7 @@ import { SquadSelectionGrid } from "@/components/formation/SquadSelectionGrid";
 import { HalfPeriodManager } from "./HalfPeriodManager";
 import { TeamHeaderControls } from "../../TeamHeaderControls";
 import { useTeamSelection } from "../context/TeamSelectionContext";
+import { PerformanceCategory } from "@/types/player";
 
 interface NewTeamTabContentProps {
   teamId: string;
@@ -30,7 +31,7 @@ export const NewTeamTabContent = ({
   getPlayerTeams
 }: NewTeamTabContentProps) => {
   const [showOnlySelected, setShowOnlySelected] = useState(false);
-  const [performanceCategories, setPerformanceCategories] = useState({
+  const [performanceCategories, setPerformanceCategories] = useState<Record<string, PerformanceCategory>>({
     'first-half': 'MESSI',
     'second-half': 'MESSI'
   });
@@ -45,7 +46,7 @@ export const NewTeamTabContent = ({
         .flatMap(halfId => 
           Object.entries(selections[teamId][halfId]).map(([periodId, periodSelections]) => {
             const firstSelection = Object.values(periodSelections)[0];
-            return firstSelection?.performanceCategory || 'MESSI';
+            return firstSelection?.performanceCategory as PerformanceCategory || 'MESSI';
           })
         );
       
@@ -54,7 +55,7 @@ export const NewTeamTabContent = ({
         .flatMap(halfId => 
           Object.entries(selections[teamId][halfId]).map(([periodId, periodSelections]) => {
             const firstSelection = Object.values(periodSelections)[0];
-            return firstSelection?.performanceCategory || 'MESSI';
+            return firstSelection?.performanceCategory as PerformanceCategory || 'MESSI';
           })
         );
       
@@ -75,7 +76,7 @@ export const NewTeamTabContent = ({
   }, [selections, teamId]);
 
   // Handle performance category changes
-  const handlePerformanceCategoryChange = (halfId: string, value: string) => {
+  const handlePerformanceCategoryChange = (halfId: string, value: PerformanceCategory) => {
     setPerformanceCategories(prev => ({
       ...prev,
       [halfId]: value
@@ -100,11 +101,12 @@ export const NewTeamTabContent = ({
         availablePlayers={availablePlayers}
         onCaptainChange={onCaptainChange}
         performanceCategory={performanceCategories['first-half']}
-        onPerformanceCategoryChange={(value) => {
+        onPerformanceCategoryChange={(teamId, periodId, value) => {
           handlePerformanceCategoryChange('first-half', value);
           handlePerformanceCategoryChange('second-half', value);
         }}
         onAddPeriod={() => {}} // Not used in new design
+        currentPeriodId="first-half"
       />
       
       <Card>
@@ -130,7 +132,7 @@ export const NewTeamTabContent = ({
         squadPlayers={team.squadPlayers}
         onFormationChange={handleFormationChange}
         performanceCategory={performanceCategories['first-half']}
-        onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange('first-half', value)}
+        onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange('first-half', value as PerformanceCategory)}
         selections={selections[teamId]?.['first-half'] || {}}
       />
       
@@ -142,7 +144,7 @@ export const NewTeamTabContent = ({
         squadPlayers={team.squadPlayers}
         onFormationChange={handleFormationChange}
         performanceCategory={performanceCategories['second-half']}
-        onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange('second-half', value)}
+        onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange('second-half', value as PerformanceCategory)}
         selections={selections[teamId]?.['second-half'] || {}}
       />
     </div>

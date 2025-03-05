@@ -21,7 +21,7 @@ interface TeamHeaderControlsProps {
   availablePlayers: any[];
   onCaptainChange: (teamId: string, playerId: string) => void;
   performanceCategory: PerformanceCategory;
-  onPerformanceCategoryChange: (teamId: string, periodId: string, category: string) => void;
+  onPerformanceCategoryChange: (teamId: string, periodId: string, category: PerformanceCategory) => void;
   onAddPeriod: () => void;
   currentPeriodId?: string;
 }
@@ -69,7 +69,7 @@ export const TeamHeaderControls = ({
         <div className="flex items-center space-x-4">
           <Select
             value={performanceCategory}
-            onValueChange={(value) => onPerformanceCategoryChange(teamId, currentPeriodId, value)}
+            onValueChange={(value) => onPerformanceCategoryChange(teamId, currentPeriodId, value as PerformanceCategory)}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select category" />

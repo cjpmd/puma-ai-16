@@ -5,6 +5,7 @@ import { TeamHeaderControls } from "../../TeamHeaderControls";
 import TeamPeriodCard from "../../TeamPeriodCard";
 import { TeamSelections, AllSelections, PeriodsPerTeam, PerformanceCategories, TeamCaptains } from "../types";
 import { PlayerSelection } from "@/components/formation/types";
+import { PerformanceCategory } from "@/types/player";
 
 interface TeamPeriodsListProps {
   fixture: any;
@@ -21,7 +22,7 @@ interface TeamPeriodsListProps {
   onDeletePeriod: (teamId: string, periodId: string) => void;
   onTeamSelectionChange: (periodId: string, teamId: string, selections: TeamSelections) => void;
   onDurationChange: (teamId: string, periodId: string, duration: number) => void;
-  onPerformanceCategoryChange: (key: string, value: string) => void;
+  onPerformanceCategoryChange: (key: string, value: PerformanceCategory) => void;
 }
 
 export const TeamPeriodsList = ({
@@ -70,15 +71,16 @@ export const TeamPeriodsList = ({
               teamCaptains={teamCaptains}
               availablePlayers={availablePlayers}
               onCaptainChange={onCaptainChange}
-              performanceCategory={performanceCategories[`period-1-${teamId}`] || "MESSI"}
-              onPerformanceCategoryChange={(value) => {
+              performanceCategory={performanceCategories[`period-1-${teamId}`] as PerformanceCategory || "MESSI"}
+              onPerformanceCategoryChange={(teamId, periodId, value) => {
                 const updatedCategories = { ...performanceCategories };
                 teamPeriods.forEach(period => {
-                  updatedCategories[`${period.id}-${teamId}`] = value;
+                  updatedCategories[`${period.id}-${teamId}`] = value as PerformanceCategory;
                 });
-                onPerformanceCategoryChange("batch", value);
+                onPerformanceCategoryChange("batch", value as PerformanceCategory);
               }}
               onAddPeriod={() => onAddPeriod(teamId)}
+              currentPeriodId={"period-1"}
             />
 
             <div className="flex flex-col space-y-6">
@@ -92,9 +94,9 @@ export const TeamPeriodsList = ({
                   format={fixture.format}
                   availablePlayers={availablePlayers}
                   selectedPlayers={selectedPlayers}
-                  performanceCategory={performanceCategories[`${period.id}-${teamId}`] || "MESSI"}
+                  performanceCategory={performanceCategories[`${period.id}-${teamId}`] as PerformanceCategory || "MESSI"}
                   onPerformanceCategoryChange={(value) => 
-                    onPerformanceCategoryChange(`${period.id}-${teamId}`, value)
+                    onPerformanceCategoryChange(`${period.id}-${teamId}`, value as PerformanceCategory)
                   }
                   onSelectionChange={(periodNumber, selections) => 
                     onTeamSelectionChange(period.id, teamId, selections as unknown as TeamSelections)
