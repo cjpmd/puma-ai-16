@@ -1,23 +1,18 @@
 
 import React from "react";
-import { X } from "lucide-react";
 
-export interface FormationPositionSlotProps {
+interface FormationPositionSlotProps {
   slotId: string;
   position: string;
-  selection: { playerId: string; position: string; isSubstitution?: boolean } | undefined;
-  player: any | null;
+  selection?: { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string };
+  player?: any;
   selectedPlayerId: string | null;
   onDrop: (slotId: string, position: string, fromSlotId?: string) => void;
   onRemovePlayer: (slotId: string) => void;
   renderSubstitutionIndicator?: (position: string) => React.ReactNode;
-  dropProps: {
-    className: string;
-    style?: React.CSSProperties;
-    onDragOver: (e: React.DragEvent) => void;
-    onDragLeave: (e: React.DragEvent) => void;
-    onDrop: (e: React.DragEvent) => void;
-  };
+  dropProps?: React.HTMLAttributes<HTMLDivElement>;
+  handleDragStart?: (e: React.DragEvent, playerId: string) => void;
+  handleDragEnd?: () => void;
 }
 
 export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
@@ -29,62 +24,74 @@ export const FormationPositionSlot: React.FC<FormationPositionSlotProps> = ({
   onDrop,
   onRemovePlayer,
   renderSubstitutionIndicator,
-  dropProps
+  dropProps,
+  handleDragStart,
+  handleDragEnd
 }) => {
-  // Make the player slot draggable when player exists
-  const handleDragStart = (e: React.DragEvent) => {
-    if (player) {
-      console.log(`Starting drag for player ${player.id} from slot ${slotId} (${position})`);
-      e.dataTransfer.setData('playerId', player.id);
-      e.dataTransfer.setData('fromSlotId', slotId);
-      e.dataTransfer.effectAllowed = 'move';
+  const hasPlayer = selection && selection.playerId && selection.playerId !== "unassigned";
+  const isSelected = selectedPlayerId === (selection?.playerId || null);
+
+  // Determine what to display in the circle - player initials or position
+  const displayText = hasPlayer && player 
+    ? player.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
+    : position.substring(0, 2);
+
+  // Handle removing a player when clicking on an assigned position
+  const handleClick = () => {
+    if (hasPlayer) {
+      onRemovePlayer(slotId);
+    }
+  };
+
+  // Handle click on an empty position to drop the selected player
+  const handleEmptySlotClick = () => {
+    if (selectedPlayerId) {
+      onDrop(slotId, position);
     }
   };
 
   return (
     <div
       {...dropProps}
-      className={`${dropProps.className} w-16 h-16 flex items-center justify-center z-10 ${
-        !player ? 'hover:cursor-pointer' : ''
-      }`}
-      onClick={() => {
-        if (selectedPlayerId) {
-          onDrop(slotId, position);
-        }
+      data-position={position}
+      data-slot-id={slotId}
+      className={`${dropProps?.className || ''}`}
+      style={{
+        ...dropProps?.style,
       }}
     >
-      {selection && player ? (
-        <div className="relative group">
-          <div
-            className="relative flex flex-col items-center justify-center w-14 h-14 bg-white rounded-full cursor-move shadow-md"
-            draggable={true}
-            onDragStart={handleDragStart}
-          >
-            <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full font-bold">
-              {player.squad_number || player.name.charAt(0)}
+      {hasPlayer ? (
+        // Show player in position
+        <div
+          className={`relative w-12 h-12 rounded-full flex items-center justify-center text-white font-bold cursor-pointer ${
+            isSelected ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+          } ${selection?.isSubstitution ? 'bg-amber-600' : 'bg-blue-600'} hover:bg-opacity-90`}
+          onClick={handleClick}
+          draggable={true}
+          onDragStart={(e) => {
+            e.dataTransfer.setData('playerId', selection?.playerId || '');
+            e.dataTransfer.setData('fromSlotId', slotId);
+            if (handleDragStart) handleDragStart(e, selection?.playerId || '');
+          }}
+          onDragEnd={handleDragEnd}
+        >
+          {displayText}
+          {renderSubstitutionIndicator && selection && renderSubstitutionIndicator(selection.position)}
+          {player?.squad_number && (
+            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-white text-blue-800 text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              {player.squad_number}
             </div>
-            <div className="text-[10px] mt-1 text-center font-medium">
-              {player.name.split(' ')[0]}
-            </div>
-            
-            {/* Remove player button */}
-            <button 
-              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemovePlayer(slotId);
-              }}
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-          
-          {/* Substitution indicator */}
-          {renderSubstitutionIndicator && renderSubstitutionIndicator(position)}
+          )}
         </div>
       ) : (
-        <div className="flex items-center justify-center w-14 h-14 bg-gray-100 bg-opacity-70 rounded-full cursor-pointer hover:bg-white">
-          <span className="text-xs font-medium">{position}</span>
+        // Show empty position
+        <div
+          className={`w-12 h-12 rounded-full border-2 border-dashed border-white/60 flex items-center justify-center text-xs text-white font-medium cursor-pointer hover:bg-white/20 ${
+            selectedPlayerId ? 'bg-white/10' : ''
+          }`}
+          onClick={handleEmptySlotClick}
+        >
+          {position}
         </div>
       )}
     </div>

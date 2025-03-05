@@ -2,50 +2,51 @@
 import React from "react";
 
 interface AvailablePlayersSectionProps {
-  availableSquadPlayers: any[];
-  selectedPlayerId: string | null;
+  availablePlayers: any[];
   handlePlayerSelect: (playerId: string) => void;
-  handleDragStart: (e: React.DragEvent, playerId: string) => void;
-  handleDragEnd: () => void;
+  selectedPlayerId: string | null;
+  onSquadPlayersChange?: (playerIds: string[]) => void;
 }
 
 export const AvailablePlayersSection: React.FC<AvailablePlayersSectionProps> = ({
-  availableSquadPlayers,
-  selectedPlayerId,
+  availablePlayers,
   handlePlayerSelect,
-  handleDragStart,
-  handleDragEnd
+  selectedPlayerId,
+  onSquadPlayersChange
 }) => {
   return (
-    <div className="mt-4">
-      <h3 className="font-bold mb-2">Available Players</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-        {availableSquadPlayers.map(player => (
-          <div
-            key={player.id}
-            className={`
-              flex flex-col items-center p-2 border rounded cursor-pointer
-              ${selectedPlayerId === player.id ? 'bg-blue-100 border-blue-500' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
-            `}
-            draggable
-            onDragStart={(e) => handleDragStart(e, player.id)}
-            onDragEnd={handleDragEnd}
-            onClick={() => handlePlayerSelect(player.id)}
-          >
-            <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center mb-1">
-              {player.squad_number || player.name.charAt(0)}
-            </div>
-            <span className="text-xs font-medium text-center">{player.name}</span>
-            {player.squad_number && (
-              <span className="text-xs text-gray-500">#{player.squad_number}</span>
-            )}
-          </div>
-        ))}
-        
-        {availableSquadPlayers.length === 0 && (
-          <div className="col-span-full text-center text-gray-500 py-4">
+    <div className="mt-6">
+      <h3 className="text-sm font-medium mb-2">Available Players</h3>
+      
+      <div className="flex flex-wrap gap-3 border rounded-lg p-4">
+        {availablePlayers.length === 0 ? (
+          <div className="w-full text-center text-gray-500 py-4">
             No available players. All players are assigned to positions.
           </div>
+        ) : (
+          availablePlayers.map(player => (
+            <div key={player.id} className="relative">
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center font-bold cursor-pointer ${
+                  selectedPlayerId === player.id 
+                    ? 'bg-blue-700 text-white ring-2 ring-blue-400 ring-offset-2' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+                onClick={() => handlePlayerSelect(player.id)}
+              >
+                {player.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
+                
+                {player.squad_number && (
+                  <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-white text-blue-800 text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {player.squad_number}
+                  </div>
+                )}
+              </div>
+              <div className="mt-1 text-center text-xs text-gray-600 w-12 truncate">
+                {player.name.split(' ')[0]}
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>

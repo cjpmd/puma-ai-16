@@ -1,15 +1,13 @@
 
-import React, { useState, useEffect } from "react";
-import { useDraggableFormation } from "./hooks/useDraggableFormation";
-import { FormationHelperText } from "./FormationHelperText";
+import { useEffect, useState } from "react";
 import { FormationFormat } from "../types";
 import { FormationGrid } from "./components/FormationGrid";
-import { SubstitutesSection } from "./components/SubstitutesSection";
 import { AvailablePlayersSection } from "./components/AvailablePlayersSection";
-import { FormationTemplateSelector } from "../FormationTemplateSelector";
-import { Card, CardContent } from "@/components/ui/card";
-import { getFormationTemplatesByFormat } from "../utils/formationTemplates";
+import { SubstitutesSection } from "./components/SubstitutesSection";
+import { useDraggableFormation } from "./hooks/useDraggableFormation";
 import { PerformanceCategory } from "@/types/player";
+import { FormationTemplateSelector } from "../FormationTemplateSelector";
+import { Button } from "@/components/ui/button";
 
 interface DraggableFormationProps {
   format: FormationFormat;
@@ -17,30 +15,28 @@ interface DraggableFormationProps {
   squadPlayers?: string[];
   initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
   onSelectionChange?: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
-  renderSubstitutionIndicator?: (position: string) => React.ReactNode;
   performanceCategory?: PerformanceCategory;
   onSquadPlayersChange?: (playerIds: string[]) => void;
   formationTemplate?: string;
   onTemplateChange?: (template: string) => void;
 }
 
-export const DraggableFormation: React.FC<DraggableFormationProps> = ({
+export const DraggableFormation = ({
   format,
-  availablePlayers = [],
+  availablePlayers,
   squadPlayers = [],
   initialSelections = {},
   onSelectionChange,
-  renderSubstitutionIndicator,
-  performanceCategory,
+  performanceCategory = "MESSI",
   onSquadPlayersChange,
-  formationTemplate = "All",
+  formationTemplate,
   onTemplateChange
-}) => {
+}: DraggableFormationProps) => {
+  const [selectedTemplate, setSelectedTemplate] = useState(formationTemplate || "All");
   const [selectedFormat, setSelectedFormat] = useState<FormationFormat>(format);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>(formationTemplate);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   
   const {
-    selectedPlayerId,
     selections,
     formationRef,
     draggingPlayer,
@@ -62,18 +58,17 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
 
   // Update template when format changes
   useEffect(() => {
-    setSelectedTemplate(formationTemplate || "All");
+    setSelectedFormat(format);
+  }, [format]);
+
+  // Update selected template when prop changes
+  useEffect(() => {
+    if (formationTemplate) {
+      setSelectedTemplate(formationTemplate);
+    }
   }, [formationTemplate]);
 
-  // Update template when a new one is selected
-  useEffect(() => {
-    if (onTemplateChange && selectedTemplate !== formationTemplate) {
-      onTemplateChange(selectedTemplate);
-    }
-  }, [selectedTemplate, onTemplateChange, formationTemplate]);
-
-  const availableSquadPlayers = getAvailableSquadPlayers();
-
+  // Handler for formation template changes
   const handleTemplateChange = (template: string) => {
     setSelectedTemplate(template);
     if (onTemplateChange) {
@@ -81,9 +76,18 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     }
   };
 
+  // Helper to render substitution indicators
+  const renderSubstitutionIndicator = (position: string) => {
+    return position.startsWith('sub-') ? (
+      <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
+        S
+      </div>
+    ) : null;
+  };
+
   return (
-    <div className="space-y-6">
-      <FormationTemplateSelector
+    <div className="space-y-4">
+      <FormationTemplateSelector 
         format={selectedFormat}
         selectedTemplate={selectedTemplate}
         onTemplateChange={handleTemplateChange}
@@ -107,20 +111,20 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
       
       <SubstitutesSection 
         selections={selections}
+        handleSubstituteDrop={handleSubstituteDrop}
+        handleRemovePlayer={handleRemovePlayer}
         getPlayer={getPlayer}
         handleDragStart={handleDragStart}
         handleDragEnd={handleDragEnd}
-        handleRemovePlayer={handleRemovePlayer}
-        handleSubstituteDrop={handleSubstituteDrop}
+        selectedPlayerId={selectedPlayerId}
         draggingPlayer={draggingPlayer}
       />
       
       <AvailablePlayersSection 
-        availableSquadPlayers={availableSquadPlayers}
-        selectedPlayerId={selectedPlayerId}
+        availablePlayers={getAvailableSquadPlayers()}
         handlePlayerSelect={handlePlayerSelect}
-        handleDragStart={handleDragStart}
-        handleDragEnd={handleDragEnd}
+        selectedPlayerId={selectedPlayerId}
+        onSquadPlayersChange={onSquadPlayersChange}
       />
     </div>
   );

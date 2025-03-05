@@ -94,6 +94,8 @@ export const FormationGrid: React.FC<FormationGridProps> = ({
               }
             }
           }}
+          handleDragStart={handleDragStart}
+          handleDragEnd={handleDragEnd}
         />
       ))}
     </div>
