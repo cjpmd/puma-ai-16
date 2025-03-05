@@ -20,9 +20,10 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
   initialSelections,
   viewMode = "team-sheet",
   duration = 20,
-  periodNumber = 1
+  periodNumber = 1,
+  formationTemplate
 }) => {
-  const [formationTemplate, setFormationTemplate] = useState<string>("All");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>(formationTemplate || "All");
   const { selections, localPerformanceCategory, handlePlayerSelection } = useFormationSelections({
     initialSelections,
     performanceCategory,
@@ -46,7 +47,8 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
   const players = initialPlayers || fetchedPlayers || [];
 
   const handleTemplateChange = (template: string) => {
-    setFormationTemplate(template);
+    console.log(`Formation template changed to: ${template}`);
+    setSelectedTemplate(template);
   };
 
   // Adapter function to handle the selection change with the correct parameters
@@ -77,7 +79,7 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
     <div className="space-y-4">
       <FormationTemplateSelector
         format={format}
-        selectedTemplate={formationTemplate}
+        selectedTemplate={selectedTemplate}
         onTemplateChange={handleTemplateChange}
       />
       
@@ -87,7 +89,7 @@ export const FormationSelector: React.FC<FormationSelectionProps> = ({
         availablePlayers={players}
         onPlayerSelection={handleSelectionChange}
         selectedPlayers={selectedPlayers}
-        formationTemplate={formationTemplate}
+        formationTemplate={selectedTemplate}
       />
 
       <SubstitutesList
