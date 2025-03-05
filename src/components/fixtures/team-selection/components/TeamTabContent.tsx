@@ -12,8 +12,8 @@ interface TeamTabContentProps {
   fixture: any;
   teamCaptains: Record<string, string>;
   availablePlayers: any[];
-  teamSelections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>;
-  performanceCategories: Record<string, PerformanceCategory>;
+  teamSelections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory | string }>>;
+  performanceCategories: Record<string, PerformanceCategory | string>;
   periods: { id: string; teamId: string; duration: number }[];
   handleCaptainChange: (teamId: string, playerId: string) => void;
   handlePerformanceCategoryChange: (teamId: string, periodId: string, category: PerformanceCategory) => void;
@@ -52,7 +52,7 @@ export const TeamTabContent = ({
         teamCaptains={teamCaptains}
         availablePlayers={availablePlayers}
         onCaptainChange={(teamId, playerId) => handleCaptainChange(teamId, playerId)}
-        performanceCategory={performanceCategories[`${teamId}-${periods[0]?.id}`] || "MESSI" as PerformanceCategory}
+        performanceCategory={(performanceCategories[`${teamId}-${periods[0]?.id}`] || "MESSI") as PerformanceCategory}
         onPerformanceCategoryChange={(teamId, periodId, category) => handlePerformanceCategoryChange(teamId, periodId, category)}
         currentPeriodId={periods[0]?.id || ""}
         onAddPeriod={() => handleAddPeriod(teamId)}

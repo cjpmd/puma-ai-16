@@ -1,152 +1,149 @@
 
-import { useState, useEffect } from "react";
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { SquadSelectionGrid } from "@/components/formation/SquadSelectionGrid";
-import { HalfPeriodManager } from "./HalfPeriodManager";
+import { useState } from "react";
 import { TeamHeaderControls } from "../../TeamHeaderControls";
-import { useTeamSelection } from "../context/TeamSelectionContext";
+import { SquadSelectionCard } from "./SquadSelectionCard";
+import { PeriodCard } from "./PeriodCard";
+import { PeriodSelector } from "./PeriodSelector";
+import { ViewToggleButton } from "./ViewToggleButton";
+import { Button } from "@/components/ui/button";
 import { PerformanceCategory } from "@/types/player";
 
 interface NewTeamTabContentProps {
   teamId: string;
-  team: { name: string; squadPlayers: string[] };
+  teamName: string;
   fixture: any;
-  teamCaptains: Record<string, string>;
   availablePlayers: any[];
-  onCaptainChange: (teamId: string, playerId: string) => void;
-  onSquadSelection: (teamId: string, playerIds: string[]) => void;
-  onFormationChange: (teamId: string, halfId: string, periodId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string; isSubstitution?: boolean }>) => void;
-  getPlayerTeams: (playerId: string) => string[];
+  selectedPlayers: Set<string>;
+  periodSelections: Record<number, Record<string, { playerId: string; position: string }>>;
+  performanceCategories: Record<string, PerformanceCategory | string>;
+  setPeriodSelections: (teamId: string, periodNumber: number, selections: Record<string, { playerId: string; position: string }>) => void;
+  onPerformanceCategoryChange: (teamId: string, value: PerformanceCategory) => void;
+  format: string;
+  captainId?: string;
+  setCaptainId: (teamId: string, playerId: string) => void;
 }
 
 export const NewTeamTabContent = ({
   teamId,
-  team,
+  teamName,
   fixture,
-  teamCaptains,
   availablePlayers,
-  onCaptainChange,
-  onSquadSelection,
-  onFormationChange,
-  getPlayerTeams
+  selectedPlayers,
+  periodSelections,
+  performanceCategories,
+  setPeriodSelections,
+  onPerformanceCategoryChange,
+  format,
+  captainId,
+  setCaptainId
 }: NewTeamTabContentProps) => {
-  const [showOnlySelected, setShowOnlySelected] = useState(false);
-  const [performanceCategories, setPerformanceCategories] = useState<Record<string, PerformanceCategory>>({
-    'first-half': 'MESSI',
-    'second-half': 'MESSI'
+  const [activePeriod, setActivePeriod] = useState<number>(1);
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [squadPlayers, setSquadPlayers] = useState<string[]>([]);
+  const [showSquadSelector, setShowSquadSelector] = useState(false);
+  
+  // Map of period numbers to durations
+  const [periodDurations, setPeriodDurations] = useState<Record<number, number>>({
+    1: 45,
+    2: 45
   });
-  
-  const { selections } = useTeamSelection();
-  
-  // Sync initial performance categories with existing selections
-  useEffect(() => {
-    if (selections[teamId]) {
-      const firstHalfCategories = Object.keys(selections[teamId])
-        .filter(halfId => halfId === 'first-half')
-        .flatMap(halfId => 
-          Object.entries(selections[teamId][halfId]).map(([periodId, periodSelections]) => {
-            const firstSelection = Object.values(periodSelections)[0];
-            return firstSelection?.performanceCategory as PerformanceCategory || 'MESSI';
-          })
-        );
-      
-      const secondHalfCategories = Object.keys(selections[teamId])
-        .filter(halfId => halfId === 'second-half')
-        .flatMap(halfId => 
-          Object.entries(selections[teamId][halfId]).map(([periodId, periodSelections]) => {
-            const firstSelection = Object.values(periodSelections)[0];
-            return firstSelection?.performanceCategory as PerformanceCategory || 'MESSI';
-          })
-        );
-      
-      if (firstHalfCategories.length > 0) {
-        setPerformanceCategories(prev => ({
-          ...prev,
-          'first-half': firstHalfCategories[0]
-        }));
-      }
-      
-      if (secondHalfCategories.length > 0) {
-        setPerformanceCategories(prev => ({
-          ...prev,
-          'second-half': secondHalfCategories[0]
-        }));
-      }
-    }
-  }, [selections, teamId]);
 
-  // Handle performance category changes
-  const handlePerformanceCategoryChange = (halfId: string, value: PerformanceCategory) => {
-    setPerformanceCategories(prev => ({
+  // Get current performance category
+  const currentPerformanceCategory = (performanceCategories[teamId] || "MESSI") as PerformanceCategory;
+  
+  // Calculate total number of periods (minimum 2)
+  const totalPeriods = Math.max(2, Object.keys(periodSelections).length);
+  
+  const handlePeriodSelectionChange = (periodNumber: number, selections: Record<string, { playerId: string; position: string }>) => {
+    setPeriodSelections(teamId, periodNumber, selections);
+  };
+  
+  const handleDurationChange = (periodNumber: number, duration: number) => {
+    setPeriodDurations(prev => ({
       ...prev,
-      [halfId]: value
+      [periodNumber]: duration
     }));
   };
-
-  // Handle formation changes
-  const handleFormationChange = (halfId: string, periodId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: string; isSubstitution?: boolean }>) => {
-    onFormationChange(teamId, halfId, periodId, selections);
+  
+  const handleSquadSelectionChange = (playerIds: string[]) => {
+    setSquadPlayers(playerIds);
   };
-
-  // Save squad selection
-  const handleSaveSelection = () => {
-    setShowOnlySelected(true);
+  
+  const handleAddPeriod = () => {
+    const newPeriodNumber = totalPeriods + 1;
+    // Set an initial duration for the new period
+    setPeriodDurations(prev => ({
+      ...prev,
+      [newPeriodNumber]: 15 // Default to 15 minutes for additional periods
+    }));
   };
-
+  
+  const handleCaptainChange = (playerId: string) => {
+    setCaptainId(teamId, playerId);
+  };
+  
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">{teamName}</h2>
+        <ViewToggleButton 
+          viewMode={viewMode} 
+          onChange={setViewMode} 
+        />
+      </div>
+      
       <TeamHeaderControls
         teamId={teamId}
-        teamCaptains={teamCaptains}
+        teamCaptains={{ [teamId]: captainId || "" }}
         availablePlayers={availablePlayers}
-        onCaptainChange={onCaptainChange}
-        performanceCategory={performanceCategories['first-half']}
-        onPerformanceCategoryChange={(teamId, periodId, value) => {
-          handlePerformanceCategoryChange('first-half', value);
-          handlePerformanceCategoryChange('second-half', value);
-        }}
-        onAddPeriod={() => {}} // Not used in new design
-        currentPeriodId="first-half"
+        onCaptainChange={handleCaptainChange}
+        performanceCategory={currentPerformanceCategory}
+        onPerformanceCategoryChange={(teamId, periodId, category) => onPerformanceCategoryChange(teamId, category)}
+        onAddPeriod={handleAddPeriod}
       />
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Squad Selection</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SquadSelectionGrid 
-            availablePlayers={availablePlayers}
-            selectedPlayers={team.squadPlayers}
-            onSelectionChange={(playerIds) => onSquadSelection(teamId, playerIds)}
-            getPlayerTeams={getPlayerTeams}
-            onSaveSelection={handleSaveSelection}
-          />
-        </CardContent>
-      </Card>
+      {showSquadSelector && (
+        <SquadSelectionCard
+          availablePlayers={availablePlayers}
+          selectedPlayers={squadPlayers}
+          onSelectionChange={handleSquadSelectionChange}
+          getPlayerTeams={() => []}
+        />
+      )}
       
-      <HalfPeriodManager
-        title="First Half"
+      <PeriodSelector 
+        periodCount={totalPeriods}
+        activePeriod={activePeriod}
+        onPeriodChange={setActivePeriod}
+      />
+      
+      <PeriodCard
+        periodNumber={activePeriod}
         teamId={teamId}
-        fixture={fixture}
+        format={format}
+        duration={periodDurations[activePeriod] || 45}
+        onDurationChange={(duration) => handleDurationChange(activePeriod, duration)}
         availablePlayers={availablePlayers}
-        squadPlayers={team.squadPlayers}
-        onFormationChange={handleFormationChange}
-        performanceCategory={performanceCategories['first-half']}
-        onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange('first-half', value as PerformanceCategory)}
-        selections={selections[teamId]?.['first-half'] || {}}
+        selectedPlayers={selectedPlayers}
+        selections={periodSelections[activePeriod] || {}}
+        onSelectionChange={(selections) => handlePeriodSelectionChange(activePeriod, selections)}
+        performanceCategory={currentPerformanceCategory}
       />
       
-      <HalfPeriodManager
-        title="Second Half"
-        teamId={teamId}
-        fixture={fixture}
-        availablePlayers={availablePlayers}
-        squadPlayers={team.squadPlayers}
-        onFormationChange={handleFormationChange}
-        performanceCategory={performanceCategories['second-half']}
-        onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange('second-half', value as PerformanceCategory)}
-        selections={selections[teamId]?.['second-half'] || {}}
-      />
+      <div className="flex justify-center space-x-4">
+        <Button 
+          onClick={handleAddPeriod}
+          variant="outline"
+        >
+          Add Period
+        </Button>
+        <Button 
+          onClick={() => setShowSquadSelector(!showSquadSelector)}
+          variant="outline"
+        >
+          {showSquadSelector ? "Hide Squad Selector" : "Show Squad Selector"}
+        </Button>
+      </div>
     </div>
   );
 };

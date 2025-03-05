@@ -1,115 +1,111 @@
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TeamHeaderControls } from "../../TeamHeaderControls";
-import TeamPeriodCard from "../../TeamPeriodCard";
-import { TeamSelections, AllSelections, PeriodsPerTeam, PerformanceCategories, TeamCaptains } from "../types";
-import { PlayerSelection } from "@/components/formation/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormationSelector } from "@/components/FormationSelector";
 import { PerformanceCategory } from "@/types/player";
+import { FormationFormat } from "@/components/formation/types";
 
 interface TeamPeriodsListProps {
-  fixture: any;
-  activeTeam: string;
-  setActiveTeam: (teamId: string) => void;
-  periodsPerTeam: PeriodsPerTeam;
-  selections: AllSelections;
-  performanceCategories: PerformanceCategories;
-  teamCaptains: TeamCaptains;
-  selectedPlayers: Set<string>;
+  teamId: string;
+  teamName: string;
+  format: FormationFormat;
   availablePlayers: any[];
-  onCaptainChange: (teamId: string, playerId: string) => void;
-  onAddPeriod: (teamId: string) => void;
-  onDeletePeriod: (teamId: string, periodId: string) => void;
-  onTeamSelectionChange: (periodId: string, teamId: string, selections: TeamSelections) => void;
-  onDurationChange: (teamId: string, periodId: string, duration: number) => void;
-  onPerformanceCategoryChange: (key: string, value: PerformanceCategory) => void;
+  selectedPlayers: Set<string>;
+  performanceCategory: PerformanceCategory;
+  onPerformanceCategoryChange: (value: PerformanceCategory) => void;
+  periods: Array<{
+    id: number;
+    duration: number;
+    selections: Record<string, { playerId: string; position: string }>;
+  }>;
+  onPeriodSelectionChange: (periodId: number, selections: Record<string, { playerId: string; position: string }>) => void;
+  onPeriodDurationChange: (periodId: number, duration: number) => void;
+  onAddPeriod: () => void;
+  onDeletePeriod: (periodId: number) => void;
 }
 
 export const TeamPeriodsList = ({
-  fixture,
-  activeTeam,
-  setActiveTeam,
-  periodsPerTeam,
-  selections,
-  performanceCategories,
-  teamCaptains,
-  selectedPlayers,
+  teamId,
+  teamName,
+  format,
   availablePlayers,
-  onCaptainChange,
-  onAddPeriod,
-  onDeletePeriod,
-  onTeamSelectionChange,
-  onDurationChange,
+  selectedPlayers,
+  performanceCategory,
   onPerformanceCategoryChange,
+  periods,
+  onPeriodSelectionChange,
+  onPeriodDurationChange,
+  onAddPeriod,
+  onDeletePeriod
 }: TeamPeriodsListProps) => {
+  const [formationTemplate, setFormationTemplate] = useState("All");
+  
   return (
-    <Tabs defaultValue={activeTeam} className="w-full" onValueChange={setActiveTeam}>
-      <TabsList className="w-full mb-4">
-        {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
-          <TabsTrigger 
-            key={index} 
-            value={(index + 1).toString()}
-            className="flex-1"
-          >
-            Team {index + 1}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-
-      {Array.from({ length: fixture.number_of_teams || 1 }).map((_, teamIndex) => {
-        const teamId = (teamIndex + 1).toString();
-        const teamPeriods = periodsPerTeam[teamId] || [];
-
-        return (
-          <TabsContent 
-            key={teamIndex} 
-            value={teamId}
-            className="mt-0"
-          >
-            <TeamHeaderControls
-              teamId={teamId}
-              teamCaptains={teamCaptains}
-              availablePlayers={availablePlayers}
-              onCaptainChange={onCaptainChange}
-              performanceCategory={performanceCategories[`period-1-${teamId}`] as PerformanceCategory || "MESSI"}
-              onPerformanceCategoryChange={(teamId, periodId, value) => {
-                const updatedCategories = { ...performanceCategories };
-                teamPeriods.forEach(period => {
-                  updatedCategories[`${period.id}-${teamId}`] = value as PerformanceCategory;
-                });
-                onPerformanceCategoryChange("batch", value as PerformanceCategory);
-              }}
-              onAddPeriod={() => onAddPeriod(teamId)}
-              currentPeriodId={"period-1"}
-            />
-
-            <div className="flex flex-col space-y-6">
-              {teamPeriods.map((period, index) => (
-                <TeamPeriodCard
-                  key={`${period.id}-${teamId}-${performanceCategories[`${period.id}-${teamId}`] || 'MESSI'}`}
-                  teamId={teamId}
-                  teamName={fixture.team_name}
-                  periodNumber={index + 1}
-                  duration={period.duration}
-                  format={fixture.format}
-                  availablePlayers={availablePlayers}
-                  selectedPlayers={selectedPlayers}
-                  performanceCategory={performanceCategories[`${period.id}-${teamId}`] as PerformanceCategory || "MESSI"}
-                  onPerformanceCategoryChange={(value) => 
-                    onPerformanceCategoryChange(`${period.id}-${teamId}`, value as PerformanceCategory)
-                  }
-                  onSelectionChange={(periodNumber, selections) => 
-                    onTeamSelectionChange(period.id, teamId, selections as unknown as TeamSelections)
-                  }
-                  initialSelections={selections[period.id]?.[teamId]}
-                  formationTemplate={"All"}
-                  onTemplateChange={() => {}}
-                />
-              ))}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">{teamName} - Periods</h3>
+        <Select value={performanceCategory} onValueChange={(value) => onPerformanceCategoryChange(value as PerformanceCategory)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Performance category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="MESSI">Messi</SelectItem>
+            <SelectItem value="RONALDO">Ronaldo</SelectItem>
+            <SelectItem value="JAGS">Jags</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      {periods.map((period) => (
+        <Card key={period.id} className="mb-4">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base">Period {period.id}</CardTitle>
+            <div className="flex items-center space-x-2">
+              <label className="text-sm">Duration (min):</label>
+              <input
+                type="number"
+                min="5"
+                max="90"
+                value={period.duration}
+                onChange={(e) => onPeriodDurationChange(period.id, parseInt(e.target.value) || 45)}
+                className="w-16 px-2 py-1 border rounded"
+              />
+              {periods.length > 1 && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => onDeletePeriod(period.id)}
+                  className="text-destructive border-destructive hover:bg-destructive/10"
+                >
+                  Delete
+                </Button>
+              )}
             </div>
-          </TabsContent>
-        );
-      })}
-    </Tabs>
+          </CardHeader>
+          <CardContent>
+            <FormationSelector
+              format={format}
+              teamName={`${teamName} - Period ${period.id}`}
+              onSelectionChange={(selections) => onPeriodSelectionChange(period.id, selections)}
+              selectedPlayers={selectedPlayers}
+              availablePlayers={availablePlayers}
+              performanceCategory={performanceCategory}
+              formationTemplate={formationTemplate}
+              onTemplateChange={setFormationTemplate}
+              viewMode="team-sheet"
+              periodNumber={period.id}
+              duration={period.duration}
+              initialSelections={period.selections}
+            />
+          </CardContent>
+        </Card>
+      ))}
+      
+      <div className="flex justify-center">
+        <Button onClick={onAddPeriod}>Add Period</Button>
+      </div>
+    </div>
   );
 };

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormationFormat } from "@/components/formation/types";
 import { PerformanceCategory } from "@/types/player";
-import { TeamSelections } from "../types";
+import { TeamSelection, TeamSelections } from "../types";
 import { FormationView } from "@/components/fixtures/FormationView";
 
 interface TeamPreviewCardProps {
@@ -12,10 +12,10 @@ interface TeamPreviewCardProps {
   index: number;
   teamId: string;
   fixture: any;
-  teamSelections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>;
+  teamSelections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory | string }>>;
   availablePlayers: any[];
   teamSquadPlayers: string[];
-  performanceCategories: Record<string, PerformanceCategory>;
+  performanceCategories: Record<string, PerformanceCategory | string>;
   onPerformanceCategoryChange: (value: PerformanceCategory) => void;
   onDurationChange: (teamId: string, periodId: string, duration: number) => void;
   onDeletePeriod: (teamId: string, periodId: string) => void;
@@ -38,7 +38,7 @@ export const TeamPreviewCard: React.FC<TeamPreviewCardProps> = ({
   handleFormationChange,
   checkIsSubstitution
 }) => {
-  const formatSelectionsForFormation = (selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
+  const formatSelectionsForFormation = (selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory | string }>) => {
     return Object.entries(selections)
       .filter(([_, value]) => !value.position.startsWith('sub-'))
       .map(([_, value]) => ({
@@ -48,7 +48,7 @@ export const TeamPreviewCard: React.FC<TeamPreviewCardProps> = ({
   };
 
   // Get the current performanceCategory for this period
-  const performanceCategory = performanceCategories[`${teamId}-${periodId}`] || "MESSI" as PerformanceCategory;
+  const performanceCategory = (performanceCategories[`${teamId}-${periodId}`] || "MESSI") as PerformanceCategory;
   const selections = teamSelections[`${teamId}-${periodId}`] || {};
   const positions = formatSelectionsForFormation(selections);
 
