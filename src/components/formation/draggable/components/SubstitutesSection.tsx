@@ -1,19 +1,19 @@
 
-import React from 'react';
-import { FormationFormat } from '../../types';
+import React from "react";
+import { FormationFormat } from "../../types";
 
-export interface SubstitutesSectionProps {
+interface SubstitutesSectionProps {
   selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean }>;
   availablePlayers: any[];
   getPlayerById: (playerId: string) => any;
-  addSubstitute: (playerId: string, substitutePosition?: string) => void;
-  removeSubstitute: (playerPosition: string) => void;
+  addSubstitute: (playerId: string) => void;
+  removeSubstitute: (slotId: string) => void;
   selectedPlayerId: string | null;
   onPlayerClick: (playerId: string) => void;
   handleDragStart: (e: React.DragEvent, playerId: string) => void;
-  handleDragEnd: (e: React.DragEvent) => void;
+  handleDragEnd: () => void;
   renderSubstitutionIndicator?: (position: string) => React.ReactNode;
-  format?: FormationFormat;
+  format: FormationFormat;
 }
 
 export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
@@ -29,67 +29,116 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
   renderSubstitutionIndicator,
   format
 }) => {
-  // Find all positions marked as substitutions
-  const substitutes = Object.entries(selections)
-    .filter(([_, value]) => value.position.startsWith('sub-'))
-    .map(([_, value]) => ({
-      position: value.position,
-      playerId: value.playerId,
-      player: getPlayerById(value.playerId)
+  // Maximum substitutes based on format
+  const maxSubstitutes = format === '11-a-side' ? 5 : 3;
+  
+  // Get current substitutions
+  const substitutions = Object.entries(selections)
+    .filter(([_, selection]) => selection.position.startsWith('sub-'))
+    .map(([slotId, selection]) => ({
+      slotId,
+      playerId: selection.playerId,
+      position: selection.position,
+      player: getPlayerById(selection.playerId)
     }));
-
-  const handleAdd = () => {
-    if (selectedPlayerId) {
+  
+  // Handle drop on substitutes area
+  const handleSubstituteDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const playerId = e.dataTransfer.getData('playerId');
+    
+    if (playerId && substitutions.length < maxSubstitutes) {
+      addSubstitute(playerId);
+    }
+  };
+  
+  // Handle substitute click
+  const handleSubstituteClick = () => {
+    if (selectedPlayerId && substitutions.length < maxSubstitutes) {
       addSubstitute(selectedPlayerId);
     }
   };
 
   return (
-    <div className="border rounded-md p-4 bg-white">
-      <div className="flex justify-between items-center mb-4">
+    <div 
+      className="border rounded-md p-4 bg-white"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleSubstituteDrop}
+    >
+      <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium">Substitutes</h3>
-        <button
-          onClick={handleAdd}
-          disabled={!selectedPlayerId}
-          className={`px-2 py-1 rounded text-xs ${
-            selectedPlayerId 
-              ? 'bg-blue-600 text-white hover:bg-blue-700' 
-              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          Add Substitute
-        </button>
+        {selectedPlayerId && substitutions.length < maxSubstitutes && (
+          <button 
+            onClick={handleSubstituteClick}
+            className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded"
+          >
+            Add as Substitute
+          </button>
+        )}
       </div>
-
-      {substitutes.length === 0 ? (
-        <div className="text-gray-500 text-sm">No substitutes added yet</div>
+      
+      {substitutions.length === 0 ? (
+        <div 
+          className="h-16 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-500 text-sm"
+        >
+          {selectedPlayerId 
+            ? "Click 'Add as Substitute' or drop player here" 
+            : "Select a player and click here or drag a player here"}
+        </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-          {substitutes.map(sub => (
-            <div
-              key={sub.position}
-              className="relative flex flex-col items-center border rounded p-2 bg-gray-50"
-              draggable
-              onDragStart={(e) => handleDragStart(e, sub.playerId)}
-              onDragEnd={handleDragEnd}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          {substitutions.map(({ slotId, player, position }) => (
+            <div 
+              key={slotId}
+              className="relative flex flex-col items-center bg-gray-50 p-2 rounded-md border border-gray-200"
             >
-              {renderSubstitutionIndicator && renderSubstitutionIndicator(sub.position)}
-              
-              <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center text-white text-xs font-bold mb-1">
-                {sub.player?.squad_number || 'S'}
+              <div 
+                className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white mb-1"
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('playerId', player.id);
+                  e.dataTransfer.setData('fromSlotId', slotId);
+                  handleDragStart(e, player.id);
+                }}
+                onDragEnd={handleDragEnd}
+              >
+                {player.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
               </div>
+              <span className="text-xs font-medium truncate w-full text-center">{player.name}</span>
+              {player.squad_number && (
+                <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded-full mt-1">
+                  #{player.squad_number}
+                </span>
+              )}
               
-              <div className="text-xs font-medium text-center truncate w-full">
-                {sub.player?.name || 'Unknown'}
-              </div>
+              {/* Custom or default substitution indicator */}
+              {renderSubstitutionIndicator ? (
+                renderSubstitutionIndicator(position)
+              ) : (
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
+                  S
+                </div>
+              )}
               
-              <button
-                onClick={() => removeSubstitute(sub.position)}
-                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+              <button 
+                onClick={() => removeSubstitute(slotId)}
+                className="absolute -top-1 -left-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center"
                 title="Remove substitute"
               >
                 ×
               </button>
+            </div>
+          ))}
+          
+          {/* Placeholder substitution slots */}
+          {Array.from({ length: maxSubstitutes - substitutions.length }).map((_, index) => (
+            <div 
+              key={`sub-placeholder-${index}`}
+              className="h-24 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 text-xs"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleSubstituteDrop}
+            >
+              {index === 0 && substitutions.length === 0 ? "Drop player here" : ""}
             </div>
           ))}
         </div>

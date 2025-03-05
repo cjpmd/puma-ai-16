@@ -37,6 +37,7 @@ export const AvailablePlayersSection: React.FC<AvailablePlayersSectionProps> = (
             draggable
             onDragStart={(e) => {
               e.dataTransfer.setData('playerId', player.id);
+              e.dataTransfer.setData('playerName', player.name);
               e.dataTransfer.effectAllowed = 'move';
             }}
           >

@@ -7,28 +7,34 @@ export interface FormationHelperTextProps {
 }
 
 export const FormationHelperText: React.FC<FormationHelperTextProps> = ({ 
-  selectedPlayerId,
-  draggingPlayer
+  selectedPlayerId, 
+  draggingPlayer 
 }) => {
   if (draggingPlayer) {
     return (
-      <div className="text-blue-600 p-2 bg-blue-50 rounded mb-4">
-        Drag player to a position on the formation or to the substitutes area
+      <div className="rounded-md p-3 bg-blue-50 border border-blue-200 text-blue-700">
+        <p className="text-sm">
+          <span className="font-medium">Dragging player</span>: Drop on any position to place the player
+        </p>
       </div>
     );
   }
-
+  
   if (selectedPlayerId) {
     return (
-      <div className="text-blue-600 p-2 bg-blue-50 rounded mb-4">
-        Click on a position to place the selected player
+      <div className="rounded-md p-3 bg-green-50 border border-green-200 text-green-700">
+        <p className="text-sm">
+          <span className="font-medium">Player selected</span>: Click on any position to place the player
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="text-gray-500 p-2 bg-gray-50 rounded mb-4">
-      Select a player from the list below or drag players directly to positions
+    <div className="rounded-md p-3 bg-gray-50 border border-gray-200 text-gray-700">
+      <p className="text-sm">
+        <span className="font-medium">Select a player</span> or drag a player onto a position
+      </p>
     </div>
   );
 };
