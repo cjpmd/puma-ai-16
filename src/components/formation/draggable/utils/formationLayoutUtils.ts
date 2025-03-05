@@ -99,7 +99,7 @@ export const getPositionsForFormation = (format: FormationFormat, template?: str
 export const getPositionCoordinates = (position: string): { x: string, y: string } => {
   const posData = positionDefinitions[position];
   if (!posData) {
-    console.warn(`Position ${pos} not found in definitions`);
+    console.warn(`Position ${position} not found in definitions`);
     return { x: '50%', y: '50%' };
   }
   

@@ -36,19 +36,19 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
 }) => {
   const {
     selectedTemplate,
-    selections,
     selectedPlayerId,
-    handleDragStart,
-    handleDragEnd,
-    handleTemplateChange,
+    draggingPlayer,
+    selections,
     handleDrop,
     handlePlayerClick,
     handleRemovePlayer,
+    handleDragStart,
+    handleDragEnd,
+    handleTemplateChange,
     getPlayerById,
     getAvailablePlayers,
     addSubstitute,
-    removeSubstitute,
-    showPlayers
+    removeSubstitute
   } = useDraggableFormation({
     format,
     availablePlayers,
@@ -71,7 +71,10 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
       />
       
       {/* Helper text */}
-      <FormationHelperText selectedPlayerId={selectedPlayerId} />
+      <FormationHelperText 
+        selectedPlayerId={selectedPlayerId}
+        draggingPlayer={draggingPlayer}
+      />
       
       {/* The pitch with formation slots */}
       <div className="flex flex-col gap-4 lg:flex-row">
@@ -102,7 +105,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
       
       {/* Substitutes Section */}
       <SubstitutesSection
-        format={format}
         selections={selections}
         availablePlayers={availablePlayers}
         getPlayerById={getPlayerById}

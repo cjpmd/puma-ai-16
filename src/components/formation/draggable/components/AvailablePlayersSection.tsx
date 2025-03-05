@@ -1,53 +1,55 @@
 
 import React from "react";
 
-interface AvailablePlayersSectionProps {
-  availablePlayers: any[];
-  handlePlayerSelect: (playerId: string) => void;
+export interface AvailablePlayersSectionProps {
+  players: any[];
   selectedPlayerId: string | null;
-  onSquadPlayersChange?: (playerIds: string[]) => void;
+  onPlayerClick: (playerId: string) => void;
 }
 
 export const AvailablePlayersSection: React.FC<AvailablePlayersSectionProps> = ({
-  availablePlayers,
-  handlePlayerSelect,
+  players,
   selectedPlayerId,
-  onSquadPlayersChange
+  onPlayerClick
 }) => {
+  if (!players || players.length === 0) {
+    return (
+      <div className="border rounded-md p-4 bg-white">
+        <h3 className="text-sm font-medium mb-2">Available Players</h3>
+        <div className="text-gray-500 text-sm">No available players</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="mt-6">
+    <div className="border rounded-md p-4 bg-white">
       <h3 className="text-sm font-medium mb-2">Available Players</h3>
-      
-      <div className="flex flex-wrap gap-3 border rounded-lg p-4">
-        {availablePlayers.length === 0 ? (
-          <div className="w-full text-center text-gray-500 py-4">
-            No available players. All players are assigned to positions.
-          </div>
-        ) : (
-          availablePlayers.map(player => (
-            <div key={player.id} className="relative">
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center font-bold cursor-pointer ${
-                  selectedPlayerId === player.id 
-                    ? 'bg-blue-700 text-white ring-2 ring-blue-400 ring-offset-2' 
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-                onClick={() => handlePlayerSelect(player.id)}
-              >
+      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+        {players.map(player => (
+          <div
+            key={player.id}
+            onClick={() => onPlayerClick(player.id)}
+            className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${
+              selectedPlayerId === player.id 
+                ? 'bg-blue-100 border border-blue-300' 
+                : 'hover:bg-gray-100 border border-gray-200'
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${
+                selectedPlayerId === player.id ? 'bg-blue-600' : 'bg-gray-600'
+              }`}>
                 {player.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
-                
-                {player.squad_number && (
-                  <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-white text-blue-800 text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {player.squad_number}
-                  </div>
-                )}
               </div>
-              <div className="mt-1 text-center text-xs text-gray-600 w-12 truncate">
-                {player.name.split(' ')[0]}
-              </div>
+              <span className="font-medium text-sm">{player.name}</span>
             </div>
-          ))
-        )}
+            {player.squad_number && (
+              <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">
+                #{player.squad_number}
+              </span>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

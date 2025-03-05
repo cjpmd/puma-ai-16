@@ -2,13 +2,13 @@
 import React from "react";
 
 export interface FormationHelperTextProps {
-  draggingPlayer: string | null;
   selectedPlayerId: string | null;
+  draggingPlayer?: string | null;
 }
 
 export const FormationHelperText: React.FC<FormationHelperTextProps> = ({ 
-  draggingPlayer, 
-  selectedPlayerId 
+  selectedPlayerId,
+  draggingPlayer
 }) => {
   if (draggingPlayer) {
     return (

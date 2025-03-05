@@ -5,6 +5,7 @@ import { useDragOperations } from "./useDragOperations";
 import { useDropOperations } from "./useDropOperations";
 import { useSubstitutionManager } from "./useSubstitutionManager";
 import { PerformanceCategory } from "@/types/player";
+import { FormationFormat } from "../../types";
 
 interface UseDraggableFormationProps {
   initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
@@ -12,6 +13,9 @@ interface UseDraggableFormationProps {
   availablePlayers: any[];
   squadPlayers?: string[];
   performanceCategory?: PerformanceCategory;
+  format?: FormationFormat;
+  formationTemplate?: string;
+  onTemplateChange?: (template: string) => void;
 }
 
 export const useDraggableFormation = ({
@@ -19,11 +23,15 @@ export const useDraggableFormation = ({
   onSelectionChange,
   availablePlayers,
   squadPlayers = [],
-  performanceCategory
+  performanceCategory,
+  format = "7-a-side",
+  formationTemplate = "All",
+  onTemplateChange
 }: UseDraggableFormationProps) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>>(initialSelections);
   const [draggingPlayer, setDraggingPlayer] = useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>(formationTemplate);
   const formationRef = useRef<HTMLDivElement>(null);
   
   // Initialize with saved selections
@@ -55,8 +63,12 @@ export const useDraggableFormation = ({
   
   // Wrapper for handlePlayerSelect to update selectedPlayerId
   const handlePlayerSelect = (playerId: string) => {
-    setSelectedPlayerId(originalHandlePlayerSelect(playerId));
-    return playerId;
+    return originalHandlePlayerSelect(playerId);
+  };
+  
+  // Handler for player click
+  const handlePlayerClick = (playerId: string) => {
+    setSelectedPlayerId(playerId === selectedPlayerId ? null : playerId);
   };
   
   const { handleDrop } = useDropOperations({
@@ -72,7 +84,9 @@ export const useDraggableFormation = ({
   const { 
     handleSubstituteDrop,
     initializeSubCounter,
-    handleRemovePlayer
+    handleRemovePlayer,
+    addSubstitute,
+    removeSubstitute
   } = useSubstitutionManager({
     selections,
     updateSelections: setSelections,
@@ -91,19 +105,51 @@ export const useDraggableFormation = ({
       onSelectionChange(selections);
     }
   }, [selections, onSelectionChange]);
+  
+  // Handle template change
+  const handleTemplateChange = (template: string) => {
+    setSelectedTemplate(template);
+    if (onTemplateChange) {
+      onTemplateChange(template);
+    }
+  };
+  
+  // Get player by ID
+  const getPlayerById = (playerId: string) => {
+    return availablePlayers.find(player => player.id === playerId);
+  };
+  
+  // Get available players
+  const getAvailablePlayers = () => {
+    return getAvailableSquadPlayers();
+  };
+  
+  // Show players state function
+  const showPlayers = () => {
+    // Implementation can be added later if needed
+    return true;
+  };
 
   return {
     selectedPlayerId,
+    draggingPlayer,
+    selectedTemplate,
     selections,
     formationRef,
-    draggingPlayer,
     handleDrop,
     handlePlayerSelect,
+    handlePlayerClick,
     handleRemovePlayer,
     handleDragStart,
     handleDragEnd,
     handleSubstituteDrop,
+    handleTemplateChange,
     getPlayer,
-    getAvailableSquadPlayers
+    getPlayerById,
+    getAvailablePlayers,
+    getAvailableSquadPlayers,
+    addSubstitute,
+    removeSubstitute,
+    showPlayers
   };
 };

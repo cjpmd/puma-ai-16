@@ -1,26 +1,32 @@
 
 import React from "react";
+import { FormationFormat } from "../../types";
 
-interface SubstitutesSectionProps {
+export interface SubstitutesSectionProps {
+  format?: FormationFormat;
   selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
-  handleSubstituteDrop: (playerId: string, fromSlotId?: string) => void;
-  handleRemovePlayer: (slotId: string) => void;
-  getPlayer: (playerId: string) => any;
+  availablePlayers: any[];
+  getPlayerById: (playerId: string) => any;
+  addSubstitute: (playerId: string, fromSlotId?: string) => void;
+  removeSubstitute: (slotId: string) => void;
+  selectedPlayerId: string | null;
+  onPlayerClick: (playerId: string) => void;
   handleDragStart: (e: React.DragEvent, playerId: string) => void;
   handleDragEnd: () => void;
-  selectedPlayerId: string | null;
-  draggingPlayer: string | null;
+  renderSubstitutionIndicator?: (position: string) => React.ReactNode;
 }
 
 export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
   selections,
-  handleSubstituteDrop,
-  handleRemovePlayer,
-  getPlayer,
+  availablePlayers,
+  getPlayerById,
+  addSubstitute,
+  removeSubstitute,
+  selectedPlayerId,
+  onPlayerClick,
   handleDragStart,
   handleDragEnd,
-  selectedPlayerId,
-  draggingPlayer
+  renderSubstitutionIndicator
 }) => {
   // Filter for substitutes
   const substitutes = Object.entries(selections)
@@ -28,7 +34,7 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
     .map(([slotId, value]) => ({
       slotId,
       ...value,
-      player: getPlayer(value.playerId)
+      player: getPlayerById(value.playerId)
     }));
 
   // Handle dropping a player into the substitutes area
@@ -40,17 +46,17 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
     const fromSlotId = e.dataTransfer.getData('fromSlotId');
     
     if (playerId) {
-      handleSubstituteDrop(playerId, fromSlotId);
+      addSubstitute(playerId, fromSlotId);
     } else if (selectedPlayerId) {
       // Or use the selected player
-      handleSubstituteDrop(selectedPlayerId);
+      addSubstitute(selectedPlayerId);
     }
   };
 
   // Handle click on the area when a player is selected
   const handleSubAreaClick = () => {
     if (selectedPlayerId) {
-      handleSubstituteDrop(selectedPlayerId);
+      addSubstitute(selectedPlayerId);
     }
   };
 
@@ -59,7 +65,7 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
       <h3 className="text-sm font-medium mb-2">Substitutes</h3>
       
       <div 
-        className={`border-2 ${selectedPlayerId || draggingPlayer ? 'border-green-500 bg-green-50' : 'border-dashed border-gray-300'} rounded-lg p-4 min-h-[100px] transition-colors`}
+        className={`border-2 ${selectedPlayerId ? 'border-green-500 bg-green-50' : 'border-dashed border-gray-300'} rounded-lg p-4 min-h-[100px] transition-colors`}
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleSubDrop}
         onClick={handleSubAreaClick}
@@ -74,7 +80,7 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
               <div key={slotId} className="relative">
                 <div
                   className="w-12 h-12 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold cursor-pointer hover:bg-amber-700"
-                  onClick={() => handleRemovePlayer(slotId)}
+                  onClick={() => removeSubstitute(slotId)}
                   draggable
                   onDragStart={(e) => {
                     e.dataTransfer.setData('playerId', player.id);
