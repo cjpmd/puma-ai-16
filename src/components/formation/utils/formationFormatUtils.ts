@@ -24,13 +24,16 @@ export const getAllPositionSlots = (): FormationSlot[] => {
   }).filter(Boolean) as FormationSlot[];
 };
 
-// Get specific formation slots based on format
+// Get specific formation slots based on format and template
 export const getFormationSlots = (format: FormationFormat, template?: string): FormationSlot[] => {
   let positions: string[] = [];
+  
+  console.log(`Getting formation slots for format: ${format}, template: ${template}`);
   
   // If template is specified and not "All", use it
   if (template && template !== "All") {
     positions = getPositionsForTemplate(format, template);
+    console.log(`Got positions from template: ${positions.join(', ')}`);
     if (positions.length > 0) {
       return createSlotsFromPositions(positions);
     }
@@ -54,13 +57,14 @@ export const getFormationSlots = (format: FormationFormat, template?: string): F
       positions = ["GK", "DL", "DC", "DR", "ML", "MC", "MR"];
   }
   
+  console.log(`Using default positions for format ${format}: ${positions.join(', ')}`);
   return createSlotsFromPositions(positions);
 };
 
 // Create slots from position codes
 function createSlotsFromPositions(positions: string[]): FormationSlot[] {
   // Filter the positions to only include the ones we want for this formation
-  return positions.map(pos => {
+  const slots = positions.map(pos => {
     const position = positionDefinitions[pos];
     if (!position) {
       console.warn(`Position ${pos} not found in position definitions`);
@@ -73,6 +77,9 @@ function createSlotsFromPositions(positions: string[]): FormationSlot[] {
       className: getPositionClass(position.x, position.y)
     };
   }).filter(Boolean) as FormationSlot[];
+  
+  console.log(`Created ${slots.length} slots from positions`);
+  return slots;
 }
 
 // Re-export the template functions with a different name to avoid conflicts

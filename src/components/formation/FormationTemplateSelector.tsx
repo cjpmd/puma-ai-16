@@ -1,6 +1,5 @@
 
 import React from "react";
-import { Button } from "@/components/ui/button";
 import { 
   Select,
   SelectContent,
@@ -24,7 +23,10 @@ export const FormationTemplateSelector: React.FC<FormationTemplateSelectorProps>
 }) => {
   const templates = getFormationTemplatesForFormat(format);
   
+  console.log(`Rendering FormationTemplateSelector for format: ${format} with templates:`, templates);
+  
   if (!templates || Object.keys(templates).length === 0) {
+    console.warn(`No templates found for format: ${format}`);
     return null;
   }
 
@@ -177,8 +179,8 @@ export const FormationTemplateSelector: React.FC<FormationTemplateSelectorProps>
   return (
     <div className="mb-4">
       <div className="text-sm font-medium mb-2">Formation:</div>
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex space-x-3">
+      <div className="flex justify-between items-center">
+        <div className="flex space-x-3 overflow-x-auto pb-2">
           {Object.keys(templates).map((templateName) => (
             <div key={templateName}>
               {renderMiniPitch(templateName, selectedTemplate === templateName)}

@@ -21,8 +21,10 @@ export const FormationSlots: React.FC<FormationSlotsProps> = ({
   selectedPlayers,
   formationTemplate = "All"
 }) => {
-  // Get appropriate position slots based on formation format
+  // Get appropriate position slots based on formation format and template
   const positionSlots = getFormationSlots(format, formationTemplate);
+  
+  console.log(`Rendering FormationSlots with format: ${format}, template: ${formationTemplate}, slots: ${positionSlots.length}`);
 
   return (
     <div className="rounded-md border p-4">

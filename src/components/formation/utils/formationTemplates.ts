@@ -36,18 +36,28 @@ export const FORMATION_5_A_SIDE = {
 
 // Returns formation templates based on format
 export const getFormationTemplatesByFormat = (format: FormationFormat): Record<string, string[]> => {
+  console.log(`Getting formation templates for format: ${format}`);
+  let templates: Record<string, string[]> = {};
+  
   switch (format) {
     case "5-a-side":
-      return FORMATION_5_A_SIDE;
+      templates = FORMATION_5_A_SIDE;
+      break;
     case "7-a-side":
-      return FORMATION_7_A_SIDE;
+      templates = FORMATION_7_A_SIDE;
+      break;
     case "9-a-side":
-      return FORMATION_9_A_SIDE;
+      templates = FORMATION_9_A_SIDE;
+      break;
     case "11-a-side":
-      return FORMATION_11_A_SIDE;
+      templates = FORMATION_11_A_SIDE;
+      break;
     default:
-      return {};
+      templates = {};
   }
+  
+  console.log(`Retrieved templates for ${format}:`, Object.keys(templates));
+  return templates;
 };
 
 // Get positions for a specific template
@@ -56,5 +66,7 @@ export const getPositionsForTemplate = (
   template: string
 ): string[] => {
   const templates = getFormationTemplatesByFormat(format);
-  return templates[template] || [];
+  const positions = templates[template] || [];
+  console.log(`Positions for ${format} template ${template}:`, positions);
+  return positions;
 };

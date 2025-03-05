@@ -28,6 +28,7 @@ export const TeamSelectionManager = ({
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [teamFormationTemplates, setTeamFormationTemplates] = useState<Record<string, string>>({});
 
   const { data: attendanceData } = useQuery({
     queryKey: ["attendance-status"],
@@ -117,6 +118,14 @@ export const TeamSelectionManager = ({
     }));
   };
 
+  const handleTemplateChange = (teamId: string, template: string) => {
+    console.log(`Changing template for team ${teamId} to ${template}`);
+    setTeamFormationTemplates(prev => ({
+      ...prev,
+      [teamId]: template
+    }));
+  };
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -182,6 +191,7 @@ export const TeamSelectionManager = ({
               selectedPlayers={selectedPlayers}
               availablePlayers={playersWithStatus}
               performanceCategory={performanceCategories[team.id] || "MESSI"}
+              formationTemplate={teamFormationTemplates[team.id] || "All"}
             />
           </CardContent>
         </Card>

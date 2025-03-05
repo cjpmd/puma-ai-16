@@ -36,6 +36,7 @@ export const FestivalTeamSelection = ({
   const { selectedPlayers, clearSelectedPlayers } = useTeamSelection();
   const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: string }>>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [teamFormationTemplates, setTeamFormationTemplates] = useState<Record<string, string>>({});
 
   const { data: players } = useQuery({
     queryKey: ["all-players"],
@@ -59,6 +60,13 @@ export const FestivalTeamSelection = ({
     setTeamSelections(prev => ({
       ...prev,
       [teamId]: selections
+    }));
+  };
+
+  const handleTemplateChange = (teamId: string, template: string) => {
+    setTeamFormationTemplates(prev => ({
+      ...prev,
+      [teamId]: template
     }));
   };
 
@@ -142,6 +150,7 @@ export const FestivalTeamSelection = ({
                   onSelectionChange={(selections) => handleSelectionChange(team.id, selections)}
                   selectedPlayers={selectedPlayers}
                   availablePlayers={players || []}
+                  formationTemplate={teamFormationTemplates[team.id] || "All"}
                 />
               </CardContent>
             </Card>
