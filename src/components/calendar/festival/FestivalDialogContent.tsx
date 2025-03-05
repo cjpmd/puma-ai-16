@@ -1,7 +1,9 @@
+
 import { DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { FestivalForm } from "./FestivalForm";
-import { TeamSelectionManager } from "@/components/TeamSelectionManager";
+import { TeamSelectionManager } from "@/components/team-selection/TeamSelectionManager";
 import { useToast } from "@/hooks/use-toast";
+import { FormationFormat } from "@/components/formation/types";
 
 interface TeamSelection {
   playerId: string;
@@ -31,6 +33,12 @@ export const FestivalDialogContent = ({
 }: FestivalDialogContentProps) => {
   const { toast } = useToast();
 
+  // Validate and convert format to FormationFormat
+  const validFormatOptions: FormationFormat[] = ["5-a-side", "7-a-side", "9-a-side", "11-a-side"];
+  const validFormat: FormationFormat = validFormatOptions.includes(format as FormationFormat) 
+    ? (format as FormationFormat) 
+    : "7-a-side";
+
   return (
     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
@@ -56,7 +64,7 @@ export const FestivalDialogContent = ({
         <div className="space-y-6">
           <TeamSelectionManager
             teams={teams}
-            format={format}
+            format={validFormat}
             onTeamSelectionsChange={(selections) => {
               try {
                 const formattedSelections = Object.entries(selections).reduce<Record<string, TeamSelection[]>>(
