@@ -8,6 +8,7 @@ import { Fixture } from "@/types/fixture";
 import { FormationFormat } from "@/components/formation/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PerformanceCategory } from "@/types/player";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface TeamSelectionManagerProps {
   teams?: Array<{
@@ -45,9 +46,15 @@ export const TeamSelectionManager = ({
     selectedPlayers, 
     performanceCategories, 
     teamFormationTemplates,
+    periodSelections,
+    squadSelections,
+    dragEnabled,
     handleTeamSelectionChange,
+    handlePeriodSelectionChange,
     handlePerformanceCategoryChange,
     handleTemplateChange,
+    handleSquadSelectionChange,
+    toggleDragEnabled,
     saveSelections
   } = useTeamSelections(onTeamSelectionsChange);
   
@@ -107,6 +114,10 @@ export const TeamSelectionManager = ({
               formationTemplate={teamFormationTemplates[team.id] || "All"}
               onTemplateChange={(template) => handleTemplateChange(team.id, template)}
               viewMode="formation"
+              squadSelection={squadSelections[team.id]}
+              onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
+              useDragAndDrop={dragEnabled}
+              onToggleDragAndDrop={toggleDragEnabled}
             />
           ))}
         </TabsContent>
@@ -116,40 +127,57 @@ export const TeamSelectionManager = ({
             <div key={team.id} className="mb-6">
               <h3 className="text-lg font-medium mb-4">{team.name} - Time Periods</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-muted p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">First Half</h4>
-                  <TeamSelectionCard
-                    team={team}
-                    format={validFormat}
-                    players={playersWithStatus}
-                    selectedPlayers={selectedPlayers}
-                    performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
-                    onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
-                    onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
-                    formationTemplate={teamFormationTemplates[team.id] || "All"}
-                    onTemplateChange={(template) => handleTemplateChange(team.id, template)}
-                    viewMode="team-sheet"
-                    periodNumber={1}
-                    duration={20}
-                  />
-                </div>
-                <div className="bg-muted p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Second Half</h4>
-                  <TeamSelectionCard
-                    team={team}
-                    format={validFormat}
-                    players={playersWithStatus}
-                    selectedPlayers={selectedPlayers}
-                    performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
-                    onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
-                    onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
-                    formationTemplate={teamFormationTemplates[team.id] || "All"}
-                    onTemplateChange={(template) => handleTemplateChange(team.id, template)}
-                    viewMode="team-sheet"
-                    periodNumber={2}
-                    duration={20}
-                  />
-                </div>
+                <Card className="bg-muted">
+                  <CardContent className="p-4">
+                    <h4 className="font-medium mb-2">First Half</h4>
+                    <TeamSelectionCard
+                      team={team}
+                      format={validFormat}
+                      players={playersWithStatus}
+                      selectedPlayers={selectedPlayers}
+                      performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
+                      onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
+                      onSelectionChange={(selections) => {
+                        handlePeriodSelectionChange(team.id, 1, selections);
+                        // Also update main selection for consistency
+                        handleTeamSelectionChange(team.id, selections);
+                      }}
+                      formationTemplate={teamFormationTemplates[team.id] || "All"}
+                      onTemplateChange={(template) => handleTemplateChange(team.id, template)}
+                      viewMode="team-sheet"
+                      periodNumber={1}
+                      duration={20}
+                      squadSelection={squadSelections[team.id]}
+                      onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
+                      useDragAndDrop={dragEnabled}
+                      onToggleDragAndDrop={toggleDragEnabled}
+                    />
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-muted">
+                  <CardContent className="p-4">
+                    <h4 className="font-medium mb-2">Second Half</h4>
+                    <TeamSelectionCard
+                      team={team}
+                      format={validFormat}
+                      players={playersWithStatus}
+                      selectedPlayers={selectedPlayers}
+                      performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
+                      onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
+                      onSelectionChange={(selections) => handlePeriodSelectionChange(team.id, 2, selections)}
+                      formationTemplate={teamFormationTemplates[team.id] || "All"}
+                      onTemplateChange={(template) => handleTemplateChange(team.id, template)}
+                      viewMode="team-sheet"
+                      periodNumber={2}
+                      duration={20}
+                      squadSelection={squadSelections[team.id]}
+                      onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
+                      useDragAndDrop={dragEnabled}
+                      onToggleDragAndDrop={toggleDragEnabled}
+                    />
+                  </CardContent>
+                </Card>
               </div>
             </div>
           ))}

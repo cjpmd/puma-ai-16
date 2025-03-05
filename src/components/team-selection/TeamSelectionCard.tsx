@@ -6,6 +6,9 @@ import { FormationView } from "@/components/fixtures/FormationView";
 import { FormationFormat } from "@/components/formation/types";
 import { PerformanceCategory } from "@/types/player";
 import { TeamSelections } from "@/components/fixtures/team-selection/types";
+import { DraggableFormation } from "@/components/formation/draggable";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface TeamSelectionCardProps {
   team: {
@@ -24,6 +27,10 @@ interface TeamSelectionCardProps {
   viewMode?: "formation" | "team-sheet";
   periodNumber?: number;
   duration?: number;
+  onSquadSelectionChange?: (playerIds: string[]) => void;
+  squadSelection?: string[];
+  useDragAndDrop?: boolean;
+  onToggleDragAndDrop?: (enabled: boolean) => void;
 }
 
 export const TeamSelectionCard = ({
@@ -38,7 +45,11 @@ export const TeamSelectionCard = ({
   onTemplateChange,
   viewMode = "team-sheet",
   periodNumber = 1,
-  duration = 20
+  duration = 20,
+  onSquadSelectionChange,
+  squadSelection = [],
+  useDragAndDrop = true,
+  onToggleDragAndDrop
 }: TeamSelectionCardProps) => {
   const formatSelectionsForFormation = (selections: TeamSelections) => {
     return Object.entries(selections)
@@ -49,29 +60,56 @@ export const TeamSelectionCard = ({
       }));
   };
 
+  const squadPlayers = squadSelection.length > 0 ? squadSelection : Array.from(selectedPlayers);
+
   return (
     <Card key={team.id} className="mb-6">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>{viewMode === "formation" ? team.name : `Period ${periodNumber} (${duration} min)`}</CardTitle>
-        <PerformanceCategorySelector
-          value={performanceCategory}
-          onChange={onPerformanceCategoryChange}
-        />
+        <div className="flex items-center gap-4">
+          {onToggleDragAndDrop && (
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="drag-enabled" 
+                checked={useDragAndDrop}
+                onCheckedChange={onToggleDragAndDrop}
+              />
+              <Label htmlFor="drag-enabled">Drag & Drop</Label>
+            </div>
+          )}
+          <PerformanceCategorySelector
+            value={performanceCategory}
+            onChange={onPerformanceCategoryChange}
+          />
+        </div>
       </CardHeader>
       <CardContent>
-        <FormationSelector
-          format={format}
-          teamName={team.name}
-          onSelectionChange={onSelectionChange}
-          selectedPlayers={selectedPlayers}
-          availablePlayers={players}
-          performanceCategory={performanceCategory}
-          formationTemplate={formationTemplate}
-          onTemplateChange={onTemplateChange}
-          viewMode={viewMode}
-          periodNumber={periodNumber}
-          duration={duration}
-        />
+        {useDragAndDrop ? (
+          <DraggableFormation
+            format={format}
+            availablePlayers={players}
+            squadPlayers={squadPlayers}
+            onSelectionChange={onSelectionChange}
+            performanceCategory={performanceCategory}
+            onSquadPlayersChange={onSquadSelectionChange}
+            formationTemplate={formationTemplate}
+            onTemplateChange={onTemplateChange}
+          />
+        ) : (
+          <FormationSelector
+            format={format}
+            teamName={team.name}
+            onSelectionChange={onSelectionChange}
+            selectedPlayers={selectedPlayers}
+            availablePlayers={players}
+            performanceCategory={performanceCategory}
+            formationTemplate={formationTemplate}
+            onTemplateChange={onTemplateChange}
+            viewMode={viewMode}
+            periodNumber={periodNumber}
+            duration={duration}
+          />
+        )}
       </CardContent>
     </Card>
   );

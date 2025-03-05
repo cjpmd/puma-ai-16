@@ -12,7 +12,9 @@ export const useTeamSelections = (
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, PerformanceCategory>>({});
   const [teamFormationTemplates, setTeamFormationTemplates] = useState<Record<string, string>>({});
-  const [periodSelections, setPeriodSelections] = useState<Record<string, Record<number, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>>>({});
+  const [periodSelections, setPeriodSelections] = useState<Record<string, Record<string | number, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>>>({});
+  const [squadSelections, setSquadSelections] = useState<Record<string, string[]>>({});
+  const [dragEnabled, setDragEnabled] = useState<boolean>(true);
 
   const handleTeamSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
     const newSelections = {
@@ -36,14 +38,14 @@ export const useTeamSelections = (
   };
 
   const handlePeriodSelectionChange = (teamId: string, periodNumber: number | string, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
-    // Convert periodNumber to number if it's a string
-    const periodNum = typeof periodNumber === 'string' ? parseInt(periodNumber, 10) : periodNumber;
+    // Convert periodNumber to string to ensure consistent key types
+    const periodKey = periodNumber.toString();
     
     setPeriodSelections(prev => ({
       ...prev,
       [teamId]: {
         ...(prev[teamId] || {}),
-        [periodNum]: selections
+        [periodKey]: selections
       }
     }));
   };
@@ -77,6 +79,24 @@ export const useTeamSelections = (
       ...prev,
       [teamId]: template
     }));
+  };
+
+  // Handle squad selection change
+  const handleSquadSelectionChange = (teamId: string, playerIds: string[]) => {
+    setSquadSelections(prev => ({
+      ...prev,
+      [teamId]: playerIds
+    }));
+    
+    // Update selected players as well
+    const newSelectedPlayers = new Set(selectedPlayers);
+    playerIds.forEach(id => newSelectedPlayers.add(id));
+    setSelectedPlayers(newSelectedPlayers);
+  };
+
+  // Toggle drag functionality
+  const toggleDragEnabled = (enabled: boolean) => {
+    setDragEnabled(enabled);
   };
 
   const saveSelections = async () => {
@@ -121,10 +141,14 @@ export const useTeamSelections = (
     selectedPlayers,
     performanceCategories,
     teamFormationTemplates,
+    squadSelections,
+    dragEnabled,
     handleTeamSelectionChange,
     handlePeriodSelectionChange,
     handlePerformanceCategoryChange,
     handleTemplateChange,
+    handleSquadSelectionChange,
+    toggleDragEnabled,
     saveSelections,
     setPeriodSelections
   };
