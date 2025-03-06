@@ -120,10 +120,14 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     }
   };
 
-  // Handle toggle squad mode with local state
-  const handleToggleSquadMode = (toSquadMode: boolean) => {
-    setSquadModeState(toSquadMode);
-    if (toSquadMode) {
+  // Handle toggle squad mode - explicitly call the function from the hook
+  const handleToggleSquadMode = () => {
+    const newSquadMode = !squadModeState;
+    setSquadModeState(newSquadMode);
+    
+    console.log(`Toggling squad mode from ${squadModeState} to ${newSquadMode}`);
+    
+    if (newSquadMode) {
       returnToSquadSelection();
     } else {
       finishSquadSelection();
@@ -146,9 +150,8 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
           <Button 
             variant={squadModeState ? "default" : "outline"}
-            onClick={() => handleToggleSquadMode(!squadModeState)}
+            onClick={handleToggleSquadMode}
             className="flex items-center"
-            disabled={squadModeState && localSquadPlayers.length === 0}
           >
             {squadModeState ? (
               <>
@@ -280,4 +283,3 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     </div>
   );
 };
-

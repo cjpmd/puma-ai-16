@@ -34,7 +34,7 @@ export const useDropOperations = ({
     
     console.log(`Dropping player ${playerId} into position ${position} (slot ${slotId})`);
     
-    // Update selections with the new player
+    // Create a new selections object to avoid mutating the original
     const updatedSelections = { ...selections };
     
     // If we're preventing duplicates, remove the player from other positions first

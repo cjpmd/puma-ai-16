@@ -97,7 +97,7 @@ export const useDraggableFormation = ({
         const combinedPlayerIds = [...new Set([...localSquadPlayers, ...selectedPlayerIds])];
         
         // Only update if there's a change to avoid infinite loops
-        if (JSON.stringify(combinedPlayerIds) !== JSON.stringify(localSquadPlayers)) {
+        if (JSON.stringify(combinedPlayerIds.sort()) !== JSON.stringify(localSquadPlayers.sort())) {
           setLocalSquadPlayers(combinedPlayerIds);
           onSquadPlayersChange(combinedPlayerIds);
         }
@@ -107,7 +107,8 @@ export const useDraggableFormation = ({
   
   // Sync with squadPlayers prop
   useEffect(() => {
-    if (squadPlayers && squadPlayers.length > 0 && JSON.stringify(squadPlayers) !== JSON.stringify(localSquadPlayers)) {
+    if (squadPlayers && squadPlayers.length > 0 && JSON.stringify(squadPlayers.sort()) !== JSON.stringify(localSquadPlayers.sort())) {
+      console.log("Updating local squad players:", squadPlayers);
       setLocalSquadPlayers(squadPlayers);
     }
   }, [squadPlayers]);
@@ -121,6 +122,7 @@ export const useDraggableFormation = ({
   // Update squad mode when forceSquadMode changes
   useEffect(() => {
     if (forceSquadMode !== undefined && forceSquadMode !== squadMode) {
+      console.log(`Forcing squad mode to: ${forceSquadMode}`);
       setSquadMode(forceSquadMode);
     }
   }, [forceSquadMode, squadMode]);
@@ -176,6 +178,7 @@ export const useDraggableFormation = ({
 
   // Toggle squad mode
   const toggleSquadMode = () => {
+    console.log("Toggle squad mode called - current state:", squadMode);
     setSquadMode(prev => !prev);
   };
 
@@ -183,6 +186,7 @@ export const useDraggableFormation = ({
   const addPlayerToSquad = (playerId: string) => {
     if (!localSquadPlayers.includes(playerId)) {
       const updatedSquad = [...localSquadPlayers, playerId];
+      console.log("Adding player to squad:", playerId, updatedSquad);
       setLocalSquadPlayers(updatedSquad);
       
       if (onSquadPlayersChange) {
@@ -195,6 +199,7 @@ export const useDraggableFormation = ({
   const removePlayerFromSquad = (playerId: string) => {
     if (localSquadPlayers.includes(playerId)) {
       const updatedSquad = localSquadPlayers.filter(id => id !== playerId);
+      console.log("Removing player from squad:", playerId, updatedSquad);
       setLocalSquadPlayers(updatedSquad);
       
       // Also remove from selections if present
@@ -215,13 +220,13 @@ export const useDraggableFormation = ({
 
   // Finished squad selection
   const finishSquadSelection = () => {
-    if (localSquadPlayers.length > 0) {
-      setSquadMode(false);
-    }
+    console.log("Finishing squad selection, setting squadMode to false");
+    setSquadMode(false);
   };
 
   // Return to squad selection
   const returnToSquadSelection = () => {
+    console.log("Returning to squad selection, setting squadMode to true");
     setSquadMode(true);
   };
 
