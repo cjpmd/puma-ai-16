@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { FormationGrid } from "./components/FormationGrid";
 import { FormationFormat } from "../types";
@@ -52,6 +53,16 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   const [localPeriod, setLocalPeriod] = useState(periodNumber);
   const [localDuration, setLocalDuration] = useState(periodDuration);
   const [squadModeState, setSquadModeState] = useState(true);
+
+  // Debug log to see props
+  console.log("DraggableFormation props:", {
+    format,
+    squadPlayers: squadPlayers.length,
+    performanceCategory,
+    formationTemplate,
+    periodNumber,
+    periodDuration
+  });
 
   const {
     selectedPlayerId,
@@ -139,6 +150,13 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     }
     return periodNumber === 1 ? "First Half" : "Second Half";
   };
+
+  // Debug log to monitor state
+  console.log("DraggableFormation state:", {
+    squadMode: squadModeState,
+    localSquadPlayers: localSquadPlayers.length,
+    selections: Object.keys(selections).length
+  });
 
   return (
     <div className="space-y-6" id={`team-selection-${periodId || periodNumber}`}>

@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { FormationFormat } from "../../types";
 import { PerformanceCategory } from "@/types/player";
@@ -66,9 +67,7 @@ export const useDraggableFormation = ({
     selectedPlayerId,
     setSelectedPlayerId,
     draggingPlayer,
-    setDraggingPlayer: (playerId) => {
-      if (playerId === null) handleDragEnd();
-    },
+    setDraggingPlayer: handleDragEnd, // Fixed: using handleDragEnd instead of undefined setDraggingPlayer
     performanceCategory,
     preventDuplicates: true
   });
@@ -84,6 +83,7 @@ export const useDraggableFormation = ({
           .map(selection => selection.playerId)
           .filter(id => id !== "unassigned");
         
+        // Don't lose existing squad players when adding a new one
         const combinedPlayerIds = Array.from(new Set([...localSquadPlayers, ...selectedPlayerIds]));
         
         if (JSON.stringify(combinedPlayerIds.sort()) !== JSON.stringify(localSquadPlayers.sort())) {
@@ -200,7 +200,7 @@ export const useDraggableFormation = ({
     console.log("Returning to squad selection");
     setSquadMode(true);
     setSelectedPlayerId(null);
-    setDraggingPlayer(null);
+    handleDragEnd(); // Fixed: using handleDragEnd instead of undefined setDraggingPlayer
   };
 
   const finishSquadSelection = () => {
@@ -208,7 +208,7 @@ export const useDraggableFormation = ({
     if (localSquadPlayers.length > 0) {
       setSquadMode(false);
       setSelectedPlayerId(null);
-      setDraggingPlayer(null);
+      handleDragEnd(); // Fixed: using handleDragEnd instead of undefined setDraggingPlayer
     }
   };
 

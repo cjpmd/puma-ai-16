@@ -7,7 +7,7 @@ interface UseDropOperationsProps {
   selectedPlayerId: string | null;
   setSelectedPlayerId: React.Dispatch<React.SetStateAction<string | null>>;
   draggingPlayer: string | null;
-  setDraggingPlayer: React.Dispatch<React.SetStateAction<string | null>>;
+  setDraggingPlayer: (playerId: string | null) => void;
   performanceCategory?: PerformanceCategory;
   preventDuplicates?: boolean;
 }

@@ -31,6 +31,9 @@ export const SquadPlayersSection: React.FC<SquadPlayersSectionProps> = ({
     return players.find(player => player.id === playerId);
   };
 
+  // Debug squad players
+  console.log("SquadPlayersSection rendering with squad players:", squadPlayers);
+
   return (
     <Card>
       <CardHeader className="pb-3">
