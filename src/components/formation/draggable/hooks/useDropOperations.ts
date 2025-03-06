@@ -24,7 +24,6 @@ export const useDropOperations = ({
 }: UseDropOperationsProps) => {
   
   const handleDrop = (slotId: string, position: string, fromSlotId?: string) => {
-    // Identify which player is being dropped - either a dragged player or a selected player
     const playerId = draggingPlayer || selectedPlayerId;
     
     if (!playerId) {
@@ -32,17 +31,28 @@ export const useDropOperations = ({
       return;
     }
     
+    // Don't allow dropping into the same slot
+    if (fromSlotId === slotId) {
+      console.log("Same slot, ignoring drop");
+      return;
+    }
+    
     console.log(`Dropping player ${playerId} into position ${position} (slot ${slotId})`);
     
-    // Create a new selections object to avoid mutating the original
+    // Create a new selections object
     const updatedSelections = { ...selections };
     
-    // If we're preventing duplicates, remove the player from other positions first
+    // If moving from one slot to another, remove from old slot first
+    if (fromSlotId && updatedSelections[fromSlotId]?.playerId === playerId) {
+      console.log(`Removing player ${playerId} from slot ${fromSlotId}`);
+      delete updatedSelections[fromSlotId];
+    }
+    
+    // If preventing duplicates, remove the player from any other positions
     if (preventDuplicates) {
-      // Only remove if not the same slot (for dragging within the same position)
       Object.entries(updatedSelections).forEach(([existingSlotId, existingSelection]) => {
-        if (existingSelection.playerId === playerId && existingSlotId !== fromSlotId && existingSlotId !== slotId) {
-          console.log(`Removing ${playerId} from position ${existingSelection.position} (slot ${existingSlotId})`);
+        if (existingSelection.playerId === playerId && existingSlotId !== slotId) {
+          console.log(`Removing duplicate ${playerId} from position ${existingSelection.position}`);
           delete updatedSelections[existingSlotId];
         }
       });
@@ -58,7 +68,7 @@ export const useDropOperations = ({
     // Update the state
     updateSelections(updatedSelections);
     
-    // Reset the UI state
+    // Reset UI state
     setSelectedPlayerId(null);
     setDraggingPlayer(null);
   };

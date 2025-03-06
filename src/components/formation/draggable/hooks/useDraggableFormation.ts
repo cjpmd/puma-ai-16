@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { FormationFormat } from "../../types";
 import { PerformanceCategory } from "@/types/player";
@@ -35,7 +34,6 @@ export const useDraggableFormation = ({
   periodDuration = 45,
   forceSquadMode
 }: UseDraggableFormationProps) => {
-  // State for tracking selections, selected player, and active template
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>>(initialSelections || {});
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>(formationTemplate);
@@ -46,10 +44,8 @@ export const useDraggableFormation = ({
   const formationRef = useRef<HTMLDivElement>(null);
   const previousSelectionsRef = useRef<Record<string, { playerId: string; position: string }>>({});
 
-  // Get drag operations from the hook
   const { draggingPlayerId: draggingPlayer, handleDragStart, handleDragEnd, handlePlayerSelect } = useDragOperations();
 
-  // Initialize substitution manager
   const { 
     addSubstitute, 
     removeSubstitute, 
@@ -61,11 +57,9 @@ export const useDraggableFormation = ({
     performanceCategory
   });
 
-  // Initialize drop operations with modified callbacks to prevent duplication
   const { handleDrop } = useDropOperations({
     selections,
     updateSelections: (newSelections) => {
-      // Store previous state for comparison
       previousSelectionsRef.current = selections;
       setSelections(newSelections);
     },
@@ -79,47 +73,45 @@ export const useDraggableFormation = ({
     preventDuplicates: true
   });
 
-  // Update parent component when selections change
   useEffect(() => {
-    // Check if we need to update the parent
     const needsUpdate = JSON.stringify(selections) !== JSON.stringify(previousSelectionsRef.current);
     
     if (needsUpdate) {
       onSelectionChange(selections);
       
-      // Update squad players list based on selections
       if (onSquadPlayersChange) {
         const selectedPlayerIds = Object.values(selections)
           .map(selection => selection.playerId)
           .filter(id => id !== "unassigned");
         
-        // Combine with existing squad players to prevent losing squad members
-        const combinedPlayerIds = [...new Set([...localSquadPlayers, ...selectedPlayerIds])];
+        const combinedPlayerIds = Array.from(new Set([...localSquadPlayers, ...selectedPlayerIds]));
         
-        // Only update if there's a change to avoid infinite loops
         if (JSON.stringify(combinedPlayerIds.sort()) !== JSON.stringify(localSquadPlayers.sort())) {
+          console.log("Updating squad players:", combinedPlayerIds);
           setLocalSquadPlayers(combinedPlayerIds);
           onSquadPlayersChange(combinedPlayerIds);
         }
       }
     }
   }, [selections, onSelectionChange, onSquadPlayersChange, localSquadPlayers]);
-  
-  // Sync with squadPlayers prop
+
   useEffect(() => {
-    if (squadPlayers && squadPlayers.length > 0 && JSON.stringify(squadPlayers.sort()) !== JSON.stringify(localSquadPlayers.sort())) {
-      console.log("Updating local squad players:", squadPlayers);
-      setLocalSquadPlayers(squadPlayers);
+    if (squadPlayers && squadPlayers.length > 0) {
+      const sortedSquadPlayers = [...squadPlayers].sort();
+      const sortedLocalPlayers = [...localSquadPlayers].sort();
+      
+      if (JSON.stringify(sortedSquadPlayers) !== JSON.stringify(sortedLocalPlayers)) {
+        console.log("Syncing squad players:", squadPlayers);
+        setLocalSquadPlayers(squadPlayers);
+      }
     }
   }, [squadPlayers]);
 
-  // Update period settings when props change
   useEffect(() => {
     setCurrentPeriod(periodNumber);
     setPeriodLength(periodDuration);
   }, [periodNumber, periodDuration]);
   
-  // Update squad mode when forceSquadMode changes
   useEffect(() => {
     if (forceSquadMode !== undefined && forceSquadMode !== squadMode) {
       console.log(`Forcing squad mode to: ${forceSquadMode}`);
@@ -127,48 +119,38 @@ export const useDraggableFormation = ({
     }
   }, [forceSquadMode, squadMode]);
 
-  // Handle player click in the available players list
   const handlePlayerClick = (playerId: string) => {
-    // If player is already selected, deselect them
     if (selectedPlayerId === playerId) {
       setSelectedPlayerId(null);
     } else {
-      // Otherwise, select the player
       setSelectedPlayerId(playerId);
     }
   };
 
-  // Handle removing a player from a position
   const handleRemovePlayer = (slotId: string) => {
     const updatedSelections = { ...selections };
     delete updatedSelections[slotId];
     setSelections(updatedSelections);
   };
 
-  // Function to get player by ID from available players
   const getPlayerById = (playerId: string) => {
     return availablePlayers.find(player => player.id === playerId);
   };
 
-  // Function to get all available players (not yet selected)
   const getAvailablePlayers = () => {
-    // Return all available players - filtering is handled in the component
     return availablePlayers;
   };
 
-  // Function to get player from squad by ID
   const getPlayer = (playerId: string) => {
     return availablePlayers.find(player => player.id === playerId);
   };
 
-  // Get available players for the squad
   const getAvailableSquadPlayers = () => {
     return localSquadPlayers.length > 0
       ? availablePlayers.filter(player => localSquadPlayers.includes(player.id))
       : availablePlayers;
   };
 
-  // Handle formation template change
   const handleTemplateChange = (template: string) => {
     setSelectedTemplate(template);
     if (onTemplateChange) {
@@ -176,13 +158,11 @@ export const useDraggableFormation = ({
     }
   };
 
-  // Toggle squad mode
   const toggleSquadMode = () => {
     console.log("Toggle squad mode called - current state:", squadMode);
     setSquadMode(prev => !prev);
   };
 
-  // Add player to squad
   const addPlayerToSquad = (playerId: string) => {
     if (!localSquadPlayers.includes(playerId)) {
       const updatedSquad = [...localSquadPlayers, playerId];
@@ -195,14 +175,12 @@ export const useDraggableFormation = ({
     }
   };
 
-  // Remove player from squad
   const removePlayerFromSquad = (playerId: string) => {
     if (localSquadPlayers.includes(playerId)) {
       const updatedSquad = localSquadPlayers.filter(id => id !== playerId);
       console.log("Removing player from squad:", playerId, updatedSquad);
       setLocalSquadPlayers(updatedSquad);
       
-      // Also remove from selections if present
       const updatedSelections = { ...selections };
       Object.entries(updatedSelections).forEach(([key, value]) => {
         if (value.playerId === playerId) {
@@ -218,19 +196,22 @@ export const useDraggableFormation = ({
     }
   };
 
-  // Finished squad selection
-  const finishSquadSelection = () => {
-    console.log("Finishing squad selection, setting squadMode to false");
-    setSquadMode(false);
-  };
-
-  // Return to squad selection
   const returnToSquadSelection = () => {
-    console.log("Returning to squad selection, setting squadMode to true");
+    console.log("Returning to squad selection");
     setSquadMode(true);
+    setSelectedPlayerId(null);
+    setDraggingPlayer(null);
   };
 
-  // Show all players by default
+  const finishSquadSelection = () => {
+    console.log("Finishing squad selection");
+    if (localSquadPlayers.length > 0) {
+      setSquadMode(false);
+      setSelectedPlayerId(null);
+      setDraggingPlayer(null);
+    }
+  };
+
   const showPlayers = true;
 
   return {

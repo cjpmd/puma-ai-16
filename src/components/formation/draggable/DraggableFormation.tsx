@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { FormationGrid } from "./components/FormationGrid";
 import { FormationFormat } from "../types";
@@ -30,7 +29,7 @@ export interface DraggableFormationProps {
   periodDuration?: number;
   onPeriodChange?: (periodNumber: number) => void;
   onDurationChange?: (duration: number) => void;
-  periodId?: number; // Add support for custom period IDs
+  periodId?: number;
 }
 
 export const DraggableFormation: React.FC<DraggableFormationProps> = ({
@@ -93,17 +92,15 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     onSquadPlayersChange,
     periodNumber: localPeriod,
     periodDuration: localDuration,
-    forceSquadMode: squadModeState // Pass the local squad mode state
+    forceSquadMode: squadModeState
   });
 
-  // Use effect to synchronize the local squad mode state with the hook's state
   useEffect(() => {
     if (squadMode !== squadModeState) {
       setSquadModeState(squadMode);
     }
   }, [squadMode, squadModeState]);
 
-  // Handle period change
   const handlePeriodChange = (value: string) => {
     const period = parseInt(value);
     setLocalPeriod(period);
@@ -112,7 +109,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     }
   };
 
-  // Handle duration change
   const handleDurationChange = (value: number) => {
     setLocalDuration(value);
     if (onDurationChange) {
@@ -120,7 +116,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     }
   };
 
-  // Handle toggle squad mode - explicitly call the function from the hook
   const handleToggleSquadMode = () => {
     const newSquadMode = !squadModeState;
     setSquadModeState(newSquadMode);
@@ -130,7 +125,9 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     if (newSquadMode) {
       returnToSquadSelection();
     } else {
-      finishSquadSelection();
+      if (localSquadPlayers.length > 0) {
+        finishSquadSelection();
+      }
     }
   };
 
@@ -145,13 +142,13 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
 
   return (
     <div className="space-y-6" id={`team-selection-${periodId || periodNumber}`}>
-      {/* Top controls - Squad mode toggle and Period/Duration selector */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
           <Button 
             variant={squadModeState ? "default" : "outline"}
             onClick={handleToggleSquadMode}
             className="flex items-center"
+            disabled={!squadModeState && localSquadPlayers.length === 0}
           >
             {squadModeState ? (
               <>
@@ -196,7 +193,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         )}
       </div>
       
-      {/* Helper text */}
       <FormationHelperText 
         selectedPlayerId={selectedPlayerId}
         draggingPlayer={draggingPlayer}
@@ -204,10 +200,8 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         periodNumber={localPeriod}
       />
       
-      {/* Squad selection mode vs Position assignment mode */}
       {squadModeState ? (
         <div className="space-y-4">
-          {/* Available Players List */}
           <AvailablePlayersSection
             players={getAvailablePlayers()}
             selectedPlayerId={selectedPlayerId}
@@ -219,7 +213,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
             handleDragEnd={handleDragEnd}
           />
           
-          {/* Squad Players List */}
           <SquadPlayersSection
             players={availablePlayers}
             squadPlayers={localSquadPlayers}
@@ -249,7 +242,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
           </div>
           
           <div className="lg:w-1/4 space-y-4">
-            {/* Squad Players List for Dragging */}
             <SquadPlayersSection
               players={availablePlayers}
               squadPlayers={localSquadPlayers}
@@ -264,7 +256,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         </div>
       )}
       
-      {/* Substitutes Section - only visible in position assignment mode */}
       {!squadModeState && (
         <SubstitutesSection
           selections={selections}
