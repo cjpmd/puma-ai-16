@@ -79,13 +79,13 @@ export const SquadPlayersSection: React.FC<SquadPlayersSectionProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 rounded-full hover:bg-destructive hover:text-destructive-foreground"
+                          className="h-6 w-6 rounded-full hover:bg-red-100 hover:text-red-600"
                           onClick={(e) => {
                             e.stopPropagation();
                             onRemoveFromSquad(player.id);
                           }}
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-3 w-3" />
                         </Button>
                       )}
                     </div>
@@ -96,8 +96,8 @@ export const SquadPlayersSection: React.FC<SquadPlayersSectionProps> = ({
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               {squadMode 
-                ? "Add players to your squad from the available list" 
-                : "No players available for positioning"}
+                ? "No players added to squad yet" 
+                : "No players available for selection"}
             </div>
           )}
         </ScrollArea>

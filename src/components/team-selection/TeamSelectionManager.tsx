@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { TeamSelectionCard } from "./TeamSelectionCard";
@@ -170,6 +169,17 @@ export const TeamSelectionManager = ({
       editPeriod(teamId, periodId, { duration: newDuration });
     }
   };
+  
+  // Function to switch to formation view for a specific period
+  const navigateToFormationPeriod = (teamId: string, periodId: number) => {
+    setActiveView("formation");
+    setTimeout(() => {
+      const periodElement = document.getElementById(`team-selection-${periodId}`);
+      if (periodElement) {
+        periodElement.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
 
   if (isLoading) {
     return <div>Loading players...</div>;
@@ -204,25 +214,62 @@ export const TeamSelectionManager = ({
         </div>
 
         <TabsContent value="formation" className="mt-0">
-          {teams.map(team => (
-            <TeamSelectionCard
-              key={team.id}
-              team={team}
-              format={validFormat}
-              players={playersWithStatus}
-              selectedPlayers={selectedPlayers}
-              performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
-              onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
-              onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
-              formationTemplate={teamFormationTemplates[team.id] || "All"}
-              onTemplateChange={(template) => handleTemplateChange(team.id, template)}
-              viewMode="formation"
-              squadSelection={squadSelections[team.id]}
-              onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
-              useDragAndDrop={forceDragEnabled}
-              onToggleDragAndDrop={handleToggleDragAndDrop}
-            />
-          ))}
+          {teams.map(team => {
+            const teamPeriods = periods[team.id] || [];
+            
+            // Show default first half if no periods
+            if (teamPeriods.length === 0) {
+              return (
+                <TeamSelectionCard
+                  key={`${team.id}-default`}
+                  team={team}
+                  format={validFormat}
+                  players={playersWithStatus}
+                  selectedPlayers={selectedPlayers}
+                  performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
+                  onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
+                  onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
+                  formationTemplate={teamFormationTemplates[team.id] || "All"}
+                  onTemplateChange={(template) => handleTemplateChange(team.id, template)}
+                  viewMode="formation"
+                  squadSelection={squadSelections[team.id]}
+                  onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
+                  useDragAndDrop={forceDragEnabled}
+                  onToggleDragAndDrop={handleToggleDragAndDrop}
+                />
+              );
+            }
+            
+            // Otherwise, show a card for each period
+            return teamPeriods.map(period => (
+              <TeamSelectionCard
+                key={`${team.id}-${period.id}`}
+                team={team}
+                format={validFormat}
+                players={playersWithStatus}
+                selectedPlayers={selectedPlayers}
+                performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
+                onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
+                onSelectionChange={(selections) => {
+                  // Store selections for this specific period
+                  handlePeriodSelectionChange(team.id, period.id, selections);
+                  // Also update the main team selections
+                  handleTeamSelectionChange(team.id, selections);
+                }}
+                formationTemplate={teamFormationTemplates[team.id] || "All"}
+                onTemplateChange={(template) => handleTemplateChange(team.id, template)}
+                viewMode="formation"
+                periodNumber={Math.floor(period.id / 100)}
+                duration={period.duration}
+                onDurationChange={(duration) => handlePeriodDurationUpdate(team.id, period.id, duration)}
+                squadSelection={squadSelections[team.id]}
+                onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
+                useDragAndDrop={forceDragEnabled}
+                onToggleDragAndDrop={handleToggleDragAndDrop}
+                periodId={period.id}
+              />
+            ));
+          })}
         </TabsContent>
 
         <TabsContent value="periods" className="mt-0">
@@ -282,14 +329,7 @@ export const TeamSelectionManager = ({
                             <Button 
                               className="w-full"
                               variant="outline"
-                              onClick={() => {
-                                setActiveView("formation");
-                                // Update or create the team selection card for this period
-                                const teamSelectionCard = document.getElementById(`team-selection-${team.id}-${period.id}`);
-                                if (teamSelectionCard) {
-                                  teamSelectionCard.scrollIntoView({ behavior: 'smooth' });
-                                }
-                              }}
+                              onClick={() => navigateToFormationPeriod(team.id, period.id)}
                             >
                               Set Formation
                             </Button>
@@ -338,14 +378,7 @@ export const TeamSelectionManager = ({
                             <Button 
                               className="w-full"
                               variant="outline"
-                              onClick={() => {
-                                setActiveView("formation");
-                                // Update or create the team selection card for this period
-                                const teamSelectionCard = document.getElementById(`team-selection-${team.id}-${period.id}`);
-                                if (teamSelectionCard) {
-                                  teamSelectionCard.scrollIntoView({ behavior: 'smooth' });
-                                }
-                              }}
+                              onClick={() => navigateToFormationPeriod(team.id, period.id)}
                             >
                               Set Formation
                             </Button>

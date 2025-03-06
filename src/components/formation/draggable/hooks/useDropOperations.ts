@@ -9,6 +9,7 @@ interface UseDropOperationsProps {
   draggingPlayer: string | null;
   setDraggingPlayer: React.Dispatch<React.SetStateAction<string | null>>;
   performanceCategory?: PerformanceCategory;
+  preventDuplicates?: boolean;
 }
 
 export const useDropOperations = ({
@@ -18,7 +19,8 @@ export const useDropOperations = ({
   setSelectedPlayerId,
   draggingPlayer,
   setDraggingPlayer,
-  performanceCategory
+  performanceCategory,
+  preventDuplicates = true
 }: UseDropOperationsProps) => {
   
   const handleDrop = (slotId: string, position: string, fromSlotId?: string) => {
@@ -35,12 +37,16 @@ export const useDropOperations = ({
     // Update selections with the new player
     const updatedSelections = { ...selections };
     
-    // Check if the dropped player is already assigned to a position
-    Object.entries(updatedSelections).forEach(([existingSlotId, existingSelection]) => {
-      if (existingSelection.playerId === playerId && existingSlotId !== fromSlotId) {
-        delete updatedSelections[existingSlotId];
-      }
-    });
+    // If we're preventing duplicates, remove the player from other positions first
+    if (preventDuplicates) {
+      // Only remove if not the same slot (for dragging within the same position)
+      Object.entries(updatedSelections).forEach(([existingSlotId, existingSelection]) => {
+        if (existingSelection.playerId === playerId && existingSlotId !== fromSlotId && existingSlotId !== slotId) {
+          console.log(`Removing ${playerId} from position ${existingSelection.position} (slot ${existingSlotId})`);
+          delete updatedSelections[existingSlotId];
+        }
+      });
+    }
     
     // Add the player to the new position
     updatedSelections[slotId] = {

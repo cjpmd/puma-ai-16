@@ -18,6 +18,7 @@ export interface UseDraggableFormationProps {
   onSquadPlayersChange?: (playerIds: string[]) => void;
   periodNumber?: number;
   periodDuration?: number;
+  forceSquadMode?: boolean;
 }
 
 export const useDraggableFormation = ({
@@ -31,17 +32,19 @@ export const useDraggableFormation = ({
   onTemplateChange,
   onSquadPlayersChange,
   periodNumber = 1,
-  periodDuration = 45
+  periodDuration = 45,
+  forceSquadMode
 }: UseDraggableFormationProps) => {
   // State for tracking selections, selected player, and active template
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>>(initialSelections || {});
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>(formationTemplate);
   const [localSquadPlayers, setLocalSquadPlayers] = useState<string[]>(squadPlayers || []);
-  const [squadMode, setSquadMode] = useState<boolean>(true);
+  const [squadMode, setSquadMode] = useState<boolean>(forceSquadMode !== undefined ? forceSquadMode : true);
   const [currentPeriod, setCurrentPeriod] = useState<number>(periodNumber);
   const [periodLength, setPeriodLength] = useState<number>(periodDuration);
   const formationRef = useRef<HTMLDivElement>(null);
+  const previousSelectionsRef = useRef<Record<string, { playerId: string; position: string }>>({});
 
   // Get drag operations from the hook
   const { draggingPlayerId: draggingPlayer, handleDragStart, handleDragEnd, handlePlayerSelect } = useDragOperations();
@@ -58,53 +61,69 @@ export const useDraggableFormation = ({
     performanceCategory
   });
 
-  // Initialize drop operations
+  // Initialize drop operations with modified callbacks to prevent duplication
   const { handleDrop } = useDropOperations({
     selections,
-    updateSelections: setSelections,
+    updateSelections: (newSelections) => {
+      // Store previous state for comparison
+      previousSelectionsRef.current = selections;
+      setSelections(newSelections);
+    },
     selectedPlayerId,
     setSelectedPlayerId,
     draggingPlayer,
     setDraggingPlayer: (playerId) => {
       if (playerId === null) handleDragEnd();
     },
-    performanceCategory
+    performanceCategory,
+    preventDuplicates: true
   });
 
   // Update parent component when selections change
   useEffect(() => {
-    onSelectionChange(selections);
+    // Check if we need to update the parent
+    const needsUpdate = JSON.stringify(selections) !== JSON.stringify(previousSelectionsRef.current);
     
-    // Update squad players list based on selections
-    if (onSquadPlayersChange) {
-      const selectedPlayerIds = Object.values(selections)
-        .map(selection => selection.playerId)
-        .filter(id => id !== "unassigned");
+    if (needsUpdate) {
+      onSelectionChange(selections);
       
-      // Remove duplicates
-      const uniquePlayerIds = [...new Set(selectedPlayerIds)];
-      onSquadPlayersChange(uniquePlayerIds);
-    }
-  }, [selections, onSelectionChange, onSquadPlayersChange]);
-  
-  // Initialize squad with props
-  useEffect(() => {
-    if (squadPlayers && squadPlayers.length > 0) {
-      setLocalSquadPlayers(squadPlayers);
-      
-      // Only set squad mode to false if we have selected players
-      // This ensures new squad selections start in squad mode
-      if (Object.keys(selections).length > 0) {
-        setSquadMode(false);
+      // Update squad players list based on selections
+      if (onSquadPlayersChange) {
+        const selectedPlayerIds = Object.values(selections)
+          .map(selection => selection.playerId)
+          .filter(id => id !== "unassigned");
+        
+        // Combine with existing squad players to prevent losing squad members
+        const combinedPlayerIds = [...new Set([...localSquadPlayers, ...selectedPlayerIds])];
+        
+        // Only update if there's a change to avoid infinite loops
+        if (JSON.stringify(combinedPlayerIds) !== JSON.stringify(localSquadPlayers)) {
+          setLocalSquadPlayers(combinedPlayerIds);
+          onSquadPlayersChange(combinedPlayerIds);
+        }
       }
     }
-  }, [squadPlayers, selections]);
+  }, [selections, onSelectionChange, onSquadPlayersChange, localSquadPlayers]);
+  
+  // Sync with squadPlayers prop
+  useEffect(() => {
+    if (squadPlayers && squadPlayers.length > 0 && JSON.stringify(squadPlayers) !== JSON.stringify(localSquadPlayers)) {
+      setLocalSquadPlayers(squadPlayers);
+    }
+  }, [squadPlayers]);
 
   // Update period settings when props change
   useEffect(() => {
     setCurrentPeriod(periodNumber);
     setPeriodLength(periodDuration);
   }, [periodNumber, periodDuration]);
+  
+  // Update squad mode when forceSquadMode changes
+  useEffect(() => {
+    if (forceSquadMode !== undefined && forceSquadMode !== squadMode) {
+      setSquadMode(forceSquadMode);
+    }
+  }, [forceSquadMode, squadMode]);
 
   // Handle player click in the available players list
   const handlePlayerClick = (playerId: string) => {
@@ -131,7 +150,7 @@ export const useDraggableFormation = ({
 
   // Function to get all available players (not yet selected)
   const getAvailablePlayers = () => {
-    // No need to filter out selected players - allow multiple positions
+    // Return all available players - filtering is handled in the component
     return availablePlayers;
   };
 
