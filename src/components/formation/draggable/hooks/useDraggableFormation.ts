@@ -45,8 +45,10 @@ export const useDraggableFormation = ({
   const formationRef = useRef<HTMLDivElement>(null);
   const previousSelectionsRef = useRef<Record<string, { playerId: string; position: string }>>({});
 
+  // Get drag operations
   const { draggingPlayerId: draggingPlayer, handleDragStart, handleDragEnd, handlePlayerSelect } = useDragOperations();
 
+  // Initialize substitution manager
   const { 
     addSubstitute, 
     removeSubstitute, 
@@ -58,6 +60,7 @@ export const useDraggableFormation = ({
     performanceCategory
   });
 
+  // Initialize drop operations
   const { handleDrop } = useDropOperations({
     selections,
     updateSelections: (newSelections) => {
@@ -67,51 +70,68 @@ export const useDraggableFormation = ({
     selectedPlayerId,
     setSelectedPlayerId,
     draggingPlayer,
-    setDraggingPlayer: handleDragEnd, // Fixed: using handleDragEnd instead of undefined setDraggingPlayer
+    setDraggingPlayer: handleDragEnd,
     performanceCategory,
     preventDuplicates: true
   });
 
+  // Update parent when selections change
   useEffect(() => {
     const needsUpdate = JSON.stringify(selections) !== JSON.stringify(previousSelectionsRef.current);
     
     if (needsUpdate) {
+      // Notify parent of selection changes
       onSelectionChange(selections);
       
       if (onSquadPlayersChange) {
+        // Get all currently selected players
         const selectedPlayerIds = Object.values(selections)
           .map(selection => selection.playerId)
           .filter(id => id !== "unassigned");
         
-        // Don't lose existing squad players when adding a new one
-        const combinedPlayerIds = Array.from(new Set([...localSquadPlayers, ...selectedPlayerIds]));
+        // IMPORTANT: Don't lose existing squad players when updating
+        // This is key to fixing the issue
+        const newSquadPlayers = [...localSquadPlayers];
         
-        if (JSON.stringify(combinedPlayerIds.sort()) !== JSON.stringify(localSquadPlayers.sort())) {
-          console.log("Updating squad players:", combinedPlayerIds);
-          setLocalSquadPlayers(combinedPlayerIds);
-          onSquadPlayersChange(combinedPlayerIds);
+        // Only add new players that aren't already in the squad
+        selectedPlayerIds.forEach(id => {
+          if (!newSquadPlayers.includes(id)) {
+            newSquadPlayers.push(id);
+          }
+        });
+        
+        // Only update if something actually changed
+        if (JSON.stringify([...newSquadPlayers].sort()) !== JSON.stringify([...localSquadPlayers].sort())) {
+          console.log("Updating squad players from selections:", newSquadPlayers);
+          setLocalSquadPlayers(newSquadPlayers);
+          onSquadPlayersChange(newSquadPlayers);
         }
       }
     }
   }, [selections, onSelectionChange, onSquadPlayersChange, localSquadPlayers]);
 
+  // Sync squad players from props
   useEffect(() => {
     if (squadPlayers && squadPlayers.length > 0) {
+      // Sort for consistent comparison
       const sortedSquadPlayers = [...squadPlayers].sort();
       const sortedLocalPlayers = [...localSquadPlayers].sort();
       
+      // Only update if there's an actual difference
       if (JSON.stringify(sortedSquadPlayers) !== JSON.stringify(sortedLocalPlayers)) {
-        console.log("Syncing squad players:", squadPlayers);
+        console.log("Syncing squad players from props:", squadPlayers);
         setLocalSquadPlayers(squadPlayers);
       }
     }
   }, [squadPlayers]);
 
+  // Sync period data from props
   useEffect(() => {
     setCurrentPeriod(periodNumber);
     setPeriodLength(periodDuration);
   }, [periodNumber, periodDuration]);
   
+  // Sync squad mode from props
   useEffect(() => {
     if (forceSquadMode !== undefined && forceSquadMode !== squadMode) {
       console.log(`Forcing squad mode to: ${forceSquadMode}`);
@@ -119,6 +139,7 @@ export const useDraggableFormation = ({
     }
   }, [forceSquadMode, squadMode]);
 
+  // Handle player selection
   const handlePlayerClick = (playerId: string) => {
     if (selectedPlayerId === playerId) {
       setSelectedPlayerId(null);
@@ -127,30 +148,36 @@ export const useDraggableFormation = ({
     }
   };
 
+  // Handle player removal
   const handleRemovePlayer = (slotId: string) => {
     const updatedSelections = { ...selections };
     delete updatedSelections[slotId];
     setSelections(updatedSelections);
   };
 
+  // Get player data by ID
   const getPlayerById = (playerId: string) => {
     return availablePlayers.find(player => player.id === playerId);
   };
 
+  // Get all available players
   const getAvailablePlayers = () => {
     return availablePlayers;
   };
 
+  // Get player data
   const getPlayer = (playerId: string) => {
     return availablePlayers.find(player => player.id === playerId);
   };
 
+  // Get players available for squad selection
   const getAvailableSquadPlayers = () => {
     return localSquadPlayers.length > 0
       ? availablePlayers.filter(player => localSquadPlayers.includes(player.id))
       : availablePlayers;
   };
 
+  // Handle formation template changes
   const handleTemplateChange = (template: string) => {
     setSelectedTemplate(template);
     if (onTemplateChange) {
@@ -158,11 +185,13 @@ export const useDraggableFormation = ({
     }
   };
 
+  // Toggle between squad selection and formation modes
   const toggleSquadMode = () => {
     console.log("Toggle squad mode called - current state:", squadMode);
     setSquadMode(prev => !prev);
   };
 
+  // Add a player to the squad
   const addPlayerToSquad = (playerId: string) => {
     if (!localSquadPlayers.includes(playerId)) {
       const updatedSquad = [...localSquadPlayers, playerId];
@@ -175,12 +204,14 @@ export const useDraggableFormation = ({
     }
   };
 
+  // Remove a player from the squad
   const removePlayerFromSquad = (playerId: string) => {
     if (localSquadPlayers.includes(playerId)) {
       const updatedSquad = localSquadPlayers.filter(id => id !== playerId);
       console.log("Removing player from squad:", playerId, updatedSquad);
       setLocalSquadPlayers(updatedSquad);
       
+      // Also remove player from any positions they might be in
       const updatedSelections = { ...selections };
       Object.entries(updatedSelections).forEach(([key, value]) => {
         if (value.playerId === playerId) {
@@ -196,19 +227,21 @@ export const useDraggableFormation = ({
     }
   };
 
+  // Return to squad selection mode
   const returnToSquadSelection = () => {
     console.log("Returning to squad selection");
     setSquadMode(true);
     setSelectedPlayerId(null);
-    handleDragEnd(); // Fixed: using handleDragEnd instead of undefined setDraggingPlayer
+    handleDragEnd();
   };
 
+  // Finish squad selection and move to position assignment
   const finishSquadSelection = () => {
     console.log("Finishing squad selection");
     if (localSquadPlayers.length > 0) {
       setSquadMode(false);
       setSelectedPlayerId(null);
-      handleDragEnd(); // Fixed: using handleDragEnd instead of undefined setDraggingPlayer
+      handleDragEnd();
     }
   };
 

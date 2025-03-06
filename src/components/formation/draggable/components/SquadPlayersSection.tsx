@@ -31,7 +31,7 @@ export const SquadPlayersSection: React.FC<SquadPlayersSectionProps> = ({
     return players.find(player => player.id === playerId);
   };
 
-  // Debug squad players
+  // Debug output for troubleshooting
   console.log("SquadPlayersSection rendering with squad players:", squadPlayers);
 
   return (
@@ -47,7 +47,10 @@ export const SquadPlayersSection: React.FC<SquadPlayersSectionProps> = ({
             <div className="grid grid-cols-1 gap-2">
               {squadPlayers.map((playerId) => {
                 const player = getSquadPlayer(playerId);
-                if (!player) return null;
+                if (!player) {
+                  console.log("Missing player data for ID:", playerId);
+                  return null;
+                }
                 
                 return (
                   <div 

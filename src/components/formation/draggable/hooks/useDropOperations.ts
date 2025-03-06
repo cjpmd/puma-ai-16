@@ -49,6 +49,7 @@ export const useDropOperations = ({
     }
     
     // If preventing duplicates, remove the player from any other positions
+    // but only if they're the same player and it's not the target slot
     if (preventDuplicates) {
       Object.entries(updatedSelections).forEach(([existingSlotId, existingSelection]) => {
         if (existingSelection.playerId === playerId && existingSlotId !== slotId) {
