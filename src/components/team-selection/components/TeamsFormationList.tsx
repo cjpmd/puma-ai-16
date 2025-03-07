@@ -1,3 +1,4 @@
+
 import { FormationFormat } from "@/components/formation/types";
 import { PerformanceCategory } from "@/types/player";
 import { DefaultFormationCard } from "./DefaultFormationCard";
@@ -16,6 +17,8 @@ interface TeamsFormationListProps {
   teamFormationTemplates: Record<string, string>;
   squadSelections: Record<string, string[]>;
   periods: Record<string, any[]>;
+  teamCaptains: Record<string, string>;
+  captainSelectionMode?: Record<string, boolean>;
   handlePerformanceCategoryChange: (teamId: string, value: PerformanceCategory) => void;
   handleTeamSelectionChange: (teamId: string, selections: any) => void;
   handlePeriodSelectionChange: (teamId: string, periodId: number, selections: any) => void;
@@ -23,6 +26,8 @@ interface TeamsFormationListProps {
   handleSquadSelectionChange: (teamId: string, playerIds: string[]) => void;
   toggleDragEnabled: (enabled: boolean) => void;
   handlePeriodDurationUpdate: (teamId: string, periodId: number, duration: number) => void;
+  toggleCaptainSelectionMode?: (teamId: string) => void;
+  handleSetCaptain?: (teamId: string, playerId: string) => void;
   forceDragEnabled: boolean;
 }
 
@@ -35,6 +40,8 @@ export const TeamsFormationList = ({
   teamFormationTemplates,
   squadSelections,
   periods,
+  teamCaptains,
+  captainSelectionMode,
   handlePerformanceCategoryChange,
   handleTeamSelectionChange,
   handlePeriodSelectionChange,
@@ -42,6 +49,8 @@ export const TeamsFormationList = ({
   handleSquadSelectionChange,
   toggleDragEnabled,
   handlePeriodDurationUpdate,
+  toggleCaptainSelectionMode,
+  handleSetCaptain,
   forceDragEnabled,
 }: TeamsFormationListProps) => {
   return (
@@ -67,6 +76,10 @@ export const TeamsFormationList = ({
               onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
               useDragAndDrop={forceDragEnabled}
               onToggleDragAndDrop={toggleDragEnabled}
+              captainSelectionMode={captainSelectionMode?.[team.id]}
+              onToggleCaptainSelection={() => toggleCaptainSelectionMode?.(team.id)}
+              onSetCaptain={(playerId) => handleSetCaptain?.(team.id, playerId)}
+              captain={teamCaptains[team.id]}
             />
           );
         }
@@ -91,6 +104,10 @@ export const TeamsFormationList = ({
             useDragAndDrop={forceDragEnabled}
             onToggleDragAndDrop={toggleDragEnabled}
             onDurationChange={(duration) => handlePeriodDurationUpdate(team.id, period.id, duration)}
+            captainSelectionMode={captainSelectionMode?.[team.id]}
+            onToggleCaptainSelection={() => toggleCaptainSelectionMode?.(team.id)}
+            onSetCaptain={(playerId) => handleSetCaptain?.(team.id, playerId)}
+            captain={teamCaptains[team.id]}
           />
         ));
       })}
