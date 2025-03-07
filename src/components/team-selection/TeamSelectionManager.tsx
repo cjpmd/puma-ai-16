@@ -43,6 +43,8 @@ export const TeamSelectionManager = ({
   // Use format from fixture if available, otherwise use provided format
   const format = fixture?.format as FormationFormat || providedFormat || "7-a-side";
   
+  const fixtureId = fixture?.id;
+  
   const { 
     teamSelections, 
     selectedPlayers, 
@@ -51,11 +53,16 @@ export const TeamSelectionManager = ({
     periodSelections,
     squadSelections,
     periods,
+    periodDurations,
+    teamCaptains,
     dragEnabled,
+    isLoading,
     handleTeamSelectionChange,
     handlePeriodSelectionChange,
+    handlePeriodDurationChange,
     handlePerformanceCategoryChange,
     handleTemplateChange,
+    handleCaptainChange,
     handleSquadSelectionChange,
     toggleDragEnabled,
     saveSelections,
@@ -63,12 +70,13 @@ export const TeamSelectionManager = ({
     editPeriod,
     deletePeriod,
     initializeDefaultPeriods
-  } = useTeamSelections(onTeamSelectionsChange);
+  } = useTeamSelections(onTeamSelectionsChange, fixtureId);
   
   // Force drag and drop to be enabled by default
   const [forceDragEnabled] = useState(true);
+  const [captainSelectionMode, setCaptainSelectionMode] = useState<Record<string, boolean>>({});
   
-  const { playersWithStatus, isLoading, error } = usePlayersWithAttendance();
+  const { playersWithStatus, isLoading: isLoadingPlayers, error } = usePlayersWithAttendance();
   const [isSaving, setIsSaving] = useState(false);
   const [activeView, setActiveView] = useState("formation"); // "formation" or "periods"
   
@@ -101,9 +109,7 @@ export const TeamSelectionManager = ({
       }
     } catch (error) {
       console.error("Error saving team selections:", error);
-      toast("Failed to save team selections", {
-        style: { backgroundColor: "red", color: "white" }
-      });
+      toast.error("Failed to save team selections");
     } finally {
       setIsSaving(false);
     }
@@ -112,9 +118,7 @@ export const TeamSelectionManager = ({
   // Add a new period
   const handleAddPeriod = () => {
     if (!newPeriodName.trim()) {
-      toast("Period name is required", {
-        style: { backgroundColor: "orange", color: "white" }
-      });
+      toast.error("Period name is required");
       return;
     }
 
@@ -129,9 +133,7 @@ export const TeamSelectionManager = ({
     setNewPeriodName("");
     setNewPeriodDuration(15);
     
-    toast(`Added ${newPeriodName} to ${parseInt(newPeriodHalf) === 1 ? "First Half" : "Second Half"}`, {
-      style: { backgroundColor: "green", color: "white" }
-    });
+    toast.success(`Added ${newPeriodName} to ${parseInt(newPeriodHalf) === 1 ? "First Half" : "Second Half"}`);
   };
 
   // Prepare to add a period for a specific team
@@ -143,9 +145,7 @@ export const TeamSelectionManager = ({
   // Delete a period
   const handleDeletePeriod = (teamId: string, periodId: number) => {
     deletePeriod(teamId, periodId);
-    toast("Period deleted successfully", {
-      style: { backgroundColor: "green", color: "white" }
-    });
+    toast.success("Period deleted successfully");
   };
 
   // Update period duration
@@ -153,6 +153,24 @@ export const TeamSelectionManager = ({
     if (newDuration > 0 && newDuration <= 90) {
       editPeriod(teamId, periodId, { duration: newDuration });
     }
+  };
+  
+  // Toggle captain selection mode for a team
+  const toggleCaptainSelectionMode = (teamId: string) => {
+    setCaptainSelectionMode(prev => ({
+      ...prev,
+      [teamId]: !prev[teamId]
+    }));
+  };
+  
+  // Set a player as captain for a team
+  const handleSetCaptain = (teamId: string, playerId: string) => {
+    handleCaptainChange(teamId, playerId);
+    setCaptainSelectionMode(prev => ({
+      ...prev,
+      [teamId]: false
+    }));
+    toast.success("Captain set successfully");
   };
   
   // Function to switch to formation view for a specific period
@@ -166,8 +184,8 @@ export const TeamSelectionManager = ({
     }, 100);
   };
 
-  if (isLoading) {
-    return <div>Loading players...</div>;
+  if (isLoading || isLoadingPlayers) {
+    return <div>Loading team and player data...</div>;
   }
 
   if (error) {
@@ -194,6 +212,8 @@ export const TeamSelectionManager = ({
             teamFormationTemplates={teamFormationTemplates}
             squadSelections={squadSelections}
             periods={periods}
+            teamCaptains={teamCaptains}
+            captainSelectionMode={captainSelectionMode}
             handlePerformanceCategoryChange={handlePerformanceCategoryChange}
             handleTeamSelectionChange={handleTeamSelectionChange}
             handlePeriodSelectionChange={handlePeriodSelectionChange}
@@ -201,6 +221,8 @@ export const TeamSelectionManager = ({
             handleSquadSelectionChange={handleSquadSelectionChange}
             toggleDragEnabled={toggleDragEnabled}
             handlePeriodDurationUpdate={handlePeriodDurationUpdate}
+            toggleCaptainSelectionMode={toggleCaptainSelectionMode}
+            handleSetCaptain={handleSetCaptain}
             forceDragEnabled={forceDragEnabled}
           />
         </TabsContent>
