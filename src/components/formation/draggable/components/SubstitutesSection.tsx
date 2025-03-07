@@ -14,6 +14,7 @@ interface SubstitutesSectionProps {
   handleDragEnd: () => void;
   renderSubstitutionIndicator?: (position: string) => React.ReactNode;
   format: FormationFormat;
+  handleSubstituteDrop?: (playerId: string) => void;
 }
 
 export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
@@ -27,7 +28,8 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
   handleDragStart,
   handleDragEnd,
   renderSubstitutionIndicator,
-  format
+  format,
+  handleSubstituteDrop
 }) => {
   // Maximum substitutes based on format
   const maxSubstitutes = format === '11-a-side' ? 5 : 3;
@@ -43,12 +45,18 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
     }));
   
   // Handle drop on substitutes area
-  const handleSubstituteDrop = (e: React.DragEvent) => {
+  const handleSubstitutesAreaDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const playerId = e.dataTransfer.getData('playerId');
     
     if (playerId && substitutions.length < maxSubstitutes) {
-      addSubstitute(playerId);
+      if (handleSubstituteDrop) {
+        // Use the provided handler if available
+        handleSubstituteDrop(playerId);
+      } else {
+        // Fall back to the default behavior
+        addSubstitute(playerId);
+      }
     }
   };
   
@@ -63,7 +71,7 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
     <div 
       className="border rounded-md p-4 bg-white"
       onDragOver={(e) => e.preventDefault()}
-      onDrop={handleSubstituteDrop}
+      onDrop={handleSubstitutesAreaDrop}
     >
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium">Substitutes</h3>
@@ -136,7 +144,7 @@ export const SubstitutesSection: React.FC<SubstitutesSectionProps> = ({
               key={`sub-placeholder-${index}`}
               className="h-24 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 text-xs"
               onDragOver={(e) => e.preventDefault()}
-              onDrop={handleSubstituteDrop}
+              onDrop={handleSubstitutesAreaDrop}
             >
               {index === 0 && substitutions.length === 0 ? "Drop player here" : ""}
             </div>
