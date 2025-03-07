@@ -26,6 +26,7 @@ export const useTeamSelections = (onTeamSelectionsChange?: (selections: any) => 
     periodDurations,
     teamCaptains,
     isLoading,
+    dataLoaded, // Add this prop from useTeamSelectionsState
     handleTeamSelectionChange,
     handlePeriodSelectionChange,
     handlePeriodDurationChange,
@@ -144,6 +145,7 @@ export const useTeamSelections = (onTeamSelectionsChange?: (selections: any) => 
     teamCaptains,
     dragEnabled,
     isLoading,
+    dataLoaded, // Add this to the return object
     handleTeamSelectionChange,
     handlePeriodSelectionChange,
     handlePeriodDurationChange,

@@ -9,9 +9,21 @@ interface UseTeamSelectionsStateProps {
   fixtureId?: string;
 }
 
+// Define a type for the selection object that includes optional isSubstitution property
+interface PlayerSelection {
+  playerId: string;
+  position: string;
+  performanceCategory?: PerformanceCategory;
+}
+
+// Interface for loaded selection that may include isSubstitution
+interface LoadedPlayerSelection extends PlayerSelection {
+  isSubstitution?: boolean;
+}
+
 export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: UseTeamSelectionsStateProps = {}) => {
-  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>>({});
-  const [periodSelections, setPeriodSelections] = useState<Record<string, Record<number, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>>>({});
+  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, PlayerSelection>>>({});
+  const [periodSelections, setPeriodSelections] = useState<Record<string, Record<number, Record<string, PlayerSelection>>>>({});
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [performanceCategories, setPerformanceCategories] = useState<Record<string, PerformanceCategory>>({});
   const [teamFormationTemplates, setTeamFormationTemplates] = useState<Record<string, string>>({});
@@ -42,8 +54,8 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
 
         if (selectionsData && selectionsData.length > 0) {
           // Process team selections
-          const loadedTeamSelections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>> = {};
-          const loadedPeriodSelections: Record<string, Record<number, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>> = {};
+          const loadedTeamSelections: Record<string, Record<string, PlayerSelection>> = {};
+          const loadedPeriodSelections: Record<string, Record<number, Record<string, PlayerSelection>>> = {};
           const loadedPerformanceCategories: Record<string, PerformanceCategory> = {};
           const loadedTeamCaptains: Record<string, string> = {};
           const loadedSelectedPlayers = new Set<string>();
@@ -100,12 +112,14 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
                       loadedPeriodSelections[teamId][period_number] = {};
                     }
                     
-                    loadedPeriodSelections[teamId][period_number][slotId] = {
+                    // Create the properly typed PlayerSelection object
+                    const playerSelectionObj: PlayerSelection = {
                       playerId: player_id,
                       position,
-                      isSubstitution: is_substitute,
                       performanceCategory: loadedPerformanceCategories[teamId] || 'MESSI'
                     };
+                    
+                    loadedPeriodSelections[teamId][period_number][slotId] = playerSelectionObj;
                     
                     // Store period durations
                     if (duration) {
@@ -117,12 +131,14 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
                     }
                   } else {
                     // Default team selections (no period)
-                    loadedTeamSelections[teamId][slotId] = {
+                    // Create the properly typed PlayerSelection object
+                    const playerSelectionObj: PlayerSelection = {
                       playerId: player_id,
                       position,
-                      isSubstitution: is_substitute,
                       performanceCategory: loadedPerformanceCategories[teamId] || 'MESSI'
                     };
+                    
+                    loadedTeamSelections[teamId][slotId] = playerSelectionObj;
                   }
                 }
               });
@@ -159,7 +175,7 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
     loadSavedSelections();
   }, [fixtureId]);
 
-  const handleTeamSelectionChange = useCallback((teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
+  const handleTeamSelectionChange = useCallback((teamId: string, selections: Record<string, PlayerSelection>) => {
     setTeamSelections(prev => {
       const updated = {
         ...prev,
@@ -182,7 +198,7 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
     setSelectedPlayers(currentSelectedPlayers);
   }, [selectedPlayers, onTeamSelectionsChange]);
 
-  const handlePeriodSelectionChange = useCallback((teamId: string, periodId: number, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
+  const handlePeriodSelectionChange = useCallback((teamId: string, periodId: number, selections: Record<string, PlayerSelection>) => {
     setPeriodSelections(prev => {
       const updated = {
         ...prev,
@@ -252,7 +268,7 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
     periodDurations,
     teamCaptains,
     isLoading,
-    dataLoaded,
+    dataLoaded, // Make sure this property is returned
     handleTeamSelectionChange,
     handlePeriodSelectionChange,
     handlePeriodDurationChange,

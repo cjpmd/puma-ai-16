@@ -14,6 +14,9 @@ interface TeamSelectionCardHeaderProps {
     name: string;
     category: string;
   };
+  teamName?: string; // Added for backward compatibility
+  periodDisplayName?: string; // Added for backward compatibility
+  viewMode?: string; // Added for backward compatibility
   performanceCategory: PerformanceCategory;
   onPerformanceCategoryChange: (value: PerformanceCategory) => void;
   useDragAndDrop?: boolean;
@@ -25,6 +28,7 @@ interface TeamSelectionCardHeaderProps {
 
 export const TeamSelectionCardHeader: React.FC<TeamSelectionCardHeaderProps> = ({
   team,
+  teamName, // Support legacy prop
   performanceCategory,
   onPerformanceCategoryChange,
   useDragAndDrop = true,
@@ -33,9 +37,12 @@ export const TeamSelectionCardHeader: React.FC<TeamSelectionCardHeaderProps> = (
   onToggleCaptainSelection,
   hasCaptain = false
 }) => {
+  // Use teamName prop if provided (for backward compatibility)
+  const displayName = teamName || team.name;
+
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
-      <CardTitle className="text-lg">{team.name}</CardTitle>
+      <CardTitle className="text-lg">{displayName}</CardTitle>
       
       <div className="flex flex-wrap gap-3 items-center">
         {onToggleCaptainSelection && (

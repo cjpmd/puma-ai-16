@@ -61,6 +61,10 @@ interface FormationViewProps {
   handleSetCaptain?: (teamId: string, playerId: string) => void;
   /** Whether drag and drop is forced enabled */
   forceDragEnabled: boolean;
+  /** Function to check if a player is a captain */
+  isPlayerCaptain?: (teamId: string, playerId: string) => boolean;
+  /** Function to get other team indicator for a player */
+  getOtherTeamIndicator?: (teamId: string, playerId: string) => React.ReactNode;
 }
 
 /**
@@ -90,6 +94,8 @@ export const FormationView = ({
   toggleCaptainSelectionMode,
   handleSetCaptain,
   forceDragEnabled,
+  isPlayerCaptain,
+  getOtherTeamIndicator,
 }: FormationViewProps) => {
   return (
     <TeamsFormationList
@@ -113,6 +119,8 @@ export const FormationView = ({
       toggleCaptainSelectionMode={toggleCaptainSelectionMode}
       handleSetCaptain={handleSetCaptain}
       forceDragEnabled={forceDragEnabled}
+      isPlayerCaptain={isPlayerCaptain}
+      getOtherTeamIndicator={getOtherTeamIndicator}
     />
   );
 };
