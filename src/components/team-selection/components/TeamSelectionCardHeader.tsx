@@ -5,16 +5,32 @@ import { Label } from "@/components/ui/label";
 import { PerformanceCategory } from "@/types/player";
 import { PerformanceCategorySelector } from "./PerformanceCategorySelector";
 
+/**
+ * TeamSelectionCardHeader props interface
+ */
 interface TeamSelectionCardHeaderProps {
+  /** Team name to display */
   teamName: string;
+  /** Period display name (e.g., "First Half") */
   periodDisplayName?: string;
+  /** View mode for the card */
   viewMode: "formation" | "team-sheet";
+  /** Current performance category setting */
   performanceCategory: PerformanceCategory;
+  /** Handler for performance category changes */
   onPerformanceCategoryChange: (value: PerformanceCategory) => void;
+  /** Whether drag and drop is enabled */
   useDragAndDrop?: boolean;
+  /** Handler for toggling drag and drop */
   onToggleDragAndDrop?: (enabled: boolean) => void;
 }
 
+/**
+ * TeamSelectionCardHeader component
+ * 
+ * Displays the header for a team selection card, including the team name,
+ * period name, and controls for performance category and drag-and-drop
+ */
 export const TeamSelectionCardHeader = ({
   teamName,
   periodDisplayName,
@@ -26,7 +42,7 @@ export const TeamSelectionCardHeader = ({
 }: TeamSelectionCardHeaderProps) => {
   // Get a display title based on view mode and period
   const title = viewMode === "formation" 
-    ? teamName 
+    ? periodDisplayName ? `${teamName} - ${periodDisplayName}` : teamName
     : `${teamName} - ${periodDisplayName || ""}`;
 
   return (
