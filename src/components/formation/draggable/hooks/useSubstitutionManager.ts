@@ -3,7 +3,7 @@ import { PerformanceCategory } from "@/types/player";
 
 interface UseSubstitutionManagerProps {
   selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
-  updateSelections: React.Dispatch<React.SetStateAction<Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>>>;
+  updateSelections: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
   onSelectionChange: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
   performanceCategory?: PerformanceCategory;
 }

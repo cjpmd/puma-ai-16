@@ -96,15 +96,14 @@ export const useDraggableFormation = ({
   });
 
   // Initialize substitution manager
+  // Fix: Pass direct object instead of function to updateSelections
   const { 
     addSubstitute, 
     removeSubstitute, 
     handleSubstituteDrop 
   } = useSubstitutionManager({
     selections: formationSelections,
-    updateSelections: (newSelections) => {
-      onSelectionChange(newSelections);
-    },
+    updateSelections: onSelectionChange, // Fixed: Pass the callback directly
     onSelectionChange,
     performanceCategory
   });
@@ -135,7 +134,7 @@ export const useDraggableFormation = ({
         onSquadPlayersChange(newSquadPlayers);
       }
     }
-  }, [formationSelections, onSquadPlayersChange, localSquadPlayers]);
+  }, [formationSelections, onSelectionChange, localSquadPlayers]);
 
   const showPlayers = true;
 
