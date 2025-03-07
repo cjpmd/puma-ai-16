@@ -81,13 +81,26 @@ export const useTeamSelections = (onTeamSelectionsChange?: (selections: any) => 
             
             if (period) {
               Object.values(periodSelection).forEach(selection => {
-                playerSelections.push({
+                // Create a base selection object
+                const selectionData: {
+                  player_id: string;
+                  position: string;
+                  is_substitute: boolean;
+                  period_number: number;
+                  duration?: number;
+                } = {
                   player_id: selection.playerId,
                   position: selection.position,
                   is_substitute: selection.position.startsWith('sub-'),
-                  period_number: periodId,
-                  duration: periodDurations[teamId]?.[periodId] || period.duration
-                });
+                  period_number: periodId
+                };
+
+                // Add duration if available
+                if (periodDurations[teamId]?.[periodId] || period.duration) {
+                  selectionData.duration = periodDurations[teamId]?.[periodId] || period.duration;
+                }
+
+                playerSelections.push(selectionData);
               });
             }
           });

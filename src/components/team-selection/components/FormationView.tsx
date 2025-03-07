@@ -37,6 +37,10 @@ interface FormationViewProps {
     name: string;
     duration: number;
   }>>;
+  /** Team captains mapping */
+  teamCaptains: Record<string, string>;
+  /** Captain selection mode flags for each team */
+  captainSelectionMode?: Record<string, boolean>;
   /** Handler for performance category changes */
   handlePerformanceCategoryChange: (teamId: string, value: PerformanceCategory) => void;
   /** Handler for team selection changes */
@@ -51,6 +55,10 @@ interface FormationViewProps {
   toggleDragEnabled: (enabled: boolean) => void;
   /** Handler for period duration updates */
   handlePeriodDurationUpdate: (teamId: string, periodId: number, duration: number) => void;
+  /** Handler for toggling captain selection mode */
+  toggleCaptainSelectionMode?: (teamId: string) => void;
+  /** Handler for setting a player as captain */
+  handleSetCaptain?: (teamId: string, playerId: string) => void;
   /** Whether drag and drop is forced enabled */
   forceDragEnabled: boolean;
 }
@@ -70,6 +78,8 @@ export const FormationView = ({
   teamFormationTemplates,
   squadSelections,
   periods,
+  teamCaptains,
+  captainSelectionMode,
   handlePerformanceCategoryChange,
   handleTeamSelectionChange,
   handlePeriodSelectionChange,
@@ -77,6 +87,8 @@ export const FormationView = ({
   handleSquadSelectionChange,
   toggleDragEnabled,
   handlePeriodDurationUpdate,
+  toggleCaptainSelectionMode,
+  handleSetCaptain,
   forceDragEnabled,
 }: FormationViewProps) => {
   return (
@@ -89,6 +101,8 @@ export const FormationView = ({
       teamFormationTemplates={teamFormationTemplates}
       squadSelections={squadSelections}
       periods={periods}
+      teamCaptains={teamCaptains}
+      captainSelectionMode={captainSelectionMode}
       handlePerformanceCategoryChange={handlePerformanceCategoryChange}
       handleTeamSelectionChange={handleTeamSelectionChange}
       handlePeriodSelectionChange={handlePeriodSelectionChange}
@@ -96,6 +110,8 @@ export const FormationView = ({
       handleSquadSelectionChange={handleSquadSelectionChange}
       toggleDragEnabled={toggleDragEnabled}
       handlePeriodDurationUpdate={handlePeriodDurationUpdate}
+      toggleCaptainSelectionMode={toggleCaptainSelectionMode}
+      handleSetCaptain={handleSetCaptain}
       forceDragEnabled={forceDragEnabled}
     />
   );
