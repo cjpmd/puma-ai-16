@@ -32,6 +32,10 @@ interface TeamSelectionCardProps {
   onToggleDragAndDrop?: (enabled: boolean) => void;
   onDurationChange?: (duration: number) => void;
   periodId?: number;
+  captain?: string;
+  captainSelectionMode?: boolean;
+  onToggleCaptainSelection?: () => void;
+  onSetCaptain?: (playerId: string) => void;
 }
 
 export const TeamSelectionCard = ({
@@ -53,7 +57,11 @@ export const TeamSelectionCard = ({
   squadSelection = [],
   useDragAndDrop = true,
   onToggleDragAndDrop,
-  periodId
+  periodId,
+  captain,
+  captainSelectionMode,
+  onToggleCaptainSelection,
+  onSetCaptain
 }: TeamSelectionCardProps) => {
   const [localPeriod, setLocalPeriod] = useState(periodNumber);
   const [localDuration, setLocalDuration] = useState(duration);
@@ -96,6 +104,8 @@ export const TeamSelectionCard = ({
         onPerformanceCategoryChange={onPerformanceCategoryChange}
         useDragAndDrop={useDragAndDrop}
         onToggleDragAndDrop={onToggleDragAndDrop}
+        captainSelectionMode={captainSelectionMode}
+        onToggleCaptainSelection={onToggleCaptainSelection}
       />
       <CardContent>
         {useDragAndDrop ? (
