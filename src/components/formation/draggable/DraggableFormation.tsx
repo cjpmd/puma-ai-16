@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { FormationGrid } from "./components/FormationGrid";
 import { FormationFormat } from "../types";
@@ -54,7 +53,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   const [localDuration, setLocalDuration] = useState(periodDuration);
   const [squadModeState, setSquadModeState] = useState(true);
 
-  // Debug logging for troubleshooting
   console.log("DraggableFormation props:", {
     format,
     squadPlayers: squadPlayers.length,
@@ -64,7 +62,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     periodDuration
   });
 
-  // Use the draggable formation hook
   const {
     selectedPlayerId,
     draggingPlayer,
@@ -107,14 +104,12 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     forceSquadMode: squadModeState
   });
 
-  // Sync squad mode state with the hook
   useEffect(() => {
     if (squadMode !== squadModeState) {
       setSquadModeState(squadMode);
     }
   }, [squadMode, squadModeState]);
 
-  // Handle period changes
   const handlePeriodChange = (value: string) => {
     const period = parseInt(value);
     setLocalPeriod(period);
@@ -123,7 +118,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     }
   };
 
-  // Handle duration changes 
   const handleDurationChange = (value: number) => {
     setLocalDuration(value);
     if (onDurationChange) {
@@ -131,7 +125,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     }
   };
 
-  // Toggle between squad selection and position assignment
   const handleToggleSquadMode = () => {
     const newSquadMode = !squadModeState;
     setSquadModeState(newSquadMode);
@@ -147,7 +140,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     }
   };
 
-  // Get display name for period
   const periodDisplayName = () => {
     if (periodId) {
       if (periodId === 100) return "First Half";
@@ -157,7 +149,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     return periodNumber === 1 ? "First Half" : "Second Half";
   };
 
-  // Additional debug logging
   console.log("DraggableFormation state:", {
     squadMode: squadModeState,
     localSquadPlayers: localSquadPlayers.length,
