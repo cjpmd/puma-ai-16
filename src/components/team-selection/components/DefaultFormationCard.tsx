@@ -46,6 +46,10 @@ interface DefaultFormationCardProps {
   onToggleCaptainSelection?: () => void;
   /** Handler for setting a player as captain */
   onSetCaptain?: (playerId: string) => void;
+  /** Function to check if a player is a captain */
+  isPlayerCaptain?: (playerId: string) => boolean;
+  /** Function to get other team indicator for a player */
+  getOtherTeamIndicator?: (playerId: string) => React.ReactNode;
 }
 
 /**
@@ -71,7 +75,9 @@ export const DefaultFormationCard = ({
   captain,
   captainSelectionMode,
   onToggleCaptainSelection,
-  onSetCaptain
+  onSetCaptain,
+  isPlayerCaptain,
+  getOtherTeamIndicator
 }: DefaultFormationCardProps) => {
   return (
     <TeamSelectionCard
@@ -94,6 +100,8 @@ export const DefaultFormationCard = ({
       captainSelectionMode={captainSelectionMode}
       onToggleCaptainSelection={onToggleCaptainSelection}
       onSetCaptain={onSetCaptain}
+      isPlayerCaptain={isPlayerCaptain}
+      getOtherTeamIndicator={getOtherTeamIndicator}
     />
   );
 };

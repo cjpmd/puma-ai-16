@@ -56,6 +56,10 @@ interface PeriodFormationCardProps {
   onToggleCaptainSelection?: () => void;
   /** Handler for setting a player as captain */
   onSetCaptain?: (playerId: string) => void;
+  /** Function to check if a player is a captain */
+  isPlayerCaptain?: (playerId: string) => boolean;
+  /** Function to get other team indicator for a player */
+  getOtherTeamIndicator?: (playerId: string) => React.ReactNode;
 }
 
 /**
@@ -84,7 +88,9 @@ export const PeriodFormationCard = ({
   captain,
   captainSelectionMode,
   onToggleCaptainSelection,
-  onSetCaptain
+  onSetCaptain,
+  isPlayerCaptain,
+  getOtherTeamIndicator
 }: PeriodFormationCardProps) => {
   
   /**
@@ -132,6 +138,8 @@ export const PeriodFormationCard = ({
       captainSelectionMode={captainSelectionMode}
       onToggleCaptainSelection={onToggleCaptainSelection}
       onSetCaptain={onSetCaptain}
+      isPlayerCaptain={isPlayerCaptain}
+      getOtherTeamIndicator={getOtherTeamIndicator}
     />
   );
 };
