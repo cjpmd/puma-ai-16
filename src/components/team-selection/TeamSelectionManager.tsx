@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { FormationView } from "./components/FormationView";
 import { PeriodsView } from "./components/PeriodsView";
 import { PeriodDialog } from "./components/PeriodDialog";
+import { Flag, GitBranch } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface TeamSelectionManagerProps {
   teams?: Array<{
@@ -57,6 +59,7 @@ export const TeamSelectionManager = ({
     teamCaptains,
     dragEnabled,
     isLoading,
+    dataLoaded,
     handleTeamSelectionChange,
     handlePeriodSelectionChange,
     handlePeriodDurationChange,
@@ -94,18 +97,24 @@ export const TeamSelectionManager = ({
 
   // Initialize default periods for each team
   useEffect(() => {
-    teams.forEach(team => {
-      initializeDefaultPeriods(team.id);
-    });
-  }, [teams, initializeDefaultPeriods]);
+    if (dataLoaded) {
+      console.log("Data loaded, initializing default periods");
+      teams.forEach(team => {
+        initializeDefaultPeriods(team.id);
+      });
+    }
+  }, [teams, initializeDefaultPeriods, dataLoaded]);
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
       const success = await saveSelections();
       
-      if (success && onSuccess) {
-        onSuccess();
+      if (success) {
+        toast.success("Team selections saved successfully");
+        if (onSuccess) {
+          onSuccess();
+        }
       }
     } catch (error) {
       console.error("Error saving team selections:", error);
@@ -161,6 +170,10 @@ export const TeamSelectionManager = ({
       ...prev,
       [teamId]: !prev[teamId]
     }));
+    
+    if (!captainSelectionMode[teamId]) {
+      toast.info("Click on a player to set them as captain");
+    }
   };
   
   // Set a player as captain for a team
@@ -171,6 +184,33 @@ export const TeamSelectionManager = ({
       [teamId]: false
     }));
     toast.success("Captain set successfully");
+  };
+
+  // Check if player is captain
+  const isPlayerCaptain = (teamId: string, playerId: string) => {
+    return teamCaptains[teamId] === playerId;
+  };
+  
+  // Generate a badge for players that are in other teams
+  const getOtherTeamIndicator = (teamId: string, playerId: string) => {
+    // Check if this player is in any other team
+    const otherTeams = teams
+      .filter(team => team.id !== teamId)
+      .filter(team => {
+        const teamPlayerSelection = squadSelections[team.id] || [];
+        return teamPlayerSelection.includes(playerId);
+      });
+    
+    if (otherTeams.length === 0) return null;
+    
+    return (
+      <div className="absolute -bottom-1 -left-1">
+        <Badge variant="secondary" className="flex items-center space-x-1 px-1 py-0 h-5">
+          <GitBranch className="w-3 h-3" />
+          <span className="text-xs">{otherTeams.length}</span>
+        </Badge>
+      </div>
+    );
   };
   
   // Function to switch to formation view for a specific period
@@ -224,6 +264,8 @@ export const TeamSelectionManager = ({
             toggleCaptainSelectionMode={toggleCaptainSelectionMode}
             handleSetCaptain={handleSetCaptain}
             forceDragEnabled={forceDragEnabled}
+            isPlayerCaptain={isPlayerCaptain}
+            getOtherTeamIndicator={getOtherTeamIndicator}
           />
         </TabsContent>
 

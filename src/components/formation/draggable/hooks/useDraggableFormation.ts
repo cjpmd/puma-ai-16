@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { FormationFormat } from "../../types";
 import { PerformanceCategory } from "@/types/player";
 import { useSubstitutionManager } from "./useSubstitutionManager";
@@ -7,6 +7,7 @@ import { useSquadManagement } from "./useSquadManagement";
 import { useFormationState } from "./useFormationState";
 import { useTemplateManagement } from "./useTemplateManagement";
 import { usePlayerData } from "./usePlayerData";
+import { toast } from "sonner";
 
 export interface UseDraggableFormationProps {
   initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
@@ -105,10 +106,33 @@ export const useDraggableFormation = ({
 
   // We need this for the useEffect that updates squad players from selections
   const previousSelectionsRef = useRef({});
+  const previousSquadPlayersRef = useRef<string[]>([]);
 
-  // Update squad players when selections change
+  // Log whenever squad players change
   useEffect(() => {
-    if (onSquadPlayersChange) {
+    if (JSON.stringify(localSquadPlayers) !== JSON.stringify(previousSquadPlayersRef.current)) {
+      console.log("Squad players changed:", {
+        old: previousSquadPlayersRef.current,
+        new: localSquadPlayers
+      });
+      previousSquadPlayersRef.current = [...localSquadPlayers];
+    }
+  }, [localSquadPlayers]);
+
+  // Log whenever selections change
+  useEffect(() => {
+    if (JSON.stringify(formationSelections) !== JSON.stringify(previousSelectionsRef.current)) {
+      console.log("Selections changed:", {
+        old: Object.keys(previousSelectionsRef.current).length,
+        new: Object.keys(formationSelections).length
+      });
+      previousSelectionsRef.current = {...formationSelections};
+    }
+  }, [formationSelections]);
+
+  // Update squad players when selections change to ensure sync
+  useEffect(() => {
+    if (onSquadPlayersChange && Object.keys(formationSelections).length > 0) {
       // Get all currently selected players
       const selectedPlayerIds = Object.values(formationSelections)
         .map(selection => selection.playerId)
@@ -126,10 +150,35 @@ export const useDraggableFormation = ({
       
       // Only update if something actually changed
       if (JSON.stringify([...newSquadPlayers].sort()) !== JSON.stringify([...localSquadPlayers].sort())) {
+        console.log("Updating squad players from selections:", {
+          before: localSquadPlayers.length,
+          after: newSquadPlayers.length
+        });
         onSquadPlayersChange(newSquadPlayers);
       }
     }
-  }, [formationSelections, onSelectionChange, localSquadPlayers]);
+  }, [formationSelections, onSelectionChange, localSquadPlayers, onSquadPlayersChange]);
+
+  // Add improved squad player management
+  const addPlayerToSquadWithFeedback = useCallback((playerId: string) => {
+    addPlayerToSquad(playerId);
+    toast.success("Player added to squad");
+  }, [addPlayerToSquad]);
+
+  const removePlayerFromSquadWithFeedback = useCallback((playerId: string) => {
+    // First check if this player is used in any positions
+    const playerInUse = Object.values(formationSelections).some(
+      selection => selection.playerId === playerId
+    );
+    
+    if (playerInUse) {
+      toast.warning("This player is currently in a position. Remove them from all positions first.");
+      return;
+    }
+    
+    removePlayerFromSquad(playerId);
+    toast.success("Player removed from squad");
+  }, [removePlayerFromSquad, formationSelections]);
 
   const showPlayers = true;
 
@@ -156,7 +205,7 @@ export const useDraggableFormation = ({
     addSubstitute,
     removeSubstitute,
     showPlayers,
-    addPlayerToSquad,
-    removePlayerFromSquad
+    addPlayerToSquad: addPlayerToSquadWithFeedback,
+    removePlayerFromSquad: removePlayerFromSquadWithFeedback
   };
 };

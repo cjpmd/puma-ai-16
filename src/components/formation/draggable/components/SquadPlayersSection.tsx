@@ -3,8 +3,9 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, Flag } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 interface SquadPlayersSectionProps {
   players: any[];
@@ -15,6 +16,8 @@ interface SquadPlayersSectionProps {
   squadMode: boolean;
   handleDragStart?: (e: React.DragEvent, playerId: string) => void;
   handleDragEnd?: () => void;
+  isCaptain?: (playerId: string) => boolean;
+  otherTeamIndicator?: (playerId: string) => React.ReactNode;
 }
 
 export const SquadPlayersSection: React.FC<SquadPlayersSectionProps> = ({
@@ -25,7 +28,9 @@ export const SquadPlayersSection: React.FC<SquadPlayersSectionProps> = ({
   onPlayerClick,
   squadMode,
   handleDragStart,
-  handleDragEnd
+  handleDragEnd,
+  isCaptain,
+  otherTeamIndicator
 }) => {
   const getSquadPlayer = (playerId: string) => {
     return players.find(player => player.id === playerId);
@@ -52,11 +57,13 @@ export const SquadPlayersSection: React.FC<SquadPlayersSectionProps> = ({
                   return null;
                 }
                 
+                const playerIsCaptain = isCaptain && isCaptain(player.id);
+                
                 return (
                   <div 
                     key={player.id}
                     className={`
-                      rounded-md p-2 border cursor-pointer transition-colors
+                      rounded-md p-2 border cursor-pointer transition-colors relative
                       ${selectedPlayerId === player.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-card hover:bg-accent border-border'}
                     `}
                     onClick={() => onPlayerClick(player.id)}
@@ -66,18 +73,33 @@ export const SquadPlayersSection: React.FC<SquadPlayersSectionProps> = ({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <Avatar className="h-8 w-8 text-xs">
-                          <div className="font-bold">
-                            {player.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2)}
-                          </div>
-                        </Avatar>
+                        <div className="relative">
+                          <Avatar className="h-10 w-10 text-xs bg-blue-600 text-white relative">
+                            <div className="font-bold">
+                              {player.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase()}
+                            </div>
+                            {player.squad_number && (
+                              <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-white flex items-center justify-center text-xs font-bold text-blue-700 border border-blue-600">
+                                {player.squad_number}
+                              </div>
+                            )}
+                            {playerIsCaptain && (
+                              <div className="absolute -top-1 -right-1">
+                                <Flag className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                              </div>
+                            )}
+                          </Avatar>
+                          {otherTeamIndicator && otherTeamIndicator(player.id)}
+                        </div>
                         <div>
                           <div className="text-sm font-medium">{player.name}</div>
-                          {player.squad_number && (
-                            <div className="text-xs text-muted-foreground">
-                              #{player.squad_number}
-                            </div>
-                          )}
+                          <div className="text-xs text-muted-foreground flex items-center space-x-1">
+                            {player.position && (
+                              <Badge variant="outline" className="text-xs py-0 h-4">
+                                {player.position}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
                       

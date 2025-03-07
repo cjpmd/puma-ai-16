@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormationFormat } from "../../types";
 import { FormationTemplateSelector } from "../../FormationTemplateSelector";
-import { Grip, Users } from "lucide-react";
+import { Grip, Users, AlertCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface FormationHeaderProps {
   squadMode: boolean;
@@ -40,25 +41,37 @@ export const FormationHeader: React.FC<FormationHeaderProps> = ({
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-        <Button 
-          variant={squadMode ? "default" : "outline"}
-          onClick={onToggleSquadMode}
-          className="flex items-center"
-          disabled={squadMode && !canExitSquadMode}
-          title={squadMode && !canExitSquadMode ? "Add players to the squad first" : ""}
-        >
-          {squadMode ? (
-            <>
-              <Grip className="mr-2 h-4 w-4" />
-              Proceed to Position Assignment
-            </>
-          ) : (
-            <>
-              <Users className="mr-2 h-4 w-4" />
-              Return to Squad Selection
-            </>
-          )}
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <Button 
+                  variant={squadMode ? "default" : "outline"}
+                  onClick={onToggleSquadMode}
+                  className="flex items-center"
+                  disabled={squadMode && !canExitSquadMode}
+                >
+                  {squadMode ? (
+                    <>
+                      <Grip className="mr-2 h-4 w-4" />
+                      Proceed to Position Assignment
+                    </>
+                  ) : (
+                    <>
+                      <Users className="mr-2 h-4 w-4" />
+                      Return to Squad Selection
+                    </>
+                  )}
+                </Button>
+              </div>
+            </TooltipTrigger>
+            {squadMode && !canExitSquadMode && (
+              <TooltipContent>
+                <p>Add players to the squad first</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
         
         {!squadMode && (
           <div className="flex items-center gap-2">

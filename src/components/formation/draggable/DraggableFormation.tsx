@@ -9,6 +9,7 @@ import { SquadModeView } from "./components/SquadModeView";
 import { FormationModeView } from "./components/FormationModeView";
 import { usePeriodManagement } from "./hooks/usePeriodManagement";
 import { useSquadModeToggle } from "./hooks/useSquadModeToggle";
+import { toast } from "sonner";
 
 export interface DraggableFormationProps {
   format: FormationFormat;
@@ -107,6 +108,15 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     squadPlayers: localSquadPlayers
   });
 
+  // Handle toggle squad mode with better feedback
+  const handleToggleSquadMode = () => {
+    if (squadMode && !canExitSquadMode) {
+      toast.warning("Add players to the squad first before proceeding");
+      return;
+    }
+    toggleSquadMode();
+  };
+
   // Debug state
   useEffect(() => {
     console.log("DraggableFormation state:", {
@@ -121,7 +131,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     <div className="space-y-6" id={`team-selection-${periodId || localPeriod}`}>
       <FormationHeader 
         squadMode={squadMode}
-        onToggleSquadMode={toggleSquadMode}
+        onToggleSquadMode={handleToggleSquadMode}
         squadPlayersLength={localSquadPlayers.length}
         periodDisplayName={getPeriodDisplayName()}
         format={format}

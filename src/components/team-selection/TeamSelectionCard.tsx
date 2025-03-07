@@ -1,44 +1,45 @@
 
-import { Card, CardContent } from "@/components/ui/card";
+import React from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FormationFormat } from "@/components/formation/types";
 import { PerformanceCategory } from "@/types/player";
 import { TeamSelectionCardHeader } from "./components/TeamSelectionCardHeader";
-import { useState } from "react";
-import { getPeriodDisplayName } from "./utils/periodUtils";
-import { DraggableFormation } from "@/components/formation/draggable";
-import { FormationSelector } from "@/components/FormationSelector";
+import { DraggableFormation } from "../formation/draggable/DraggableFormation";
+import { Flag, GitBranch } from "lucide-react";
 
-interface TeamSelectionCardProps {
+export interface TeamSelectionCardProps {
   team: {
     id: string;
     name: string;
     category: string;
   };
   format: FormationFormat;
-  players: any[];
+  players: Array<{ id: string; name: string; squad_number?: number }>;
   selectedPlayers: Set<string>;
   performanceCategory: PerformanceCategory;
   onPerformanceCategoryChange: (value: PerformanceCategory) => void;
   onSelectionChange: (selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => void;
   formationTemplate: string;
   onTemplateChange: (template: string) => void;
-  viewMode?: "formation" | "team-sheet";
+  viewMode?: "team-sheet" | "formation";
   periodNumber?: number;
   duration?: number;
-  onPeriodChange?: (periodNumber: number) => void;
-  onSquadSelectionChange?: (playerIds: string[]) => void;
+  onDurationChange?: (duration: number) => void;
   squadSelection?: string[];
+  onSquadSelectionChange?: (playerIds: string[]) => void;
   useDragAndDrop?: boolean;
   onToggleDragAndDrop?: (enabled: boolean) => void;
-  onDurationChange?: (duration: number) => void;
+  initialSelections?: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>;
   periodId?: number;
   captain?: string;
   captainSelectionMode?: boolean;
   onToggleCaptainSelection?: () => void;
   onSetCaptain?: (playerId: string) => void;
+  isPlayerCaptain?: (teamId: string, playerId: string) => boolean;
+  getOtherTeamIndicator?: (teamId: string, playerId: string) => React.ReactNode;
 }
 
-export const TeamSelectionCard = ({
+export const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
   team,
   format,
   players,
@@ -48,44 +49,24 @@ export const TeamSelectionCard = ({
   onSelectionChange,
   formationTemplate,
   onTemplateChange,
-  viewMode = "team-sheet",
-  periodNumber = 1,
-  duration = 45,
-  onPeriodChange,
+  viewMode = "formation",
+  periodNumber,
+  duration,
   onDurationChange,
-  onSquadSelectionChange,
   squadSelection = [],
+  onSquadSelectionChange,
   useDragAndDrop = true,
   onToggleDragAndDrop,
+  initialSelections,
   periodId,
   captain,
   captainSelectionMode,
   onToggleCaptainSelection,
-  onSetCaptain
-}: TeamSelectionCardProps) => {
-  const [localPeriod, setLocalPeriod] = useState(periodNumber);
-  const [localDuration, setLocalDuration] = useState(duration);
-
-  const periodDisplayName = getPeriodDisplayName(periodId, localPeriod);
-  const squadPlayers = squadSelection.length > 0 ? squadSelection : Array.from(selectedPlayers);
-
-  // Handle period change
-  const handlePeriodChange = (period: number) => {
-    setLocalPeriod(period);
-    if (onPeriodChange) {
-      onPeriodChange(period);
-    }
-  };
-
-  // Handle duration change
-  const handleDurationChange = (newDuration: number) => {
-    setLocalDuration(newDuration);
-    if (onDurationChange) {
-      onDurationChange(newDuration);
-    }
-  };
-
-  // Render substitution indicators for positions
+  onSetCaptain,
+  isPlayerCaptain,
+  getOtherTeamIndicator
+}) => {
+  // Provide default renderSubstitutionIndicator
   const renderSubstitutionIndicator = (position: string) => {
     return position.startsWith('sub-') ? (
       <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
@@ -94,52 +75,60 @@ export const TeamSelectionCard = ({
     ) : null;
   };
 
+  // Handle player captain status check
+  const checkPlayerIsCaptain = (playerId: string) => {
+    if (isPlayerCaptain) {
+      return isPlayerCaptain(team.id, playerId);
+    }
+    return captain === playerId;
+  };
+
+  // Handle other team indicator
+  const renderOtherTeamIndicator = (playerId: string) => {
+    if (getOtherTeamIndicator) {
+      return getOtherTeamIndicator(team.id, playerId);
+    }
+    return null;
+  };
+
+  // Handle captain selection
+  const handlePlayerSelect = (playerId: string) => {
+    if (captainSelectionMode && onSetCaptain) {
+      onSetCaptain(playerId);
+    }
+  };
+
   return (
-    <Card key={team.id} className="mb-6">
-      <TeamSelectionCardHeader
-        teamName={team.name}
-        periodDisplayName={periodDisplayName}
-        viewMode={viewMode}
-        performanceCategory={performanceCategory}
-        onPerformanceCategoryChange={onPerformanceCategoryChange}
-        useDragAndDrop={useDragAndDrop}
-        onToggleDragAndDrop={onToggleDragAndDrop}
-        captainSelectionMode={captainSelectionMode}
-        onToggleCaptainSelection={onToggleCaptainSelection}
-      />
+    <Card className="w-full">
+      <CardHeader className="pb-3">
+        <TeamSelectionCardHeader
+          team={team}
+          performanceCategory={performanceCategory}
+          onPerformanceCategoryChange={onPerformanceCategoryChange}
+          useDragAndDrop={useDragAndDrop}
+          onToggleDragAndDrop={onToggleDragAndDrop}
+          captainSelectionMode={captainSelectionMode}
+          onToggleCaptainSelection={onToggleCaptainSelection}
+          hasCaptain={!!captain}
+        />
+      </CardHeader>
       <CardContent>
-        {useDragAndDrop ? (
-          <DraggableFormation
-            format={format}
-            availablePlayers={players}
-            squadPlayers={squadPlayers}
-            onSelectionChange={onSelectionChange}
-            performanceCategory={performanceCategory}
-            onSquadPlayersChange={onSquadSelectionChange}
-            formationTemplate={formationTemplate}
-            onTemplateChange={onTemplateChange}
-            renderSubstitutionIndicator={renderSubstitutionIndicator}
-            periodNumber={localPeriod}
-            periodDuration={localDuration}
-            onPeriodChange={handlePeriodChange}
-            onDurationChange={handleDurationChange}
-            periodId={periodId}
-          />
-        ) : (
-          <FormationSelector
-            format={format}
-            teamName={team.name}
-            onSelectionChange={onSelectionChange}
-            selectedPlayers={selectedPlayers}
-            availablePlayers={players}
-            performanceCategory={performanceCategory}
-            formationTemplate={formationTemplate}
-            onTemplateChange={onTemplateChange}
-            viewMode={viewMode}
-            periodNumber={localPeriod}
-            duration={localDuration}
-          />
-        )}
+        <DraggableFormation
+          format={format}
+          availablePlayers={players}
+          squadPlayers={squadSelection}
+          onSelectionChange={onSelectionChange}
+          performanceCategory={performanceCategory}
+          formationTemplate={formationTemplate}
+          onTemplateChange={onTemplateChange}
+          onSquadPlayersChange={onSquadSelectionChange}
+          renderSubstitutionIndicator={renderSubstitutionIndicator}
+          periodNumber={periodNumber}
+          periodDuration={duration}
+          onDurationChange={onDurationChange}
+          initialSelections={initialSelections}
+          periodId={periodId}
+        />
       </CardContent>
     </Card>
   );

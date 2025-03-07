@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { PerformanceCategory } from "@/types/player";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface UseTeamSelectionsStateProps {
   onTeamSelectionsChange?: (selections: Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>) => void;
@@ -17,6 +18,7 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
   const [periodDurations, setPeriodDurations] = useState<Record<string, Record<number, number>>>({});
   const [teamCaptains, setTeamCaptains] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Load saved team selections from database if fixtureId is provided
   useEffect(() => {
@@ -28,6 +30,8 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
 
       setIsLoading(true);
       try {
+        console.log("Loading saved selections for fixture:", fixtureId);
+        
         // Load team selections from database
         const { data: selectionsData, error: selectionsError } = await supabase
           .from('team_selections')
@@ -49,31 +53,36 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
           selectionsData.forEach(selection => {
             const teamId = selection.team_id;
             
+            // Initialize team selections if needed
+            if (!loadedTeamSelections[teamId]) {
+              loadedTeamSelections[teamId] = {};
+            }
+            
             // Process team formations
             if (selection.formation_template) {
               loadedTeamFormationTemplates[teamId] = selection.formation_template;
+              console.log(`Loaded template for team ${teamId}:`, selection.formation_template);
             }
             
             // Process performance categories
             if (selection.performance_category) {
               loadedPerformanceCategories[teamId] = selection.performance_category as PerformanceCategory;
+              console.log(`Loaded performance category for team ${teamId}:`, selection.performance_category);
             }
             
             // Process captains
             if (selection.captain_id) {
               loadedTeamCaptains[teamId] = selection.captain_id;
+              console.log(`Loaded captain for team ${teamId}:`, selection.captain_id);
             }
             
             // Process player selections
             if (selection.player_selections && selection.player_selections.length > 0) {
-              // Initialize team selections if needed
-              if (!loadedTeamSelections[teamId]) {
-                loadedTeamSelections[teamId] = {};
-              }
+              console.log(`Processing ${selection.player_selections.length} player selections for team ${teamId}`);
               
               // Process each player selection
               selection.player_selections.forEach((playerSelection: any) => {
-                const { player_id, position, period_number = 0 } = playerSelection;
+                const { player_id, position, period_number = 0, is_substitute, duration } = playerSelection;
                 
                 if (player_id && position) {
                   const slotId = `${position.toLowerCase()}-${player_id}`;
@@ -94,21 +103,24 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
                     loadedPeriodSelections[teamId][period_number][slotId] = {
                       playerId: player_id,
                       position,
+                      isSubstitution: is_substitute,
                       performanceCategory: loadedPerformanceCategories[teamId] || 'MESSI'
                     };
                     
                     // Store period durations
-                    if (playerSelection.duration) {
+                    if (duration) {
                       if (!loadedPeriodDurations[teamId]) {
                         loadedPeriodDurations[teamId] = {};
                       }
-                      loadedPeriodDurations[teamId][period_number] = playerSelection.duration;
+                      loadedPeriodDurations[teamId][period_number] = duration;
+                      console.log(`Loaded duration for team ${teamId}, period ${period_number}:`, duration);
                     }
                   } else {
                     // Default team selections (no period)
                     loadedTeamSelections[teamId][slotId] = {
                       playerId: player_id,
                       position,
+                      isSubstitution: is_substitute,
                       performanceCategory: loadedPerformanceCategories[teamId] || 'MESSI'
                     };
                   }
@@ -125,9 +137,20 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
           setTeamFormationTemplates(loadedTeamFormationTemplates);
           setPeriodDurations(loadedPeriodDurations);
           setTeamCaptains(loadedTeamCaptains);
+          setDataLoaded(true);
+          
+          console.log("Successfully loaded team selections:", {
+            teams: Object.keys(loadedTeamSelections).length,
+            players: loadedSelectedPlayers.size,
+            captains: Object.keys(loadedTeamCaptains).length,
+            periods: Object.values(loadedPeriodSelections).reduce((acc, team) => acc + Object.keys(team).length, 0)
+          });
+        } else {
+          console.log("No saved selections found for fixture:", fixtureId);
         }
       } catch (error) {
         console.error("Error loading team selections:", error);
+        toast.error("Failed to load team selections");
       } finally {
         setIsLoading(false);
       }
@@ -160,44 +183,64 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
   }, [selectedPlayers, onTeamSelectionsChange]);
 
   const handlePeriodSelectionChange = useCallback((teamId: string, periodId: number, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
-    setPeriodSelections(prev => ({
-      ...prev,
-      [teamId]: {
-        ...(prev[teamId] || {}),
-        [periodId]: selections
-      }
-    }));
+    setPeriodSelections(prev => {
+      const updated = {
+        ...prev,
+        [teamId]: {
+          ...(prev[teamId] || {}),
+          [periodId]: selections
+        }
+      };
+      console.log(`Updated period selections for team ${teamId}, period ${periodId}`, Object.keys(selections).length);
+      return updated;
+    });
   }, []);
 
   const handlePeriodDurationChange = useCallback((teamId: string, periodId: number, duration: number) => {
-    setPeriodDurations(prev => ({
-      ...prev,
-      [teamId]: {
-        ...(prev[teamId] || {}),
-        [periodId]: duration
-      }
-    }));
+    setPeriodDurations(prev => {
+      const updated = {
+        ...prev,
+        [teamId]: {
+          ...(prev[teamId] || {}),
+          [periodId]: duration
+        }
+      };
+      console.log(`Updated period duration for team ${teamId}, period ${periodId}:`, duration);
+      return updated;
+    });
   }, []);
 
   const handlePerformanceCategoryChange = useCallback((teamId: string, category: PerformanceCategory) => {
-    setPerformanceCategories(prev => ({
-      ...prev,
-      [teamId]: category
-    }));
+    setPerformanceCategories(prev => {
+      const updated = {
+        ...prev,
+        [teamId]: category
+      };
+      console.log(`Updated performance category for team ${teamId}:`, category);
+      return updated;
+    });
   }, []);
 
   const handleTemplateChange = useCallback((teamId: string, template: string) => {
-    setTeamFormationTemplates(prev => ({
-      ...prev,
-      [teamId]: template
-    }));
+    setTeamFormationTemplates(prev => {
+      const updated = {
+        ...prev,
+        [teamId]: template
+      };
+      console.log(`Updated formation template for team ${teamId}:`, template);
+      return updated;
+    });
   }, []);
 
   const handleCaptainChange = useCallback((teamId: string, playerId: string) => {
-    setTeamCaptains(prev => ({
-      ...prev,
-      [teamId]: playerId
-    }));
+    setTeamCaptains(prev => {
+      const updated = {
+        ...prev,
+        [teamId]: playerId
+      };
+      console.log(`Updated captain for team ${teamId}:`, playerId);
+      return updated;
+    });
   }, []);
 
   return {
@@ -209,6 +252,7 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
     periodDurations,
     teamCaptains,
     isLoading,
+    dataLoaded,
     handleTeamSelectionChange,
     handlePeriodSelectionChange,
     handlePeriodDurationChange,

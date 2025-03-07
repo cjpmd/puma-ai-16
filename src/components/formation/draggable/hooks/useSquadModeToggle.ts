@@ -29,7 +29,7 @@ export const useSquadModeToggle = ({
     // If trying to exit squad mode, check if we have players
     if (squadMode && !canExitSquadMode) {
       console.log("Cannot exit squad mode - no players selected");
-      return squadMode; // Don't change the mode
+      return false; // Return false to indicate toggle wasn't successful
     }
 
     const newSquadMode = !squadMode;
@@ -40,7 +40,7 @@ export const useSquadModeToggle = ({
       onToggleSquadMode(newSquadMode);
     }
 
-    return newSquadMode;
+    return true; // Return true to indicate toggle was successful
   };
 
   return {
