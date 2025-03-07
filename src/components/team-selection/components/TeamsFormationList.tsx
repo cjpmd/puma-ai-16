@@ -1,4 +1,3 @@
-
 import { FormationFormat } from "@/components/formation/types";
 import { PerformanceCategory } from "@/types/player";
 import { DefaultFormationCard } from "./DefaultFormationCard";
@@ -29,6 +28,8 @@ interface TeamsFormationListProps {
   toggleCaptainSelectionMode?: (teamId: string) => void;
   handleSetCaptain?: (teamId: string, playerId: string) => void;
   forceDragEnabled: boolean;
+  isPlayerCaptain?: (teamId: string, playerId: string) => boolean;
+  getOtherTeamIndicator?: (teamId: string, playerId: string) => React.ReactNode;
 }
 
 export const TeamsFormationList = ({
@@ -52,13 +53,14 @@ export const TeamsFormationList = ({
   toggleCaptainSelectionMode,
   handleSetCaptain,
   forceDragEnabled,
+  isPlayerCaptain,
+  getOtherTeamIndicator,
 }: TeamsFormationListProps) => {
   return (
     <>
       {teams.map(team => {
         const teamPeriods = periods[team.id] || [];
         
-        // Show default first half if no periods
         if (teamPeriods.length === 0) {
           return (
             <DefaultFormationCard
@@ -80,11 +82,12 @@ export const TeamsFormationList = ({
               onToggleCaptainSelection={() => toggleCaptainSelectionMode?.(team.id)}
               onSetCaptain={(playerId) => handleSetCaptain?.(team.id, playerId)}
               captain={teamCaptains[team.id]}
+              isPlayerCaptain={(playerId) => isPlayerCaptain?.(team.id, playerId)}
+              getOtherTeamIndicator={(playerId) => getOtherTeamIndicator?.(team.id, playerId)}
             />
           );
         }
         
-        // Otherwise, show a card for each period
         return teamPeriods.map(period => (
           <PeriodFormationCard
             key={`${team.id}-${period.id}`}
@@ -108,6 +111,8 @@ export const TeamsFormationList = ({
             onToggleCaptainSelection={() => toggleCaptainSelectionMode?.(team.id)}
             onSetCaptain={(playerId) => handleSetCaptain?.(team.id, playerId)}
             captain={teamCaptains[team.id]}
+            isPlayerCaptain={(playerId) => isPlayerCaptain?.(team.id, playerId)}
+            getOtherTeamIndicator={(playerId) => getOtherTeamIndicator?.(team.id, playerId)}
           />
         ));
       })}

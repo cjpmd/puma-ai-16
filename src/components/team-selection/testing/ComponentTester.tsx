@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -68,9 +67,7 @@ export const ComponentTester = () => {
           <TabsContent value="header" className="p-4 border rounded-md">
             <h3 className="text-sm font-medium mb-4">TeamSelectionCardHeader</h3>
             <TeamSelectionCardHeader
-              teamName="Test Team"
-              periodDisplayName="First Half"
-              viewMode="formation"
+              team={mockTeam}
               performanceCategory={performanceCategory}
               onPerformanceCategoryChange={setPerformanceCategory}
               useDragAndDrop={useDragAndDrop}
