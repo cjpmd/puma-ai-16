@@ -45,6 +45,7 @@ export const FormationHeader: React.FC<FormationHeaderProps> = ({
           onClick={onToggleSquadMode}
           className="flex items-center"
           disabled={squadMode && !canExitSquadMode}
+          title={squadMode && !canExitSquadMode ? "Add players to the squad first" : ""}
         >
           {squadMode ? (
             <>

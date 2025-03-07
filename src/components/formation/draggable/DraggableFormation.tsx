@@ -45,9 +45,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   onDurationChange,
   periodId
 }) => {
-  // Handle the squad mode state locally
-  const [localSquadMode, setLocalSquadMode] = useState(true);
-
   // Use our period management hook
   const {
     localPeriod,
@@ -102,33 +99,29 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
 
   // Use our squad mode toggle hook
   const { 
+    squadMode,
+    toggleSquadMode,
     canExitSquadMode 
   } = useSquadModeToggle({
     initialSquadMode: true,
     squadPlayers: localSquadPlayers
   });
 
-  // Handle toggle squad mode
-  const handleToggleSquadMode = useCallback(() => {
-    console.log(`DraggableFormation - Toggling squad mode from ${localSquadMode} to ${!localSquadMode}`);
-    setLocalSquadMode(prev => !prev);
-  }, [localSquadMode]);
-
   // Debug state
   useEffect(() => {
     console.log("DraggableFormation state:", {
-      squadMode: localSquadMode,
+      squadMode: squadMode,
       localSquadPlayers: localSquadPlayers.length,
       selections: Object.keys(selections).length,
       canExitSquadMode
     });
-  }, [localSquadMode, localSquadPlayers, selections, canExitSquadMode]);
+  }, [squadMode, localSquadPlayers, selections, canExitSquadMode]);
 
   return (
     <div className="space-y-6" id={`team-selection-${periodId || localPeriod}`}>
       <FormationHeader 
-        squadMode={localSquadMode}
-        onToggleSquadMode={handleToggleSquadMode}
+        squadMode={squadMode}
+        onToggleSquadMode={toggleSquadMode}
         squadPlayersLength={localSquadPlayers.length}
         periodDisplayName={getPeriodDisplayName()}
         format={format}
@@ -137,17 +130,17 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
         onDurationChange={onDurationChange ? handleDurationChange : undefined}
         localDuration={localDuration}
         periodId={periodId}
-        canExitSquadMode={localSquadPlayers.length > 0}
+        canExitSquadMode={canExitSquadMode}
       />
       
       <FormationHelperText 
         selectedPlayerId={selectedPlayerId}
         draggingPlayer={draggingPlayer}
-        squadMode={localSquadMode}
+        squadMode={squadMode}
         periodNumber={localPeriod}
       />
       
-      {localSquadMode ? (
+      {squadMode ? (
         <SquadModeView 
           getAvailablePlayers={getAvailablePlayers}
           selectedPlayerId={selectedPlayerId}
