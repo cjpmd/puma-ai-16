@@ -54,7 +54,7 @@ export const useDraggableFormation = ({
 
   // Initialize formation state
   const {
-    selections,
+    selections: formationSelections,
     selectedPlayerId,
     draggingPlayer,
     formationRef,
@@ -101,23 +101,22 @@ export const useDraggableFormation = ({
     removeSubstitute, 
     handleSubstituteDrop 
   } = useSubstitutionManager({
-    selections,
+    selections: formationSelections,
     updateSelections: (newSelections) => {
-      setSelections(newSelections);
+      onSelectionChange(newSelections);
     },
     onSelectionChange,
     performanceCategory
   });
 
   // We need this for the useEffect that updates squad players from selections
-  const [selections, setSelections] = useState(initialSelections || {});
   const previousSelectionsRef = useRef({});
 
   // Update squad players when selections change
   useEffect(() => {
     if (onSquadPlayersChange) {
       // Get all currently selected players
-      const selectedPlayerIds = Object.values(selections)
+      const selectedPlayerIds = Object.values(formationSelections)
         .map(selection => selection.playerId)
         .filter(id => id !== "unassigned");
       
@@ -136,7 +135,7 @@ export const useDraggableFormation = ({
         onSquadPlayersChange(newSquadPlayers);
       }
     }
-  }, [selections, onSquadPlayersChange, localSquadPlayers]);
+  }, [formationSelections, onSquadPlayersChange, localSquadPlayers]);
 
   const showPlayers = true;
 
@@ -144,7 +143,7 @@ export const useDraggableFormation = ({
     selectedPlayerId,
     draggingPlayer,
     selectedTemplate,
-    selections,
+    selections: formationSelections,
     formationRef,
     squadMode,
     squadPlayers: localSquadPlayers,
