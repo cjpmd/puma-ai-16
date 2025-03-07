@@ -34,9 +34,8 @@ export const PerformanceCategorySelector = ({
     <Select 
       value={validValue} 
       onValueChange={(newValue: string) => onChange(newValue as PerformanceCategory)}
-      className={className}
     >
-      <SelectTrigger className="w-[180px]">
+      <SelectTrigger className={`w-[180px] ${className || ""}`}>
         <SelectValue placeholder="Select category" />
       </SelectTrigger>
       <SelectContent>
