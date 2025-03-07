@@ -22,6 +22,8 @@ interface FormationModeViewProps {
   onPlayerClick: (playerId: string) => void;
   addSubstitute: (playerId: string) => void;
   removeSubstitute: (slotId: string) => void;
+  handleSubstituteDrop?: (playerId: string) => void;
+  formationRef?: React.RefObject<HTMLDivElement>;
 }
 
 export const FormationModeView: React.FC<FormationModeViewProps> = ({
@@ -40,7 +42,9 @@ export const FormationModeView: React.FC<FormationModeViewProps> = ({
   onRemoveFromSquad,
   onPlayerClick,
   addSubstitute,
-  removeSubstitute
+  removeSubstitute,
+  handleSubstituteDrop,
+  formationRef
 }) => {
   return (
     <>
@@ -86,6 +90,7 @@ export const FormationModeView: React.FC<FormationModeViewProps> = ({
         handleDragEnd={handleDragEnd}
         renderSubstitutionIndicator={renderSubstitutionIndicator}
         format={format}
+        handleSubstituteDrop={handleSubstituteDrop}
       />
     </>
   );
