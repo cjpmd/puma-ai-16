@@ -6,6 +6,9 @@ export { DraggableFormation };
 // Also export the Props interface for TypeScript type checking
 export type { DraggableFormationProps } from './DraggableFormation';
 
+// Export hooks
+export { useDraggableFormation } from './hooks/useDraggableFormation';
+export { usePeriodManagement } from './hooks/usePeriodManagement';
+
 // Export other useful utilities
 export * from './utils/formationLayoutUtils';
-export * from './hooks/useDraggableFormation';

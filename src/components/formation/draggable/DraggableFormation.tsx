@@ -7,6 +7,7 @@ import { useDraggableFormation } from "./hooks/useDraggableFormation";
 import { FormationHeader } from "./components/FormationHeader";
 import { SquadModeView } from "./components/SquadModeView";
 import { FormationModeView } from "./components/FormationModeView";
+import { usePeriodManagement } from "./hooks/usePeriodManagement";
 
 export interface DraggableFormationProps {
   format: FormationFormat;
@@ -43,17 +44,21 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   onDurationChange,
   periodId
 }) => {
-  const [localPeriod, setLocalPeriod] = useState(periodNumber);
-  const [localDuration, setLocalDuration] = useState(periodDuration);
   const [squadModeState, setSquadModeState] = useState(true);
 
-  console.log("DraggableFormation props:", {
-    format,
-    squadPlayers: squadPlayers.length,
-    performanceCategory,
-    formationTemplate,
-    periodNumber,
-    periodDuration
+  // Use our new period management hook
+  const {
+    localPeriod,
+    localDuration,
+    handlePeriodChange,
+    handleDurationChange,
+    getPeriodDisplayName
+  } = usePeriodManagement({
+    initialPeriodNumber: periodNumber,
+    initialPeriodDuration: periodDuration,
+    onPeriodChange,
+    onDurationChange,
+    periodId
   });
 
   const {
@@ -104,21 +109,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     }
   }, [squadMode, squadModeState]);
 
-  const handlePeriodChange = (value: string) => {
-    const period = parseInt(value);
-    setLocalPeriod(period);
-    if (onPeriodChange) {
-      onPeriodChange(period);
-    }
-  };
-
-  const handleDurationChange = (value: number) => {
-    setLocalDuration(value);
-    if (onDurationChange) {
-      onDurationChange(value);
-    }
-  };
-
   const handleToggleSquadMode = () => {
     const newSquadMode = !squadModeState;
     setSquadModeState(newSquadMode);
@@ -134,15 +124,6 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     }
   };
 
-  const periodDisplayName = () => {
-    if (periodId) {
-      if (periodId === 100) return "First Half";
-      if (periodId === 200) return "Second Half";
-      return `Period ${periodId}`;
-    }
-    return periodNumber === 1 ? "First Half" : "Second Half";
-  };
-
   console.log("DraggableFormation state:", {
     squadMode: squadModeState,
     localSquadPlayers: localSquadPlayers.length,
@@ -150,12 +131,12 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   });
 
   return (
-    <div className="space-y-6" id={`team-selection-${periodId || periodNumber}`}>
+    <div className="space-y-6" id={`team-selection-${periodId || localPeriod}`}>
       <FormationHeader 
         squadMode={squadModeState}
         onToggleSquadMode={handleToggleSquadMode}
         squadPlayersLength={localSquadPlayers.length}
-        periodDisplayName={periodDisplayName()}
+        periodDisplayName={getPeriodDisplayName()}
         format={format}
         template={selectedTemplate}
         onTemplateChange={onTemplateChange}
