@@ -1,26 +1,16 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { TeamSelectionCard } from "./TeamSelectionCard";
 import { usePlayersWithAttendance } from "./hooks/usePlayersWithAttendance";
-import { useTeamSelections, PeriodData } from "./hooks/useTeamSelections";
+import { useTeamSelections } from "./hooks/useTeamSelections";
 import { Fixture } from "@/types/fixture";
 import { FormationFormat } from "@/components/formation/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PerformanceCategory } from "@/types/player";
-import { Card, CardContent, CardHeader, CardFooter, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2 } from "lucide-react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter,
-  DialogTrigger
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { FormationView } from "./components/FormationView";
+import { PeriodsView } from "./components/PeriodsView";
+import { PeriodDialog } from "./components/PeriodDialog";
 
 interface TeamSelectionManagerProps {
   teams?: Array<{
@@ -119,11 +109,6 @@ export const TeamSelectionManager = ({
     }
   };
 
-  // Custom toggle function to ensure our local state is updated
-  const handleToggleDragAndDrop = (enabled: boolean) => {
-    toggleDragEnabled(enabled);
-  };
-
   // Add a new period
   const handleAddPeriod = () => {
     if (!newPeriodName.trim()) {
@@ -189,20 +174,6 @@ export const TeamSelectionManager = ({
     return <div>Error loading players: {error.message}</div>;
   }
 
-  // Helper to get half name from period ID
-  const getHalfName = (periodId: number) => {
-    return Math.floor(periodId / 100) === 1 ? "First Half" : "Second Half";
-  };
-
-  // Group periods by half
-  const getPeriodsByHalf = (teamId: string) => {
-    const teamPeriods = periods[teamId] || [];
-    return {
-      firstHalf: teamPeriods.filter(p => Math.floor(p.id / 100) === 1),
-      secondHalf: teamPeriods.filter(p => Math.floor(p.id / 100) === 2)
-    };
-  };
-
   return (
     <div className="space-y-6">
       <Tabs defaultValue="formation" className="w-full" onValueChange={setActiveView}>
@@ -214,238 +185,35 @@ export const TeamSelectionManager = ({
         </div>
 
         <TabsContent value="formation" className="mt-0">
-          {teams.map(team => {
-            const teamPeriods = periods[team.id] || [];
-            
-            // Show default first half if no periods
-            if (teamPeriods.length === 0) {
-              return (
-                <TeamSelectionCard
-                  key={`${team.id}-default`}
-                  team={team}
-                  format={validFormat}
-                  players={playersWithStatus}
-                  selectedPlayers={selectedPlayers}
-                  performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
-                  onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
-                  onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
-                  formationTemplate={teamFormationTemplates[team.id] || "All"}
-                  onTemplateChange={(template) => handleTemplateChange(team.id, template)}
-                  viewMode="formation"
-                  squadSelection={squadSelections[team.id]}
-                  onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
-                  useDragAndDrop={forceDragEnabled}
-                  onToggleDragAndDrop={handleToggleDragAndDrop}
-                />
-              );
-            }
-            
-            // Otherwise, show a card for each period
-            return teamPeriods.map(period => (
-              <TeamSelectionCard
-                key={`${team.id}-${period.id}`}
-                team={team}
-                format={validFormat}
-                players={playersWithStatus}
-                selectedPlayers={selectedPlayers}
-                performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
-                onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
-                onSelectionChange={(selections) => {
-                  // Store selections for this specific period
-                  handlePeriodSelectionChange(team.id, period.id, selections);
-                  // Also update the main team selections
-                  handleTeamSelectionChange(team.id, selections);
-                }}
-                formationTemplate={teamFormationTemplates[team.id] || "All"}
-                onTemplateChange={(template) => handleTemplateChange(team.id, template)}
-                viewMode="formation"
-                periodNumber={Math.floor(period.id / 100)}
-                duration={period.duration}
-                onDurationChange={(duration) => handlePeriodDurationUpdate(team.id, period.id, duration)}
-                squadSelection={squadSelections[team.id]}
-                onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
-                useDragAndDrop={forceDragEnabled}
-                onToggleDragAndDrop={handleToggleDragAndDrop}
-                periodId={period.id}
-              />
-            ));
-          })}
+          <FormationView
+            teams={teams}
+            format={validFormat}
+            playersWithStatus={playersWithStatus}
+            selectedPlayers={selectedPlayers}
+            performanceCategories={performanceCategories}
+            teamFormationTemplates={teamFormationTemplates}
+            squadSelections={squadSelections}
+            periods={periods}
+            handlePerformanceCategoryChange={handlePerformanceCategoryChange}
+            handleTeamSelectionChange={handleTeamSelectionChange}
+            handlePeriodSelectionChange={handlePeriodSelectionChange}
+            handleTemplateChange={handleTemplateChange}
+            handleSquadSelectionChange={handleSquadSelectionChange}
+            toggleDragEnabled={toggleDragEnabled}
+            handlePeriodDurationUpdate={handlePeriodDurationUpdate}
+            forceDragEnabled={forceDragEnabled}
+          />
         </TabsContent>
 
         <TabsContent value="periods" className="mt-0">
-          {teams.map(team => {
-            const { firstHalf, secondHalf } = getPeriodsByHalf(team.id);
-            
-            return (
-              <div key={team.id} className="mb-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium">{team.name} - Time Periods</h3>
-                  <Button 
-                    onClick={() => openAddPeriodDialog(team.id)}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Plus className="mr-2 h-4 w-4" /> Add Period
-                  </Button>
-                </div>
-                
-                <div className="space-y-6">
-                  {/* First Half */}
-                  <div>
-                    <h4 className="text-md font-medium mb-3">First Half</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {firstHalf.map(period => (
-                        <Card key={period.id} className={`${period.id === 100 ? 'border-blue-300' : ''}`}>
-                          <CardHeader className="pb-2">
-                            <div className="flex justify-between items-center">
-                              <CardTitle className="text-base">{period.name}</CardTitle>
-                              {period.id !== 100 && ( // Don't allow deletion of the default First Half
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  onClick={() => handleDeletePeriod(team.id, period.id)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                              )}
-                            </div>
-                          </CardHeader>
-                          <CardContent className="pb-2">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <Label htmlFor={`duration-${period.id}`} className="w-16">Duration:</Label>
-                              <Input
-                                id={`duration-${period.id}`}
-                                type="number"
-                                min="1"
-                                max="90" 
-                                value={period.duration}
-                                onChange={(e) => handlePeriodDurationUpdate(team.id, period.id, parseInt(e.target.value) || 1)}
-                                className="w-20"
-                              />
-                              <span className="text-sm text-gray-500">minutes</span>
-                            </div>
-                          </CardContent>
-                          <CardFooter>
-                            <Button 
-                              className="w-full"
-                              variant="outline"
-                              onClick={() => navigateToFormationPeriod(team.id, period.id)}
-                            >
-                              Set Formation
-                            </Button>
-                          </CardFooter>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Second Half */}
-                  <div>
-                    <h4 className="text-md font-medium mb-3">Second Half</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {secondHalf.map(period => (
-                        <Card key={period.id} className={`${period.id === 200 ? 'border-blue-300' : ''}`}>
-                          <CardHeader className="pb-2">
-                            <div className="flex justify-between items-center">
-                              <CardTitle className="text-base">{period.name}</CardTitle>
-                              {period.id !== 200 && ( // Don't allow deletion of the default Second Half
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  onClick={() => handleDeletePeriod(team.id, period.id)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                              )}
-                            </div>
-                          </CardHeader>
-                          <CardContent className="pb-2">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <Label htmlFor={`duration-${period.id}`} className="w-16">Duration:</Label>
-                              <Input
-                                id={`duration-${period.id}`}
-                                type="number"
-                                min="1"
-                                max="90" 
-                                value={period.duration}
-                                onChange={(e) => handlePeriodDurationUpdate(team.id, period.id, parseInt(e.target.value) || 1)}
-                                className="w-20"
-                              />
-                              <span className="text-sm text-gray-500">minutes</span>
-                            </div>
-                          </CardContent>
-                          <CardFooter>
-                            <Button 
-                              className="w-full"
-                              variant="outline"
-                              onClick={() => navigateToFormationPeriod(team.id, period.id)}
-                            >
-                              Set Formation
-                            </Button>
-                          </CardFooter>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          
-          {/* Add Period Dialog */}
-          <Dialog open={isAddPeriodDialogOpen} onOpenChange={setIsAddPeriodDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Period</DialogTitle>
-              </DialogHeader>
-              
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="period-half">Half</Label>
-                  <Select value={newPeriodHalf} onValueChange={setNewPeriodHalf}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select half" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">First Half</SelectItem>
-                      <SelectItem value="2">Second Half</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="period-name">Period Name</Label>
-                  <Input
-                    id="period-name"
-                    value={newPeriodName}
-                    onChange={(e) => setNewPeriodName(e.target.value)}
-                    placeholder="e.g., Opening 15 min"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="period-duration">Duration (minutes)</Label>
-                  <Input
-                    id="period-duration"
-                    type="number"
-                    min="1"
-                    max="90"
-                    value={newPeriodDuration}
-                    onChange={(e) => setNewPeriodDuration(parseInt(e.target.value) || 15)}
-                  />
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddPeriodDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddPeriod}>
-                  Add Period
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <PeriodsView
+            teams={teams}
+            periods={periods}
+            openAddPeriodDialog={openAddPeriodDialog}
+            handleDeletePeriod={handleDeletePeriod}
+            handlePeriodDurationUpdate={handlePeriodDurationUpdate}
+            navigateToFormationPeriod={navigateToFormationPeriod}
+          />
         </TabsContent>
       </Tabs>
 
@@ -457,6 +225,19 @@ export const TeamSelectionManager = ({
           {isSaving ? 'Saving...' : 'Save Team Selections'}
         </Button>
       </div>
+
+      {/* Add Period Dialog */}
+      <PeriodDialog
+        isOpen={isAddPeriodDialogOpen}
+        onOpenChange={setIsAddPeriodDialogOpen}
+        onAddPeriod={handleAddPeriod}
+        newPeriodName={newPeriodName}
+        setNewPeriodName={setNewPeriodName}
+        newPeriodDuration={newPeriodDuration}
+        setNewPeriodDuration={setNewPeriodDuration}
+        newPeriodHalf={newPeriodHalf}
+        setNewPeriodHalf={setNewPeriodHalf}
+      />
     </div>
   );
 };
