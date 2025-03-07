@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from "react";
-import { useSquadModeToggle } from "./useSquadModeToggle";
 
 interface UseSquadManagementProps {
   initialSquadPlayers: string[];
@@ -15,16 +14,6 @@ export const useSquadManagement = ({
 }: UseSquadManagementProps) => {
   const [squadPlayers, setSquadPlayers] = useState<string[]>(initialSquadPlayers || []);
   
-  // Use the new squad mode toggle hook
-  const { 
-    squadMode, 
-    setSquadMode, 
-    toggleSquadMode 
-  } = useSquadModeToggle({
-    initialSquadMode: forceSquadMode !== undefined ? forceSquadMode : true,
-    squadPlayers
-  });
-
   // Sync squad players from props
   useEffect(() => {
     if (initialSquadPlayers && initialSquadPlayers.length > 0) {
@@ -39,14 +28,6 @@ export const useSquadManagement = ({
       }
     }
   }, [initialSquadPlayers, squadPlayers]);
-  
-  // Sync squad mode from props
-  useEffect(() => {
-    if (forceSquadMode !== undefined && forceSquadMode !== squadMode) {
-      console.log(`Forcing squad mode to: ${forceSquadMode}`);
-      setSquadMode(forceSquadMode);
-    }
-  }, [forceSquadMode, squadMode, setSquadMode]);
 
   // Add a player to the squad
   const addPlayerToSquad = (playerId: string) => {
@@ -74,27 +55,9 @@ export const useSquadManagement = ({
     }
   };
 
-  // Return to squad selection mode
-  const returnToSquadSelection = () => {
-    console.log("Returning to squad selection");
-    setSquadMode(true);
-  };
-
-  // Finish squad selection and move to position assignment
-  const finishSquadSelection = () => {
-    console.log("Finishing squad selection");
-    if (squadPlayers.length > 0) {
-      setSquadMode(false);
-    }
-  };
-
   return {
     squadPlayers,
-    squadMode,
     addPlayerToSquad,
-    removePlayerFromSquad,
-    toggleSquadMode,
-    returnToSquadSelection,
-    finishSquadSelection
+    removePlayerFromSquad
   };
 };

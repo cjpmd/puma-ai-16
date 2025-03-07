@@ -23,9 +23,8 @@ export const useSquadModeToggle = ({
 
   const toggleSquadMode = () => {
     const newSquadMode = !squadMode;
+    console.log(`useSquadModeToggle - Toggling squad mode from ${squadMode} to ${newSquadMode}`);
     setSquadMode(newSquadMode);
-    
-    console.log(`Toggling squad mode from ${squadMode} to ${newSquadMode}`);
     
     if (onToggleSquadMode) {
       onToggleSquadMode(newSquadMode);

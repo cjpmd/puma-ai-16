@@ -37,15 +37,11 @@ export const useDraggableFormation = ({
   periodDuration = 45,
   forceSquadMode
 }: UseDraggableFormationProps) => {
-  // Initialize squad management
+  // Initialize squad management 
   const {
     squadPlayers: localSquadPlayers,
-    squadMode,
     addPlayerToSquad,
     removePlayerFromSquad,
-    toggleSquadMode,
-    returnToSquadSelection,
-    finishSquadSelection
   } = useSquadManagement({
     initialSquadPlayers: squadPlayers,
     onSquadPlayersChange,
@@ -96,14 +92,13 @@ export const useDraggableFormation = ({
   });
 
   // Initialize substitution manager
-  // Fix: Pass direct object instead of function to updateSelections
   const { 
     addSubstitute, 
     removeSubstitute, 
     handleSubstituteDrop 
   } = useSubstitutionManager({
     selections: formationSelections,
-    updateSelections: onSelectionChange, // Fixed: Pass the callback directly
+    updateSelections: onSelectionChange,
     onSelectionChange,
     performanceCategory
   });
@@ -144,7 +139,6 @@ export const useDraggableFormation = ({
     selectedTemplate,
     selections: formationSelections,
     formationRef,
-    squadMode,
     squadPlayers: localSquadPlayers,
     currentPeriod,
     periodLength,
@@ -162,10 +156,7 @@ export const useDraggableFormation = ({
     addSubstitute,
     removeSubstitute,
     showPlayers,
-    toggleSquadMode,
     addPlayerToSquad,
-    removePlayerFromSquad,
-    finishSquadSelection,
-    returnToSquadSelection
+    removePlayerFromSquad
   };
 };

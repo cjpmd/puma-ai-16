@@ -18,6 +18,7 @@ interface FormationHeaderProps {
   onDurationChange?: (duration: number) => void;
   localDuration?: number;
   periodId?: number;
+  canExitSquadMode?: boolean;
 }
 
 export const FormationHeader: React.FC<FormationHeaderProps> = ({
@@ -30,8 +31,12 @@ export const FormationHeader: React.FC<FormationHeaderProps> = ({
   onTemplateChange,
   onDurationChange,
   localDuration,
-  periodId
+  periodId,
+  canExitSquadMode = true
 }) => {
+  // Debug output
+  console.log("FormationHeader rendering with squad mode:", squadMode, "canExit:", canExitSquadMode, "players:", squadPlayersLength);
+  
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
@@ -39,7 +44,7 @@ export const FormationHeader: React.FC<FormationHeaderProps> = ({
           variant={squadMode ? "default" : "outline"}
           onClick={onToggleSquadMode}
           className="flex items-center"
-          disabled={!squadMode && squadPlayersLength === 0}
+          disabled={squadMode && !canExitSquadMode}
         >
           {squadMode ? (
             <>
