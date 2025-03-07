@@ -5,7 +5,6 @@ import { FormationFormat } from "@/components/formation/types";
 import { PerformanceCategory } from "@/types/player";
 import { TeamSelectionCardHeader } from "./components/TeamSelectionCardHeader";
 import { DraggableFormation } from "../formation/draggable/DraggableFormation";
-import { Flag, GitBranch } from "lucide-react";
 
 export interface TeamSelectionCardProps {
   team: {
@@ -35,8 +34,8 @@ export interface TeamSelectionCardProps {
   captainSelectionMode?: boolean;
   onToggleCaptainSelection?: () => void;
   onSetCaptain?: (playerId: string) => void;
-  isPlayerCaptain?: (teamId: string, playerId: string) => boolean;
-  getOtherTeamIndicator?: (teamId: string, playerId: string) => React.ReactNode;
+  isPlayerCaptain?: (playerId: string) => boolean;
+  getOtherTeamIndicator?: (playerId: string) => React.ReactNode;
 }
 
 export const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
@@ -78,7 +77,7 @@ export const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
   // Handle player captain status check
   const checkPlayerIsCaptain = (playerId: string) => {
     if (isPlayerCaptain) {
-      return isPlayerCaptain(team.id, playerId);
+      return isPlayerCaptain(playerId);
     }
     return captain === playerId;
   };
@@ -86,7 +85,7 @@ export const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
   // Handle other team indicator
   const renderOtherTeamIndicator = (playerId: string) => {
     if (getOtherTeamIndicator) {
-      return getOtherTeamIndicator(team.id, playerId);
+      return getOtherTeamIndicator(playerId);
     }
     return null;
   };
@@ -128,6 +127,8 @@ export const TeamSelectionCard: React.FC<TeamSelectionCardProps> = ({
           onDurationChange={onDurationChange}
           initialSelections={initialSelections}
           periodId={periodId}
+          // Force to start in squad mode for new formations with no selections
+          forceSquadMode={!initialSelections || Object.keys(initialSelections).length === 0}
         />
       </CardContent>
     </Card>

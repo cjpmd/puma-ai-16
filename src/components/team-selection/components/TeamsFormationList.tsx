@@ -75,7 +75,7 @@ export const TeamsFormationList = ({
               onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
               formationTemplate={teamFormationTemplates[team.id] || "All"}
               onTemplateChange={(template) => handleTemplateChange(team.id, template)}
-              squadSelection={squadSelections[team.id]}
+              squadSelection={squadSelections[team.id] || []}
               onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
               useDragAndDrop={forceDragEnabled}
               onToggleDragAndDrop={toggleDragEnabled}
@@ -83,7 +83,7 @@ export const TeamsFormationList = ({
               onToggleCaptainSelection={() => toggleCaptainSelectionMode?.(team.id)}
               onSetCaptain={(playerId) => handleSetCaptain?.(team.id, playerId)}
               captain={teamCaptains[team.id]}
-              isPlayerCaptain={(playerId) => isPlayerCaptain?.(team.id, playerId)}
+              isPlayerCaptain={(playerId) => isPlayerCaptain?.(team.id, playerId) || false}
               getOtherTeamIndicator={(playerId) => getOtherTeamIndicator?.(team.id, playerId)}
             />
           );
@@ -103,7 +103,7 @@ export const TeamsFormationList = ({
             onPeriodSelectionChange={(selections) => handlePeriodSelectionChange(team.id, period.id, selections)}
             formationTemplate={teamFormationTemplates[team.id] || "All"}
             onTemplateChange={(template) => handleTemplateChange(team.id, template)}
-            squadSelection={squadSelections[team.id]}
+            squadSelection={squadSelections[team.id] || []}
             onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
             useDragAndDrop={forceDragEnabled}
             onToggleDragAndDrop={toggleDragEnabled}
@@ -112,7 +112,7 @@ export const TeamsFormationList = ({
             onToggleCaptainSelection={() => toggleCaptainSelectionMode?.(team.id)}
             onSetCaptain={(playerId) => handleSetCaptain?.(team.id, playerId)}
             captain={teamCaptains[team.id]}
-            isPlayerCaptain={(playerId) => isPlayerCaptain?.(team.id, playerId)}
+            isPlayerCaptain={(playerId) => isPlayerCaptain?.(team.id, playerId) || false}
             getOtherTeamIndicator={(playerId) => getOtherTeamIndicator?.(team.id, playerId)}
           />
         ));

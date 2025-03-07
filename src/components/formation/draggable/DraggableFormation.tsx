@@ -27,6 +27,7 @@ export interface DraggableFormationProps {
   onPeriodChange?: (periodNumber: number) => void;
   onDurationChange?: (duration: number) => void;
   periodId?: number;
+  forceSquadMode?: boolean;
 }
 
 export const DraggableFormation: React.FC<DraggableFormationProps> = ({
@@ -44,7 +45,8 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   periodDuration = 45,
   onPeriodChange,
   onDurationChange,
-  periodId
+  periodId,
+  forceSquadMode
 }) => {
   // Use our period management hook
   const {
@@ -96,15 +98,16 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     onSquadPlayersChange,
     periodNumber: localPeriod,
     periodDuration: localDuration,
+    forceSquadMode
   });
 
-  // Use our squad mode toggle hook
+  // Use our squad mode toggle hook with default to false to start in formation mode
   const { 
     squadMode,
     toggleSquadMode,
     canExitSquadMode 
   } = useSquadModeToggle({
-    initialSquadMode: true,
+    initialSquadMode: forceSquadMode === true,
     squadPlayers: localSquadPlayers
   });
 

@@ -1,10 +1,10 @@
 
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 
 interface UsePeriodManagementProps {
   initialPeriodNumber?: number;
   initialPeriodDuration?: number;
-  onPeriodChange?: (period: number) => void;
+  onPeriodChange?: (periodNumber: number) => void;
   onDurationChange?: (duration: number) => void;
   periodId?: number;
 }
@@ -16,41 +16,36 @@ export const usePeriodManagement = ({
   onDurationChange,
   periodId
 }: UsePeriodManagementProps) => {
-  const [localPeriod, setLocalPeriod] = useState(initialPeriodNumber);
-  const [localDuration, setLocalDuration] = useState(initialPeriodDuration);
-
-  // Sync with external props
-  useEffect(() => {
-    setLocalPeriod(initialPeriodNumber);
-  }, [initialPeriodNumber]);
-
-  useEffect(() => {
-    setLocalDuration(initialPeriodDuration);
-  }, [initialPeriodDuration]);
-
-  const handlePeriodChange = (period: number) => {
-    setLocalPeriod(period);
+  const [localPeriod, setLocalPeriod] = useState<number>(initialPeriodNumber);
+  const [localDuration, setLocalDuration] = useState<number>(initialPeriodDuration);
+  
+  // Handle period change
+  const handlePeriodChange = useCallback((periodNumber: number) => {
+    setLocalPeriod(periodNumber);
     if (onPeriodChange) {
-      onPeriodChange(period);
+      onPeriodChange(periodNumber);
     }
-  };
-
-  const handleDurationChange = (duration: number) => {
-    setLocalDuration(duration);
-    if (onDurationChange) {
-      onDurationChange(duration);
+  }, [onPeriodChange]);
+  
+  // Handle duration change
+  const handleDurationChange = useCallback((duration: number) => {
+    if (duration > 0 && duration <= 90) {
+      setLocalDuration(duration);
+      if (onDurationChange) {
+        onDurationChange(duration);
+      }
     }
-  };
-
-  const getPeriodDisplayName = () => {
+  }, [onDurationChange]);
+  
+  // Get period display name based on period number or custom ID
+  const getPeriodDisplayName = useCallback(() => {
     if (periodId) {
-      if (periodId === 100) return "First Half";
-      if (periodId === 200) return "Second Half";
-      return `Period ${periodId}`;
+      const halfNumber = Math.floor(periodId / 100);
+      return halfNumber === 1 ? "First Half" : "Second Half";
     }
-    return localPeriod === 1 ? "First Half" : "Second Half";
-  };
-
+    return `Period ${localPeriod}`;
+  }, [periodId, localPeriod]);
+  
   return {
     localPeriod,
     localDuration,
