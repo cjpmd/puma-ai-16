@@ -1,6 +1,7 @@
-import { TeamSelectionCard } from "../TeamSelectionCard";
+
 import { FormationFormat } from "@/components/formation/types";
 import { PerformanceCategory } from "@/types/player";
+import { TeamsFormationList } from "./TeamsFormationList";
 
 interface FormationViewProps {
   teams: Array<{
@@ -44,63 +45,23 @@ export const FormationView = ({
   forceDragEnabled,
 }: FormationViewProps) => {
   return (
-    <>
-      {teams.map(team => {
-        const teamPeriods = periods[team.id] || [];
-        
-        // Show default first half if no periods
-        if (teamPeriods.length === 0) {
-          return (
-            <TeamSelectionCard
-              key={`${team.id}-default`}
-              team={team}
-              format={format}
-              players={playersWithStatus}
-              selectedPlayers={selectedPlayers}
-              performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
-              onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
-              onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
-              formationTemplate={teamFormationTemplates[team.id] || "All"}
-              onTemplateChange={(template) => handleTemplateChange(team.id, template)}
-              viewMode="formation"
-              squadSelection={squadSelections[team.id]}
-              onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
-              useDragAndDrop={forceDragEnabled}
-              onToggleDragAndDrop={toggleDragEnabled}
-            />
-          );
-        }
-        
-        // Otherwise, show a card for each period
-        return teamPeriods.map(period => (
-          <TeamSelectionCard
-            key={`${team.id}-${period.id}`}
-            team={team}
-            format={format}
-            players={playersWithStatus}
-            selectedPlayers={selectedPlayers}
-            performanceCategory={performanceCategories[team.id] || "MESSI" as PerformanceCategory}
-            onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
-            onSelectionChange={(selections) => {
-              // Store selections for this specific period
-              handlePeriodSelectionChange(team.id, period.id, selections);
-              // Also update the main team selections
-              handleTeamSelectionChange(team.id, selections);
-            }}
-            formationTemplate={teamFormationTemplates[team.id] || "All"}
-            onTemplateChange={(template) => handleTemplateChange(team.id, template)}
-            viewMode="formation"
-            periodNumber={Math.floor(period.id / 100)}
-            duration={period.duration}
-            onDurationChange={(duration) => handlePeriodDurationUpdate(team.id, period.id, duration)}
-            squadSelection={squadSelections[team.id]}
-            onSquadSelectionChange={(playerIds) => handleSquadSelectionChange(team.id, playerIds)}
-            useDragAndDrop={forceDragEnabled}
-            onToggleDragAndDrop={toggleDragEnabled}
-            periodId={period.id}
-          />
-        ));
-      })}
-    </>
+    <TeamsFormationList
+      teams={teams}
+      format={format}
+      playersWithStatus={playersWithStatus}
+      selectedPlayers={selectedPlayers}
+      performanceCategories={performanceCategories}
+      teamFormationTemplates={teamFormationTemplates}
+      squadSelections={squadSelections}
+      periods={periods}
+      handlePerformanceCategoryChange={handlePerformanceCategoryChange}
+      handleTeamSelectionChange={handleTeamSelectionChange}
+      handlePeriodSelectionChange={handlePeriodSelectionChange}
+      handleTemplateChange={handleTemplateChange}
+      handleSquadSelectionChange={handleSquadSelectionChange}
+      toggleDragEnabled={toggleDragEnabled}
+      handlePeriodDurationUpdate={handlePeriodDurationUpdate}
+      forceDragEnabled={forceDragEnabled}
+    />
   );
 };
