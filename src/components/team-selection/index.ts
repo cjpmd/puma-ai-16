@@ -8,3 +8,7 @@ export * from "./components/PeriodDialog";
 export * from "./components/FormationView";
 export * from "./components/PeriodsView";
 export * from "./components/PeriodCard";
+export * from "./components/TeamSelectionCardHeader";
+export * from "./components/PerformanceCategorySelector";
+export * from "./utils/periodUtils";
+

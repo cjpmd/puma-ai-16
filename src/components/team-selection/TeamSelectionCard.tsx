@@ -1,15 +1,12 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FormationSelector } from "@/components/FormationSelector";
-import { FormationView } from "@/components/fixtures/FormationView";
+import { Card, CardContent } from "@/components/ui/card";
 import { FormationFormat } from "@/components/formation/types";
 import { PerformanceCategory } from "@/types/player";
-import { TeamSelections } from "@/components/fixtures/team-selection/types";
-import { DraggableFormation } from "@/components/formation/draggable";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { TeamSelectionCardHeader } from "./components/TeamSelectionCardHeader";
 import { useState } from "react";
+import { getPeriodDisplayName } from "./utils/periodUtils";
+import { DraggableFormation } from "@/components/formation/draggable";
+import { FormationSelector } from "@/components/FormationSelector";
 
 interface TeamSelectionCardProps {
   team: {
@@ -34,7 +31,7 @@ interface TeamSelectionCardProps {
   useDragAndDrop?: boolean;
   onToggleDragAndDrop?: (enabled: boolean) => void;
   onDurationChange?: (duration: number) => void;
-  periodId?: number; // Add support for custom period IDs
+  periodId?: number;
 }
 
 export const TeamSelectionCard = ({
@@ -61,18 +58,26 @@ export const TeamSelectionCard = ({
   const [localPeriod, setLocalPeriod] = useState(periodNumber);
   const [localDuration, setLocalDuration] = useState(duration);
 
-  const formatSelectionsForFormation = (selections: TeamSelections) => {
-    return Object.entries(selections)
-      .filter(([_, value]) => !value.position.startsWith('sub-'))
-      .map(([_, value]) => ({
-        position: value.position.split('-')[0].toUpperCase(),
-        playerId: value.playerId
-      }));
-  };
-
+  const periodDisplayName = getPeriodDisplayName(periodId, localPeriod);
   const squadPlayers = squadSelection.length > 0 ? squadSelection : Array.from(selectedPlayers);
 
-  // Custom substitution indicator for positions
+  // Handle period change
+  const handlePeriodChange = (period: number) => {
+    setLocalPeriod(period);
+    if (onPeriodChange) {
+      onPeriodChange(period);
+    }
+  };
+
+  // Handle duration change
+  const handleDurationChange = (newDuration: number) => {
+    setLocalDuration(newDuration);
+    if (onDurationChange) {
+      onDurationChange(newDuration);
+    }
+  };
+
+  // Render substitution indicators for positions
   const renderSubstitutionIndicator = (position: string) => {
     return position.startsWith('sub-') ? (
       <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
@@ -81,51 +86,17 @@ export const TeamSelectionCard = ({
     ) : null;
   };
 
-  const handlePeriodChange = (period: number) => {
-    setLocalPeriod(period);
-    if (onPeriodChange) {
-      onPeriodChange(period);
-    }
-  };
-
-  const handleDurationChange = (newDuration: number) => {
-    setLocalDuration(newDuration);
-    if (onDurationChange) {
-      onDurationChange(newDuration);
-    }
-  };
-
-  // Get a display name for the period
-  const getPeriodDisplayName = () => {
-    if (periodId) {
-      if (periodId === 100) return "First Half";
-      if (periodId === 200) return "Second Half";
-      return `Period ${periodId}`;
-    }
-    return periodNumber === 1 ? 'First Half' : 'Second Half';
-  };
-
   return (
     <Card key={team.id} className="mb-6">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{viewMode === "formation" ? team.name : `${team.name} - ${getPeriodDisplayName()}`}</CardTitle>
-        <div className="flex items-center gap-4">
-          {onToggleDragAndDrop && (
-            <div className="flex items-center space-x-2">
-              <Switch 
-                id="drag-enabled" 
-                checked={useDragAndDrop}
-                onCheckedChange={onToggleDragAndDrop}
-              />
-              <Label htmlFor="drag-enabled">Drag & Drop</Label>
-            </div>
-          )}
-          <PerformanceCategorySelector
-            value={performanceCategory}
-            onChange={onPerformanceCategoryChange}
-          />
-        </div>
-      </CardHeader>
+      <TeamSelectionCardHeader
+        teamName={team.name}
+        periodDisplayName={periodDisplayName}
+        viewMode={viewMode}
+        performanceCategory={performanceCategory}
+        onPerformanceCategoryChange={onPerformanceCategoryChange}
+        useDragAndDrop={useDragAndDrop}
+        onToggleDragAndDrop={onToggleDragAndDrop}
+      />
       <CardContent>
         {useDragAndDrop ? (
           <DraggableFormation
@@ -161,25 +132,5 @@ export const TeamSelectionCard = ({
         )}
       </CardContent>
     </Card>
-  );
-};
-
-interface PerformanceCategorySelectorProps {
-  value: PerformanceCategory;
-  onChange: (value: PerformanceCategory) => void;
-}
-
-const PerformanceCategorySelector = ({ value, onChange }: PerformanceCategorySelectorProps) => {
-  return (
-    <Select value={value} onValueChange={(newValue: string) => onChange(newValue as PerformanceCategory)}>
-      <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="Select category" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="MESSI">Messi</SelectItem>
-        <SelectItem value="RONALDO">Ronaldo</SelectItem>
-        <SelectItem value="JAGS">Jags</SelectItem>
-      </SelectContent>
-    </Select>
   );
 };
