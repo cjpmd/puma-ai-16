@@ -48,6 +48,14 @@ interface PeriodFormationCardProps {
   onToggleDragAndDrop: (enabled: boolean) => void;
   /** Handler for changing period duration */
   onDurationChange: (duration: number) => void;
+  /** Current team captain's ID (if any) */
+  captain?: string;
+  /** Whether captain selection mode is active */
+  captainSelectionMode?: boolean;
+  /** Handler for toggling captain selection mode */
+  onToggleCaptainSelection?: () => void;
+  /** Handler for setting a player as captain */
+  onSetCaptain?: (playerId: string) => void;
 }
 
 /**
@@ -72,7 +80,11 @@ export const PeriodFormationCard = ({
   onSquadSelectionChange,
   useDragAndDrop,
   onToggleDragAndDrop,
-  onDurationChange
+  onDurationChange,
+  captain,
+  captainSelectionMode,
+  onToggleCaptainSelection,
+  onSetCaptain
 }: PeriodFormationCardProps) => {
   
   /**
@@ -116,6 +128,10 @@ export const PeriodFormationCard = ({
       useDragAndDrop={useDragAndDrop}
       onToggleDragAndDrop={onToggleDragAndDrop}
       periodId={period.id}
+      captain={captain}
+      captainSelectionMode={captainSelectionMode}
+      onToggleCaptainSelection={onToggleCaptainSelection}
+      onSetCaptain={onSetCaptain}
     />
   );
 };

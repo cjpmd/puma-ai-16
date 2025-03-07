@@ -38,6 +38,14 @@ interface DefaultFormationCardProps {
   useDragAndDrop: boolean;
   /** Handler for toggling drag and drop interface */
   onToggleDragAndDrop: (enabled: boolean) => void;
+  /** Current team captain's ID (if any) */
+  captain?: string;
+  /** Whether captain selection mode is active */
+  captainSelectionMode?: boolean;
+  /** Handler for toggling captain selection mode */
+  onToggleCaptainSelection?: () => void;
+  /** Handler for setting a player as captain */
+  onSetCaptain?: (playerId: string) => void;
 }
 
 /**
@@ -59,7 +67,11 @@ export const DefaultFormationCard = ({
   squadSelection,
   onSquadSelectionChange,
   useDragAndDrop,
-  onToggleDragAndDrop
+  onToggleDragAndDrop,
+  captain,
+  captainSelectionMode,
+  onToggleCaptainSelection,
+  onSetCaptain
 }: DefaultFormationCardProps) => {
   return (
     <TeamSelectionCard
@@ -78,6 +90,10 @@ export const DefaultFormationCard = ({
       onSquadSelectionChange={onSquadSelectionChange}
       useDragAndDrop={useDragAndDrop}
       onToggleDragAndDrop={onToggleDragAndDrop}
+      captain={captain}
+      captainSelectionMode={captainSelectionMode}
+      onToggleCaptainSelection={onToggleCaptainSelection}
+      onSetCaptain={onSetCaptain}
     />
   );
 };
