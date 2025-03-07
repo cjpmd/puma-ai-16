@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useSquadModeToggle } from "./useSquadModeToggle";
 
 interface UseSquadManagementProps {
   initialSquadPlayers: string[];
@@ -13,7 +14,16 @@ export const useSquadManagement = ({
   forceSquadMode
 }: UseSquadManagementProps) => {
   const [squadPlayers, setSquadPlayers] = useState<string[]>(initialSquadPlayers || []);
-  const [squadMode, setSquadMode] = useState<boolean>(forceSquadMode !== undefined ? forceSquadMode : true);
+  
+  // Use the new squad mode toggle hook
+  const { 
+    squadMode, 
+    setSquadMode, 
+    toggleSquadMode 
+  } = useSquadModeToggle({
+    initialSquadMode: forceSquadMode !== undefined ? forceSquadMode : true,
+    squadPlayers
+  });
 
   // Sync squad players from props
   useEffect(() => {
@@ -36,7 +46,7 @@ export const useSquadManagement = ({
       console.log(`Forcing squad mode to: ${forceSquadMode}`);
       setSquadMode(forceSquadMode);
     }
-  }, [forceSquadMode, squadMode]);
+  }, [forceSquadMode, squadMode, setSquadMode]);
 
   // Add a player to the squad
   const addPlayerToSquad = (playerId: string) => {
@@ -62,12 +72,6 @@ export const useSquadManagement = ({
         onSquadPlayersChange(updatedSquad);
       }
     }
-  };
-
-  // Toggle between squad selection and formation modes
-  const toggleSquadMode = () => {
-    console.log("Toggle squad mode called - current state:", squadMode);
-    setSquadMode(prev => !prev);
   };
 
   // Return to squad selection mode

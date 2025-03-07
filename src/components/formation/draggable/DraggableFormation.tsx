@@ -8,6 +8,7 @@ import { FormationHeader } from "./components/FormationHeader";
 import { SquadModeView } from "./components/SquadModeView";
 import { FormationModeView } from "./components/FormationModeView";
 import { usePeriodManagement } from "./hooks/usePeriodManagement";
+import { useSquadModeToggle } from "./hooks/useSquadModeToggle";
 
 export interface DraggableFormationProps {
   format: FormationFormat;
@@ -44,9 +45,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   onDurationChange,
   periodId
 }) => {
-  const [squadModeState, setSquadModeState] = useState(true);
-
-  // Use our new period management hook
+  // Use our period management hook
   const {
     localPeriod,
     localDuration,
@@ -67,7 +66,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     selectedTemplate,
     selections,
     formationRef,
-    squadMode,
+    squadMode: formationSquadMode,
     handleDrop,
     handlePlayerClick,
     handleRemovePlayer,
@@ -82,7 +81,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     addSubstitute,
     removeSubstitute,
     showPlayers,
-    toggleSquadMode,
+    toggleSquadMode: formationToggleSquadMode,
     addPlayerToSquad,
     removePlayerFromSquad,
     finishSquadSelection,
@@ -100,20 +99,27 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     onSquadPlayersChange,
     periodNumber: localPeriod,
     periodDuration: localDuration,
-    forceSquadMode: squadModeState
   });
 
+  // Use our new squad mode toggle hook
+  const { 
+    squadMode, 
+    toggleSquadMode, 
+    canExitSquadMode 
+  } = useSquadModeToggle({
+    initialSquadMode: true,
+    squadPlayers: localSquadPlayers
+  });
+
+  // Sync squadMode between our hook and the useDraggableFormation hook
   useEffect(() => {
-    if (squadMode !== squadModeState) {
-      setSquadModeState(squadMode);
+    if (squadMode !== formationSquadMode) {
+      formationToggleSquadMode();
     }
-  }, [squadMode, squadModeState]);
+  }, [squadMode, formationSquadMode, formationToggleSquadMode]);
 
   const handleToggleSquadMode = () => {
-    const newSquadMode = !squadModeState;
-    setSquadModeState(newSquadMode);
-    
-    console.log(`Toggling squad mode from ${squadModeState} to ${newSquadMode}`);
+    const newSquadMode = toggleSquadMode();
     
     if (newSquadMode) {
       returnToSquadSelection();
@@ -125,7 +131,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   };
 
   console.log("DraggableFormation state:", {
-    squadMode: squadModeState,
+    squadMode,
     localSquadPlayers: localSquadPlayers.length,
     selections: Object.keys(selections).length
   });
@@ -133,7 +139,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   return (
     <div className="space-y-6" id={`team-selection-${periodId || localPeriod}`}>
       <FormationHeader 
-        squadMode={squadModeState}
+        squadMode={squadMode}
         onToggleSquadMode={handleToggleSquadMode}
         squadPlayersLength={localSquadPlayers.length}
         periodDisplayName={getPeriodDisplayName()}
@@ -148,11 +154,11 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
       <FormationHelperText 
         selectedPlayerId={selectedPlayerId}
         draggingPlayer={draggingPlayer}
-        squadMode={squadModeState}
+        squadMode={squadMode}
         periodNumber={localPeriod}
       />
       
-      {squadModeState ? (
+      {squadMode ? (
         <SquadModeView 
           getAvailablePlayers={getAvailablePlayers}
           selectedPlayerId={selectedPlayerId}
