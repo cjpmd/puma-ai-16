@@ -101,20 +101,22 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     forceSquadMode
   });
 
-  // Use our squad mode toggle hook with default to false to start in formation mode
+  // Use our squad mode toggle hook
   const { 
     squadMode,
     toggleSquadMode,
-    canExitSquadMode 
+    canExitSquadMode,
+    setSquadMode
   } = useSquadModeToggle({
-    initialSquadMode: forceSquadMode === true,
-    squadPlayers: localSquadPlayers
+    initialSquadMode: forceSquadMode === true || (initialSelections && Object.keys(initialSelections).length === 0),
+    squadPlayers: localSquadPlayers,
+    minRequiredPlayers: 1
   });
 
   // Handle toggle squad mode with better feedback
   const handleToggleSquadMode = () => {
     if (squadMode && !canExitSquadMode) {
-      toast.warning("Add players to the squad first before proceeding");
+      toast.warning("Add at least one player to the squad first before proceeding");
       return;
     }
     toggleSquadMode();
@@ -123,12 +125,36 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   // Debug state
   useEffect(() => {
     console.log("DraggableFormation state:", {
-      squadMode: squadMode,
+      squadMode,
       localSquadPlayers: localSquadPlayers.length,
       selections: Object.keys(selections).length,
-      canExitSquadMode
+      canExitSquadMode,
+      forceSquadMode
     });
-  }, [squadMode, localSquadPlayers, selections, canExitSquadMode]);
+  }, [squadMode, localSquadPlayers, selections, canExitSquadMode, forceSquadMode]);
+
+  // Force squad mode if needed
+  useEffect(() => {
+    if (forceSquadMode) {
+      setSquadMode(true);
+    }
+  }, [forceSquadMode, setSquadMode]);
+
+  // Handle the case where we have initialSelections but no squad players
+  useEffect(() => {
+    if (initialSelections && Object.keys(initialSelections).length > 0 && localSquadPlayers.length === 0) {
+      // Extract player IDs from initialSelections
+      const playerIds = Object.values(initialSelections)
+        .map(selection => selection.playerId)
+        .filter(id => id !== "unassigned");
+      
+      // Add each player to squad
+      if (playerIds.length > 0 && onSquadPlayersChange) {
+        console.log("Adding initial players to squad:", playerIds);
+        onSquadPlayersChange(playerIds);
+      }
+    }
+  }, [initialSelections, localSquadPlayers.length, onSquadPlayersChange]);
 
   return (
     <div className="space-y-6" id={`team-selection-${periodId || localPeriod}`}>
@@ -182,6 +208,8 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
           onPlayerClick={handlePlayerClick}
           addSubstitute={addSubstitute}
           removeSubstitute={removeSubstitute}
+          handleSubstituteDrop={handleSubstituteDrop}
+          formationRef={formationRef}
         />
       )}
     </div>

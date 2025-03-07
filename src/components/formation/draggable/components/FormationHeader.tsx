@@ -67,7 +67,7 @@ export const FormationHeader: React.FC<FormationHeaderProps> = ({
             </TooltipTrigger>
             {squadMode && !canExitSquadMode && (
               <TooltipContent>
-                <p>Add players to the squad first</p>
+                <p>Add at least one player to the squad first</p>
               </TooltipContent>
             )}
           </Tooltip>
