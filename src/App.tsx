@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Index from "./pages/Index";
 import Squad from "./pages/SquadManagement";
@@ -28,8 +28,11 @@ function App() {
       <Router>
         <NavBar />
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/create-team" element={<CreateTeam />} />
+          <Route path="/club-settings" element={<ClubSettings />} />
           
           {/* Platform Routes */}
           <Route
@@ -37,33 +40,6 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['admin', 'manager', 'coach', 'parent']}>
                 <PlatformLanding />
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="/create-team"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                <CreateTeam />
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="/club-settings"
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <ClubSettings />
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="/club/:clubId"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                <ClubDashboard />
               </ProtectedRoute>
             }
           />
@@ -76,6 +52,16 @@ function App() {
                 <Index />
               </ProtectedRoute>
             } 
+          />
+          
+          {/* Club Routes */}
+          <Route
+            path="/club/:clubId"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                <ClubDashboard />
+              </ProtectedRoute>
+            }
           />
           
           {/* Admin and Manager Only Routes */}

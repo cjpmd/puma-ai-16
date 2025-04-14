@@ -1,26 +1,58 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Plus, Users, Trophy, Calendar, CheckCircle, LogIn } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Index() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [userTeam, setUserTeam] = useState<any>(null);
-  const [userClub, setUserClub] = useState<any>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkSession = async () => {
       const { data, error } = await supabase.auth.getSession();
       if (!error && data.session) {
         setSession(data.session);
-        fetchUserEntities(data.session.user.id);
-      } else {
-        setLoading(false);
+        
+        // Check if user already has a team or club
+        try {
+          const { data: teamData } = await supabase
+            .from('teams')
+            .select('id, team_name, team_logo')
+            .eq('admin_id', data.session.user.id)
+            .maybeSingle();
+            
+          const { data: clubData } = await supabase
+            .from('clubs')
+            .select('id')
+            .eq('admin_id', data.session.user.id)
+            .maybeSingle();
+            
+          if (teamData) {
+            // Store team info in localStorage for use across the app
+            if (teamData.team_logo) {
+              localStorage.setItem('team_logo', teamData.team_logo);
+            }
+            localStorage.setItem('team_name', teamData.team_name || 'My Team');
+            
+            // Redirect to team dashboard
+            navigate("/home");
+            return;
+          } else if (clubData) {
+            navigate("/club-settings");
+            return;
+          }
+        } catch (error) {
+          console.error("Error checking user entities:", error);
+        }
       }
+      
+      setLoading(false);
     };
     
     checkSession();
@@ -29,7 +61,41 @@ export default function Index() {
       async (event, session) => {
         setSession(session);
         if (session?.user) {
-          fetchUserEntities(session.user.id);
+          // When user signs in, check for their team/club and redirect
+          try {
+            const { data: teamData } = await supabase
+              .from('teams')
+              .select('id, team_name, team_logo')
+              .eq('admin_id', session.user.id)
+              .maybeSingle();
+              
+            const { data: clubData } = await supabase
+              .from('clubs')
+              .select('id')
+              .eq('admin_id', session.user.id)
+              .maybeSingle();
+              
+            if (teamData) {
+              // Store team info in localStorage
+              if (teamData.team_logo) {
+                localStorage.setItem('team_logo', teamData.team_logo);
+              }
+              localStorage.setItem('team_name', teamData.team_name || 'My Team');
+              
+              toast({
+                title: "Welcome back!",
+                description: `You've been signed in to ${teamData.team_name}`,
+              });
+              
+              navigate("/home");
+            } else if (clubData) {
+              navigate("/club-settings");
+            } else {
+              navigate("/platform");
+            }
+          } catch (error) {
+            console.error("Error checking user entities:", error);
+          }
         } else {
           setLoading(false);
         }
@@ -39,46 +105,15 @@ export default function Index() {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
-  
-  const fetchUserEntities = async (userId: string) => {
-    setLoading(true);
-    try {
-      // Check if user has a team
-      const { data: teamData, error: teamError } = await supabase
-        .from('teams')
-        .select('*')
-        .eq('admin_id', userId)
-        .maybeSingle();
-        
-      if (teamError) throw teamError;
-      
-      if (teamData) {
-        setUserTeam(teamData);
-      }
-      
-      // Check if user has a club
-      const { data: clubData, error: clubError } = await supabase
-        .from('clubs')
-        .select('*')
-        .eq('admin_id', userId)
-        .maybeSingle();
-        
-      if (clubError) throw clubError;
-      
-      if (clubData) {
-        setUserClub(clubData);
-      }
-    } catch (error) {
-      console.error("Error fetching user entities:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [navigate, toast]);
   
   const renderAuthButton = () => {
+    if (loading) {
+      return null;
+    }
+    
     if (session) {
-      // If logged in, show a link to the dashboard or team
+      // If logged in, show a link to the dashboard
       return (
         <div className="flex justify-center mt-8">
           <Button size="lg" onClick={() => navigate("/platform")}>
@@ -100,254 +135,23 @@ export default function Index() {
     }
   };
 
-  const renderUserOptions = () => {
-    // Only show team/club cards if user is logged in
-    if (!session) {
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-primary" />
-                Create a Team
-              </CardTitle>
-              <CardDescription>
-                Set up your team to start managing players and fixtures
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="text-sm">
-                  Create your own team to:
-                </div>
-                <ul className="space-y-2">
-                  {[
-                    "Manage your squad roster",
-                    "Schedule fixtures and training",
-                    "Track player performance",
-                    "Generate team selections",
-                  ].map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full" onClick={() => navigate("/auth")}>
-                Sign In to Create
-                <LogIn className="ml-2 h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                Create a Club
-              </CardTitle>
-              <CardDescription>
-                Set up a club to connect multiple teams
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="text-sm">
-                  Create a club to:
-                </div>
-                <ul className="space-y-2">
-                  {[
-                    "Connect multiple teams under one organization",
-                    "Track club-wide player statistics",
-                    "Monitor training and playing minutes",
-                    "Generate club-level reports",
-                  ].map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full" onClick={() => navigate("/auth")}>
-                Sign In to Create
-                <LogIn className="ml-2 h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      );
-    }
-    
-    // If logged in and loading, show loading
-    if (loading) {
-      return (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Loading your options...</p>
-        </div>
-      );
-    }
-    
-    // Otherwise show user's entities
+  if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {userTeam ? (
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-primary" />
-                Your Team
-              </CardTitle>
-              <CardDescription>
-                Continue managing your team
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="font-medium text-xl">{userTeam.team_name}</div>
-                <div className="text-sm text-muted-foreground">{userTeam.age_group}</div>
-                
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span>Squad Management</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>Fixture Planning</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full" onClick={() => navigate("/home")}>
-                Go to Dashboard
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-primary" />
-                Create a Team
-              </CardTitle>
-              <CardDescription>
-                Set up your team to start managing players and fixtures
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="text-sm">
-                  Create your own team to:
-                </div>
-                <ul className="space-y-2">
-                  {[
-                    "Manage your squad roster",
-                    "Schedule fixtures and training",
-                    "Track player performance",
-                    "Generate team selections",
-                  ].map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full" onClick={() => navigate("/create-team")}>
-                Create Your Team
-                <Plus className="ml-2 h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
-        )}
-        
-        {userClub ? (
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                Your Club
-              </CardTitle>
-              <CardDescription>
-                Manage your club and connected teams
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="font-medium text-xl">{userClub.name}</div>
-                <div className="text-sm text-muted-foreground">{userClub.location}</div>
-                
-                <div className="grid grid-cols-1 gap-2 mt-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span>Club Administration</span>
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium">Club Serial Number:</span>
-                    <span className="ml-2 font-mono text-xs">{userClub.serial_number}</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full" onClick={() => navigate("/club-settings")}>
-                Manage Club
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                Create a Club
-              </CardTitle>
-              <CardDescription>
-                Set up a club to connect multiple teams
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="text-sm">
-                  Create a club to:
-                </div>
-                <ul className="space-y-2">
-                  {[
-                    "Connect multiple teams under one organization",
-                    "Track club-wide player statistics",
-                    "Monitor training and playing minutes",
-                    "Generate club-level reports",
-                  ].map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full" onClick={() => navigate("/club-settings")}>
-                Create Your Club
-                <Plus className="ml-2 h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
-        )}
+      <div className="container mx-auto py-8 px-4">
+        <div className="text-center mb-12">
+          <img 
+            src="/lovable-uploads/47160456-08d9-4525-b5da-08312ba94630.png" 
+            alt="Puma.AI Logo" 
+            className="h-32 w-auto mx-auto mb-6" 
+          />
+          <h1 className="text-4xl font-bold mb-4">Puma.AI Team Management Platform</h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Loading...
+          </p>
+        </div>
       </div>
     );
-  };
+  }
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -365,7 +169,101 @@ export default function Index() {
         {renderAuthButton()}
       </div>
       
-      {renderUserOptions()}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-primary" />
+              Create a Team
+            </CardTitle>
+            <CardDescription>
+              Set up your team to start managing players and fixtures
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="text-sm">
+                Create your own team to:
+              </div>
+              <ul className="space-y-2">
+                {[
+                  "Manage your squad roster",
+                  "Schedule fixtures and training",
+                  "Track player performance",
+                  "Generate team selections",
+                ].map((feature, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              className="w-full" 
+              onClick={() => {
+                if (session) {
+                  navigate("/create-team");
+                } else {
+                  navigate("/auth", { state: { returnTo: "/create-team" } });
+                }
+              }}
+            >
+              {session ? "Create Your Team" : "Sign In to Create"}
+              {session ? <Plus className="ml-2 h-4 w-4" /> : <LogIn className="ml-2 h-4 w-4" />}
+            </Button>
+          </CardFooter>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Create a Club
+            </CardTitle>
+            <CardDescription>
+              Set up a club to connect multiple teams
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="text-sm">
+                Create a club to:
+              </div>
+              <ul className="space-y-2">
+                {[
+                  "Connect multiple teams under one organization",
+                  "Track club-wide player statistics",
+                  "Monitor training and playing minutes",
+                  "Generate club-level reports",
+                ].map((feature, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              className="w-full" 
+              onClick={() => {
+                if (session) {
+                  navigate("/club-settings");
+                } else {
+                  navigate("/auth", { state: { returnTo: "/club-settings" } });
+                }
+              }}
+            >
+              {session ? "Create Your Club" : "Sign In to Create"}
+              {session ? <Plus className="ml-2 h-4 w-4" /> : <LogIn className="ml-2 h-4 w-4" />}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
       
       <div className="mt-16">
         <h2 className="text-2xl font-bold mb-8 text-center">Platform Features</h2>

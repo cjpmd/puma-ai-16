@@ -1,17 +1,19 @@
-
 import { useEffect, useState } from "react";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AuthError, AuthApiError } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
 
 export const Auth = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+
+  const returnTo = location.state?.returnTo || "/platform";
 
   useEffect(() => {
     let mounted = true;
@@ -30,8 +32,39 @@ export const Auth = () => {
         }
 
         if (session) {
-          navigate("/platform");
-          return;
+          try {
+            const { data: teamData } = await supabase
+              .from('teams')
+              .select('id, team_name, team_logo')
+              .eq('admin_id', session.user.id)
+              .maybeSingle();
+              
+            const { data: clubData } = await supabase
+              .from('clubs')
+              .select('id')
+              .eq('admin_id', session.user.id)
+              .maybeSingle();
+              
+            if (teamData) {
+              if (teamData.team_logo) {
+                localStorage.setItem('team_logo', teamData.team_logo);
+              }
+              localStorage.setItem('team_name', teamData.team_name || 'My Team');
+              
+              navigate("/home");
+              return;
+            } else if (clubData) {
+              navigate("/club-settings");
+              return;
+            } else {
+              navigate(returnTo);
+              return;
+            }
+          } catch (error) {
+            console.error("Error checking user entities:", error);
+            navigate(returnTo);
+            return;
+          }
         }
       } catch (err) {
         if (!mounted) return;
@@ -58,7 +91,6 @@ export const Auth = () => {
       if (event === "SIGNED_IN" && session) {
         setErrorMessage("");
         
-        // Check if user already has a team or club
         try {
           const { data: teamData } = await supabase
             .from('teams')
@@ -73,26 +105,23 @@ export const Auth = () => {
             .maybeSingle();
             
           if (teamData) {
-            // Store team info in localStorage for use across the app
             if (teamData.team_logo) {
               localStorage.setItem('team_logo', teamData.team_logo);
             }
             localStorage.setItem('team_name', teamData.team_name || 'My Team');
             
-            // Navigate to team dashboard
             navigate("/home");
           } else if (clubData) {
             navigate("/club-settings");
           } else {
-            navigate("/platform");
+            navigate(returnTo);
           }
         } catch (error) {
           console.error("Error checking user entities:", error);
-          navigate("/platform");
+          navigate(returnTo);
         }
       } else if (event === "SIGNED_OUT") {
         setErrorMessage("");
-        // Clear any stored team data on logout
         localStorage.removeItem('team_logo');
         localStorage.removeItem('team_name');
       }
@@ -102,7 +131,7 @@ export const Auth = () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, returnTo]);
 
   const getErrorMessage = (error: AuthError) => {
     if (error instanceof AuthApiError) {

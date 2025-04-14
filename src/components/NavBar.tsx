@@ -1,8 +1,7 @@
 
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
-import { Users, BarChart2, UserCircle, Calendar, LogOut, Cog, Home, Building } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Users, BarChart2, UserCircle, Calendar, LogOut, Cog, Home, Building, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -22,20 +21,19 @@ interface MenuItem {
   icon: React.ReactNode;
   label: string;
   roles: UserRole[];
+  public?: boolean;
 }
 
 export const NavBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { profile, isLoading, hasPermission } = useAuth();
+  const { profile, isLoading } = useAuth();
   const [userTeam, setUserTeam] = useState<any>(null);
   const [userClub, setUserClub] = useState<any>(null);
   const [teamLogo, setTeamLogo] = useState<string | null>(null);
   
   useEffect(() => {
-    if (!profile) return;
-    
     // Try to get team logo from localStorage first for faster initial render
     const storedLogo = localStorage.getItem('team_logo');
     const storedName = localStorage.getItem('team_name');
@@ -47,6 +45,8 @@ export const NavBar = () => {
     if (storedName && !userTeam) {
       setUserTeam({ team_name: storedName });
     }
+    
+    if (!profile) return;
     
     const fetchUserEntities = async () => {
       try {
@@ -91,7 +91,7 @@ export const NavBar = () => {
   }, [profile]);
 
   const menuItems: MenuItem[] = [
-    { to: "/platform", icon: <Home className="mr-2 h-4 w-4" />, label: "Platform", roles: ['admin', 'manager', 'coach', 'parent'] },
+    { to: "/", icon: <Home className="mr-2 h-4 w-4" />, label: "Home", roles: ['admin', 'manager', 'coach', 'parent'], public: true },
     { to: "/home", icon: <UserCircle className="mr-2 h-4 w-4" />, label: "Team Dashboard", roles: ['admin', 'manager', 'coach', 'parent'] },
     { to: "/squad", icon: <Users className="mr-2 h-4 w-4" />, label: "Squad", roles: ['admin', 'manager'] },
     { to: "/analytics", icon: <BarChart2 className="mr-2 h-4 w-4" />, label: "Analytics", roles: ['admin', 'manager', 'coach'] },
@@ -112,7 +112,7 @@ export const NavBar = () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      navigate("/auth");
+      navigate("/");
     } catch (error) {
       console.error("Logout error:", error);
       toast({
@@ -121,6 +121,14 @@ export const NavBar = () => {
         description: "Failed to sign out",
       });
     }
+  };
+  
+  const hasPermission = (requiredRoles: UserRole[], isPublic?: boolean): boolean => {
+    if (isPublic) return true;
+    if (!profile) return false;
+    if (profile.role === 'admin') return true;
+    if (requiredRoles.includes('parent') && profile.role === 'coach') return true;
+    return requiredRoles.includes(profile.role);
   };
   
   const isTeamRoute = location.pathname.includes('/home') || 
@@ -138,7 +146,13 @@ export const NavBar = () => {
                           location.pathname.includes('/club-settings') ||
                           location.pathname.includes('/club/');
 
-  if (isLoading) {
+  // Hide navbar on auth page
+  if (location.pathname === '/auth') {
+    return null;
+  }
+
+  // Show loading state
+  if (isLoading && profile) {
     return (
       <div className="w-full bg-white shadow-sm mb-8">
         <div className="container mx-auto px-4 py-4">
@@ -146,10 +160,6 @@ export const NavBar = () => {
         </div>
       </div>
     );
-  }
-  
-  if (location.pathname === '/auth') {
-    return null;
   }
 
   return (
@@ -167,11 +177,13 @@ export const NavBar = () => {
               }}
             />
           ) : (
-            <img 
-              src="/lovable-uploads/47160456-08d9-4525-b5da-08312ba94630.png" 
-              alt="Puma.AI Logo" 
-              className="h-12 w-auto"
-            />
+            <Link to="/">
+              <img 
+                src="/lovable-uploads/47160456-08d9-4525-b5da-08312ba94630.png" 
+                alt="Puma.AI Logo" 
+                className="h-12 w-auto"
+              />
+            </Link>
           )}
           {isTeamRoute && userTeam && (
             <div className="ml-4 hidden sm:block">
@@ -187,8 +199,8 @@ export const NavBar = () => {
           )}
         </div>
         <div className="flex items-center gap-4">
-          {profile && menuItems.map((item) => (
-            hasPermission(item.roles) && (
+          {menuItems.map((item) => (
+            (hasPermission(item.roles, item.public)) && (
               <Link key={item.to} to={item.to}>
                 <Button 
                   variant={location.pathname === item.to ? "default" : "ghost"}
@@ -200,7 +212,8 @@ export const NavBar = () => {
               </Link>
             )
           ))}
-          {profile && (
+          
+          {profile ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -238,6 +251,11 @@ export const NavBar = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          ) : (
+            <Button onClick={() => navigate("/auth")} variant="default">
+              <LogIn className="mr-2 h-4 w-4" />
+              <span className="hidden md:inline">Sign In</span>
+            </Button>
           )}
         </div>
       </div>
