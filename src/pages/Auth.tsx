@@ -13,6 +13,7 @@ export const Auth = () => {
   const location = useLocation();
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [authUiError, setAuthUiError] = useState<string | null>(null);
 
   // Get the return path from location state, default to platform dashboard
   const returnTo = location.state?.returnTo || "/platform";
@@ -21,12 +22,14 @@ export const Auth = () => {
     let mounted = true;
 
     const initializeAuth = async () => {
+      console.log("Auth: Starting initialization");
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (!mounted) return;
         
         if (sessionError) {
+          console.error("Auth: Session error", sessionError);
           if (sessionError.message.includes('refresh_token_not_found')) {
             await supabase.auth.signOut();
           }
@@ -34,22 +37,32 @@ export const Auth = () => {
         }
 
         if (session) {
+          console.log("Auth: Found existing session", session);
           try {
             // Check if user has a team
-            const { data: teamData } = await supabase
+            const { data: teamData, error: teamError } = await supabase
               .from('teams')
               .select('id, team_name, team_logo')
               .eq('admin_id', session.user.id)
               .maybeSingle();
               
+            if (teamError) {
+              console.error("Auth: Team lookup error", teamError);
+            }
+              
             // Check if user has a club  
-            const { data: clubData } = await supabase
+            const { data: clubData, error: clubError } = await supabase
               .from('clubs')
               .select('id')
               .eq('admin_id', session.user.id)
               .maybeSingle();
               
+            if (clubError) {
+              console.error("Auth: Club lookup error", clubError);
+            }
+              
             if (teamData) {
+              console.log("Auth: Found team, redirecting to home");
               // Store team data in localStorage
               if (teamData.team_logo) {
                 localStorage.setItem('team_logo', teamData.team_logo);
@@ -60,10 +73,12 @@ export const Auth = () => {
               navigate("/home");
               return;
             } else if (clubData) {
+              console.log("Auth: Found club, redirecting to club settings");
               // Redirect to club dashboard
               navigate("/club-settings");
               return;
             } else {
+              console.log("Auth: No team or club, redirecting to platform");
               // No team or club yet, go to platform landing
               navigate(returnTo);
               return;
@@ -73,6 +88,8 @@ export const Auth = () => {
             navigate(returnTo);
             return;
           }
+        } else {
+          console.log("Auth: No existing session found");
         }
       } catch (err) {
         if (!mounted) return;
@@ -84,6 +101,7 @@ export const Auth = () => {
         }
       } finally {
         if (mounted) {
+          console.log("Auth: Initialization complete, showing auth UI");
           setIsLoading(false);
         }
       }
@@ -101,20 +119,29 @@ export const Auth = () => {
         
         try {
           // Check if user has a team
-          const { data: teamData } = await supabase
+          const { data: teamData, error: teamError } = await supabase
             .from('teams')
             .select('id, team_name, team_logo')
             .eq('admin_id', session.user.id)
             .maybeSingle();
             
+          if (teamError) {
+            console.error("Auth: Team lookup error after sign-in", teamError);
+          }
+            
           // Check if user has a club  
-          const { data: clubData } = await supabase
+          const { data: clubData, error: clubError } = await supabase
             .from('clubs')
             .select('id')
             .eq('admin_id', session.user.id)
             .maybeSingle();
             
+          if (clubError) {
+            console.error("Auth: Club lookup error after sign-in", clubError);
+          }
+            
           if (teamData) {
+            console.log("Auth: Found team after sign-in, redirecting to home");
             // Store team data in localStorage
             if (teamData.team_logo) {
               localStorage.setItem('team_logo', teamData.team_logo);
@@ -124,9 +151,11 @@ export const Auth = () => {
             // Redirect to team dashboard
             navigate("/home");
           } else if (clubData) {
+            console.log("Auth: Found club after sign-in, redirecting to club settings");
             // Redirect to club dashboard
             navigate("/club-settings");
           } else {
+            console.log("Auth: No team or club after sign-in, redirecting to platform");
             // No team or club yet, go to platform landing or returnTo path
             navigate(returnTo);
           }
@@ -173,12 +202,17 @@ export const Auth = () => {
     return error.message;
   };
 
+  // If there's an error with the Supabase auth UI
+  const handleAuthUiError = () => {
+    setAuthUiError("Failed to load authentication interface. Please try refreshing the page.");
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">Loading authentication...</p>
         </div>
       </div>
     );
@@ -204,14 +238,30 @@ export const Auth = () => {
               <AlertDescription>{errorMessage}</AlertDescription>
             </Alert>
           )}
-          <SupabaseAuth 
-            supabaseClient={supabase}
-            appearance={{ theme: ThemeSupa }}
-            theme="light"
-            providers={[]}
-          />
+          
+          {authUiError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{authUiError}</AlertDescription>
+            </Alert>
+          )}
+
+          <div id="auth-container">
+            {!authUiError && (
+              <SupabaseAuth 
+                supabaseClient={supabase}
+                appearance={{ theme: ThemeSupa }}
+                theme="light"
+                providers={[]}
+                onError={(error) => {
+                  console.error("Supabase Auth UI error:", error);
+                  handleAuthUiError();
+                }}
+              />
+            )}
+          </div>
+          
           <div className="mt-4 text-center text-sm text-muted-foreground">
-            <p>Sign in to access your team: Broughty Pumas 2015s</p>
+            <p>Sign in to access your team</p>
           </div>
         </div>
       </div>
