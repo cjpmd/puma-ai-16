@@ -28,7 +28,7 @@ function App() {
       <Router>
         <NavBar />
         <Routes>
-          <Route path="/" element={<Navigate to="/auth" replace />} />
+          <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           
           {/* Platform Routes */}

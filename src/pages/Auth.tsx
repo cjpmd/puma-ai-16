@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
@@ -57,7 +56,32 @@ export const Auth = () => {
       
       if (event === "SIGNED_IN" && session) {
         setErrorMessage("");
-        navigate("/platform");
+        
+        // Check if user already has a team or club
+        try {
+          const { data: teamData } = await supabase
+            .from('teams')
+            .select('id')
+            .eq('admin_id', session.user.id)
+            .maybeSingle();
+            
+          const { data: clubData } = await supabase
+            .from('clubs')
+            .select('id')
+            .eq('admin_id', session.user.id)
+            .maybeSingle();
+            
+          if (teamData) {
+            navigate("/home");
+          } else if (clubData) {
+            navigate("/club-settings");
+          } else {
+            navigate("/platform");
+          }
+        } catch (error) {
+          console.error("Error checking user entities:", error);
+          navigate("/platform");
+        }
       } else if (event === "SIGNED_OUT") {
         setErrorMessage("");
       }
