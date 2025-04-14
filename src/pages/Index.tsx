@@ -30,39 +30,53 @@ export default function Index() {
         // If user is authenticated, check for team/club
         if (data.session) {
           try {
-            // Try to get team data - use .maybeSingle() to handle non-existent tables gracefully
-            const teamResult = await supabase
-              .from('teams')
-              .select('id, team_name, team_logo')
-              .eq('admin_id', data.session.user.id)
-              .maybeSingle()
-              .catch(err => {
-                console.log("Team query failed - table may not exist yet:", err);
-                return { data: null };
-              });
+            // Try to get team data
+            let teamData = null;
+            let clubData = null;
             
-            // Try to get club data - use .maybeSingle() to handle non-existent tables gracefully
-            const clubResult = await supabase
-              .from('clubs')
-              .select('id')
-              .eq('admin_id', data.session.user.id)
-              .maybeSingle()
-              .catch(err => {
-                console.log("Club query failed - table may not exist yet:", err);
-                return { data: null };
-              });
-            
-            if (teamResult.data) {
-              // Store team info in localStorage
-              if (teamResult.data.team_logo) {
-                localStorage.setItem('team_logo', teamResult.data.team_logo);
+            try {
+              const { data: teamResult, error: teamError } = await supabase
+                .from('teams')
+                .select('id, team_name, team_logo')
+                .eq('admin_id', data.session.user.id)
+                .maybeSingle();
+              
+              if (!teamError) {
+                teamData = teamResult;
+              } else {
+                console.log("Team query failed - table may not exist yet:", teamError);
               }
-              localStorage.setItem('team_name', teamResult.data.team_name || 'My Team');
+            } catch (err) {
+              console.log("Error querying teams:", err);
+            }
+            
+            try {
+              const { data: clubResult, error: clubError } = await supabase
+                .from('clubs')
+                .select('id')
+                .eq('admin_id', data.session.user.id)
+                .maybeSingle();
+              
+              if (!clubError) {
+                clubData = clubResult;
+              } else {
+                console.log("Club query failed - table may not exist yet:", clubError);
+              }
+            } catch (err) {
+              console.log("Error querying clubs:", err);
+            }
+            
+            if (teamData) {
+              // Store team info in localStorage
+              if (teamData.team_logo) {
+                localStorage.setItem('team_logo', teamData.team_logo);
+              }
+              localStorage.setItem('team_name', teamData.team_name || 'My Team');
               
               // Redirect to team dashboard
               navigate("/home");
               return;
-            } else if (clubResult.data) {
+            } else if (clubData) {
               navigate("/club-settings");
               return;
             }
@@ -87,41 +101,55 @@ export default function Index() {
         if (session?.user) {
           try {
             // Try to get team data
-            const teamResult = await supabase
-              .from('teams')
-              .select('id, team_name, team_logo')
-              .eq('admin_id', session.user.id)
-              .maybeSingle()
-              .catch(err => {
-                console.log("Team query failed - table may not exist yet:", err);
-                return { data: null };
-              });
+            let teamData = null;
+            let clubData = null;
             
-            // Try to get club data
-            const clubResult = await supabase
-              .from('clubs')
-              .select('id')
-              .eq('admin_id', session.user.id)
-              .maybeSingle()
-              .catch(err => {
-                console.log("Club query failed - table may not exist yet:", err);
-                return { data: null };
-              });
-            
-            if (teamResult.data) {
-              // Store team info in localStorage
-              if (teamResult.data.team_logo) {
-                localStorage.setItem('team_logo', teamResult.data.team_logo);
+            try {
+              const { data: teamResult, error: teamError } = await supabase
+                .from('teams')
+                .select('id, team_name, team_logo')
+                .eq('admin_id', session.user.id)
+                .maybeSingle();
+              
+              if (!teamError) {
+                teamData = teamResult;
+              } else {
+                console.log("Team query failed - table may not exist yet:", teamError);
               }
-              localStorage.setItem('team_name', teamResult.data.team_name || 'My Team');
+            } catch (err) {
+              console.log("Error querying teams:", err);
+            }
+            
+            try {
+              const { data: clubResult, error: clubError } = await supabase
+                .from('clubs')
+                .select('id')
+                .eq('admin_id', session.user.id)
+                .maybeSingle();
+              
+              if (!clubError) {
+                clubData = clubResult;
+              } else {
+                console.log("Club query failed - table may not exist yet:", clubError);
+              }
+            } catch (err) {
+              console.log("Error querying clubs:", err);
+            }
+            
+            if (teamData) {
+              // Store team info in localStorage
+              if (teamData.team_logo) {
+                localStorage.setItem('team_logo', teamData.team_logo);
+              }
+              localStorage.setItem('team_name', teamData.team_name || 'My Team');
               
               toast({
                 title: "Welcome back!",
-                description: `You've been signed in to ${teamResult.data.team_name}`,
+                description: `You've been signed in to ${teamData.team_name}`,
               });
               
               navigate("/home");
-            } else if (clubResult.data) {
+            } else if (clubData) {
               navigate("/club-settings");
             } else {
               navigate("/platform");
