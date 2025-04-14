@@ -4,3 +4,4 @@ export * from './executeSql';
 export * from './columnUtils';
 export * from './columnManagement';
 export * from './dataVerification';
+export * from './initializeDatabase';
