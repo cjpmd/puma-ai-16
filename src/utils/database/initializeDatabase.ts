@@ -1,6 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Database } from "lucide-react";
 
 /**
  * Gets the content of SQL files to execute in the database
@@ -143,8 +145,13 @@ export const InitializeDatabaseButton = () => {
   };
   
   return (
-    <button onClick={handleInitialize}>
+    <Button 
+      onClick={handleInitialize}
+      className="flex items-center gap-2"
+      variant="default"
+    >
+      <Database className="h-4 w-4" />
       Initialize Database
-    </button>
+    </Button>
   );
 };

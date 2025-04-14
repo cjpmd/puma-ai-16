@@ -1,13 +1,13 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Plus, Users, Trophy, Calendar, CheckCircle, LogIn, Database } from "lucide-react";
+import { ArrowRight, Plus, Users, Trophy, Calendar, CheckCircle, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { InitializeDatabaseButton } from "@/utils/database/initializeDatabase";
 
 export default function Index() {
   const [session, setSession] = useState<any>(null);
@@ -29,10 +29,8 @@ export default function Index() {
         
         setSession(data.session);
         
-        // If user is authenticated, check for team/club
         if (data.session) {
           try {
-            // Try to get team data
             let teamData = null;
             let clubData = null;
             
@@ -79,13 +77,11 @@ export default function Index() {
             }
             
             if (teamData) {
-              // Store team info in localStorage
               if (teamData.team_logo) {
                 localStorage.setItem('team_logo', teamData.team_logo);
               }
               localStorage.setItem('team_name', teamData.team_name || 'My Team');
               
-              // Redirect to team dashboard
               navigate("/home");
               return;
             } else if (clubData) {
@@ -97,8 +93,6 @@ export default function Index() {
           }
         }
         
-        // Always set loading to false when we're done checking,
-        // whether we have a session or not
         setLoading(false);
       } catch (err) {
         console.error("Auth check error:", err);
@@ -114,7 +108,6 @@ export default function Index() {
         
         if (session?.user) {
           try {
-            // Try to get team data
             let teamData = null;
             let clubData = null;
             
@@ -161,7 +154,6 @@ export default function Index() {
             }
             
             if (teamData) {
-              // Store team info in localStorage
               if (teamData.team_logo) {
                 localStorage.setItem('team_logo', teamData.team_logo);
               }
@@ -193,9 +185,7 @@ export default function Index() {
     };
   }, [navigate, toast]);
 
-  // Fixed timeout to ensure loading state doesn't get stuck
   useEffect(() => {
-    // Ensure loading state is false after a maximum of 3 seconds
     const loadingTimeout = setTimeout(() => {
       if (loading) {
         console.log("Loading timeout reached, forcing loading state to false");
@@ -244,30 +234,15 @@ export default function Index() {
         
         {databaseError && (
           <Alert variant="destructive" className="mt-4 max-w-2xl mx-auto">
-            <Database className="h-4 w-4" />
+            <AlertCircle className="h-4 w-4" />
             <AlertTitle>Database Tables Missing</AlertTitle>
             <AlertDescription>
-              <p>The application needs database tables to be created first.</p>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="mt-2 flex items-center gap-2"
-                onClick={() => {
-                  navigator.clipboard.writeText("sql/create_multi_team_club_structure.sql");
-                  toast({
-                    title: "SQL Path Copied",
-                    description: "Path to SQL script copied to clipboard",
-                  });
-                }}
-              >
-                <Database className="h-4 w-4" />
-                Copy SQL Script Path
-              </Button>
+              <p className="mb-2">The application needs database tables to be created first.</p>
+              <InitializeDatabaseButton />
             </AlertDescription>
           </Alert>
         )}
         
-        {/* Main call to action */}
         <div className="flex justify-center mt-8">
           {session ? (
             <Button size="lg" onClick={() => navigate("/platform")}>
@@ -283,7 +258,6 @@ export default function Index() {
         </div>
       </div>
       
-      {/* Options to create team or club */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="pb-4">

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Database, AlertCircle } from "lucide-react";
+import { InitializeDatabaseButton } from "@/utils/database/initializeDatabase";
 
 const clubFormSchema = z.object({
   club_name: z.string().min(3, "Club name must be at least 3 characters"),
@@ -63,7 +63,7 @@ export default function ClubSettings() {
           if (tableCheckError && tableCheckError.code === '42P01') {
             // Table doesn't exist
             setTablesExist(false);
-            setError("Database tables don't exist yet. Please run the database initialization SQL script.");
+            setError("Database tables don't exist yet. Please initialize the database first.");
             setLoading(false);
             return;
           }
@@ -72,7 +72,7 @@ export default function ClubSettings() {
           // Assume table might not exist if we get an error here
           if (err instanceof Error && err.message.includes("does not exist")) {
             setTablesExist(false);
-            setError("Database tables don't exist yet. Please run the database initialization SQL script.");
+            setError("Database tables don't exist yet. Please initialize the database first.");
             setLoading(false);
             return;
           }
@@ -89,7 +89,7 @@ export default function ClubSettings() {
           if (clubError.code === '42P01') {
             // Table doesn't exist
             setTablesExist(false);
-            setError("The 'clubs' table doesn't exist yet. Please run the database initialization SQL script.");
+            setError("The 'clubs' table doesn't exist yet. Please initialize the database first.");
             setLoading(false);
             return;
           }
@@ -148,7 +148,7 @@ export default function ClubSettings() {
       if (!tablesExist) {
         toast({
           title: "Database Error",
-          description: "Database tables don't exist yet. Please run the initialization SQL script first.",
+          description: "Database tables don't exist yet. Please initialize the database first.",
           variant: "destructive",
         });
         return;
@@ -214,7 +214,6 @@ export default function ClubSettings() {
     }
   };
   
-  // Generate a unique serial number for clubs
   const generateSerialNumber = () => {
     const prefix = "CLUB";
     const timestamp = Date.now().toString().slice(-8);
@@ -238,28 +237,11 @@ export default function ClubSettings() {
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Database Tables Missing</AlertTitle>
-          <AlertDescription>
+          <AlertDescription className="space-y-4">
             <p>The database tables required for club management don't exist yet.</p>
-            <p className="mt-2">This application needs the SQL script to be executed in your Supabase database.</p>
-            <div className="mt-4">
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-2"
-                onClick={() => {
-                  // Copy the script path to clipboard
-                  navigator.clipboard.writeText("sql/create_multi_team_club_structure.sql");
-                  toast({
-                    title: "SQL Path Copied",
-                    description: "Path to SQL script copied to clipboard",
-                  });
-                }}
-              >
-                <Database className="h-4 w-4" />
-                Copy SQL Script Path
-              </Button>
-              <p className="text-xs mt-2">
-                The SQL script is located at: <code className="bg-muted px-1 py-0.5 rounded">sql/create_multi_team_club_structure.sql</code>
-              </p>
+            <p>Click the button below to initialize the database:</p>
+            <div className="mt-2">
+              <InitializeDatabaseButton />
             </div>
           </AlertDescription>
         </Alert>
