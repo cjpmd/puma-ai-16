@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -249,7 +249,7 @@ export default function ClubDashboard() {
                                 style={{ width: `${(Number(count) / playerStats.totalPlayers) * 100}%` }}
                               ></div>
                               <div className="absolute inset-0 flex items-center justify-end px-3">
-                                <span className="text-sm font-medium">{count}</span>
+                                <span className="text-sm font-medium">{String(count)}</span>
                               </div>
                             </div>
                           </div>
