@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Plus, Users, Trophy, Calendar, CheckCircle, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Index() {
   const [session, setSession] = useState<any>(null);
@@ -15,44 +16,66 @@ export default function Index() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (!error && data.session) {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Session error:", error);
+          setLoading(false);
+          return;
+        }
+        
         setSession(data.session);
         
-        // Check if user already has a team or club
-        try {
-          const { data: teamData } = await supabase
-            .from('teams')
-            .select('id, team_name, team_logo')
-            .eq('admin_id', data.session.user.id)
-            .maybeSingle();
+        // If user is authenticated, check for team/club
+        if (data.session) {
+          try {
+            // Try to get team data - use .maybeSingle() to handle non-existent tables gracefully
+            const teamResult = await supabase
+              .from('teams')
+              .select('id, team_name, team_logo')
+              .eq('admin_id', data.session.user.id)
+              .maybeSingle()
+              .catch(err => {
+                console.log("Team query failed - table may not exist yet:", err);
+                return { data: null };
+              });
             
-          const { data: clubData } = await supabase
-            .from('clubs')
-            .select('id')
-            .eq('admin_id', data.session.user.id)
-            .maybeSingle();
+            // Try to get club data - use .maybeSingle() to handle non-existent tables gracefully
+            const clubResult = await supabase
+              .from('clubs')
+              .select('id')
+              .eq('admin_id', data.session.user.id)
+              .maybeSingle()
+              .catch(err => {
+                console.log("Club query failed - table may not exist yet:", err);
+                return { data: null };
+              });
             
-          if (teamData) {
-            // Store team info in localStorage for use across the app
-            if (teamData.team_logo) {
-              localStorage.setItem('team_logo', teamData.team_logo);
+            if (teamResult.data) {
+              // Store team info in localStorage
+              if (teamResult.data.team_logo) {
+                localStorage.setItem('team_logo', teamResult.data.team_logo);
+              }
+              localStorage.setItem('team_name', teamResult.data.team_name || 'My Team');
+              
+              // Redirect to team dashboard
+              navigate("/home");
+              return;
+            } else if (clubResult.data) {
+              navigate("/club-settings");
+              return;
             }
-            localStorage.setItem('team_name', teamData.team_name || 'My Team');
-            
-            // Redirect to team dashboard
-            navigate("/home");
-            return;
-          } else if (clubData) {
-            navigate("/club-settings");
-            return;
+          } catch (error) {
+            console.error("Error checking user entities:", error);
           }
-        } catch (error) {
-          console.error("Error checking user entities:", error);
         }
+        
+        setLoading(false);
+      } catch (err) {
+        console.error("Auth check error:", err);
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
     
     checkSession();
@@ -60,41 +83,52 @@ export default function Index() {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
+        
         if (session?.user) {
-          // When user signs in, check for their team/club and redirect
           try {
-            const { data: teamData } = await supabase
+            // Try to get team data
+            const teamResult = await supabase
               .from('teams')
               .select('id, team_name, team_logo')
               .eq('admin_id', session.user.id)
-              .maybeSingle();
-              
-            const { data: clubData } = await supabase
+              .maybeSingle()
+              .catch(err => {
+                console.log("Team query failed - table may not exist yet:", err);
+                return { data: null };
+              });
+            
+            // Try to get club data
+            const clubResult = await supabase
               .from('clubs')
               .select('id')
               .eq('admin_id', session.user.id)
-              .maybeSingle();
-              
-            if (teamData) {
+              .maybeSingle()
+              .catch(err => {
+                console.log("Club query failed - table may not exist yet:", err);
+                return { data: null };
+              });
+            
+            if (teamResult.data) {
               // Store team info in localStorage
-              if (teamData.team_logo) {
-                localStorage.setItem('team_logo', teamData.team_logo);
+              if (teamResult.data.team_logo) {
+                localStorage.setItem('team_logo', teamResult.data.team_logo);
               }
-              localStorage.setItem('team_name', teamData.team_name || 'My Team');
+              localStorage.setItem('team_name', teamResult.data.team_name || 'My Team');
               
               toast({
                 title: "Welcome back!",
-                description: `You've been signed in to ${teamData.team_name}`,
+                description: `You've been signed in to ${teamResult.data.team_name}`,
               });
               
               navigate("/home");
-            } else if (clubData) {
+            } else if (clubResult.data) {
               navigate("/club-settings");
             } else {
               navigate("/platform");
             }
           } catch (error) {
             console.error("Error checking user entities:", error);
+            navigate("/platform");
           }
         } else {
           setLoading(false);
@@ -117,9 +151,14 @@ export default function Index() {
             className="h-32 w-auto mx-auto mb-6" 
           />
           <h1 className="text-4xl font-bold mb-4">Puma.AI Team Management Platform</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Loading...
-          </p>
+          <div className="flex justify-center">
+            <Skeleton className="h-6 w-64" />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Skeleton className="h-80" />
+          <Skeleton className="h-80" />
         </div>
       </div>
     );
