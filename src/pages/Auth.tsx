@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
@@ -252,10 +251,6 @@ export const Auth = () => {
                 appearance={{ theme: ThemeSupa }}
                 theme="light"
                 providers={[]}
-                onError={(error) => {
-                  console.error("Supabase Auth UI error:", error);
-                  handleAuthUiError();
-                }}
               />
             )}
           </div>
