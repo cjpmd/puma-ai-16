@@ -110,8 +110,8 @@ export const Auth = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-6">
           <img 
-            src="/lovable-uploads/0e21bdb0-5451-4dcf-a2ca-a4d572b82e47.png" 
-            alt="Broughty United Pumas Logo" 
+            src="/lovable-uploads/47160456-08d9-4525-b5da-08312ba94630.png" 
+            alt="Puma.AI Logo" 
             className="h-32 w-auto mx-auto"
           />
           <div>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -250,7 +249,7 @@ export default function ClubDashboard() {
                                 style={{ width: `${(Number(count) / playerStats.totalPlayers) * 100}%` }}
                               ></div>
                               <div className="absolute inset-0 flex items-center justify-end px-3">
-                                <span className="text-sm font-medium">{count as React.ReactNode}</span>
+                                <span className="text-sm font-medium">{count}</span>
                               </div>
                             </div>
                           </div>

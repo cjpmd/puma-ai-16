@@ -222,7 +222,12 @@ export default function PlatformLanding() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Team Management Platform</h1>
+        <img 
+          src="/lovable-uploads/47160456-08d9-4525-b5da-08312ba94630.png" 
+          alt="Puma.AI Logo" 
+          className="h-32 w-auto mx-auto mb-6" 
+        />
+        <h1 className="text-4xl font-bold mb-4">Puma.AI Team Management Platform</h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Comprehensive tools for sports teams and clubs to manage players, fixtures, and performance.
         </p>

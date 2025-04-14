@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, BarChart2, Calendar } from "lucide-react";
@@ -27,8 +28,8 @@ export default function Index() {
     <div className="container mx-auto p-6">
       <div className="flex flex-col items-center mb-12">
         <img 
-          src="/lovable-uploads/0e21bdb0-5451-4dcf-a2ca-a4d572b82e47.png" 
-          alt="Logo" 
+          src="/lovable-uploads/47160456-08d9-4525-b5da-08312ba94630.png" 
+          alt="Puma.AI Logo" 
           className="w-48 mb-8" 
         />
         <h1 className="text-4xl font-bold text-center mb-4">Welcome to {teamName}</h1>

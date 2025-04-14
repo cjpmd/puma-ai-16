@@ -1,4 +1,3 @@
-
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Users, BarChart2, UserCircle, Calendar, LogOut, Cog, Home, Building } from "lucide-react";
@@ -37,7 +36,6 @@ export const NavBar = () => {
     
     const fetchUserEntities = async () => {
       try {
-        // Check if user has a team
         const { data: teamData, error: teamError } = await supabase
           .from('teams')
           .select('*')
@@ -50,7 +48,6 @@ export const NavBar = () => {
           setUserTeam(teamData);
         }
         
-        // Check if user has a club
         const { data: clubData, error: clubError } = await supabase
           .from('clubs')
           .select('*')
@@ -79,7 +76,6 @@ export const NavBar = () => {
     { to: "/settings", icon: <Cog className="mr-2 h-4 w-4" />, label: "Team Settings", roles: ['admin'] },
   ];
   
-  // Club-specific menu item
   if (userClub) {
     menuItems.push({ 
       to: `/club/${userClub.id}`, 
@@ -129,7 +125,6 @@ export const NavBar = () => {
     );
   }
   
-  // Don't show the navbar on the auth page
   if (location.pathname === '/auth') {
     return null;
   }
@@ -139,8 +134,8 @@ export const NavBar = () => {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img 
-            src="/lovable-uploads/0e21bdb0-5451-4dcf-a2ca-a4d572b82e47.png" 
-            alt="Broughty United Pumas Logo" 
+            src="/lovable-uploads/47160456-08d9-4525-b5da-08312ba94630.png" 
+            alt="Puma.AI Logo" 
             className="h-12 w-auto"
           />
           {isTeamRoute && userTeam && (
