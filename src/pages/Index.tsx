@@ -85,6 +85,8 @@ export default function Index() {
           }
         }
         
+        // Always set loading to false when we're done checking,
+        // whether we have a session or not
         setLoading(false);
       } catch (err) {
         console.error("Auth check error:", err);
@@ -168,6 +170,19 @@ export default function Index() {
       authListener.subscription.unsubscribe();
     };
   }, [navigate, toast]);
+
+  // Fixed timeout to ensure loading state doesn't get stuck
+  useEffect(() => {
+    // Ensure loading state is false after a maximum of 3 seconds
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.log("Loading timeout reached, forcing loading state to false");
+        setLoading(false);
+      }
+    }, 3000);
+    
+    return () => clearTimeout(loadingTimeout);
+  }, [loading]);
 
   if (loading) {
     return (
