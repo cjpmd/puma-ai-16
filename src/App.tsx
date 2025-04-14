@@ -28,7 +28,7 @@ function App() {
       <Router>
         <NavBar />
         <Routes>
-          {/* Public routes */}
+          {/* Public routes - accessible without login */}
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/create-team" element={<CreateTeam />} />

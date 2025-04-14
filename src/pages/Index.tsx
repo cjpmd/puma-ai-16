@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -106,34 +106,6 @@ export default function Index() {
       authListener.subscription.unsubscribe();
     };
   }, [navigate, toast]);
-  
-  const renderAuthButton = () => {
-    if (loading) {
-      return null;
-    }
-    
-    if (session) {
-      // If logged in, show a link to the dashboard
-      return (
-        <div className="flex justify-center mt-8">
-          <Button size="lg" onClick={() => navigate("/platform")}>
-            Go to My Dashboard
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-        </div>
-      );
-    } else {
-      // If not logged in, show a login button
-      return (
-        <div className="flex justify-center mt-8">
-          <Button size="lg" onClick={() => navigate("/auth")}>
-            Sign In
-            <LogIn className="ml-2 h-5 w-5" />
-          </Button>
-        </div>
-      );
-    }
-  };
 
   if (loading) {
     return (
@@ -166,9 +138,23 @@ export default function Index() {
           Comprehensive tools for sports teams and clubs to manage players, fixtures, and performance.
         </p>
         
-        {renderAuthButton()}
+        {/* Main call to action */}
+        <div className="flex justify-center mt-8">
+          {session ? (
+            <Button size="lg" onClick={() => navigate("/platform")}>
+              Go to My Dashboard
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          ) : (
+            <Button size="lg" onClick={() => navigate("/auth")}>
+              Sign In
+              <LogIn className="ml-2 h-5 w-5" />
+            </Button>
+          )}
+        </div>
       </div>
       
+      {/* Options to create team or club */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="pb-4">

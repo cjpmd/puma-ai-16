@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
@@ -13,6 +14,7 @@ export const Auth = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
+  // Get the return path from location state, default to platform dashboard
   const returnTo = location.state?.returnTo || "/platform";
 
   useEffect(() => {
@@ -33,12 +35,14 @@ export const Auth = () => {
 
         if (session) {
           try {
+            // Check if user has a team
             const { data: teamData } = await supabase
               .from('teams')
               .select('id, team_name, team_logo')
               .eq('admin_id', session.user.id)
               .maybeSingle();
               
+            // Check if user has a club  
             const { data: clubData } = await supabase
               .from('clubs')
               .select('id')
@@ -46,17 +50,21 @@ export const Auth = () => {
               .maybeSingle();
               
             if (teamData) {
+              // Store team data in localStorage
               if (teamData.team_logo) {
                 localStorage.setItem('team_logo', teamData.team_logo);
               }
               localStorage.setItem('team_name', teamData.team_name || 'My Team');
               
+              // Redirect to team dashboard
               navigate("/home");
               return;
             } else if (clubData) {
+              // Redirect to club dashboard
               navigate("/club-settings");
               return;
             } else {
+              // No team or club yet, go to platform landing
               navigate(returnTo);
               return;
             }
@@ -92,12 +100,14 @@ export const Auth = () => {
         setErrorMessage("");
         
         try {
+          // Check if user has a team
           const { data: teamData } = await supabase
             .from('teams')
             .select('id, team_name, team_logo')
             .eq('admin_id', session.user.id)
             .maybeSingle();
             
+          // Check if user has a club  
           const { data: clubData } = await supabase
             .from('clubs')
             .select('id')
@@ -105,15 +115,19 @@ export const Auth = () => {
             .maybeSingle();
             
           if (teamData) {
+            // Store team data in localStorage
             if (teamData.team_logo) {
               localStorage.setItem('team_logo', teamData.team_logo);
             }
             localStorage.setItem('team_name', teamData.team_name || 'My Team');
             
+            // Redirect to team dashboard
             navigate("/home");
           } else if (clubData) {
+            // Redirect to club dashboard
             navigate("/club-settings");
           } else {
+            // No team or club yet, go to platform landing or returnTo path
             navigate(returnTo);
           }
         } catch (error) {
@@ -122,6 +136,7 @@ export const Auth = () => {
         }
       } else if (event === "SIGNED_OUT") {
         setErrorMessage("");
+        // Clear team data from localStorage
         localStorage.removeItem('team_logo');
         localStorage.removeItem('team_name');
       }

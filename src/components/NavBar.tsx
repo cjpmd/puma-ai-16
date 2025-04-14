@@ -112,6 +112,15 @@ export const NavBar = () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      
+      // Clear local storage on logout
+      localStorage.removeItem('team_logo');
+      localStorage.removeItem('team_name');
+      
+      setUserTeam(null);
+      setUserClub(null);
+      setTeamLogo(null);
+      
       navigate("/");
     } catch (error) {
       console.error("Logout error:", error);
@@ -149,17 +158,6 @@ export const NavBar = () => {
   // Hide navbar on auth page
   if (location.pathname === '/auth') {
     return null;
-  }
-
-  // Show loading state
-  if (isLoading && profile) {
-    return (
-      <div className="w-full bg-white shadow-sm mb-8">
-        <div className="container mx-auto px-4 py-4">
-          <div>Loading...</div>
-        </div>
-      </div>
-    );
   }
 
   return (
