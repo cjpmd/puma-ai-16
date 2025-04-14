@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
@@ -29,7 +30,7 @@ export const Auth = () => {
         }
 
         if (session) {
-          navigate("/calendar");
+          navigate("/platform");
           return;
         }
       } catch (err) {
@@ -56,7 +57,7 @@ export const Auth = () => {
       
       if (event === "SIGNED_IN" && session) {
         setErrorMessage("");
-        navigate("/calendar");
+        navigate("/platform");
       } else if (event === "SIGNED_OUT") {
         setErrorMessage("");
       }
@@ -115,7 +116,7 @@ export const Auth = () => {
           />
           <div>
             <h1 className="text-4xl font-bold">Welcome Back</h1>
-            <p className="mt-2 text-muted-foreground">Sign in to continue</p>
+            <p className="mt-2 text-muted-foreground">Sign in to continue to Team Platform</p>
           </div>
         </div>
         <div className="bg-card p-6 rounded-lg shadow-lg">

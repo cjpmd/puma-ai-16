@@ -11,6 +11,10 @@ import FormationSelector from "./pages/FormationSelector";
 import RoleSuitability from "./pages/RoleSuitabilityPage";
 import TopRatedByPosition from "./pages/TopRatedByPosition";
 import TeamSettings from "./pages/TeamSettings";
+import ClubSettings from "./pages/ClubSettings";
+import ClubDashboard from "./pages/ClubDashboard";
+import CreateTeam from "./pages/CreateTeam";
+import PlatformLanding from "./pages/PlatformLanding";
 import { Auth } from "./pages/Auth";
 import { Coaches } from "./pages/Coaches";
 import { NavBar } from "./components/NavBar";
@@ -26,6 +30,43 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/auth" replace />} />
           <Route path="/auth" element={<Auth />} />
+          
+          {/* Platform Routes */}
+          <Route
+            path="/platform"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'manager', 'coach', 'parent']}>
+                <PlatformLanding />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/create-team"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                <CreateTeam />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/club-settings"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <ClubSettings />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/club/:clubId"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                <ClubDashboard />
+              </ProtectedRoute>
+            }
+          />
           
           {/* Admin and Manager Routes */}
           <Route 

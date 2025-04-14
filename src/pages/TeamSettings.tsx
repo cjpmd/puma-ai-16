@@ -5,10 +5,18 @@ import { FAConnectionSettings } from "@/components/settings/FAConnectionSettings
 import { WhatsAppIntegration } from "@/components/settings/WhatsAppIntegration";
 import { TeamInfoSettings } from "@/components/settings/TeamInfoSettings";
 import { FormatsAndCategoriesSettings } from "@/components/settings/FormatsAndCategoriesSettings";
+import { JoinClubSection } from "@/components/settings/JoinClubSection";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function TeamSettings() {
   const [debugInfo, setDebugInfo] = useState<any>({});
+  const [teamId, setTeamId] = useState<string | null>(null);
+  const [clubInfo, setClubInfo] = useState<any>(null);
+  const navigate = useNavigate();
+  const { profile } = useAuth();
 
   useEffect(() => {
     const checkTables = async () => {
@@ -54,7 +62,32 @@ export default function TeamSettings() {
     };
     
     checkTables();
-  }, []);
+    fetchTeamAndClubData();
+  }, [profile]);
+
+  const fetchTeamAndClubData = async () => {
+    if (!profile) return;
+    
+    try {
+      // Check if user has a team
+      const { data: teamData, error: teamError } = await supabase
+        .from('teams')
+        .select('*, clubs(*)')
+        .eq('admin_id', profile.id)
+        .maybeSingle();
+        
+      if (teamError) throw teamError;
+      
+      if (teamData) {
+        setTeamId(teamData.id);
+        if (teamData.club_id) {
+          setClubInfo(teamData.clubs);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching team data:', error);
+    }
+  };
 
   const createDefaultCategories = async () => {
     try {
@@ -141,11 +174,37 @@ export default function TeamSettings() {
     }
   };
 
+  const handleClubJoined = async () => {
+    await fetchTeamAndClubData();
+  };
+
   return (
     <div className="container mx-auto py-6 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">Team Settings</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Team Settings</h1>
+        
+        <div className="flex gap-2">
+          {profile?.role === 'admin' && (
+            <Button 
+              variant="outline" 
+              onClick={() => navigate("/club-settings")}
+            >
+              Club Management
+            </Button>
+          )}
+        </div>
+      </div>
       
       <TeamInfoSettings />
+      
+      {teamId && (
+        <JoinClubSection 
+          teamId={teamId} 
+          currentClub={clubInfo} 
+          onClubJoined={handleClubJoined} 
+        />
+      )}
+      
       <FormatsAndCategoriesSettings />
       <FAConnectionSettings />
       <WhatsAppIntegration />
