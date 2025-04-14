@@ -9,9 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { Database, AlertCircle } from "lucide-react";
 
 const clubFormSchema = z.object({
   club_name: z.string().min(3, "Club name must be at least 3 characters"),
@@ -33,6 +34,7 @@ export default function ClubSettings() {
   const [teams, setTeams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tablesExist, setTablesExist] = useState(true);
 
   const form = useForm<ClubFormValues>({
     resolver: zodResolver(clubFormSchema),
@@ -51,6 +53,31 @@ export default function ClubSettings() {
     
     const fetchClubAndTeams = async () => {
       try {
+        // Check if tables exist first
+        try {
+          // Try a metadata query to check if clubs table exists
+          const { error: tableCheckError } = await supabase
+            .from('clubs')
+            .select('count(*)', { count: 'exact', head: true });
+          
+          if (tableCheckError && tableCheckError.code === '42P01') {
+            // Table doesn't exist
+            setTablesExist(false);
+            setError("Database tables don't exist yet. Please run the database initialization SQL script.");
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.error("Error checking tables:", err);
+          // Assume table might not exist if we get an error here
+          if (err instanceof Error && err.message.includes("does not exist")) {
+            setTablesExist(false);
+            setError("Database tables don't exist yet. Please run the database initialization SQL script.");
+            setLoading(false);
+            return;
+          }
+        }
+        
         // Fetch club data if the user is an admin of a club
         const { data: clubData, error: clubError } = await supabase
           .from('clubs')
@@ -58,7 +85,16 @@ export default function ClubSettings() {
           .eq('admin_id', profile.id)
           .maybeSingle();
           
-        if (clubError) throw clubError;
+        if (clubError) {
+          if (clubError.code === '42P01') {
+            // Table doesn't exist
+            setTablesExist(false);
+            setError("The 'clubs' table doesn't exist yet. Please run the database initialization SQL script.");
+            setLoading(false);
+            return;
+          }
+          throw clubError;
+        }
         
         if (clubData) {
           setClub(clubData);
@@ -77,7 +113,14 @@ export default function ClubSettings() {
             .select('*')
             .eq('club_id', clubData.id);
             
-          if (teamsError) throw teamsError;
+          if (teamsError) {
+            if (teamsError.code === '42P01') {
+              // Just log this, we already know the clubs table exists
+              console.warn("The 'teams' table doesn't exist yet.");
+            } else {
+              throw teamsError;
+            }
+          }
           setTeams(teamsData || []);
         }
       } catch (err) {
@@ -97,6 +140,15 @@ export default function ClubSettings() {
         toast({
           title: "Error",
           description: "You must be logged in to create or update a club",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!tablesExist) {
+        toast({
+          title: "Database Error",
+          description: "Database tables don't exist yet. Please run the initialization SQL script first.",
           variant: "destructive",
         });
         return;
@@ -156,7 +208,7 @@ export default function ClubSettings() {
       console.error("Error saving club:", err);
       toast({
         title: "Error",
-        description: "Failed to save club information",
+        description: "Failed to save club information. Make sure the database tables exist.",
         variant: "destructive",
       });
     }
@@ -182,7 +234,38 @@ export default function ClubSettings() {
     <div className="container mx-auto py-6 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6">Club Settings</h1>
       
-      {error && (
+      {!tablesExist && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Database Tables Missing</AlertTitle>
+          <AlertDescription>
+            <p>The database tables required for club management don't exist yet.</p>
+            <p className="mt-2">This application needs the SQL script to be executed in your Supabase database.</p>
+            <div className="mt-4">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={() => {
+                  // Copy the script path to clipboard
+                  navigator.clipboard.writeText("sql/create_multi_team_club_structure.sql");
+                  toast({
+                    title: "SQL Path Copied",
+                    description: "Path to SQL script copied to clipboard",
+                  });
+                }}
+              >
+                <Database className="h-4 w-4" />
+                Copy SQL Script Path
+              </Button>
+              <p className="text-xs mt-2">
+                The SQL script is located at: <code className="bg-muted px-1 py-0.5 rounded">sql/create_multi_team_club_structure.sql</code>
+              </p>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {error && tablesExist && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
@@ -336,7 +419,10 @@ export default function ClubSettings() {
                   />
                   
                   <div className="flex gap-2">
-                    <Button type="submit">{club ? "Update Club" : "Create Club"}</Button>
+                    <Button 
+                      type="submit"
+                      disabled={!tablesExist}
+                    >{club ? "Update Club" : "Create Club"}</Button>
                     {club && (
                       <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
                         Cancel

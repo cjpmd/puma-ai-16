@@ -4,13 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Plus, Users, Trophy, Calendar, CheckCircle, LogIn } from "lucide-react";
+import { ArrowRight, Plus, Users, Trophy, Calendar, CheckCircle, LogIn, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Index() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [databaseError, setDatabaseError] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -41,10 +43,15 @@ export default function Index() {
                 .eq('admin_id', data.session.user.id)
                 .maybeSingle();
               
-              if (!teamError) {
-                teamData = teamResult;
+              if (teamError) {
+                if (teamError.code === '42P01') {
+                  console.log("Team query failed - table may not exist yet:", teamError);
+                  setDatabaseError(true);
+                } else {
+                  console.error("Error querying teams:", teamError);
+                }
               } else {
-                console.log("Team query failed - table may not exist yet:", teamError);
+                teamData = teamResult;
               }
             } catch (err) {
               console.log("Error querying teams:", err);
@@ -57,10 +64,15 @@ export default function Index() {
                 .eq('admin_id', data.session.user.id)
                 .maybeSingle();
               
-              if (!clubError) {
-                clubData = clubResult;
+              if (clubError) {
+                if (clubError.code === '42P01') {
+                  console.log("Club query failed - table may not exist yet:", clubError);
+                  setDatabaseError(true);
+                } else {
+                  console.error("Error querying clubs:", clubError);
+                }
               } else {
-                console.log("Club query failed - table may not exist yet:", clubError);
+                clubData = clubResult;
               }
             } catch (err) {
               console.log("Error querying clubs:", err);
@@ -113,10 +125,15 @@ export default function Index() {
                 .eq('admin_id', session.user.id)
                 .maybeSingle();
               
-              if (!teamError) {
-                teamData = teamResult;
+              if (teamError) {
+                if (teamError.code === '42P01') {
+                  console.log("Team query failed - table may not exist yet:", teamError);
+                  setDatabaseError(true);
+                } else {
+                  console.error("Error querying teams:", teamError);
+                }
               } else {
-                console.log("Team query failed - table may not exist yet:", teamError);
+                teamData = teamResult;
               }
             } catch (err) {
               console.log("Error querying teams:", err);
@@ -129,10 +146,15 @@ export default function Index() {
                 .eq('admin_id', session.user.id)
                 .maybeSingle();
               
-              if (!clubError) {
-                clubData = clubResult;
+              if (clubError) {
+                if (clubError.code === '42P01') {
+                  console.log("Club query failed - table may not exist yet:", clubError);
+                  setDatabaseError(true);
+                } else {
+                  console.error("Error querying clubs:", clubError);
+                }
               } else {
-                console.log("Club query failed - table may not exist yet:", clubError);
+                clubData = clubResult;
               }
             } catch (err) {
               console.log("Error querying clubs:", err);
@@ -219,6 +241,31 @@ export default function Index() {
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Comprehensive tools for sports teams and clubs to manage players, fixtures, and performance.
         </p>
+        
+        {databaseError && (
+          <Alert variant="destructive" className="mt-4 max-w-2xl mx-auto">
+            <Database className="h-4 w-4" />
+            <AlertTitle>Database Tables Missing</AlertTitle>
+            <AlertDescription>
+              <p>The application needs database tables to be created first.</p>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="mt-2 flex items-center gap-2"
+                onClick={() => {
+                  navigator.clipboard.writeText("sql/create_multi_team_club_structure.sql");
+                  toast({
+                    title: "SQL Path Copied",
+                    description: "Path to SQL script copied to clipboard",
+                  });
+                }}
+              >
+                <Database className="h-4 w-4" />
+                Copy SQL Script Path
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         
         {/* Main call to action */}
         <div className="flex justify-center mt-8">
