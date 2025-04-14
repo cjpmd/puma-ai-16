@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
@@ -61,7 +62,7 @@ export const Auth = () => {
         try {
           const { data: teamData } = await supabase
             .from('teams')
-            .select('id')
+            .select('id, team_name, team_logo')
             .eq('admin_id', session.user.id)
             .maybeSingle();
             
@@ -72,6 +73,13 @@ export const Auth = () => {
             .maybeSingle();
             
           if (teamData) {
+            // Store team info in localStorage for use across the app
+            if (teamData.team_logo) {
+              localStorage.setItem('team_logo', teamData.team_logo);
+            }
+            localStorage.setItem('team_name', teamData.team_name || 'My Team');
+            
+            // Navigate to team dashboard
             navigate("/home");
           } else if (clubData) {
             navigate("/club-settings");
@@ -84,6 +92,9 @@ export const Auth = () => {
         }
       } else if (event === "SIGNED_OUT") {
         setErrorMessage("");
+        // Clear any stored team data on logout
+        localStorage.removeItem('team_logo');
+        localStorage.removeItem('team_name');
       }
     });
 
@@ -140,7 +151,7 @@ export const Auth = () => {
           />
           <div>
             <h1 className="text-4xl font-bold">Welcome Back</h1>
-            <p className="mt-2 text-muted-foreground">Sign in to continue to Team Platform</p>
+            <p className="mt-2 text-muted-foreground">Sign in to continue to Puma.AI</p>
           </div>
         </div>
         <div className="bg-card p-6 rounded-lg shadow-lg">
@@ -155,6 +166,9 @@ export const Auth = () => {
             theme="light"
             providers={[]}
           />
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            <p>Sign in to access your team: Broughty Pumas 2015s</p>
+          </div>
         </div>
       </div>
     </div>

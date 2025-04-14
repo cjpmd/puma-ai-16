@@ -1,3 +1,4 @@
+
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Users, BarChart2, UserCircle, Calendar, LogOut, Cog, Home, Building } from "lucide-react";
@@ -12,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
 import { useAuth, UserRole } from "@/hooks/useAuth";
 
@@ -30,15 +31,28 @@ export const NavBar = () => {
   const { profile, isLoading, hasPermission } = useAuth();
   const [userTeam, setUserTeam] = useState<any>(null);
   const [userClub, setUserClub] = useState<any>(null);
+  const [teamLogo, setTeamLogo] = useState<string | null>(null);
   
   useEffect(() => {
     if (!profile) return;
+    
+    // Try to get team logo from localStorage first for faster initial render
+    const storedLogo = localStorage.getItem('team_logo');
+    const storedName = localStorage.getItem('team_name');
+    
+    if (storedLogo) {
+      setTeamLogo(storedLogo);
+    }
+    
+    if (storedName && !userTeam) {
+      setUserTeam({ team_name: storedName });
+    }
     
     const fetchUserEntities = async () => {
       try {
         const { data: teamData, error: teamError } = await supabase
           .from('teams')
-          .select('*')
+          .select('*, team_logo')
           .eq('admin_id', profile.id)
           .maybeSingle();
           
@@ -46,6 +60,15 @@ export const NavBar = () => {
         
         if (teamData) {
           setUserTeam(teamData);
+          
+          // Update team logo if available
+          if (teamData.team_logo) {
+            setTeamLogo(teamData.team_logo);
+            localStorage.setItem('team_logo', teamData.team_logo);
+          }
+          
+          // Store team name
+          localStorage.setItem('team_name', teamData.team_name || 'My Team');
         }
         
         const { data: clubData, error: clubError } = await supabase
@@ -133,11 +156,23 @@ export const NavBar = () => {
     <div className="w-full bg-white shadow-sm mb-8">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img 
-            src="/lovable-uploads/47160456-08d9-4525-b5da-08312ba94630.png" 
-            alt="Puma.AI Logo" 
-            className="h-12 w-auto"
-          />
+          {isTeamRoute && teamLogo ? (
+            <img 
+              src={teamLogo} 
+              alt="Team Logo" 
+              className="h-12 w-auto"
+              onError={() => {
+                // Fallback to platform logo if team logo fails to load
+                setTeamLogo("/lovable-uploads/47160456-08d9-4525-b5da-08312ba94630.png");
+              }}
+            />
+          ) : (
+            <img 
+              src="/lovable-uploads/47160456-08d9-4525-b5da-08312ba94630.png" 
+              alt="Puma.AI Logo" 
+              className="h-12 w-auto"
+            />
+          )}
           {isTeamRoute && userTeam && (
             <div className="ml-4 hidden sm:block">
               <div className="text-xl font-bold">{userTeam.team_name}</div>
