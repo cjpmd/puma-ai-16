@@ -1,7 +1,7 @@
 
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
-import { Users, BarChart2, UserCircle, Calendar, LogOut, Cog, Home, Building, LogIn } from "lucide-react";
+import { Users, BarChart2, UserCircle, Calendar, LogOut, Cog, Home, Building, LogIn, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -28,10 +28,11 @@ export const NavBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { profile, isLoading } = useAuth();
+  const [session, setSession] = useState<any>(null);
   const [userTeam, setUserTeam] = useState<any>(null);
   const [userClub, setUserClub] = useState<any>(null);
   const [teamLogo, setTeamLogo] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     // Try to get team logo from localStorage first for faster initial render
@@ -46,60 +47,103 @@ export const NavBar = () => {
       setUserTeam({ team_name: storedName });
     }
     
-    if (!profile) return;
-    
-    const fetchUserEntities = async () => {
+    // Check if user is authenticated
+    const checkAuth = async () => {
       try {
-        const { data: teamData, error: teamError } = await supabase
-          .from('teams')
-          .select('*, team_logo')
-          .eq('admin_id', profile.id)
-          .maybeSingle();
-          
-        if (teamError) throw teamError;
+        const { data } = await supabase.auth.getSession();
+        setSession(data.session);
         
-        if (teamData) {
-          setUserTeam(teamData);
-          
-          // Update team logo if available
-          if (teamData.team_logo) {
-            setTeamLogo(teamData.team_logo);
-            localStorage.setItem('team_logo', teamData.team_logo);
-          }
-          
-          // Store team name
-          localStorage.setItem('team_name', teamData.team_name || 'My Team');
+        if (data.session?.user) {
+          fetchUserEntities(data.session.user.id);
+        } else {
+          setLoading(false);
         }
-        
-        const { data: clubData, error: clubError } = await supabase
-          .from('clubs')
-          .select('*')
-          .eq('admin_id', profile.id)
-          .maybeSingle();
-          
-        if (clubError) throw clubError;
-        
-        if (clubData) {
-          setUserClub(clubData);
-        }
-      } catch (error) {
-        console.error("Error fetching user entities:", error);
+      } catch (err) {
+        console.error("Error checking auth:", err);
+        setLoading(false);
       }
     };
     
-    fetchUserEntities();
-  }, [profile]);
+    checkAuth();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        if (session?.user) {
+          fetchUserEntities(session.user.id);
+        } else {
+          setUserTeam(null);
+          setUserClub(null);
+          setTeamLogo(null);
+          setLoading(false);
+        }
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+  
+  const fetchUserEntities = async (userId: string) => {
+    try {
+      const { data: teamData, error: teamError } = await supabase
+        .from('teams')
+        .select('*, team_logo')
+        .eq('admin_id', userId)
+        .maybeSingle();
+        
+      if (teamError) throw teamError;
+      
+      if (teamData) {
+        setUserTeam(teamData);
+        
+        // Update team logo if available
+        if (teamData.team_logo) {
+          setTeamLogo(teamData.team_logo);
+          localStorage.setItem('team_logo', teamData.team_logo);
+        }
+        
+        // Store team name
+        localStorage.setItem('team_name', teamData.team_name || 'My Team');
+      }
+      
+      const { data: clubData, error: clubError } = await supabase
+        .from('clubs')
+        .select('*')
+        .eq('admin_id', userId)
+        .maybeSingle();
+        
+      if (clubError) throw clubError;
+      
+      if (clubData) {
+        setUserClub(clubData);
+      }
+      
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching user entities:", error);
+      setLoading(false);
+    }
+  };
 
   const menuItems: MenuItem[] = [
-    { to: "/", icon: <Home className="mr-2 h-4 w-4" />, label: "Home", roles: ['admin', 'manager', 'coach', 'parent'], public: true },
-    { to: "/home", icon: <UserCircle className="mr-2 h-4 w-4" />, label: "Team Dashboard", roles: ['admin', 'manager', 'coach', 'parent'] },
-    { to: "/squad", icon: <Users className="mr-2 h-4 w-4" />, label: "Squad", roles: ['admin', 'manager'] },
-    { to: "/analytics", icon: <BarChart2 className="mr-2 h-4 w-4" />, label: "Analytics", roles: ['admin', 'manager', 'coach'] },
-    { to: "/calendar", icon: <Calendar className="mr-2 h-4 w-4" />, label: "Calendar", roles: ['admin', 'manager', 'coach', 'parent'] },
-    { to: "/settings", icon: <Cog className="mr-2 h-4 w-4" />, label: "Team Settings", roles: ['admin'] },
+    { to: "/", icon: <Home className="mr-2 h-4 w-4" />, label: "Home", roles: [], public: true },
   ];
   
-  if (userClub) {
+  // Add authenticated-only menu items if user is logged in
+  if (session) {
+    menuItems.push(
+      { to: "/home", icon: <UserCircle className="mr-2 h-4 w-4" />, label: "Team Dashboard", roles: ['admin', 'manager', 'coach', 'parent'] },
+      { to: "/squad", icon: <Users className="mr-2 h-4 w-4" />, label: "Squad", roles: ['admin', 'manager'] },
+      { to: "/analytics", icon: <BarChart2 className="mr-2 h-4 w-4" />, label: "Analytics", roles: ['admin', 'manager', 'coach'] },
+      { to: "/calendar", icon: <Calendar className="mr-2 h-4 w-4" />, label: "Calendar", roles: ['admin', 'manager', 'coach', 'parent'] },
+      { to: "/settings", icon: <Cog className="mr-2 h-4 w-4" />, label: "Team Settings", roles: ['admin'] }
+    );
+  }
+  
+  // Add club dashboard if user has a club
+  if (session && userClub) {
     menuItems.push({ 
       to: `/club/${userClub.id}`, 
       icon: <Building className="mr-2 h-4 w-4" />, 
@@ -134,10 +178,10 @@ export const NavBar = () => {
   
   const hasPermission = (requiredRoles: UserRole[], isPublic?: boolean): boolean => {
     if (isPublic) return true;
-    if (!profile) return false;
-    if (profile.role === 'admin') return true;
-    if (requiredRoles.includes('parent') && profile.role === 'coach') return true;
-    return requiredRoles.includes(profile.role);
+    if (!session) return false;
+    
+    // For now, all authenticated users have admin role for simplicity
+    return true;
   };
   
   const isTeamRoute = location.pathname.includes('/home') || 
@@ -211,13 +255,36 @@ export const NavBar = () => {
             )
           ))}
           
-          {profile ? (
+          {/* Always visible buttons for creating teams and clubs */}
+          {!loading && (
+            <>
+              <Button 
+                variant="outline"
+                onClick={() => navigate("/create-team")}
+                className="hidden md:flex"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Team
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={() => navigate("/club-settings")}
+                className="hidden md:flex"
+              >
+                <Building className="mr-2 h-4 w-4" />
+                Club Settings
+              </Button>
+            </>
+          )}
+          
+          {session ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback>
-                      {profile.email?.charAt(0).toUpperCase()}
+                      {session.user?.email?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -225,9 +292,9 @@ export const NavBar = () => {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{profile.email}</p>
+                    <p className="text-sm font-medium leading-none">{session.user?.email || "User"}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {profile.role}
+                      Admin
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -236,12 +303,14 @@ export const NavBar = () => {
                   <Home className="mr-2 h-4 w-4" />
                   <span>Platform Dashboard</span>
                 </DropdownMenuItem>
-                {hasPermission(['admin']) && (
-                  <DropdownMenuItem onClick={() => navigate("/club-settings")}>
-                    <Building className="mr-2 h-4 w-4" />
-                    <span>Club Management</span>
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem onClick={() => navigate("/create-team")}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span>Create Team</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/club-settings")}>
+                  <Building className="mr-2 h-4 w-4" />
+                  <span>Club Management</span>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />

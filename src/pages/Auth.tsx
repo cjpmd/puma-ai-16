@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
@@ -154,7 +155,7 @@ export const Auth = () => {
             // Redirect to club dashboard
             navigate("/club-settings");
           } else {
-            console.log("Auth: No team or club after sign-in, redirecting to platform");
+            console.log("Auth: No team or club after sign-in, redirecting to specific path:", returnTo);
             // No team or club yet, go to platform landing or returnTo path
             navigate(returnTo);
           }
@@ -229,6 +230,9 @@ export const Auth = () => {
           <div>
             <h1 className="text-4xl font-bold">Welcome Back</h1>
             <p className="mt-2 text-muted-foreground">Sign in to continue to Puma.AI</p>
+            {returnTo !== "/platform" && (
+              <p className="mt-1 text-sm text-primary">You'll be redirected to: {returnTo.replace("/", "")}</p>
+            )}
           </div>
         </div>
         <div className="bg-card p-6 rounded-lg shadow-lg">

@@ -10,8 +10,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { Database, AlertCircle } from "lucide-react";
+import { AlertCircle, Database, LogIn } from "lucide-react";
 import { InitializeDatabaseButton } from "@/utils/database/initializeDatabase";
 
 const clubFormSchema = z.object({
@@ -28,7 +27,7 @@ type ClubFormValues = z.infer<typeof clubFormSchema>;
 export default function ClubSettings() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile, isLoading } = useAuth();
+  const [session, setSession] = useState<any>(null);
   const [club, setClub] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [teams, setTeams] = useState<any[]>([]);
@@ -49,99 +48,129 @@ export default function ClubSettings() {
   });
 
   useEffect(() => {
-    if (!profile) return;
-    
-    const fetchClubAndTeams = async () => {
+    const checkSession = async () => {
       try {
-        // Check if tables exist first
-        try {
-          // Try a metadata query to check if clubs table exists
-          const { error: tableCheckError } = await supabase
-            .from('clubs')
-            .select('count(*)', { count: 'exact', head: true });
-          
-          if (tableCheckError && tableCheckError.code === '42P01') {
-            // Table doesn't exist
-            setTablesExist(false);
-            setError("Database tables don't exist yet. Please initialize the database first.");
-            setLoading(false);
-            return;
-          }
-        } catch (err) {
-          console.error("Error checking tables:", err);
-          // Assume table might not exist if we get an error here
-          if (err instanceof Error && err.message.includes("does not exist")) {
-            setTablesExist(false);
-            setError("Database tables don't exist yet. Please initialize the database first.");
-            setLoading(false);
-            return;
-          }
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Session error:", error);
+          setLoading(false);
+          return;
         }
         
-        // Fetch club data if the user is an admin of a club
-        const { data: clubData, error: clubError } = await supabase
-          .from('clubs')
-          .select('*')
-          .eq('admin_id', profile.id)
-          .maybeSingle();
-          
-        if (clubError) {
-          if (clubError.code === '42P01') {
-            // Table doesn't exist
-            setTablesExist(false);
-            setError("The 'clubs' table doesn't exist yet. Please initialize the database first.");
-            setLoading(false);
-            return;
-          }
-          throw clubError;
-        }
+        setSession(data.session);
         
-        if (clubData) {
-          setClub(clubData);
-          form.reset({
-            club_name: clubData.name || "",
-            location: clubData.location || "",
-            contact_email: clubData.contact_email || "",
-            phone: clubData.phone || "",
-            website: clubData.website || "",
-            description: clubData.description || "",
-          });
-          
-          // Fetch teams associated with this club
-          const { data: teamsData, error: teamsError } = await supabase
-            .from('teams')
-            .select('*')
-            .eq('club_id', clubData.id);
-            
-          if (teamsError) {
-            if (teamsError.code === '42P01') {
-              // Just log this, we already know the clubs table exists
-              console.warn("The 'teams' table doesn't exist yet.");
-            } else {
-              throw teamsError;
-            }
-          }
-          setTeams(teamsData || []);
+        if (data.session) {
+          fetchClubAndTeams(data.session.user.id);
+        } else {
+          setLoading(false);
         }
       } catch (err) {
-        console.error("Error fetching club data:", err);
-        setError("Failed to load club data. Please try again.");
-      } finally {
+        console.error("Auth check error:", err);
         setLoading(false);
       }
     };
     
-    fetchClubAndTeams();
-  }, [profile, form]);
+    checkSession();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        
+        if (session?.user) {
+          fetchClubAndTeams(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      }
+    );
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+  
+  const fetchClubAndTeams = async (userId: string) => {
+    try {
+      try {
+        const { error: tableCheckError } = await supabase
+          .from('clubs')
+          .select('count(*)', { count: 'exact', head: true });
+        
+        if (tableCheckError && tableCheckError.code === '42P01') {
+          setTablesExist(false);
+          setError("Database tables don't exist yet. Please initialize the database first.");
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.error("Error checking tables:", err);
+        if (err instanceof Error && err.message.includes("does not exist")) {
+          setTablesExist(false);
+          setError("Database tables don't exist yet. Please initialize the database first.");
+          setLoading(false);
+          return;
+        }
+      }
+      
+      const { data: clubData, error: clubError } = await supabase
+        .from('clubs')
+        .select('*')
+        .eq('admin_id', userId)
+        .maybeSingle();
+        
+      if (clubError) {
+        if (clubError.code === '42P01') {
+          setTablesExist(false);
+          setError("The 'clubs' table doesn't exist yet. Please initialize the database first.");
+          setLoading(false);
+          return;
+        }
+        throw clubError;
+      }
+      
+      if (clubData) {
+        setClub(clubData);
+        form.reset({
+          club_name: clubData.name || "",
+          location: clubData.location || "",
+          contact_email: clubData.contact_email || "",
+          phone: clubData.phone || "",
+          website: clubData.website || "",
+          description: clubData.description || "",
+        });
+        
+        const { data: teamsData, error: teamsError } = await supabase
+          .from('teams')
+          .select('*')
+          .eq('club_id', clubData.id);
+          
+        if (teamsError) {
+          if (teamsError.code === '42P01') {
+            console.warn("The 'teams' table doesn't exist yet.");
+          } else {
+            throw teamsError;
+          }
+        }
+        setTeams(teamsData || []);
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching club data:", err);
+      setError("Failed to load club data. Please try again.");
+      setLoading(false);
+    }
+  };
   
   const onSubmit = async (values: ClubFormValues) => {
     try {
-      if (!profile) {
+      if (!session) {
         toast({
-          title: "Error",
-          description: "You must be logged in to create or update a club",
-          variant: "destructive",
+          title: "Authentication Required",
+          description: "Please sign in to create or update a club",
         });
+        navigate("/auth", { state: { returnTo: "/club-settings" } });
         return;
       }
       
@@ -155,7 +184,6 @@ export default function ClubSettings() {
       }
       
       if (club) {
-        // Update existing club
         const { error } = await supabase
           .from('clubs')
           .update({
@@ -176,7 +204,6 @@ export default function ClubSettings() {
           description: "Club information updated successfully",
         });
       } else {
-        // Create new club
         const { data, error } = await supabase
           .from('clubs')
           .insert({
@@ -186,7 +213,7 @@ export default function ClubSettings() {
             phone: values.phone,
             website: values.website,
             description: values.description,
-            admin_id: profile.id,
+            admin_id: session.user.id,
             serial_number: generateSerialNumber(),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -221,7 +248,7 @@ export default function ClubSettings() {
     return `${prefix}-${timestamp}-${random}`;
   };
   
-  if (isLoading || loading) {
+  if (loading) {
     return (
       <div className="container mx-auto p-6 flex justify-center items-center h-[80vh]">
         <div className="animate-pulse text-primary">Loading...</div>
@@ -232,6 +259,23 @@ export default function ClubSettings() {
   return (
     <div className="container mx-auto py-6 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6">Club Settings</h1>
+      
+      {!session && (
+        <Alert className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Sign in Required for Creating a Club</AlertTitle>
+          <AlertDescription className="space-y-4">
+            <p>You need to sign in to create or manage a club.</p>
+            <Button 
+              onClick={() => navigate("/auth", { state: { returnTo: "/club-settings" } })}
+              className="mt-2"
+            >
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       
       {!tablesExist && (
         <Alert variant="destructive" className="mb-6">
@@ -403,8 +447,10 @@ export default function ClubSettings() {
                   <div className="flex gap-2">
                     <Button 
                       type="submit"
-                      disabled={!tablesExist}
-                    >{club ? "Update Club" : "Create Club"}</Button>
+                      disabled={!tablesExist || (!session && true)}
+                    >
+                      {!session ? "Sign in to Create" : (club ? "Update Club" : "Create Club")}
+                    </Button>
                     {club && (
                       <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
                         Cancel

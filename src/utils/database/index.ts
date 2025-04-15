@@ -5,5 +5,5 @@ export * from './columnManagement';
 export * from './dataVerification';
 export * from './initializeDatabase';
 
-// Export executeSql from executeSql.ts (without re-exporting it from initializeDatabase)
+// Export executeSql separately to avoid re-export conflict
 export { executeSql } from './executeSql';
