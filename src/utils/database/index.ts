@@ -3,8 +3,8 @@
 export * from './columnUtils';
 export * from './columnManagement';
 export * from './dataVerification';
+export * from './ensureDatabaseSetup';
+export * from './initializeDatabase';
 
 // Export executeSql separately to avoid re-export conflict
 export { executeSql } from './executeSql';
-
-// IMPORTANT: We're intentionally not re-exporting initializeDatabase to make it private

@@ -8,6 +8,8 @@ import { tableExists, initializeDatabase } from "./initializeDatabase";
  */
 export const ensureDatabaseSetup = async (): Promise<boolean> => {
   try {
+    console.log("Checking database setup status...");
+    
     // Check if the clubs table already exists
     const clubsExist = await tableExists('clubs');
     
@@ -26,6 +28,16 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
       return true;
     } else {
       console.error("Failed to automatically initialize database");
+      
+      // Try once more after a short delay (sometimes helps with race conditions)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const retrySuccess = await initializeDatabase();
+      
+      if (retrySuccess) {
+        console.log("Database initialized successfully on retry");
+        return true;
+      }
+      
       return false;
     }
   } catch (error) {
