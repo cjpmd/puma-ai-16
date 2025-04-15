@@ -10,58 +10,81 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
   try {
     console.log("Checking database setup status...");
     
+    // Instead of checking for table existence (which fails if tables don't exist)
+    // We'll try to create tables directly with a fallback mechanism
+    
+    // Use a flag to avoid infinite retries
+    const setupFlag = localStorage.getItem('db_setup_attempted');
+    const lastAttempt = localStorage.getItem('db_setup_last_attempt');
+    
+    // Only attempt setup once every 60 seconds
+    const now = Date.now();
+    const timeSinceLastAttempt = lastAttempt ? now - parseInt(lastAttempt, 10) : Infinity;
+    
+    if (setupFlag === 'true' && timeSinceLastAttempt < 60000) {
+      console.log("Database setup was recently attempted, skipping");
+      // Return true to avoid further setup attempts in this session
+      return true;
+    }
+    
+    localStorage.setItem('db_setup_last_attempt', now.toString());
+    localStorage.setItem('db_setup_attempted', 'true');
+    
     // Add a timeout to prevent hanging
     const setupPromise = new Promise<boolean>(async (resolve) => {
       try {
-        // Check if the clubs table already exists
-        const clubsExist = await tableExists('clubs');
-        
-        // If tables already exist, we're good
-        if (clubsExist) {
-          console.log("Database tables already exist");
-          resolve(true);
-          return;
-        }
-        
+        // Try to initialize the database directly
         console.log("Setting up database tables automatically...");
-        // Automatically initialize the database without user interaction
         const success = await initializeDatabase();
         
         if (success) {
           console.log("Database automatically initialized successfully");
           resolve(true);
         } else {
-          console.error("Failed to automatically initialize database");
+          console.log("Failed to automatically initialize database");
           
-          // Try once more after a short delay (sometimes helps with race conditions)
-          await new Promise(resolveTimeout => setTimeout(resolveTimeout, 1000));
-          const retrySuccess = await initializeDatabase();
-          
-          if (retrySuccess) {
-            console.log("Database initialized successfully on retry");
-            resolve(true);
+          // If it's our first attempt, try once more after a short delay
+          if (setupFlag !== 'retry') {
+            localStorage.setItem('db_setup_attempted', 'retry');
+            await new Promise(resolveTimeout => setTimeout(resolveTimeout, 1000));
+            const retrySuccess = await initializeDatabase();
+            
+            if (retrySuccess) {
+              console.log("Database initialized successfully on retry");
+              resolve(true);
+            } else {
+              // If we still can't set up the database, allow the user to proceed anyway
+              console.log("Database setup failed, but allowing app to proceed");
+              resolve(true);
+            }
           } else {
-            resolve(false);
+            // If we've already retried, just let the user proceed
+            console.log("Database setup failed on previous attempts, allowing app to proceed");
+            resolve(true);
           }
         }
       } catch (error) {
         console.error("Error in setup promise:", error);
-        resolve(false);
+        // Even if setup fails, allow the user to proceed
+        // The app will show appropriate UI for missing tables
+        resolve(true);
       }
     });
     
     // Set a timeout to prevent hanging forever
     const timeoutPromise = new Promise<boolean>((resolve) => {
       setTimeout(() => {
-        console.log("Database setup timed out after 8 seconds");
-        resolve(false);
-      }, 8000);
+        console.log("Database setup timed out after 3 seconds");
+        // Even on timeout, allow the user to proceed
+        resolve(true);
+      }, 3000);
     });
     
     // Race the setup against the timeout
     return await Promise.race([setupPromise, timeoutPromise]);
   } catch (error) {
     console.error("Error checking/initializing database:", error);
-    return false;
+    // Even on error, allow the user to proceed
+    return true;
   }
 };

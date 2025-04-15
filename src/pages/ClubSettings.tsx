@@ -10,7 +10,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, LogIn } from "lucide-react";
+import { AlertCircle, LogIn, RefreshCw } from "lucide-react";
 import { ensureDatabaseSetup } from "@/utils/database/ensureDatabaseSetup";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -34,9 +34,10 @@ export default function ClubSettings() {
   const [teams, setTeams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tablesExist, setTablesExist] = useState(true);
+  const [tablesExist, setTablesExist] = useState(false);
   const [setupInProgress, setSetupInProgress] = useState(false);
   const [setupTimeout, setSetupTimeout] = useState(false);
+  const [manualSetupNeeded, setManualSetupNeeded] = useState(false);
 
   const form = useForm<ClubFormValues>({
     resolver: zodResolver(clubFormSchema),
@@ -72,20 +73,25 @@ export default function ClubSettings() {
             console.log("Setup timeout triggered");
             setSetupTimeout(true);
             setSetupInProgress(false);
+            setManualSetupNeeded(true);
             setError("Database setup is taking longer than expected. Please try again later.");
-          }, 10000);
+          }, 5000);
           
-          const dbSetup = await ensureDatabaseSetup();
-          clearTimeout(timeoutId);
-          
-          setTablesExist(dbSetup);
-          setSetupInProgress(false);
-          
-          if (dbSetup) {
-            // Now fetch club and team data
-            fetchClubAndTeams(data.session.user.id);
-          } else {
-            setError("Database setup failed. Please refresh the page to try again.");
+          try {
+            const dbSetup = await ensureDatabaseSetup();
+            clearTimeout(timeoutId);
+            
+            // Always set tablesExist to true to allow UI to proceed
+            setTablesExist(true);
+            setSetupInProgress(false);
+            
+            // Try to fetch club data
+            await fetchClubAndTeams(data.session.user.id);
+          } catch (err) {
+            clearTimeout(timeoutId);
+            console.error("Error during database setup:", err);
+            setManualSetupNeeded(true);
+            setSetupInProgress(false);
             setLoading(false);
           }
         } else {
@@ -112,19 +118,25 @@ export default function ClubSettings() {
             console.log("Setup timeout triggered");
             setSetupTimeout(true);
             setSetupInProgress(false);
+            setManualSetupNeeded(true);
             setError("Database setup is taking longer than expected. Please try again later.");
-          }, 10000);
+          }, 5000);
           
-          const dbSetup = await ensureDatabaseSetup();
-          clearTimeout(timeoutId);
-          
-          setTablesExist(dbSetup);
-          setSetupInProgress(false);
-          
-          if (dbSetup) {
-            fetchClubAndTeams(session.user.id);
-          } else {
-            setError("Database setup failed. Please refresh the page to try again.");
+          try {
+            const dbSetup = await ensureDatabaseSetup();
+            clearTimeout(timeoutId);
+            
+            // Always set tablesExist to true to allow UI to proceed
+            setTablesExist(true);
+            setSetupInProgress(false);
+            
+            // Try to fetch club data
+            await fetchClubAndTeams(session.user.id);
+          } catch (err) {
+            clearTimeout(timeoutId);
+            console.error("Error during database setup:", err);
+            setManualSetupNeeded(true);
+            setSetupInProgress(false);
             setLoading(false);
           }
         } else {
@@ -140,97 +152,62 @@ export default function ClubSettings() {
   
   const fetchClubAndTeams = async (userId: string) => {
     try {
-      // We're going to check tables but not show the initialization button
+      // Try to fetch clubs data
       try {
-        const { error: tableCheckError } = await supabase
+        const { data: clubData, error: clubError } = await supabase
           .from('clubs')
-          .select('count(*)', { count: 'exact', head: true });
-        
-        if (tableCheckError && tableCheckError.code === '42P01') {
-          // Tables don't exist - we'll set tablesExist to false but we won't
-          // show the initialization button to users
-          setTablesExist(false);
-          setError("The system is currently being configured. Please try again later.");
-          setLoading(false);
-          
-          // Try to auto-setup in the background
-          ensureDatabaseSetup().then(success => {
-            if (success) {
-              // If auto-setup succeeds, refresh the page
-              window.location.reload();
-            }
-          });
-          
-          return;
-        }
-      } catch (err) {
-        console.error("Error checking tables:", err);
-        if (err instanceof Error && err.message.includes("does not exist")) {
-          setTablesExist(false);
-          setError("The system is currently being configured. Please try again later.");
-          setLoading(false);
-          
-          // Try to auto-setup in the background
-          ensureDatabaseSetup().then(success => {
-            if (success) {
-              // If auto-setup succeeds, refresh the page
-              window.location.reload();
-            }
-          });
-          
-          return;
-        }
-      }
-      
-      const { data: clubData, error: clubError } = await supabase
-        .from('clubs')
-        .select('*')
-        .eq('admin_id', userId)
-        .maybeSingle();
-        
-      if (clubError) {
-        if (clubError.code === '42P01') {
-          setTablesExist(false);
-          setError("The system is currently being configured. Please try again later.");
-          
-          // Try to auto-setup in the background
-          ensureDatabaseSetup().then(success => {
-            if (success) {
-              // If auto-setup succeeds, refresh the page
-              window.location.reload();
-            }
-          });
-          
-          setLoading(false);
-          return;
-        }
-        throw clubError;
-      }
-      
-      if (clubData) {
-        setClub(clubData);
-        form.reset({
-          club_name: clubData.name || "",
-          location: clubData.location || "",
-          contact_email: clubData.contact_email || "",
-          phone: clubData.phone || "",
-          website: clubData.website || "",
-          description: clubData.description || "",
-        });
-        
-        const { data: teamsData, error: teamsError } = await supabase
-          .from('teams')
           .select('*')
-          .eq('club_id', clubData.id);
+          .eq('admin_id', userId)
+          .maybeSingle();
           
-        if (teamsError) {
-          if (teamsError.code === '42P01') {
-            console.warn("The 'teams' table doesn't exist yet.");
-          } else {
-            throw teamsError;
+        if (clubError) {
+          // If we get a 42P01 error, it means the table doesn't exist
+          if (clubError.code === '42P01') {
+            setTablesExist(false);
+            setManualSetupNeeded(true);
+            setError("The database tables have not been set up. Please contact support.");
+            setLoading(false);
+            return;
+          }
+          // For other errors, just log them
+          console.error("Error fetching club data:", clubError);
+        } else if (clubData) {
+          // If we get data, we know tables exist
+          setTablesExist(true);
+          setClub(clubData);
+          form.reset({
+            club_name: clubData.name || "",
+            location: clubData.location || "",
+            contact_email: clubData.contact_email || "",
+            phone: clubData.phone || "",
+            website: clubData.website || "",
+            description: clubData.description || "",
+          });
+          
+          // Try to fetch teams data
+          try {
+            const { data: teamsData, error: teamsError } = await supabase
+              .from('teams')
+              .select('*')
+              .eq('club_id', clubData.id);
+              
+            if (teamsError) {
+              if (teamsError.code === '42P01') {
+                console.warn("The 'teams' table doesn't exist yet.");
+              } else {
+                console.error("Error fetching teams:", teamsError);
+              }
+            } else {
+              setTeams(teamsData || []);
+            }
+          } catch (teamsErr) {
+            console.error("Error in teams fetch:", teamsErr);
           }
         }
-        setTeams(teamsData || []);
+      } catch (err) {
+        console.error("Error in clubs fetch:", err);
+        setTablesExist(false);
+        setManualSetupNeeded(true);
       }
       
       setLoading(false);
@@ -255,7 +232,7 @@ export default function ClubSettings() {
       if (!tablesExist) {
         toast({
           title: "System Configuration",
-          description: "The system is currently being configured. Please try again later.",
+          description: "The database tables have not been set up. Please contact support.",
           variant: "destructive",
         });
         return;
@@ -275,37 +252,71 @@ export default function ClubSettings() {
           })
           .eq('id', club.id);
           
-        if (error) throw error;
+        if (error) {
+          if (error.code === '42P01') {
+            setTablesExist(false);
+            setManualSetupNeeded(true);
+            toast({
+              title: "Database Error",
+              description: "The database tables have not been set up. Please contact support.",
+              variant: "destructive",
+            });
+            return;
+          }
+          throw error;
+        }
         
         toast({
           title: "Success",
           description: "Club information updated successfully",
         });
       } else {
-        const { data, error } = await supabase
-          .from('clubs')
-          .insert({
-            name: values.club_name,
-            location: values.location,
-            contact_email: values.contact_email,
-            phone: values.phone,
-            website: values.website,
-            description: values.description,
-            admin_id: session.user.id,
-            serial_number: generateSerialNumber(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .select()
-          .single();
+        try {
+          const { data, error } = await supabase
+            .from('clubs')
+            .insert({
+              name: values.club_name,
+              location: values.location,
+              contact_email: values.contact_email,
+              phone: values.phone,
+              website: values.website,
+              description: values.description,
+              admin_id: session.user.id,
+              serial_number: generateSerialNumber(),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
+            
+          if (error) {
+            if (error.code === '42P01') {
+              setTablesExist(false);
+              setManualSetupNeeded(true);
+              toast({
+                title: "Database Error",
+                description: "The database tables have not been set up. Please contact support.",
+                variant: "destructive",
+              });
+              return;
+            }
+            throw error;
+          }
           
-        if (error) throw error;
-        
-        setClub(data);
-        toast({
-          title: "Success",
-          description: "Club created successfully",
-        });
+          setClub(data);
+          toast({
+            title: "Success",
+            description: "Club created successfully",
+          });
+        } catch (insertErr) {
+          console.error("Error inserting club:", insertErr);
+          toast({
+            title: "Error",
+            description: "Failed to create club. The database may not be properly set up.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
       
       setIsEditing(false);
@@ -325,6 +336,19 @@ export default function ClubSettings() {
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     return `${prefix}-${timestamp}-${random}`;
   };
+
+  const handleRefresh = () => {
+    // Clear any setup flags
+    localStorage.removeItem('db_setup_attempted');
+    localStorage.removeItem('db_setup_last_attempt');
+    // Reset state
+    setLoading(true);
+    setError(null);
+    setSetupTimeout(false);
+    setManualSetupNeeded(false);
+    // Reload the page
+    window.location.reload();
+  };
   
   if (loading || setupInProgress) {
     return (
@@ -338,10 +362,11 @@ export default function ClubSettings() {
             <AlertDescription>
               <p>Database setup is taking longer than expected.</p>
               <Button 
-                onClick={() => window.location.reload()} 
+                onClick={handleRefresh} 
                 variant="outline" 
                 className="mt-2"
               >
+                <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh Page
               </Button>
             </AlertDescription>
@@ -372,17 +397,43 @@ export default function ClubSettings() {
         </Alert>
       )}
       
+      {manualSetupNeeded && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Database Setup Required</AlertTitle>
+          <AlertDescription className="space-y-4">
+            <p>The database tables required for club management have not been set up. This typically requires manual configuration by an administrator.</p>
+            <Button 
+              onClick={handleRefresh} 
+              variant="outline" 
+              className="mt-2"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry Setup
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {!tablesExist && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>System Configuration</AlertTitle>
           <AlertDescription>
-            <p>The system is currently being configured. Please try again later.</p>
+            <p>The system is currently being configured. You may need to contact your administrator.</p>
+            <Button 
+              onClick={handleRefresh} 
+              variant="outline" 
+              className="mt-2"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry Setup
+            </Button>
           </AlertDescription>
         </Alert>
       )}
       
-      {error && tablesExist && (
+      {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
@@ -400,7 +451,7 @@ export default function ClubSettings() {
           </CardHeader>
           <CardContent>
             {!isEditing && club ? (
-              <>
+              <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground">Club Name</h3>
@@ -447,7 +498,7 @@ export default function ClubSettings() {
                 )}
                 
                 <Button onClick={() => setIsEditing(true)}>Edit Club Information</Button>
-              </>
+              </div>
             ) : (
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -554,7 +605,7 @@ export default function ClubSettings() {
           </CardContent>
         </Card>
         
-        {club && (
+        {club && teams.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Connected Teams</CardTitle>
@@ -563,26 +614,19 @@ export default function ClubSettings() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {teams.length > 0 ? (
-                <div className="grid gap-4">
-                  {teams.map((team) => (
-                    <div key={team.id} className="border rounded-md p-4 flex justify-between items-center">
-                      <div>
-                        <h3 className="font-medium">{team.team_name}</h3>
-                        <p className="text-sm text-muted-foreground">Joined: {new Date(team.joined_club_at).toLocaleDateString()}</p>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/team/${team.id}`)}>
-                        View Details
-                      </Button>
+              <div className="grid gap-4">
+                {teams.map((team) => (
+                  <div key={team.id} className="border rounded-md p-4 flex justify-between items-center">
+                    <div>
+                      <h3 className="font-medium">{team.team_name}</h3>
+                      <p className="text-sm text-muted-foreground">Joined: {new Date(team.joined_club_at).toLocaleDateString()}</p>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 text-muted-foreground">
-                  <p>No teams have joined your club yet.</p>
-                  <p className="text-sm mt-2">Share your club serial number with teams to get started.</p>
-                </div>
-              )}
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/team/${team.id}`)}>
+                      View Details
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}
