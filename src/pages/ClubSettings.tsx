@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,8 +11,8 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Database, LogIn } from "lucide-react";
-import { InitializeDatabaseButton } from "@/utils/database/initializeDatabase";
+import { AlertCircle, LogIn } from "lucide-react";
+import { ensureDatabaseSetup } from "@/utils/database/ensureDatabaseSetup";
 
 const clubFormSchema = z.object({
   club_name: z.string().min(3, "Club name must be at least 3 characters"),
@@ -34,6 +35,7 @@ export default function ClubSettings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tablesExist, setTablesExist] = useState(true);
+  const [setupInProgress, setSetupInProgress] = useState(false);
 
   const form = useForm<ClubFormValues>({
     resolver: zodResolver(clubFormSchema),
@@ -61,6 +63,13 @@ export default function ClubSettings() {
         setSession(data.session);
         
         if (data.session) {
+          // Attempt to automatically ensure database is set up
+          setSetupInProgress(true);
+          const dbSetup = await ensureDatabaseSetup();
+          setTablesExist(dbSetup);
+          setSetupInProgress(false);
+          
+          // Now fetch club and team data
           fetchClubAndTeams(data.session.user.id);
         } else {
           setLoading(false);
@@ -78,6 +87,12 @@ export default function ClubSettings() {
         setSession(session);
         
         if (session?.user) {
+          // Attempt to automatically ensure database is set up
+          setSetupInProgress(true);
+          const dbSetup = await ensureDatabaseSetup();
+          setTablesExist(dbSetup);
+          setSetupInProgress(false);
+          
           fetchClubAndTeams(session.user.id);
         } else {
           setLoading(false);
@@ -92,23 +107,44 @@ export default function ClubSettings() {
   
   const fetchClubAndTeams = async (userId: string) => {
     try {
+      // We're going to check tables but not show the initialization button
       try {
         const { error: tableCheckError } = await supabase
           .from('clubs')
           .select('count(*)', { count: 'exact', head: true });
         
         if (tableCheckError && tableCheckError.code === '42P01') {
+          // Tables don't exist - we'll set tablesExist to false but we won't
+          // show the initialization button to users
           setTablesExist(false);
-          setError("Database tables don't exist yet. Please initialize the database first.");
+          setError("The system is currently being configured. Please try again later.");
           setLoading(false);
+          
+          // Try to auto-setup in the background
+          ensureDatabaseSetup().then(success => {
+            if (success) {
+              // If auto-setup succeeds, refresh the page
+              window.location.reload();
+            }
+          });
+          
           return;
         }
       } catch (err) {
         console.error("Error checking tables:", err);
         if (err instanceof Error && err.message.includes("does not exist")) {
           setTablesExist(false);
-          setError("Database tables don't exist yet. Please initialize the database first.");
+          setError("The system is currently being configured. Please try again later.");
           setLoading(false);
+          
+          // Try to auto-setup in the background
+          ensureDatabaseSetup().then(success => {
+            if (success) {
+              // If auto-setup succeeds, refresh the page
+              window.location.reload();
+            }
+          });
+          
           return;
         }
       }
@@ -122,7 +158,16 @@ export default function ClubSettings() {
       if (clubError) {
         if (clubError.code === '42P01') {
           setTablesExist(false);
-          setError("The 'clubs' table doesn't exist yet. Please initialize the database first.");
+          setError("The system is currently being configured. Please try again later.");
+          
+          // Try to auto-setup in the background
+          ensureDatabaseSetup().then(success => {
+            if (success) {
+              // If auto-setup succeeds, refresh the page
+              window.location.reload();
+            }
+          });
+          
           setLoading(false);
           return;
         }
@@ -176,8 +221,8 @@ export default function ClubSettings() {
       
       if (!tablesExist) {
         toast({
-          title: "Database Error",
-          description: "Database tables don't exist yet. Please initialize the database first.",
+          title: "System Configuration",
+          description: "The system is currently being configured. Please try again later.",
           variant: "destructive",
         });
         return;
@@ -235,7 +280,7 @@ export default function ClubSettings() {
       console.error("Error saving club:", err);
       toast({
         title: "Error",
-        description: "Failed to save club information. Make sure the database tables exist.",
+        description: "Failed to save club information. Please try again later.",
         variant: "destructive",
       });
     }
@@ -248,10 +293,10 @@ export default function ClubSettings() {
     return `${prefix}-${timestamp}-${random}`;
   };
   
-  if (loading) {
+  if (loading || setupInProgress) {
     return (
       <div className="container mx-auto p-6 flex justify-center items-center h-[80vh]">
-        <div className="animate-pulse text-primary">Loading...</div>
+        <div className="animate-pulse text-primary">Setting up club management...</div>
       </div>
     );
   }
@@ -277,16 +322,13 @@ export default function ClubSettings() {
         </Alert>
       )}
       
+      {/* We're replacing the DB initialization alert with a generic error message */}
       {!tablesExist && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Database Tables Missing</AlertTitle>
-          <AlertDescription className="space-y-4">
-            <p>The database tables required for club management don't exist yet.</p>
-            <p>Click the button below to initialize the database:</p>
-            <div className="mt-2">
-              <InitializeDatabaseButton />
-            </div>
+          <AlertTitle>System Configuration</AlertTitle>
+          <AlertDescription>
+            <p>The system is currently being configured. Please try again later.</p>
           </AlertDescription>
         </Alert>
       )}
@@ -297,6 +339,7 @@ export default function ClubSettings() {
         </Alert>
       )}
       
+      {/* Continue with the rest of the component */}
       <div className="grid gap-6">
         <Card>
           <CardHeader>

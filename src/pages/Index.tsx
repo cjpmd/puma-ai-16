@@ -8,12 +8,13 @@ import { ArrowRight, Plus, Users, Trophy, Calendar, CheckCircle, LogIn, AlertCir
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { InitializeDatabaseButton } from "@/utils/database/initializeDatabase";
+import { ensureDatabaseSetup } from "@/utils/database/ensureDatabaseSetup";
 
 export default function Index() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [databaseError, setDatabaseError] = useState(false);
+  const [setupInProgress, setSetupInProgress] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -30,7 +31,13 @@ export default function Index() {
         
         setSession(data.session);
         
+        // Attempt to automatically set up database tables
         if (data.session) {
+          setSetupInProgress(true);
+          const dbSetup = await ensureDatabaseSetup();
+          setDatabaseError(!dbSetup);
+          setSetupInProgress(false);
+          
           try {
             let teamData = null;
             let clubData = null;
@@ -45,7 +52,8 @@ export default function Index() {
               if (teamError) {
                 if (teamError.code === '42P01') {
                   console.log("Team query failed - table may not exist yet:", teamError);
-                  setDatabaseError(true);
+                  // We'll try to auto-setup instead of showing an error
+                  ensureDatabaseSetup();
                 } else {
                   console.error("Error querying teams:", teamError);
                 }
@@ -66,7 +74,8 @@ export default function Index() {
               if (clubError) {
                 if (clubError.code === '42P01') {
                   console.log("Club query failed - table may not exist yet:", clubError);
-                  setDatabaseError(true);
+                  // We'll try to auto-setup instead of showing an error
+                  ensureDatabaseSetup();
                 } else {
                   console.error("Error querying clubs:", clubError);
                 }
@@ -108,6 +117,12 @@ export default function Index() {
         setSession(session);
         
         if (session?.user) {
+          // Try to ensure database is set up
+          setSetupInProgress(true);
+          const dbSetup = await ensureDatabaseSetup();
+          setDatabaseError(!dbSetup);
+          setSetupInProgress(false);
+          
           try {
             let teamData = null;
             let clubData = null;
@@ -122,7 +137,7 @@ export default function Index() {
               if (teamError) {
                 if (teamError.code === '42P01') {
                   console.log("Team query failed - table may not exist yet:", teamError);
-                  setDatabaseError(true);
+                  ensureDatabaseSetup();
                 } else {
                   console.error("Error querying teams:", teamError);
                 }
@@ -143,7 +158,7 @@ export default function Index() {
               if (clubError) {
                 if (clubError.code === '42P01') {
                   console.log("Club query failed - table may not exist yet:", clubError);
-                  setDatabaseError(true);
+                  ensureDatabaseSetup();
                 } else {
                   console.error("Error querying clubs:", clubError);
                 }
@@ -197,7 +212,7 @@ export default function Index() {
     return () => clearTimeout(loadingTimeout);
   }, [loading]);
 
-  if (loading) {
+  if (loading || setupInProgress) {
     return (
       <div className="container mx-auto py-8 px-4">
         <div className="text-center mb-12">
@@ -236,10 +251,9 @@ export default function Index() {
         {databaseError && (
           <Alert variant="destructive" className="mt-4 max-w-2xl mx-auto">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Database Tables Missing</AlertTitle>
+            <AlertTitle>System Configuration</AlertTitle>
             <AlertDescription>
-              <p className="mb-2">The application needs database tables to be created first.</p>
-              <InitializeDatabaseButton />
+              <p className="mb-2">The system is currently being configured. Please try again later.</p>
             </AlertDescription>
           </Alert>
         )}

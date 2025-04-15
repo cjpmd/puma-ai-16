@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AuthError, AuthApiError } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
+import { ensureDatabaseSetup } from "@/utils/database/ensureDatabaseSetup";
 
 export const Auth = () => {
   const navigate = useNavigate();
@@ -38,6 +39,10 @@ export const Auth = () => {
 
         if (session) {
           console.log("Auth: Found existing session", session);
+          
+          // Ensure database is set up
+          await ensureDatabaseSetup();
+          
           try {
             // Check if user has a team
             const { data: teamData, error: teamError } = await supabase
@@ -116,6 +121,9 @@ export const Auth = () => {
       
       if (event === "SIGNED_IN" && session) {
         setErrorMessage("");
+        
+        // Ensure database is set up when user signs in
+        await ensureDatabaseSetup();
         
         try {
           // Check if user has a team

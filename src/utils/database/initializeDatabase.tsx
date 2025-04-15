@@ -2,7 +2,6 @@
 import React from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { Database } from "lucide-react";
 
 /**
@@ -65,6 +64,7 @@ export const tableExists = async (tableName: string): Promise<boolean> => {
 
 /**
  * Initialize the database tables using the SQL files
+ * This function is now private/internal and not exposed to users
  */
 export const initializeDatabase = async (): Promise<boolean> => {
   try {
@@ -108,51 +108,4 @@ export const initializeDatabase = async (): Promise<boolean> => {
   }
 };
 
-/**
- * Button to initialize the database
- */
-export const InitializeDatabaseButton = () => {
-  const handleInitialize = async () => {
-    try {
-      toast({
-        title: "Initializing Database",
-        description: "Please wait while we set up the database...",
-      });
-      
-      const success = await initializeDatabase();
-      
-      if (success) {
-        toast({
-          title: "Success",
-          description: "Database initialized successfully. You can now create clubs and teams.",
-        });
-        // Reload the page to reflect the new database state
-        window.location.reload();
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to initialize database. Please check console for details.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error initializing database:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please check console for details.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  return (
-    <Button 
-      onClick={handleInitialize}
-      className="flex items-center gap-2"
-      variant="default"
-    >
-      <Database className="h-4 w-4" />
-      Initialize Database
-    </Button>
-  );
-};
+// We're removing the InitializeDatabaseButton component and only exporting the necessary functions
