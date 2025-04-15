@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
  * Direct SQL execution for critical database operations
  * Fallback to direct table operations when RPC is not available
  */
-export const executeSql = async (sql: string): Promise<boolean> => {
+export const executeSql = async (sql: string): Promise<{ success: boolean; data?: any; error?: any }> => {
   try {
     console.log(`Attempting SQL execution: ${sql}`);
     
@@ -21,7 +21,8 @@ export const executeSql = async (sql: string): Promise<boolean> => {
       
       // For the specific case of adding profile_image to players
       if (tableName === 'players' && columnName === 'profile_image') {
-        return await addProfileImageColumn();
+        const success = await addProfileImageColumn();
+        return { success };
       }
       
       // For other columns - since we can't execute arbitrary SQL, 
@@ -35,18 +36,18 @@ export const executeSql = async (sql: string): Promise<boolean> => {
       
       if (error) {
         console.error(`SQL RPC execution error:`, error);
-        return false;
+        return { success: false, error };
       }
       
       console.log(`SQL RPC execution result:`, data);
-      return true;
+      return { success: true, data };
     } catch (rpcError) {
       console.error(`RPC method failed, using fallback approaches:`, rpcError);
-      return false;
+      return { success: false, error: rpcError };
     }
   } catch (error) {
     console.error(`Exception during SQL execution:`, error);
-    return false;
+    return { success: false, error };
   }
 };
 
@@ -75,9 +76,9 @@ async function addProfileImageColumn(): Promise<boolean> {
       }
       
       // If the error is specifically about the column not existing
-      if (updateError.message.includes('profile_image') && 
-          (updateError.message.includes('does not exist') || 
-           updateError.message.includes('column "profile_image" of relation "players" does not exist'))) {
+      if (updateError.message?.includes('profile_image') && 
+          (updateError.message?.includes('does not exist') || 
+           updateError.message?.includes('column "profile_image" of relation "players" does not exist'))) {
         console.log("Column doesn't exist yet - error confirms it");
       } else {
         console.error("Unexpected error testing column:", updateError);
