@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { AlertCircle, LogIn } from "lucide-react";
 import { ensureDatabaseSetup } from "@/utils/database/ensureDatabaseSetup";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const clubFormSchema = z.object({
   club_name: z.string().min(3, "Club name must be at least 3 characters"),
@@ -36,6 +36,7 @@ export default function ClubSettings() {
   const [error, setError] = useState<string | null>(null);
   const [tablesExist, setTablesExist] = useState(true);
   const [setupInProgress, setSetupInProgress] = useState(false);
+  const [setupTimeout, setSetupTimeout] = useState(false);
 
   const form = useForm<ClubFormValues>({
     resolver: zodResolver(clubFormSchema),
@@ -65,12 +66,28 @@ export default function ClubSettings() {
         if (data.session) {
           // Attempt to automatically ensure database is set up
           setSetupInProgress(true);
+          
+          // Set a timeout to prevent eternal loading
+          const timeoutId = setTimeout(() => {
+            console.log("Setup timeout triggered");
+            setSetupTimeout(true);
+            setSetupInProgress(false);
+            setError("Database setup is taking longer than expected. Please try again later.");
+          }, 10000);
+          
           const dbSetup = await ensureDatabaseSetup();
+          clearTimeout(timeoutId);
+          
           setTablesExist(dbSetup);
           setSetupInProgress(false);
           
-          // Now fetch club and team data
-          fetchClubAndTeams(data.session.user.id);
+          if (dbSetup) {
+            // Now fetch club and team data
+            fetchClubAndTeams(data.session.user.id);
+          } else {
+            setError("Database setup failed. Please refresh the page to try again.");
+            setLoading(false);
+          }
         } else {
           setLoading(false);
         }
@@ -89,11 +106,27 @@ export default function ClubSettings() {
         if (session?.user) {
           // Attempt to automatically ensure database is set up
           setSetupInProgress(true);
+          
+          // Set a timeout to prevent eternal loading
+          const timeoutId = setTimeout(() => {
+            console.log("Setup timeout triggered");
+            setSetupTimeout(true);
+            setSetupInProgress(false);
+            setError("Database setup is taking longer than expected. Please try again later.");
+          }, 10000);
+          
           const dbSetup = await ensureDatabaseSetup();
+          clearTimeout(timeoutId);
+          
           setTablesExist(dbSetup);
           setSetupInProgress(false);
           
-          fetchClubAndTeams(session.user.id);
+          if (dbSetup) {
+            fetchClubAndTeams(session.user.id);
+          } else {
+            setError("Database setup failed. Please refresh the page to try again.");
+            setLoading(false);
+          }
         } else {
           setLoading(false);
         }
@@ -295,8 +328,25 @@ export default function ClubSettings() {
   
   if (loading || setupInProgress) {
     return (
-      <div className="container mx-auto p-6 flex justify-center items-center h-[80vh]">
-        <div className="animate-pulse text-primary">Setting up club management...</div>
+      <div className="container mx-auto p-6 flex flex-col justify-center items-center h-[80vh]">
+        <div className="animate-pulse text-primary text-lg mb-4">Setting up club management...</div>
+        <Skeleton className="h-4 w-64 mb-8" />
+        {setupTimeout && (
+          <Alert variant="destructive" className="max-w-md">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Setup Taking Too Long</AlertTitle>
+            <AlertDescription>
+              <p>Database setup is taking longer than expected.</p>
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline" 
+                className="mt-2"
+              >
+                Refresh Page
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
     );
   }
@@ -322,7 +372,6 @@ export default function ClubSettings() {
         </Alert>
       )}
       
-      {/* We're replacing the DB initialization alert with a generic error message */}
       {!tablesExist && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
@@ -339,7 +388,6 @@ export default function ClubSettings() {
         </Alert>
       )}
       
-      {/* Continue with the rest of the component */}
       <div className="grid gap-6">
         <Card>
           <CardHeader>

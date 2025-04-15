@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Plus, Users, Trophy, Calendar, CheckCircle, LogIn, AlertCircle } from "lucide-react";
+import { ArrowRight, Plus, Users, Trophy, Calendar, CheckCircle, LogIn, AlertCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -15,6 +14,7 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [databaseError, setDatabaseError] = useState(false);
   const [setupInProgress, setSetupInProgress] = useState(false);
+  const [setupTimeout, setSetupTimeout] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -34,7 +34,18 @@ export default function Index() {
         // Attempt to automatically set up database tables
         if (data.session) {
           setSetupInProgress(true);
+          
+          // Set a timeout to prevent eternal loading
+          const timeoutId = setTimeout(() => {
+            console.log("Setup timeout triggered");
+            setSetupTimeout(true);
+            setSetupInProgress(false);
+            setDatabaseError(true);
+          }, 10000);
+          
           const dbSetup = await ensureDatabaseSetup();
+          clearTimeout(timeoutId);
+          
           setDatabaseError(!dbSetup);
           setSetupInProgress(false);
           
@@ -119,7 +130,18 @@ export default function Index() {
         if (session?.user) {
           // Try to ensure database is set up
           setSetupInProgress(true);
+          
+          // Set a timeout to prevent eternal loading
+          const timeoutId = setTimeout(() => {
+            console.log("Setup timeout triggered");
+            setSetupTimeout(true);
+            setSetupInProgress(false);
+            setDatabaseError(true);
+          }, 10000);
+          
           const dbSetup = await ensureDatabaseSetup();
+          clearTimeout(timeoutId);
+          
           setDatabaseError(!dbSetup);
           setSetupInProgress(false);
           
@@ -222,8 +244,19 @@ export default function Index() {
             className="h-32 w-auto mx-auto mb-6" 
           />
           <h1 className="text-4xl font-bold mb-4">Puma.AI Team Management Platform</h1>
-          <div className="flex justify-center">
-            <Skeleton className="h-6 w-64" />
+          <div className="flex flex-col items-center">
+            <Skeleton className="h-6 w-64 mb-4" />
+            {setupTimeout && (
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline"
+                size="sm"
+                className="mt-2"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh Page
+              </Button>
+            )}
           </div>
         </div>
         
