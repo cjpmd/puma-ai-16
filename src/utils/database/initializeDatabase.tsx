@@ -61,6 +61,7 @@ const createTablesDirectly = async () => {
     const { error: clubsError } = await supabase.from('clubs')
       .select('count(*)', { count: 'exact', head: true })
       .limit(1)
+      .then(response => response)
       .catch(() => ({ error: { message: 'Table does not exist' } }));
     
     if (clubsError) {
@@ -80,32 +81,43 @@ const createTablesDirectly = async () => {
           created_at timestamp with time zone DEFAULT now(),
           updated_at timestamp with time zone DEFAULT now()
         `
-      }).catch(() => ({ error: true }));
+      }).then(response => response)
+      .catch(() => ({ error: true }));
       
       if (error) {
         console.log("RPC method not available, creating table manually");
-        // Direct create table using Supabase REST API
-        await supabase.rest.schemas.create({
-          name: 'public',
-          tables: [{
-            name: 'clubs',
-            columns: [
-              { name: 'id', type: 'uuid', primaryKey: true, defaultValue: 'uuid_generate_v4()' },
-              { name: 'name', type: 'text', notNull: true },
-              { name: 'location', type: 'text' },
-              { name: 'contact_email', type: 'text' },
-              { name: 'phone', type: 'text' },
-              { name: 'website', type: 'text' },
-              { name: 'description', type: 'text' },
-              { name: 'admin_id', type: 'uuid', references: 'auth.users(id)' },
-              { name: 'serial_number', type: 'text', unique: true },
-              { name: 'created_at', type: 'timestamp with time zone', defaultValue: 'now()' },
-              { name: 'updated_at', type: 'timestamp with time zone', defaultValue: 'now()' }
-            ]
-          }]
-        }).catch(e => {
-          console.log("Failed to create clubs table directly:", e);
-        });
+        // Instead of using schemas API which is not available/protected, 
+        // attempt direct SQL execution or use available methods
+        try {
+          // Try to create the table using the SQL API
+          const createTableSQL = `
+            CREATE TABLE IF NOT EXISTS public.clubs (
+              id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+              name text NOT NULL,
+              location text,
+              contact_email text,
+              phone text,
+              website text,
+              description text,
+              admin_id uuid REFERENCES auth.users(id),
+              serial_number text UNIQUE,
+              created_at timestamp with time zone DEFAULT now(),
+              updated_at timestamp with time zone DEFAULT now()
+            );
+          `;
+          
+          await supabase.rpc('execute_sql', { sql_string: createTableSQL })
+            .then(response => {
+              if (response.error) {
+                console.log("Error creating clubs table via SQL:", response.error);
+              } else {
+                console.log("Created clubs table via SQL");
+              }
+              return response;
+            });
+        } catch (e) {
+          console.log("Failed to create clubs table:", e);
+        }
       }
     }
     
@@ -113,6 +125,7 @@ const createTablesDirectly = async () => {
     const { error: teamsError } = await supabase.from('teams')
       .select('count(*)', { count: 'exact', head: true })
       .limit(1)
+      .then(response => response)
       .catch(() => ({ error: { message: 'Table does not exist' } }));
     
     if (teamsError) {
@@ -131,31 +144,42 @@ const createTablesDirectly = async () => {
           created_at timestamp with time zone DEFAULT now(),
           updated_at timestamp with time zone DEFAULT now()
         `
-      }).catch(() => ({ error: true }));
+      }).then(response => response)
+      .catch(() => ({ error: true }));
       
       if (error) {
         console.log("RPC method not available, creating table manually");
-        // Direct create table using Supabase REST API
-        await supabase.rest.schemas.create({
-          name: 'public',
-          tables: [{
-            name: 'teams',
-            columns: [
-              { name: 'id', type: 'uuid', primaryKey: true, defaultValue: 'uuid_generate_v4()' },
-              { name: 'team_name', type: 'text', notNull: true },
-              { name: 'team_logo', type: 'text' },
-              { name: 'home_venue', type: 'text' },
-              { name: 'team_colors', type: 'jsonb' },
-              { name: 'admin_id', type: 'uuid', references: 'auth.users(id)' },
-              { name: 'club_id', type: 'uuid', references: 'clubs(id)' },
-              { name: 'joined_club_at', type: 'timestamp with time zone' },
-              { name: 'created_at', type: 'timestamp with time zone', defaultValue: 'now()' },
-              { name: 'updated_at', type: 'timestamp with time zone', defaultValue: 'now()' }
-            ]
-          }]
-        }).catch(e => {
-          console.log("Failed to create teams table directly:", e);
-        });
+        // Instead of using schemas API which is not available/protected,
+        // attempt direct SQL execution or use available methods
+        try {
+          // Try to create the table using the SQL API
+          const createTableSQL = `
+            CREATE TABLE IF NOT EXISTS public.teams (
+              id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+              team_name text NOT NULL,
+              team_logo text,
+              home_venue text,
+              team_colors jsonb,
+              admin_id uuid REFERENCES auth.users(id),
+              club_id uuid REFERENCES clubs(id),
+              joined_club_at timestamp with time zone,
+              created_at timestamp with time zone DEFAULT now(),
+              updated_at timestamp with time zone DEFAULT now()
+            );
+          `;
+          
+          await supabase.rpc('execute_sql', { sql_string: createTableSQL })
+            .then(response => {
+              if (response.error) {
+                console.log("Error creating teams table via SQL:", response.error);
+              } else {
+                console.log("Created teams table via SQL");
+              }
+              return response;
+            });
+        } catch (e) {
+          console.log("Failed to create teams table:", e);
+        }
       }
     }
     
