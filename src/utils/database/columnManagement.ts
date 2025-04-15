@@ -22,7 +22,10 @@ export const createColumn = async (
     
     // Use direct SQL to create the column
     const sql = `ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${columnName} ${columnType}`;
-    return await executeSql(sql);
+    const result = await executeSql(sql);
+    
+    // Return a boolean based on the result of executeSql
+    return result.success;
   } catch (error) {
     console.error(`Failed to create column ${columnName} in ${tableName}:`, error);
     return false;
