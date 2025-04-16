@@ -40,6 +40,12 @@ export const executeSql = async (sql: string) => {
       
       if (error.code === 'PGRST202') {
         console.log("RPC method 'execute_sql' not found - this is expected");
+        // Show a specific message about the RPC method
+        toast({
+          title: "Database Setup Note",
+          description: "The 'execute_sql' RPC function is not available. Please run the SQL setup scripts in Supabase.",
+          duration: 8000,
+        });
       } else {
         console.error("Error executing SQL:", error);
       }
@@ -81,7 +87,7 @@ export const tableExists = async (tableName: string): Promise<boolean> => {
 
 /**
  * Initialize the database tables
- * This now handles missing tables gracefully
+ * This now handles missing tables gracefully and provides better user feedback
  */
 export const initializeDatabase = async (): Promise<boolean> => {
   try {
@@ -93,6 +99,13 @@ export const initializeDatabase = async (): Promise<boolean> => {
     }
     
     console.log("Tables don't exist, attempting auto-setup");
+    
+    // Display toast to inform user about setup
+    toast({
+      title: "Database Setup Required",
+      description: "The application needs to initialize database tables. Please run the SQL setup scripts in Supabase.",
+      duration: 8000,
+    });
     
     // Try to execute SQL file - this will likely fail due to missing RPC
     try {
@@ -109,6 +122,12 @@ export const initializeDatabase = async (): Promise<boolean> => {
       }
     } catch (err) {
       console.error("Error executing SQL file:", err);
+      toast({
+        title: "Database Setup Failed",
+        description: "Could not automatically set up the database. Please run the SQL setup scripts in Supabase.",
+        variant: "destructive",
+        duration: 8000,
+      });
     }
     
     // At this point, just allow the app to continue

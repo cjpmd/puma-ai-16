@@ -3,7 +3,7 @@ import { tableExists, initializeDatabase } from "./initializeDatabase";
 
 /**
  * Automatically ensures database tables are set up without user interaction
- * This replaces the manual initialization button
+ * This replaces the manual initialization button and prevents reload loops
  * @returns Promise<boolean> indicating success/failure
  */
 export const ensureDatabaseSetup = async (): Promise<boolean> => {
@@ -28,10 +28,18 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
     localStorage.setItem('db_setup_last_attempt', now.toString());
     localStorage.setItem('db_setup_attempted', 'true');
     
-    // Create a promise that will resolve after a maximum of 3 seconds
+    // Create a promise that will resolve after a maximum of 2 seconds
     // This prevents hanging if Supabase is unreachable
     const setupPromise = new Promise<boolean>(async (resolve) => {
       try {
+        // Check if tables exist before attempting full initialization
+        const tablesExist = await tableExists('clubs');
+        if (tablesExist) {
+          console.log("Tables already exist, skipping initialization");
+          resolve(true);
+          return;
+        }
+        
         console.log("Setting up database tables automatically...");
         const success = await initializeDatabase();
         
@@ -56,12 +64,17 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
       setTimeout(() => {
         console.log("Database setup timed out after 2 seconds");
         resolve(true); // Resolve as true to let the user proceed
-      }, 2000); // Reduced from 3s to 2s for faster feedback
+      }, 2000); // 2s timeout for faster feedback
     });
     
     // Race the setup against the timeout
     // This ensures we never wait longer than the timeout period
-    return await Promise.race([setupPromise, timeoutPromise]);
+    const setupResult = await Promise.race([setupPromise, timeoutPromise]);
+    
+    // Store this flag to avoid multiple setup attempts
+    localStorage.setItem('db_setup_completed', 'true');
+    
+    return setupResult;
   } catch (error) {
     console.error("Error checking/initializing database:", error);
     // Even on error, allow the user to proceed
