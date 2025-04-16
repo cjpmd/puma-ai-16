@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +11,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, LogIn, RefreshCw } from "lucide-react";
+import { AlertCircle, LogIn, RefreshCw, ExternalLink } from "lucide-react";
 import { ensureDatabaseSetup } from "@/utils/database/ensureDatabaseSetup";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -36,6 +37,7 @@ export default function ClubSettings() {
   const [error, setError] = useState<string | null>(null);
   const [tablesExist, setTablesExist] = useState(false);
   const [setupInProgress, setSetupInProgress] = useState(false);
+  const [setupAttempted, setSetupAttempted] = useState(false);
   const [setupTimeout, setSetupTimeout] = useState(false);
   const [manualSetupNeeded, setManualSetupNeeded] = useState(false);
 
@@ -70,28 +72,28 @@ export default function ClubSettings() {
           
           // Set a timeout to prevent eternal loading
           const timeoutId = setTimeout(() => {
-            console.log("Setup timeout triggered");
+            console.log("Loading timeout reached, forcing loading state to false");
             setSetupTimeout(true);
             setSetupInProgress(false);
+            setLoading(false);
             setManualSetupNeeded(true);
-            setError("Database setup is taking longer than expected. Please try again later.");
-          }, 5000);
+          }, 3000);
           
           try {
             const dbSetup = await ensureDatabaseSetup();
             clearTimeout(timeoutId);
             
-            // Always set tablesExist to true to allow UI to proceed
-            setTablesExist(true);
+            setSetupAttempted(true);
             setSetupInProgress(false);
             
-            // Try to fetch club data
+            // Try to fetch club data regardless
             await fetchClubAndTeams(data.session.user.id);
           } catch (err) {
             clearTimeout(timeoutId);
             console.error("Error during database setup:", err);
             setManualSetupNeeded(true);
             setSetupInProgress(false);
+            setSetupAttempted(true);
             setLoading(false);
           }
         } else {
@@ -109,37 +111,34 @@ export default function ClubSettings() {
       async (event, session) => {
         setSession(session);
         
-        if (session?.user) {
-          // Attempt to automatically ensure database is set up
+        if (session?.user && !setupAttempted) {
           setSetupInProgress(true);
           
-          // Set a timeout to prevent eternal loading
           const timeoutId = setTimeout(() => {
-            console.log("Setup timeout triggered");
+            console.log("Loading timeout reached, forcing loading state to false");
             setSetupTimeout(true);
             setSetupInProgress(false);
+            setLoading(false);
             setManualSetupNeeded(true);
-            setError("Database setup is taking longer than expected. Please try again later.");
-          }, 5000);
+          }, 3000);
           
           try {
             const dbSetup = await ensureDatabaseSetup();
             clearTimeout(timeoutId);
             
-            // Always set tablesExist to true to allow UI to proceed
-            setTablesExist(true);
+            setSetupAttempted(true);
             setSetupInProgress(false);
             
-            // Try to fetch club data
             await fetchClubAndTeams(session.user.id);
           } catch (err) {
             clearTimeout(timeoutId);
             console.error("Error during database setup:", err);
             setManualSetupNeeded(true);
             setSetupInProgress(false);
+            setSetupAttempted(true);
             setLoading(false);
           }
-        } else {
+        } else if (!session) {
           setLoading(false);
         }
       }
@@ -152,7 +151,7 @@ export default function ClubSettings() {
   
   const fetchClubAndTeams = async (userId: string) => {
     try {
-      // Try to fetch clubs data
+      // Try to fetch clubs data - this may fail if tables don't exist
       try {
         const { data: clubData, error: clubError } = await supabase
           .from('clubs')
@@ -163,45 +162,47 @@ export default function ClubSettings() {
         if (clubError) {
           // If we get a 42P01 error, it means the table doesn't exist
           if (clubError.code === '42P01') {
+            console.log("The 'clubs' table doesn't exist");
             setTablesExist(false);
             setManualSetupNeeded(true);
-            setError("The database tables have not been set up. Please contact support.");
-            setLoading(false);
-            return;
+            setError("The database tables do not exist. They need to be created through the Supabase interface.");
+          } else {
+            console.error("Error fetching club data:", clubError);
           }
-          // For other errors, just log them
-          console.error("Error fetching club data:", clubError);
-        } else if (clubData) {
-          // If we get data, we know tables exist
+        } else {
+          // If we get here, clubs table exists
           setTablesExist(true);
           setClub(clubData);
-          form.reset({
-            club_name: clubData.name || "",
-            location: clubData.location || "",
-            contact_email: clubData.contact_email || "",
-            phone: clubData.phone || "",
-            website: clubData.website || "",
-            description: clubData.description || "",
-          });
           
-          // Try to fetch teams data
-          try {
-            const { data: teamsData, error: teamsError } = await supabase
-              .from('teams')
-              .select('*')
-              .eq('club_id', clubData.id);
-              
-            if (teamsError) {
-              if (teamsError.code === '42P01') {
-                console.warn("The 'teams' table doesn't exist yet.");
+          if (clubData) {
+            form.reset({
+              club_name: clubData.name || "",
+              location: clubData.location || "",
+              contact_email: clubData.contact_email || "",
+              phone: clubData.phone || "",
+              website: clubData.website || "",
+              description: clubData.description || "",
+            });
+            
+            // Try to fetch teams data
+            try {
+              const { data: teamsData, error: teamsError } = await supabase
+                .from('teams')
+                .select('*')
+                .eq('club_id', clubData.id);
+                
+              if (teamsError) {
+                if (teamsError.code === '42P01') {
+                  console.warn("The 'teams' table doesn't exist yet.");
+                } else {
+                  console.error("Error fetching teams:", teamsError);
+                }
               } else {
-                console.error("Error fetching teams:", teamsError);
+                setTeams(teamsData || []);
               }
-            } else {
-              setTeams(teamsData || []);
+            } catch (teamsErr) {
+              console.error("Error in teams fetch:", teamsErr);
             }
-          } catch (teamsErr) {
-            console.error("Error in teams fetch:", teamsErr);
           }
         }
       } catch (err) {
@@ -213,7 +214,7 @@ export default function ClubSettings() {
       setLoading(false);
     } catch (err) {
       console.error("Error fetching club data:", err);
-      setError("Failed to load club data. Please try again.");
+      setError("Failed to load club data. The database tables may not exist.");
       setLoading(false);
     }
   };
@@ -346,7 +347,9 @@ export default function ClubSettings() {
     setError(null);
     setSetupTimeout(false);
     setManualSetupNeeded(false);
-    // Reload the page
+    setSetupAttempted(false);
+    setSetupInProgress(true);
+    // Retry loading
     window.location.reload();
   };
   
@@ -360,7 +363,7 @@ export default function ClubSettings() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Setup Taking Too Long</AlertTitle>
             <AlertDescription>
-              <p>Database setup is taking longer than expected.</p>
+              <p className="mb-2">Database setup is taking longer than expected. The Supabase database tables may need to be created.</p>
               <Button 
                 onClick={handleRefresh} 
                 variant="outline" 
@@ -402,25 +405,27 @@ export default function ClubSettings() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Database Setup Required</AlertTitle>
           <AlertDescription className="space-y-4">
-            <p>The database tables required for club management have not been set up. This typically requires manual configuration by an administrator.</p>
-            <Button 
-              onClick={handleRefresh} 
-              variant="outline" 
-              className="mt-2"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Retry Setup
-            </Button>
+            <p>The database tables required for club management do not exist. This application requires tables to be created in Supabase.</p>
+            <p className="text-sm mt-2">For this demo to work, you need to run the SQL setup script in the Supabase SQL Editor.</p>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <Button 
+                onClick={handleRefresh} 
+                variant="outline"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Retry Setup
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       )}
       
-      {!tablesExist && (
+      {!tablesExist && setupAttempted && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>System Configuration</AlertTitle>
+          <AlertTitle>Database Tables Not Found</AlertTitle>
           <AlertDescription>
-            <p>The system is currently being configured. You may need to contact your administrator.</p>
+            <p>The required database tables do not exist in Supabase. Please create them using the SQL script provided in the project.</p>
             <Button 
               onClick={handleRefresh} 
               variant="outline" 

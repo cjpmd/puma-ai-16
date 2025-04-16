@@ -10,10 +10,7 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
   try {
     console.log("Checking database setup status...");
     
-    // Instead of checking for table existence (which fails if tables don't exist)
-    // We'll try to create tables directly with a fallback mechanism
-    
-    // Use a flag to avoid infinite retries
+    // Check if we've already attempted setup recently to avoid loops
     const setupFlag = localStorage.getItem('db_setup_attempted');
     const lastAttempt = localStorage.getItem('db_setup_last_attempt');
     
@@ -24,16 +21,17 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
     if (setupFlag === 'true' && timeSinceLastAttempt < 60000) {
       console.log("Database setup was recently attempted, skipping");
       // Return true to avoid further setup attempts in this session
+      // This prevents endless loading loops
       return true;
     }
     
     localStorage.setItem('db_setup_last_attempt', now.toString());
     localStorage.setItem('db_setup_attempted', 'true');
     
-    // Add a timeout to prevent hanging
+    // Create a promise that will resolve after a maximum of 3 seconds
+    // This prevents hanging if Supabase is unreachable
     const setupPromise = new Promise<boolean>(async (resolve) => {
       try {
-        // Try to initialize the database directly
         console.log("Setting up database tables automatically...");
         const success = await initializeDatabase();
         
@@ -41,46 +39,28 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
           console.log("Database automatically initialized successfully");
           resolve(true);
         } else {
-          console.log("Failed to automatically initialize database");
-          
-          // If it's our first attempt, try once more after a short delay
-          if (setupFlag !== 'retry') {
-            localStorage.setItem('db_setup_attempted', 'retry');
-            await new Promise(resolveTimeout => setTimeout(resolveTimeout, 1000));
-            const retrySuccess = await initializeDatabase();
-            
-            if (retrySuccess) {
-              console.log("Database initialized successfully on retry");
-              resolve(true);
-            } else {
-              // If we still can't set up the database, allow the user to proceed anyway
-              console.log("Database setup failed, but allowing app to proceed");
-              resolve(true);
-            }
-          } else {
-            // If we've already retried, just let the user proceed
-            console.log("Database setup failed on previous attempts, allowing app to proceed");
-            resolve(true);
-          }
+          console.log("Database setup failed, but allowing app to proceed");
+          // Always resolve true to let the user continue using the app
+          // The UI will show appropriate messages for missing tables
+          resolve(true);
         }
       } catch (error) {
         console.error("Error in setup promise:", error);
-        // Even if setup fails, allow the user to proceed
-        // The app will show appropriate UI for missing tables
+        // Even on error, allow the app to proceed
         resolve(true);
       }
     });
     
-    // Set a timeout to prevent hanging forever
+    // Set a hard timeout to prevent hanging
     const timeoutPromise = new Promise<boolean>((resolve) => {
       setTimeout(() => {
-        console.log("Database setup timed out after 3 seconds");
-        // Even on timeout, allow the user to proceed
-        resolve(true);
-      }, 3000);
+        console.log("Database setup timed out after 2 seconds");
+        resolve(true); // Resolve as true to let the user proceed
+      }, 2000); // Reduced from 3s to 2s for faster feedback
     });
     
     // Race the setup against the timeout
+    // This ensures we never wait longer than the timeout period
     return await Promise.race([setupPromise, timeoutPromise]);
   } catch (error) {
     console.error("Error checking/initializing database:", error);
