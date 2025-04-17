@@ -25,6 +25,12 @@ export const executeSql = async (sql: string): Promise<{ success: boolean; data?
         return { success };
       }
       
+      // For adding team_id to players
+      if (tableName === 'players' && columnName === 'team_id') {
+        const success = await addTeamIdColumn();
+        return { success };
+      }
+      
       // For other columns - since we can't execute arbitrary SQL, 
       // we'll have to implement specific cases as needed
       console.log(`No direct implementation for adding ${columnName} to ${tableName}`);
@@ -97,6 +103,53 @@ async function addProfileImageColumn(): Promise<boolean> {
     return false;
   } catch (error) {
     console.error("Error in addProfileImageColumn:", error);
+    return false;
+  }
+}
+
+/**
+ * Direct method to add team_id column to players table
+ * Uses a combination of updates to bypass SQL execution
+ */
+async function addTeamIdColumn(): Promise<boolean> {
+  try {
+    console.log("Adding team_id column to players table using direct approach");
+    
+    // First, try to update a player with the team_id field
+    // If it succeeds, the column already exists
+    const testPlayerId = await getFirstPlayerId();
+    
+    if (testPlayerId) {
+      console.log(`Testing update on player ${testPlayerId} to check if team_id column exists`);
+      const { error: updateError } = await supabase
+        .from('players')
+        .update({ team_id: null })
+        .eq('id', testPlayerId);
+      
+      if (!updateError) {
+        console.log("Column team_id already exists - update succeeded");
+        return true;
+      }
+      
+      // If the error is specifically about the column not existing
+      if (updateError.message?.includes('team_id') && 
+          (updateError.message?.includes('does not exist') || 
+           updateError.message?.includes('column "team_id" of relation "players" does not exist'))) {
+        console.log("Column team_id doesn't exist yet - error confirms it");
+      } else {
+        console.error("Unexpected error testing team_id column:", updateError);
+        // Continue anyway - we'll try to add it
+      }
+    }
+    
+    // Since we can't run ALTER TABLE directly, we need a workaround
+    console.log("Team_id column needs to be added, but cannot be performed through the client");
+    console.log("Please add the column through a migration or the Supabase UI");
+    
+    // For now, return false to indicate we couldn't add the column
+    return false;
+  } catch (error) {
+    console.error("Error in addTeamIdColumn:", error);
     return false;
   }
 }
