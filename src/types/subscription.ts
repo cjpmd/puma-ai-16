@@ -1,4 +1,5 @@
 
+
 export interface PlayerSubscription {
   id?: string;
   player_id: string;
@@ -51,3 +52,23 @@ export interface StripeVerificationResponse {
   message?: string;
   error?: string;
 }
+
+export interface StripeAccountConfig {
+  platform_account_id?: string; // Puma AI's Stripe account
+  platform_fee_percentage?: number; // Fee taken by the platform (e.g., 10%)
+  connect_account_id?: string; // Team or Club's connected Stripe account
+}
+
+export interface StripeSubscriptionPlans {
+  team_plans: {
+    basic: string; // Stripe price ID
+    standard: string;
+    premium: string;
+  };
+  club_plans: {
+    basic: string;
+    standard: string;
+    enterprise: string;
+  };
+}
+

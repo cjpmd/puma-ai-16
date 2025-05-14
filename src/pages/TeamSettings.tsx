@@ -7,6 +7,7 @@ import { TeamInfoSettings } from "@/components/settings/TeamInfoSettings";
 import { FormatsAndCategoriesSettings } from "@/components/settings/FormatsAndCategoriesSettings";
 import { JoinClubSection } from "@/components/settings/JoinClubSection";
 import { PlayerSubscriptionManager } from "@/components/subscription/PlayerSubscriptionManager";
+import { TeamPlatformSubscription } from "@/components/subscription/TeamPlatformSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -230,7 +231,8 @@ export default function TeamSettings() {
           <WhatsAppIntegration />
         </TabsContent>
         
-        <TabsContent value="subscriptions">
+        <TabsContent value="subscriptions" className="space-y-6">
+          <TeamPlatformSubscription />
           <PlayerSubscriptionManager />
         </TabsContent>
         
