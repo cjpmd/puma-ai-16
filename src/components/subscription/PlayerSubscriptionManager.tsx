@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -450,7 +451,7 @@ export function PlayerSubscriptionManager() {
             <div className="mb-4 flex justify-between items-center">
               <h3 className="text-lg font-semibold">Player Subscriptions</h3>
               <Button 
-                onClick={() => openAddSubscriptionDialog()}
+                onClick={() => openDialog ? setOpenDialog(false) : openAddSubscriptionDialog()}
                 className="flex items-center gap-2"
               >
                 <span>Add Subscription</span>
@@ -641,8 +642,8 @@ export function PlayerSubscriptionManager() {
                     <FormItem>
                       <FormLabel>Default Payment Day</FormLabel>
                       <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
+                        onValueChange={(value) => field.onChange(Number(value))}
+                        defaultValue={field.value.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
