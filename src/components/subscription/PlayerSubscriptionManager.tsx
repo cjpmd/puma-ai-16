@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -129,11 +128,11 @@ export function PlayerSubscriptionManager() {
             paymentDay: 1, // Default if not stored
           });
 
-          // Update form values
+          // Update form values - fixed by converting subscription_amount to number
           settingsForm.reset({
-            defaultAmount: (settingsData.subscription_amount || 30).toString(),
+            defaultAmount: Number(settingsData.subscription_amount || 30),
             subscriptionType: settingsData.subscription_period || "monthly",
-            paymentDay: "1",
+            paymentDay: 1,
           });
         }
 
@@ -177,7 +176,7 @@ export function PlayerSubscriptionManager() {
 
       if (teamError) throw new Error("Team not found");
 
-      // Update or insert team subscription settings
+      // Update or insert team subscription settings - fixed the subscription_period type
       const { error: updateError } = await supabase
         .from('team_subscriptions')
         .upsert({
