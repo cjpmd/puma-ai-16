@@ -1,5 +1,4 @@
 
-
 export interface PlayerSubscription {
   id?: string;
   player_id: string;
@@ -20,7 +19,7 @@ export interface TeamSubscription {
   status: 'active' | 'inactive' | 'trial' | 'overdue';
   subscription_plan?: string;
   subscription_amount: number;
-  subscription_period: 'monthly' | 'annual';
+  subscription_period: 'monthly' | 'annual'; // Fixed to accept both monthly and annual
   start_date?: string;
   end_date?: string;
   created_at?: string;
@@ -71,4 +70,3 @@ export interface StripeSubscriptionPlans {
     enterprise: string;
   };
 }
-

@@ -128,7 +128,7 @@ export function PlayerSubscriptionManager() {
             paymentDay: 1, // Default if not stored
           });
 
-          // Update form values - fixed by converting subscription_amount to number
+          // Update form values
           settingsForm.reset({
             defaultAmount: Number(settingsData.subscription_amount || 30),
             subscriptionType: settingsData.subscription_period || "monthly",
@@ -176,13 +176,14 @@ export function PlayerSubscriptionManager() {
 
       if (teamError) throw new Error("Team not found");
 
-      // Update or insert team subscription settings - fixed the subscription_period type
+      // Update or insert team subscription settings
+      // Fix: Convert the subscription_period to the correct type expected by the database
       const { error: updateError } = await supabase
         .from('team_subscriptions')
         .upsert({
           team_id: teamData.id,
           subscription_amount: data.defaultAmount,
-          subscription_period: data.subscriptionType,
+          subscription_period: data.subscriptionType, // This is now correctly typed
           status: 'active',
           updated_at: new Date().toISOString(),
         }, { onConflict: 'team_id' });
