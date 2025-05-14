@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +24,7 @@ import { PlayerSubscription, TeamSubscription } from "@/types/subscription";
 // Define the schema for subscription settings
 const subscriptionSettingsSchema = z.object({
   defaultAmount: z.coerce.number().min(0),
-  subscriptionType: z.enum(["monthly", "annual"]),
+  subscriptionType: z.enum(["monthly"]),
   paymentDay: z.coerce.number().int().min(1).max(28),
 });
 
@@ -624,7 +625,6 @@ export function PlayerSubscriptionManager() {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="monthly">Monthly</SelectItem>
-                          <SelectItem value="annual">Annual</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
