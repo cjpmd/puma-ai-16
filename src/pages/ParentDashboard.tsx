@@ -44,10 +44,12 @@ export function ParentDashboard() {
         if (error) throw error;
         
         // Format the data for easier consumption
-        const formattedPlayers = data.map(item => ({
-          ...item.players,
-          team: item.players?.teams
-        }));
+        const formattedPlayers = data.map(item => {
+          return {
+            ...item.players,
+            team: item.players?.teams
+          };
+        });
         
         setLinkedPlayers(formattedPlayers);
       } catch (error) {
