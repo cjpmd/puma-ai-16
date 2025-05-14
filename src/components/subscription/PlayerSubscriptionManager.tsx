@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +18,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { CalendarIcon, CheckCircle, CreditCard, AlertCircle, Users, DollarSign, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PlayerSubscription } from "@/types/subscription";
+import { PlayerSubscription, TeamSubscription } from "@/types/subscription";
 
 // Define the schema for subscription settings
 const subscriptionSettingsSchema = z.object({
@@ -178,13 +177,12 @@ export function PlayerSubscriptionManager() {
       if (teamError) throw new Error("Team not found");
 
       // Update or insert team subscription settings
-      // Fix: Convert the subscription_period to the correct type expected by the database
       const { error: updateError } = await supabase
         .from('team_subscriptions')
         .upsert({
           team_id: teamData.id,
           subscription_amount: data.defaultAmount,
-          subscription_period: data.subscriptionType as 'monthly' | 'annual', // Fix: Cast to expected type
+          subscription_period: data.subscriptionType, // Now this is properly typed in the TeamSubscription interface
           status: 'active',
           updated_at: new Date().toISOString(),
         }, { onConflict: 'team_id' });
