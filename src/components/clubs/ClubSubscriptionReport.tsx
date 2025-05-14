@@ -1,333 +1,204 @@
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DollarSign, Users, CreditCard } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
 
 export function ClubSubscriptionReport() {
-  const [teams, setTeams] = useState<any[]>([]);
-  const [subscriptionSummary, setSubscriptionSummary] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clubData, setClubData] = useState<any>(null);
+  const [subscriptionData, setSubscriptionData] = useState<any[]>([]);
   const { profile } = useAuth();
-  const { toast } = useToast();
 
   useEffect(() => {
-    if (!profile) return;
-
-    const fetchClubData = async () => {
+    const fetchData = async () => {
+      if (!profile?.id) return;
+      
       setLoading(true);
+      
       try {
-        // First fetch the club managed by the current user
-        const { data: clubData, error: clubError } = await supabase
+        // Fetch club data
+        const { data: clubResult, error: clubError } = await supabase
           .from('clubs')
-          .select('id, name')
+          .select('*')
           .eq('admin_id', profile.id)
-          .single();
-
-        if (clubError) throw new Error("No club found or you don't have permission");
-
-        // Then fetch all teams in this club
+          .maybeSingle();
+          
+        if (clubError) throw clubError;
+        if (!clubResult) return;
+        
+        setClubData(clubResult);
+        
+        // Fetch teams in this club
         const { data: teamsData, error: teamsError } = await supabase
           .from('teams')
           .select('id, team_name')
-          .eq('club_id', clubData.id);
-
+          .eq('club_id', clubResult.id);
+          
         if (teamsError) throw teamsError;
-
-        setTeams(teamsData || []);
-
-        // For each team, fetch subscription data
-        const subscriptionData = await Promise.all(
-          teamsData.map(async (team) => {
-            // Get player count for this team
-            const { data: playersData, error: playersError } = await supabase
-              .from('players')
-              .select('id')
-              .eq('team_id', team.id);
-
-            if (playersError) {
-              console.error(`Error fetching players for team ${team.team_name}:`, playersError);
-              return {
-                team_id: team.id,
-                team_name: team.team_name,
-                total_players: 0,
-                active_subscriptions: 0,
-                paused_subscriptions: 0,
-                total_monthly_revenue: 0,
-                players_with_subscriptions: []
-              };
-            }
-
-            // Get subscription data for this team
-            const { data: subscriptionsData, error: subscriptionsError } = await supabase
-              .from('players')
-              .select(`
-                id,
-                name,
-                player_subscriptions (
-                  id,
-                  status,
-                  subscription_amount
-                )
-              `)
-              .eq('team_id', team.id);
-
-            if (subscriptionsError) {
-              console.error(`Error fetching subscriptions for team ${team.team_name}:`, subscriptionsError);
-              return {
-                team_id: team.id,
-                team_name: team.team_name,
-                total_players: playersData?.length || 0,
-                active_subscriptions: 0,
-                paused_subscriptions: 0,
-                total_monthly_revenue: 0,
-                players_with_subscriptions: []
-              };
-            }
-
-            // Calculate subscription statistics
-            const playersWithSubscriptions = subscriptionsData.filter(
-              player => player.player_subscriptions?.length > 0
-            );
+        if (!teamsData?.length) return;
+        
+        const teamIds = teamsData.map(team => team.id);
+        
+        // Get all players in these teams
+        const { data: playersData, error: playersError } = await supabase
+          .from('players')
+          .select('id, name, team_id')
+          .in('team_id', teamIds);
+          
+        if (playersError) throw playersError;
+        
+        // Get subscription data for all players
+        const { data: subsData, error: subsError } = await supabase
+          .from('player_subscriptions')
+          .select('*')
+          .in('player_id', playersData?.map(p => p.id) || []);
+          
+        if (subsError) throw subsError;
+        
+        // Combine data for reporting
+        const reportData = teamsData.map(team => {
+          const teamPlayers = playersData?.filter(p => p.team_id === team.id) || [];
+          const teamSubs = subsData?.filter(s => 
+            teamPlayers.some(p => p.id === s.player_id)
+          ) || [];
+          
+          const activeCount = teamSubs.filter(s => s.status === 'active').length;
+          const totalAmount = teamSubs
+            .filter(s => s.status === 'active')
+            .reduce((sum, sub) => sum + (parseFloat(sub.subscription_amount) || 0), 0);
             
-            const activeSubscriptions = playersWithSubscriptions.filter(
-              player => player.player_subscriptions?.[0]?.status === 'active'
-            );
-            
-            const pausedSubscriptions = playersWithSubscriptions.filter(
-              player => player.player_subscriptions?.[0]?.status === 'paused'
-            );
-            
-            const monthlyRevenue = activeSubscriptions.reduce(
-              (sum, player) => sum + (player.player_subscriptions?.[0]?.subscription_amount || 0),
-              0
-            );
-
-            return {
-              team_id: team.id,
-              team_name: team.team_name,
-              total_players: playersData?.length || 0,
-              active_subscriptions: activeSubscriptions.length,
-              paused_subscriptions: pausedSubscriptions.length,
-              total_monthly_revenue: monthlyRevenue,
-              players_with_subscriptions: playersWithSubscriptions
-            };
-          })
-        );
-
-        setSubscriptionSummary(subscriptionData);
+          return {
+            id: team.id,
+            name: team.team_name,
+            playerCount: teamPlayers.length,
+            subscribedCount: activeCount,
+            totalMonthlyAmount: totalAmount,
+            subscriptionRate: teamPlayers.length ? Math.round((activeCount / teamPlayers.length) * 100) : 0
+          };
+        });
+        
+        setSubscriptionData(reportData);
       } catch (error) {
         console.error("Error fetching club subscription data:", error);
-        toast({
-          title: "Error",
-          description: error.message || "Failed to load club subscription data",
-          variant: "destructive",
-        });
       } finally {
         setLoading(false);
       }
     };
-
-    fetchClubData();
+    
+    fetchData();
   }, [profile]);
-
-  // Calculate club-wide totals
-  const totalPlayers = subscriptionSummary.reduce((sum, team) => sum + team.total_players, 0);
-  const totalActiveSubscriptions = subscriptionSummary.reduce((sum, team) => sum + team.active_subscriptions, 0);
-  const totalPausedSubscriptions = subscriptionSummary.reduce((sum, team) => sum + team.paused_subscriptions, 0);
-  const totalMonthlyRevenue = subscriptionSummary.reduce((sum, team) => sum + team.total_monthly_revenue, 0);
-  const subscriptionRate = totalPlayers > 0 ? (totalActiveSubscriptions / totalPlayers) * 100 : 0;
-
+  
   if (loading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Club Subscription Report</CardTitle>
         </CardHeader>
-        <CardContent className="flex justify-center">
-          <p className="text-muted-foreground">Loading subscription data...</p>
+        <CardContent>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (!clubData) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Club Subscription Report</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">No club data found.</p>
         </CardContent>
       </Card>
     );
   }
 
+  const totalPlayers = subscriptionData.reduce((sum, team) => sum + team.playerCount, 0);
+  const totalSubscribed = subscriptionData.reduce((sum, team) => sum + team.subscribedCount, 0);
+  const overallRate = totalPlayers ? Math.round((totalSubscribed / totalPlayers) * 100) : 0;
+  const totalMonthlyRevenue = subscriptionData.reduce((sum, team) => sum + team.totalMonthlyAmount, 0);
+  const totalAnnualRevenue = totalMonthlyRevenue * 12;
+  
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CreditCard className="h-5 w-5" />
-          <span>Club Subscription Report</span>
-        </CardTitle>
-        <CardDescription>
-          Overview of subscription status across all teams in your club
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="summary">
-          <TabsList>
-            <TabsTrigger value="summary">
-              <div className="flex items-center gap-1">
-                <DollarSign className="h-4 w-4" />
-                <span>Summary</span>
-              </div>
-            </TabsTrigger>
-            <TabsTrigger value="teams">
-              <div className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                <span>Teams</span>
-              </div>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="summary" className="pt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-sm font-medium text-muted-foreground">Total Players</div>
-                  <div className="text-2xl font-bold">{totalPlayers}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-sm font-medium text-muted-foreground">Active Subscriptions</div>
-                  <div className="text-2xl font-bold">{totalActiveSubscriptions}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-sm font-medium text-muted-foreground">Monthly Revenue</div>
-                  <div className="text-2xl font-bold">£{totalMonthlyRevenue.toFixed(2)}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-sm font-medium text-muted-foreground">Subscription Rate</div>
-                  <div className="text-2xl font-bold">{subscriptionRate.toFixed(1)}%</div>
-                </CardContent>
-              </Card>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Club Subscription Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border p-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Total Players</h4>
+              <p className="mt-2 text-3xl font-bold">{totalPlayers}</p>
             </div>
-
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px]">Team</TableHead>
-                    <TableHead>Players</TableHead>
-                    <TableHead>Active Subs</TableHead>
-                    <TableHead>Paused</TableHead>
-                    <TableHead>Monthly Revenue</TableHead>
-                    <TableHead>Coverage</TableHead>
+            <div className="rounded-lg border p-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Subscribed Players</h4>
+              <p className="mt-2 text-3xl font-bold">{totalSubscribed}</p>
+            </div>
+            <div className="rounded-lg border p-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Subscription Rate</h4>
+              <p className="mt-2 text-3xl font-bold">{overallRate}%</p>
+            </div>
+            <div className="rounded-lg border p-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Monthly Revenue</h4>
+              <p className="mt-2 text-3xl font-bold">£{totalMonthlyRevenue.toFixed(2)}</p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm text-muted-foreground">
+              Projected Annual Revenue: <span className="font-medium">£{totalAnnualRevenue.toFixed(2)}</span>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Report Date: {format(new Date(), "PPP")}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Subscription Breakdown</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {subscriptionData.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Team</TableHead>
+                  <TableHead className="text-right">Players</TableHead>
+                  <TableHead className="text-right">Subscribed</TableHead>
+                  <TableHead className="text-right">Rate</TableHead>
+                  <TableHead className="text-right">Monthly Revenue</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {subscriptionData.map((team) => (
+                  <TableRow key={team.id}>
+                    <TableCell className="font-medium">{team.name}</TableCell>
+                    <TableCell className="text-right">{team.playerCount}</TableCell>
+                    <TableCell className="text-right">{team.subscribedCount}</TableCell>
+                    <TableCell className="text-right">{team.subscriptionRate}%</TableCell>
+                    <TableCell className="text-right">£{team.totalMonthlyAmount.toFixed(2)}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {subscriptionSummary.length > 0 ? (
-                    subscriptionSummary.map((team) => {
-                      const coverage = team.total_players > 0 
-                        ? ((team.active_subscriptions / team.total_players) * 100).toFixed(1) 
-                        : "0.0";
-                        
-                      return (
-                        <TableRow key={team.team_id}>
-                          <TableCell className="font-medium">{team.team_name}</TableCell>
-                          <TableCell>{team.total_players}</TableCell>
-                          <TableCell>{team.active_subscriptions}</TableCell>
-                          <TableCell>{team.paused_subscriptions}</TableCell>
-                          <TableCell>£{team.total_monthly_revenue.toFixed(2)}</TableCell>
-                          <TableCell>{coverage}%</TableCell>
-                        </TableRow>
-                      );
-                    })
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4">
-                        <p className="text-muted-foreground">No teams found in your club.</p>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {subscriptionSummary.length > 0 && (
-                    <TableRow className="bg-muted/50">
-                      <TableCell className="font-bold">Total</TableCell>
-                      <TableCell className="font-bold">{totalPlayers}</TableCell>
-                      <TableCell className="font-bold">{totalActiveSubscriptions}</TableCell>
-                      <TableCell className="font-bold">{totalPausedSubscriptions}</TableCell>
-                      <TableCell className="font-bold">£{totalMonthlyRevenue.toFixed(2)}</TableCell>
-                      <TableCell className="font-bold">{subscriptionRate.toFixed(1)}%</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="teams" className="pt-4">
-            <div className="space-y-8">
-              {subscriptionSummary.map(team => (
-                <div key={team.team_id} className="space-y-4">
-                  <h3 className="text-lg font-semibold">{team.team_name}</h3>
-                  
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Player</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Amount</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {team.players_with_subscriptions.length > 0 ? (
-                          team.players_with_subscriptions.map((player) => {
-                            const subscription = player.player_subscriptions?.[0];
-                            const status = subscription?.status || "inactive";
-                            
-                            return (
-                              <TableRow key={player.id}>
-                                <TableCell className="font-medium">{player.name}</TableCell>
-                                <TableCell>
-                                  <span className={
-                                    status === 'active' 
-                                      ? 'text-green-600'
-                                      : status === 'paused'
-                                        ? 'text-amber-600'
-                                        : 'text-red-600'
-                                  }>
-                                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                                  </span>
-                                </TableCell>
-                                <TableCell>
-                                  {subscription
-                                    ? `£${subscription.subscription_amount?.toFixed(2) || "0.00"}`
-                                    : "-"}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={3} className="text-center py-4">
-                              <p className="text-muted-foreground">No subscription data available for this team.</p>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              ))}
-              
-              {subscriptionSummary.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No teams found in your club.</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-center py-4 text-muted-foreground">
+              No team subscription data available.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
