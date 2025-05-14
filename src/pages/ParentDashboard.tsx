@@ -75,7 +75,7 @@ export function ParentDashboard() {
         if (error) throw error;
         
         // Format the data for easier consumption
-        const formattedPlayers = data.map((item: PlayerParentData) => {
+        const formattedPlayers = data.map((item: any) => {
           return {
             ...item.players,
             team: item.players?.teams
