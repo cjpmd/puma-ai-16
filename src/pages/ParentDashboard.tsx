@@ -25,10 +25,16 @@ interface Player {
   teams?: PlayerTeam;
 }
 
-// Updated interface to match the actual data structure
+// Updated interface to match the actual data structure from Supabase
 interface PlayerParentData {
   player_id: string;
-  players: Player;
+  players: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    team_id: string;
+    teams?: PlayerTeam;
+  };
 }
 
 interface FormattedPlayer extends Player {
