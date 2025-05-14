@@ -10,11 +10,35 @@ import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
 import { ParentSubscriptionManager } from "@/components/parents/ParentSubscriptionManager";
 
+// Define proper types for the Supabase response
+interface PlayerTeam {
+  id: string;
+  team_name: string;
+  age_group: string | null;
+}
+
+interface Player {
+  id: string;
+  first_name: string;
+  last_name: string;
+  team_id: string;
+  teams?: PlayerTeam;
+}
+
+interface PlayerParent {
+  player_id: string;
+  players: Player;
+}
+
+interface FormattedPlayer extends Player {
+  team?: PlayerTeam;
+}
+
 export function ParentDashboard() {
   const { profile } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [linkedPlayers, setLinkedPlayers] = useState<any[]>([]);
+  const [linkedPlayers, setLinkedPlayers] = useState<FormattedPlayer[]>([]);
 
   useEffect(() => {
     const fetchLinkedPlayers = async () => {
@@ -44,7 +68,7 @@ export function ParentDashboard() {
         if (error) throw error;
         
         // Format the data for easier consumption
-        const formattedPlayers = data.map(item => {
+        const formattedPlayers = data.map((item: PlayerParent) => {
           return {
             ...item.players,
             team: item.players?.teams
