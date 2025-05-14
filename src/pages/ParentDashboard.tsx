@@ -25,7 +25,8 @@ interface Player {
   teams?: PlayerTeam;
 }
 
-interface PlayerParent {
+// Updated interface to match the actual data structure
+interface PlayerParentData {
   player_id: string;
   players: Player;
 }
@@ -68,7 +69,7 @@ export function ParentDashboard() {
         if (error) throw error;
         
         // Format the data for easier consumption
-        const formattedPlayers = data.map((item: PlayerParent) => {
+        const formattedPlayers = data.map((item: PlayerParentData) => {
           return {
             ...item.players,
             team: item.players?.teams
