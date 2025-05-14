@@ -6,10 +6,13 @@ import { WhatsAppIntegration } from "@/components/settings/WhatsAppIntegration";
 import { TeamInfoSettings } from "@/components/settings/TeamInfoSettings";
 import { FormatsAndCategoriesSettings } from "@/components/settings/FormatsAndCategoriesSettings";
 import { JoinClubSection } from "@/components/settings/JoinClubSection";
+import { PlayerSubscriptionManager } from "@/components/subscription/PlayerSubscriptionManager";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Users, Settings, CreditCard } from "lucide-react";
 
 export default function TeamSettings() {
   const [debugInfo, setDebugInfo] = useState<any>({});
@@ -194,24 +197,47 @@ export default function TeamSettings() {
           )}
         </div>
       </div>
-      
-      <TeamInfoSettings />
-      
-      {teamId && (
-        <JoinClubSection 
-          teamId={teamId} 
-          currentClub={clubInfo} 
-          onClubJoined={handleClubJoined} 
-        />
-      )}
-      
-      <FormatsAndCategoriesSettings />
-      <FAConnectionSettings />
-      <WhatsAppIntegration />
-      
-      <div className="mt-8">
-        <AttributeSettingsManager />
-      </div>
+
+      <Tabs defaultValue="general" className="mb-8">
+        <TabsList className="mb-4">
+          <TabsTrigger value="general" className="flex items-center gap-1">
+            <Settings className="h-4 w-4" />
+            <span>General</span>
+          </TabsTrigger>
+          <TabsTrigger value="subscriptions" className="flex items-center gap-1">
+            <CreditCard className="h-4 w-4" />
+            <span>Subscriptions</span>
+          </TabsTrigger>
+          <TabsTrigger value="attributes" className="flex items-center gap-1">
+            <Users className="h-4 w-4" />
+            <span>Player Attributes</span>
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="general" className="space-y-6">
+          <TeamInfoSettings />
+          
+          {teamId && (
+            <JoinClubSection 
+              teamId={teamId} 
+              currentClub={clubInfo} 
+              onClubJoined={handleClubJoined} 
+            />
+          )}
+          
+          <FormatsAndCategoriesSettings />
+          <FAConnectionSettings />
+          <WhatsAppIntegration />
+        </TabsContent>
+        
+        <TabsContent value="subscriptions">
+          <PlayerSubscriptionManager />
+        </TabsContent>
+        
+        <TabsContent value="attributes">
+          <AttributeSettingsManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

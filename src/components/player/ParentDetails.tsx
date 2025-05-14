@@ -2,8 +2,11 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ParentDetailsDialog } from "@/components/parents/ParentDetailsDialog";
+import { ParentSubscriptionManager } from "@/components/parents/ParentSubscriptionManager";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Users, CreditCard } from "lucide-react";
 
 interface ParentDetailsProps {
   playerId: string;
@@ -62,23 +65,42 @@ export const ParentDetails = ({ playerId }: ParentDetailsProps) => {
         />
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center py-4">
-            <div className="animate-pulse rounded-md bg-slate-200 h-24 w-full"></div>
-          </div>
-        ) : parents.length > 0 ? (
-          <div className="space-y-4">
-            {parents.map(parent => (
-              <div key={parent.id} className="space-y-2 border-b pb-3 last:border-b-0">
-                <p><strong>Name:</strong> {parent.name}</p>
-                {parent.email && <p><strong>Email:</strong> {parent.email}</p>}
-                {parent.phone && <p><strong>Phone:</strong> {parent.phone}</p>}
+        <Tabs defaultValue="details">
+          <TabsList className="mb-4">
+            <TabsTrigger value="details" className="flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              <span>Details</span>
+            </TabsTrigger>
+            <TabsTrigger value="subscription" className="flex items-center gap-1">
+              <CreditCard className="h-4 w-4" />
+              <span>Subscription</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details">
+            {isLoading ? (
+              <div className="flex justify-center py-4">
+                <div className="animate-pulse rounded-md bg-slate-200 h-24 w-full"></div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted-foreground">No parent details added yet.</p>
-        )}
+            ) : parents.length > 0 ? (
+              <div className="space-y-4">
+                {parents.map(parent => (
+                  <div key={parent.id} className="space-y-2 border-b pb-3 last:border-b-0">
+                    <p><strong>Name:</strong> {parent.name}</p>
+                    {parent.email && <p><strong>Email:</strong> {parent.email}</p>}
+                    {parent.phone && <p><strong>Phone:</strong> {parent.phone}</p>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No parent details added yet.</p>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="subscription">
+            <ParentSubscriptionManager playerId={playerId} />
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
