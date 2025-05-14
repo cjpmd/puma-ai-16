@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +24,7 @@ import { PlayerSubscription, TeamSubscription } from "@/types/subscription";
 // Define the schema for subscription settings
 const subscriptionSettingsSchema = z.object({
   defaultAmount: z.coerce.number().min(0),
-  subscriptionType: z.enum(["monthly", "annual"]), // Fixed: Define the type as a union
+  subscriptionType: z.enum(["monthly", "annual"]),
   paymentDay: z.coerce.number().int().min(1).max(28),
 });
 
@@ -182,7 +183,7 @@ export function PlayerSubscriptionManager() {
         .upsert({
           team_id: teamData.id,
           subscription_amount: data.defaultAmount,
-          subscription_period: data.subscriptionType, // Now this is properly typed in the TeamSubscription interface
+          subscription_period: data.subscriptionType,
           status: 'active',
           updated_at: new Date().toISOString(),
         }, { onConflict: 'team_id' });
