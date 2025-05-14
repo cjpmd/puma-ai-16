@@ -15,7 +15,7 @@ export interface TeamSubscription {
   id?: string;
   team_id: string;
   subscription_amount: number;
-  subscription_period: 'monthly' | 'annual'; // This allows 'monthly' or 'annual'
+  subscription_period: 'monthly' | 'annual';
   status: 'active' | 'inactive' | 'cancelled';
   created_at?: string;
   updated_at?: string;
