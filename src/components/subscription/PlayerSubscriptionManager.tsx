@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,15 +21,15 @@ import { cn } from "@/lib/utils";
 
 // Define the schema for subscription settings
 const subscriptionSettingsSchema = z.object({
-  defaultAmount: z.string().transform((val) => parseFloat(val)),
+  defaultAmount: z.coerce.number().min(0),
   subscriptionType: z.enum(["monthly", "annual"]),
-  paymentDay: z.string().transform((val) => parseInt(val, 10)),
+  paymentDay: z.coerce.number().int().min(1).max(28),
 });
 
 // Define the schema for creating a new subscription
 const newSubscriptionSchema = z.object({
   playerId: z.string().uuid(),
-  amount: z.string().transform((val) => parseFloat(val)),
+  amount: z.coerce.number().min(0),
   paymentMethod: z.enum(["direct_debit", "card"]),
   nextPaymentDate: z.date(),
 });
@@ -53,9 +52,9 @@ export function PlayerSubscriptionManager() {
   const settingsForm = useForm<z.infer<typeof subscriptionSettingsSchema>>({
     resolver: zodResolver(subscriptionSettingsSchema),
     defaultValues: {
-      defaultAmount: subscriptionSettings.defaultAmount.toString(),
+      defaultAmount: subscriptionSettings.defaultAmount,
       subscriptionType: subscriptionSettings.subscriptionType,
-      paymentDay: subscriptionSettings.paymentDay.toString(),
+      paymentDay: subscriptionSettings.paymentDay,
     },
   });
 
@@ -64,7 +63,7 @@ export function PlayerSubscriptionManager() {
     resolver: zodResolver(newSubscriptionSchema),
     defaultValues: {
       playerId: "",
-      amount: subscriptionSettings.defaultAmount.toString(),
+      amount: subscriptionSettings.defaultAmount,
       paymentMethod: "direct_debit",
       nextPaymentDate: new Date(),
     },
@@ -398,7 +397,7 @@ export function PlayerSubscriptionManager() {
       const player = players.find(p => p.id === playerId);
       if (player) {
         newSubscriptionForm.setValue('playerId', playerId);
-        newSubscriptionForm.setValue('amount', subscriptionSettings.defaultAmount.toString());
+        newSubscriptionForm.setValue('amount', subscriptionSettings.defaultAmount);
       }
     } else {
       setSelectedPlayerId(null);

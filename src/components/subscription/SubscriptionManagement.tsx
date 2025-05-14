@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,7 @@ import { cn } from "@/lib/utils";
 
 const newPaymentSchema = z.object({
   playerId: z.string().uuid(),
-  amount: z.string().transform((val) => parseFloat(val)),
+  amount: z.coerce.number().min(0),
   paymentMethod: z.enum(["manual", "direct_debit", "card", "bank_transfer", "cash"]),
   paymentDate: z.date(),
   notes: z.string().optional(),
@@ -39,7 +38,7 @@ export function SubscriptionManagement() {
   const paymentForm = useForm<z.infer<typeof newPaymentSchema>>({
     resolver: zodResolver(newPaymentSchema),
     defaultValues: {
-      amount: "50",
+      amount: 50,
       paymentMethod: "manual",
       paymentDate: new Date(),
       notes: "",

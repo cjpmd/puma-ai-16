@@ -8,10 +8,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper logging function
+// Helper logging function for debugging
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[SUBSCRIPTION-PORTAL] ${step}${detailsStr}`);
+  console.log(`[PLAYER-SUBSCRIPTION-PORTAL] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
@@ -21,52 +21,48 @@ serve(async (req) => {
 
   try {
     logStep("Function started");
-    
+    const { playerId, parentEmail } = await req.json();
+
+    if (!playerId) {
+      throw new Error("Player ID is required");
+    }
+
+    if (!parentEmail) {
+      throw new Error("Parent email is required");
+    }
+
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
     
-    // Parse request body
-    const { playerId, parentEmail } = await req.json();
-    
-    if (!playerId || !parentEmail) {
-      throw new Error("Missing required fields: playerId or parentEmail");
-    }
-    
-    logStep("Request data", { playerId, parentEmail });
-
     // Initialize Stripe
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
-    // Find customer by email
-    const customers = await stripe.customers.list({ 
-      email: parentEmail,
-      limit: 1
-    });
-    
+    // Find the customer ID for the parent's email
+    const customers = await stripe.customers.list({ email: parentEmail, limit: 1 });
     if (customers.data.length === 0) {
-      throw new Error("No Stripe customer found with this email");
+      throw new Error("No Stripe customer found for this parent's email");
     }
     
     const customerId = customers.data[0].id;
-    logStep("Found customer", { customerId });
+    logStep("Found Stripe customer", { customerId, parentEmail });
     
-    // Create a billing portal session
-    const origin = req.headers.get("origin") || "http://localhost:5173";
-    const session = await stripe.billingPortal.sessions.create({
+    // Create a portal session
+    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${origin}/player/${playerId}`
+      return_url: `${origin}/player/${playerId}`,
     });
     
-    logStep("Created billing portal session", { sessionUrl: session.url });
+    logStep("Created portal session", { url: portalSession.url });
     
-    return new Response(JSON.stringify({ url: session.url }), {
+    return new Response(JSON.stringify({ url: portalSession.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-    
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
+    
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +20,7 @@ import { CreditCard, CheckCircle, AlertCircle, Pause, Loader2 } from "lucide-rea
 const paymentMethodSchema = z.object({
   paymentMethod: z.enum(["direct_debit", "card"]),
   parentEmail: z.string().email("Please enter a valid email address"),
-  amount: z.string().transform((val) => parseFloat(val))
+  amount: z.coerce.number().min(0)
 });
 
 export function ParentSubscriptionManager({ playerId }: { playerId: string }) {
@@ -39,7 +38,7 @@ export function ParentSubscriptionManager({ playerId }: { playerId: string }) {
     defaultValues: {
       paymentMethod: "direct_debit",
       parentEmail: "",
-      amount: "0"
+      amount: 0
     },
   });
 
