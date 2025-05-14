@@ -1,7 +1,7 @@
 
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
-import { Users, BarChart2, UserCircle, Calendar, LogOut, Cog, Home, Building, LogIn, Plus } from "lucide-react";
+import { Users, BarChart2, UserCircle, Calendar, LogOut, Cog, Home, Building, LogIn, Plus, SwitchCamera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -11,6 +11,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
@@ -33,6 +38,7 @@ export const NavBar = () => {
   const [userClub, setUserClub] = useState<any>(null);
   const [teamLogo, setTeamLogo] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { activeRole, switchRole, hasRole } = useAuth();
   
   useEffect(() => {
     // Try to get team logo from localStorage first for faster initial render
@@ -198,11 +204,24 @@ export const NavBar = () => {
                           location.pathname.includes('/create-team') || 
                           location.pathname.includes('/club-settings') ||
                           location.pathname.includes('/club/');
+                          
+  const isParentRoute = location.pathname.includes('/parent-dashboard');
 
   // Hide navbar on auth page
   if (location.pathname === '/auth') {
     return null;
   }
+
+  // Function to handle role switching
+  const handleRoleSwitch = (role: UserRole) => {
+    switchRole(role);
+    
+    // Show toast notification about role switch
+    toast({
+      title: "Role Switched",
+      description: `You are now viewing as a ${role.charAt(0).toUpperCase() + role.slice(1)}`,
+    });
+  };
 
   return (
     <div className="w-full bg-white shadow-sm mb-8">
@@ -237,6 +256,12 @@ export const NavBar = () => {
             <div className="ml-4 hidden sm:block">
               <div className="text-xl font-bold">Team Platform</div>
               <div className="text-sm text-muted-foreground">Multi-team management</div>
+            </div>
+          )}
+          {isParentRoute && (
+            <div className="ml-4 hidden sm:block">
+              <div className="text-xl font-bold">Parent Dashboard</div>
+              <div className="text-sm text-muted-foreground">Player management</div>
             </div>
           )}
         </div>
@@ -294,15 +319,43 @@ export const NavBar = () => {
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{session.user?.email || "User"}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      Admin
+                      {activeRole ? activeRole.charAt(0).toUpperCase() + activeRole.slice(1) : "Admin"}
                     </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                
+                {/* Role Switcher */}
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <SwitchCamera className="mr-2 h-4 w-4" />
+                    <span>Switch View</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuRadioGroup value={activeRole || undefined} onValueChange={(value) => handleRoleSwitch(value as UserRole)}>
+                      <DropdownMenuRadioItem value="admin">Admin</DropdownMenuRadioItem>
+                      {hasRole('parent') && (
+                        <DropdownMenuRadioItem value="parent">Parent</DropdownMenuRadioItem>
+                      )}
+                      {hasRole('coach') && (
+                        <DropdownMenuRadioItem value="coach">Coach</DropdownMenuRadioItem>
+                      )}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                
                 <DropdownMenuItem onClick={() => navigate("/platform")}>
                   <Home className="mr-2 h-4 w-4" />
                   <span>Platform Dashboard</span>
                 </DropdownMenuItem>
+                
+                {hasRole('parent') && (
+                  <DropdownMenuItem onClick={() => navigate("/parent-dashboard")}>
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>Parent Dashboard</span>
+                  </DropdownMenuItem>
+                )}
+                
                 <DropdownMenuItem onClick={() => navigate("/create-team")}>
                   <Plus className="mr-2 h-4 w-4" />
                   <span>Create Team</span>

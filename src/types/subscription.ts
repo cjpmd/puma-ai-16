@@ -1,72 +1,22 @@
 
 export interface PlayerSubscription {
-  id?: string;
+  id: string;
   player_id: string;
-  status: 'active' | 'paused' | 'cancelled';
-  subscription_type: 'monthly' | 'annual';
-  subscription_amount: number;
-  last_payment_date?: string;
-  next_payment_due?: string;
-  stripe_subscription_id?: string;
-  payment_method?: 'direct_debit' | 'card';
-  created_at?: string;
-  updated_at?: string;
+  subscription_id: string;
+  status: 'active' | 'inactive' | 'cancelled';
+  created_at: string;
+  payment_date?: string;
+  payment_amount?: number;
+  payment_method?: string;
+  next_payment_date?: string;
 }
 
 export interface TeamSubscription {
   id?: string;
   team_id: string;
-  status: 'active' | 'inactive' | 'trial' | 'overdue';
-  subscription_plan?: string;
   subscription_amount: number;
-  subscription_period: 'monthly' | 'annual'; // Fixed to accept both monthly and annual
-  start_date?: string;
-  end_date?: string;
+  subscription_period: 'monthly' | 'annual'; // This allows 'monthly' or 'annual'
+  status: 'active' | 'inactive' | 'cancelled';
   created_at?: string;
   updated_at?: string;
-}
-
-export interface PaymentHistory {
-  id?: string;
-  player_id: string;
-  amount: number;
-  payment_date: string;
-  payment_method?: string;
-  notes?: string;
-  created_at?: string;
-}
-
-export interface StripeCheckoutResponse {
-  url: string;
-  error?: string;
-}
-
-export interface StripeVerificationResponse {
-  subscribed: boolean;
-  subscription_id?: string;
-  status?: 'active' | 'paused' | 'cancelled';
-  amount?: number;
-  next_payment_due?: string;
-  payment_method?: 'direct_debit' | 'card';
-  message?: string;
-  error?: string;
-}
-
-export interface StripeAccountConfig {
-  platform_account_id?: string; // Puma AI's Stripe account
-  platform_fee_percentage?: number; // Fee taken by the platform (e.g., 10%)
-  connect_account_id?: string; // Team or Club's connected Stripe account
-}
-
-export interface StripeSubscriptionPlans {
-  team_plans: {
-    basic: string; // Stripe price ID
-    standard: string;
-    premium: string;
-  };
-  club_plans: {
-    basic: string;
-    standard: string;
-    enterprise: string;
-  };
 }

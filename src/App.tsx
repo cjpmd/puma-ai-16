@@ -15,6 +15,7 @@ import ClubSettings from "./pages/ClubSettings";
 import ClubDashboard from "./pages/ClubDashboard";
 import CreateTeam from "./pages/CreateTeam";
 import PlatformLanding from "./pages/PlatformLanding";
+import { ParentDashboard } from "./pages/ParentDashboard";
 import { Auth } from "./pages/Auth";
 import { Coaches } from "./pages/Coaches";
 import { NavBar } from "./components/NavBar";
@@ -47,6 +48,16 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['admin', 'manager', 'coach', 'parent']}>
                 <PlatformLanding />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* Parent Routes */}
+          <Route
+            path="/parent-dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'parent', 'coach']}>
+                <ParentDashboard />
               </ProtectedRoute>
             }
           />

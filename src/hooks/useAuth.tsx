@@ -17,6 +17,7 @@ export const useAuth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isInitializing, setIsInitializing] = useState(true);
+  const [activeRole, setActiveRole] = useState<UserRole | null>(null);
 
   const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useQuery({
     queryKey: ['profile'],
@@ -103,6 +104,12 @@ export const useAuth = () => {
   });
 
   useEffect(() => {
+    if (profile && !activeRole) {
+      setActiveRole(profile.role);
+    }
+  }, [profile, activeRole]);
+
+  useEffect(() => {
     const initializeAuth = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -147,6 +154,17 @@ export const useAuth = () => {
     };
   }, [navigate, refetchProfile]);
 
+  // Function to switch between roles
+  const switchRole = (role: UserRole) => {
+    setActiveRole(role);
+    // Navigate to appropriate dashboard based on role
+    if (role === 'parent') {
+      navigate('/parent-dashboard');
+    } else {
+      navigate('/platform');
+    }
+  };
+
   const hasPermission = (requiredRole: UserRole[]): boolean => {
     if (!profile) return false;
     
@@ -157,9 +175,25 @@ export const useAuth = () => {
     return requiredRole.includes(profile.role);
   };
 
+  // Check if user has a specific role assigned
+  const hasRole = (role: UserRole): boolean => {
+    if (!profile) return false;
+    
+    // Admin has access to all roles
+    if (profile.role === 'admin') return true;
+    
+    // Coaches can also access parent role
+    if (role === 'parent' && profile.role === 'coach') return true;
+    
+    return profile.role === role;
+  };
+
   return {
     profile,
+    activeRole,
+    switchRole,
     isLoading: isInitializing || profileLoading,
     hasPermission,
+    hasRole,
   };
 };
