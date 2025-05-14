@@ -19,6 +19,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { CalendarIcon, CheckCircle, CreditCard, AlertCircle, Users, DollarSign, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PlayerSubscription } from "@/types/subscription";
 
 // Define the schema for subscription settings
 const subscriptionSettingsSchema = z.object({
