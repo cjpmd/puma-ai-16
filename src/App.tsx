@@ -18,30 +18,37 @@ import { ParentDashboard } from "./pages/ParentDashboard";
 import { PlatformLanding } from "./pages/PlatformLanding";
 import { PlayerDashboard } from "./pages/PlayerDashboard";
 import CreateTeam from "./pages/CreateTeam";
+import { AppLayout } from "./components/layout/AppLayout";
 import "./App.css";
 
 function App() {
   return (
     <ErrorBoundary>
       <Routes>
-        <Route path="/" element={<SquadManagement />} />
-        <Route path="/squad-management" element={<SquadManagement />} />
-        <Route path="/player/:id" element={<PlayerDetailsPage />} />
+        {/* Auth page is outside the layout since it doesn't need the NavBar */}
         <Route path="/login" element={<Auth />} />
-        <Route path="/calendar" element={<Calendar />} />
-        <Route path="/top-rated-by-position" element={<TopRatedByPosition />} />
-        <Route path="/role-suitability/:playerId" element={<RoleSuitabilityPage />} />
-        <Route path="/formation-selector" element={<FormationSelector />} />
-        <Route path="/fixtures" element={<Fixtures />} />
-        <Route path="/team-settings" element={<TeamSettings />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/coaches" element={<Coaches />} />
-        <Route path="/club-settings" element={<ClubSettings />} />
-        <Route path="/create-club" element={<CreateClub />} />
-        <Route path="/parent-dashboard" element={<ParentDashboard />} />
-        <Route path="/platform" element={<PlatformLanding />} />
-        <Route path="/player-dashboard" element={<PlayerDashboard />} />
-        <Route path="/create-team" element={<CreateTeam />} />
+        <Route path="/auth" element={<Auth />} />
+
+        {/* All other routes use the layout with NavBar */}
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<SquadManagement />} />
+          <Route path="/squad-management" element={<SquadManagement />} />
+          <Route path="/player/:id" element={<PlayerDetailsPage />} />
+          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/top-rated-by-position" element={<TopRatedByPosition />} />
+          <Route path="/role-suitability/:playerId" element={<RoleSuitabilityPage />} />
+          <Route path="/formation-selector" element={<FormationSelector />} />
+          <Route path="/fixtures" element={<Fixtures />} />
+          <Route path="/team-settings" element={<TeamSettings />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/coaches" element={<Coaches />} />
+          <Route path="/club-settings" element={<ClubSettings />} />
+          <Route path="/create-club" element={<CreateClub />} />
+          <Route path="/parent-dashboard" element={<ParentDashboard />} />
+          <Route path="/platform" element={<PlatformLanding />} />
+          <Route path="/player-dashboard" element={<PlayerDashboard />} />
+          <Route path="/create-team" element={<CreateTeam />} />
+        </Route>
       </Routes>
     </ErrorBoundary>
   );

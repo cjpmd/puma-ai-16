@@ -14,7 +14,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Settings, CreditCard, Plus } from "lucide-react";
-import { NavBar } from "@/components/NavBar";
 
 export default function TeamSettings() {
   const [debugInfo, setDebugInfo] = useState<any>({});
@@ -185,7 +184,6 @@ export default function TeamSettings() {
 
   return (
     <>
-      <NavBar />
       <div className="container mx-auto py-6 max-w-4xl">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Team Settings</h1>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -75,7 +74,7 @@ export function ClubSubscriptionReport({ clubId }: ClubSubscriptionReportProps) 
         // If clubId is provided, filter to only teams in this club
         if (clubId) {
           const filteredTeams = teamSubsData?.filter(sub => {
-            // Fix: Check if teams is not null, is an object, and access club_id as a property
+            // Fix the TypeScript error by properly checking club_id existence
             return sub.teams && 
                    typeof sub.teams === 'object' && 
                    'club_id' in sub.teams && 

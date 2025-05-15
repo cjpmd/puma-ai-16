@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -174,7 +173,6 @@ export default function ClubSettings() {
   if (loading) {
     return (
       <>
-        <NavBar />
         <div className="container mx-auto py-6">
           <div className="text-center">
             <p className="text-muted-foreground">Loading club data...</p>
@@ -187,7 +185,6 @@ export default function ClubSettings() {
   if (clubs.length === 0) {
     return (
       <>
-        <NavBar />
         <div className="container mx-auto py-6 max-w-4xl">
           <Card>
             <CardHeader>
@@ -207,7 +204,6 @@ export default function ClubSettings() {
 
   return (
     <>
-      <NavBar />
       <div className="container mx-auto py-6 max-w-4xl">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">
