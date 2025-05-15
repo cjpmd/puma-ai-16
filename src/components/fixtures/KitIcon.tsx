@@ -72,7 +72,7 @@ export function KitIcon({ type, size = 24 }: KitIconProps) {
               ? `${teamNameStr} ${typeToText[type]}` 
               : typeToText[type]);
           } else {
-            // Default tooltip text
+            // Default tooltip text when iconData is not available
             setTooltipText(typeToText[type]);
           }
         } else {
@@ -81,6 +81,8 @@ export function KitIcon({ type, size = 24 }: KitIconProps) {
         }
       } catch (error) {
         console.error('Error fetching kit icon:', error);
+        // Set default tooltip text in case of error
+        setTooltipText(typeToText[type]);
       } finally {
         setIsLoading(false);
       }
