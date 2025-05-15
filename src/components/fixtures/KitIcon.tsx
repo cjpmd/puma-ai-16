@@ -47,6 +47,7 @@ export function KitIcon({ type, size = 24 }: KitIconProps) {
         
         if (error) {
           console.error('Error fetching kit icon:', error);
+          setTooltipText(typeToText[type]); // Default tooltip when error occurs
           return;
         }
 
@@ -59,7 +60,7 @@ export function KitIcon({ type, size = 24 }: KitIconProps) {
           
           // Safely extract team name with proper null checking
           if (typeof data === 'object' && data !== null && 'team_name' in data) {
-            teamNameStr = String(data.team_name || "");
+            teamNameStr = data.team_name ? String(data.team_name) : "";
           }
           
           if (iconData) {
