@@ -73,6 +73,8 @@ export default function TeamSettings() {
     if (!profile) return;
     
     try {
+      console.log("Fetching team data for user:", profile.id);
+      
       // Check if user has a team
       const { data: teamData, error: teamError } = await supabase
         .from('teams')
@@ -80,16 +82,60 @@ export default function TeamSettings() {
         .eq('admin_id', profile.id)
         .maybeSingle();
         
-      if (teamError) throw teamError;
+      if (teamError) {
+        console.error('Error fetching team data:', teamError);
+        throw teamError;
+      }
+      
+      console.log("Team data fetched:", teamData);
       
       if (teamData) {
         setTeamId(teamData.id);
+        console.log("Setting team ID:", teamData.id);
+        
         if (teamData.club_id) {
           setClubInfo(teamData.clubs);
+          console.log("Setting club info:", teamData.clubs);
+        } else {
+          console.log("No club associated with this team");
         }
+      } else {
+        console.log("No team found for this user");
+        
+        // Create a default team for the user if none exists
+        await createDefaultTeam();
       }
     } catch (error) {
       console.error('Error fetching team data:', error);
+    }
+  };
+  
+  // Add function to create a default team if the user doesn't have one
+  const createDefaultTeam = async () => {
+    try {
+      if (!profile) return;
+      
+      console.log("Creating default team for user:", profile.id);
+      
+      const { data: newTeam, error } = await supabase
+        .from('teams')
+        .insert({
+          team_name: 'My Team',
+          admin_id: profile.id,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Error creating default team:', error);
+        return;
+      }
+      
+      console.log("Created default team:", newTeam);
+      setTeamId(newTeam.id);
+    } catch (error) {
+      console.error('Error in createDefaultTeam:', error);
     }
   };
 
@@ -227,12 +273,16 @@ export default function TeamSettings() {
           <TabsContent value="general" className="space-y-6">
             <TeamInfoSettings />
             
-            {teamId && (
+            {teamId ? (
               <JoinClubSection 
                 teamId={teamId} 
                 currentClub={clubInfo} 
                 onClubJoined={handleClubJoined} 
               />
+            ) : (
+              <div className="p-4 border rounded-md bg-yellow-50">
+                <p className="text-amber-700">Loading team information...</p>
+              </div>
             )}
             
             <FormatsAndCategoriesSettings />
@@ -250,6 +300,16 @@ export default function TeamSettings() {
             <AttributeSettingsManager />
           </TabsContent>
         </Tabs>
+        
+        {/* Debug information - can be removed in production */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-8 p-4 border rounded-md bg-gray-50">
+            <h3 className="text-sm font-medium mb-2">Debug Info:</h3>
+            <pre className="text-xs overflow-auto">
+              {JSON.stringify({teamId, clubInfo: !!clubInfo, profile: !!profile}, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
     </>
   );
