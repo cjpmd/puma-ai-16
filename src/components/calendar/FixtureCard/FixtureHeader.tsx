@@ -18,11 +18,17 @@ interface FixtureHeaderProps {
       end_time?: string | null;
       performance_category?: string;
     }>;
+    status?: string;
+    home_team_name?: string;
+    away_team_name?: string;
+    home_team_data?: any;
+    away_team_data?: any;
+    home_team_score?: number;
+    away_team_score?: number;
   };
-  currentTime: Date;
 }
 
-export const FixtureHeader = ({ fixture, currentTime }: FixtureHeaderProps) => {
+export const FixtureHeader = ({ fixture }: FixtureHeaderProps) => {
   // Format date for display
   const formattedDate = fixture.date
     ? format(new Date(fixture.date), "MMMM do, yyyy")
@@ -42,7 +48,7 @@ export const FixtureHeader = ({ fixture, currentTime }: FixtureHeaderProps) => {
   return (
     <div className="flex justify-between items-start">
       <div className="space-y-1">
-        <FixtureStatus fixture={fixture} currentTime={currentTime} />
+        <FixtureStatus fixture={fixture} />
         <CardTitle className="text-xl font-bold">
           {vsTitle}
         </CardTitle>

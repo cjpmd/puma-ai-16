@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { Fixture } from '@/types';
+import { Fixture } from '@/types/fixture';
 import { KitIcon } from '@/components/fixtures/KitIcon';
 import { Edit, Trash2 } from 'lucide-react';
 
@@ -9,9 +10,10 @@ type FixtureCardProps = {
   fixture: Fixture;
   onEdit: (fixture: Fixture) => void;
   onDelete: (id: string) => void;
+  onDateChange?: (fixtureId: string, newDate: Date) => void;
 };
 
-const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => {
+const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: FixtureCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const fixtureDate = fixture.date ? new Date(fixture.date) : null;
   const formattedDate = fixtureDate ? format(fixtureDate, 'EEE, d MMM yyyy') : 'Date not set';
@@ -20,8 +22,8 @@ const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => {
   const homeTeamName = fixture.home_team_name || 'Home Team';
   const awayTeamName = fixture.away_team_name || 'Away Team';
 
-  const homeTeamData = fixture.home_team;
-  const awayTeamData = fixture.away_team;
+  const homeTeamData = fixture.home_team_data;
+  const awayTeamData = fixture.away_team_data;
 
   return (
     <div className="border rounded-lg shadow-sm bg-card overflow-hidden mb-4">
@@ -80,21 +82,21 @@ const FixtureCard = ({ fixture, onEdit, onDelete }: FixtureCardProps) => {
             <KitIcon 
               teamData={homeTeamData} 
               type="home" 
-              size="small" // Changed from numeric to string value
+              size="small"
             />
           )}
-          <span className="text-sm font-medium">{homeTeamName || 'Home Team'}</span>
+          <span className="text-sm font-medium">{homeTeamName}</span>
         </div>
         
         <div className="text-lg font-medium">vs</div>
         
         <div className="flex items-center space-x-2">
-          <span className="text-sm font-medium">{awayTeamName || 'Away Team'}</span>
+          <span className="text-sm font-medium">{awayTeamName}</span>
           {awayTeamData && (
             <KitIcon 
               teamData={awayTeamData} 
               type="away" 
-              size="small" // Changed from numeric to string value
+              size="small"
             />
           )}
         </div>

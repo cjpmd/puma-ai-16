@@ -1,5 +1,5 @@
 
-import { FixtureCard } from "@/components/calendar/FixtureCard";
+import FixtureCard from "@/components/calendar/FixtureCard";
 import type { Fixture } from "@/types/fixture";
 
 interface FixturesSectionProps {

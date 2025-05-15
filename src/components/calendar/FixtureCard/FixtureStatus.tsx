@@ -1,12 +1,13 @@
+
 import React from 'react';
 import { cn } from "@/lib/utils";
-import { Fixture } from "@/types";
+import { Fixture } from "@/types/fixture";
 import { KitIcon } from "@/components/fixtures/KitIcon";
 
 type FixtureStatusProps = {
   fixture: Fixture;
   condensed?: boolean;
-}
+};
 
 export const FixtureStatus = ({ fixture, condensed = false }: FixtureStatusProps) => {
   const { status, home_team_name, away_team_name, home_team_data, away_team_data } = fixture;
@@ -39,7 +40,7 @@ export const FixtureStatus = ({ fixture, condensed = false }: FixtureStatusProps
               <KitIcon 
                 teamData={homeTeamData} 
                 type="home" 
-                size="small" // Changed from numeric to string value
+                size="small"
               />
             )}
             <span className="text-sm">{homeTeamName}</span>
@@ -52,7 +53,7 @@ export const FixtureStatus = ({ fixture, condensed = false }: FixtureStatusProps
               <KitIcon 
                 teamData={awayTeamData} 
                 type="away" 
-                size="small" // Changed from numeric to string value
+                size="small"
               />
             )}
             <span className="text-sm">{awayTeamName}</span>
