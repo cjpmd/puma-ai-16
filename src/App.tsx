@@ -1,4 +1,3 @@
-
 import { Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,7 +30,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { ensureDatabaseSetup } from "./utils/database/ensureDatabaseSetup";
 import { Button } from "@/components/ui/button";
-import { initializeDatabase } from "./utils/database/initializeDatabase";
+import { initializeDatabase, createParentChildLinkingColumns } from "./utils/database/initializeDatabase";
 
 function App() {
   const { profile } = useAuth();
@@ -94,8 +93,13 @@ function App() {
   const handleManualDbInit = async () => {
     setIsInitializingDb(true);
     try {
+      // First try to initialize the database
       const result = await initializeDatabase();
-      if (result) {
+      
+      // Then specifically try to create parent-child linking columns
+      const linkingResult = await createParentChildLinkingColumns();
+      
+      if (result && linkingResult) {
         setDbSetupError(false);
         toast({
           title: "Database Initialized",
@@ -103,8 +107,8 @@ function App() {
         });
       } else {
         toast({
-          title: "Database initialization failed",
-          description: "Could not create all required tables",
+          title: "Database initialization partially failed",
+          description: "Some tables or columns could not be created",
           variant: "destructive"
         });
       }
@@ -131,7 +135,7 @@ function App() {
                   Some database tables may be missing. This won't prevent you from using the application,
                   but some features might not work correctly.
                 </p>
-                <div>
+                <div className="flex gap-2">
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -139,6 +143,14 @@ function App() {
                     disabled={isInitializingDb}
                   >
                     {isInitializingDb ? "Initializing..." : "Initialize Database"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => createParentChildLinkingColumns()}
+                    disabled={isInitializingDb}
+                  >
+                    Fix Parent Linking
                   </Button>
                 </div>
               </AlertDescription>

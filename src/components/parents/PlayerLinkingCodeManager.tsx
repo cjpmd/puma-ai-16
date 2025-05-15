@@ -1,11 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { generateChildLinkingCode } from "@/utils/database/setupUserRolesTable";
-import { Copy, Check, RefreshCw, Loader2 } from "lucide-react";
+import { Copy, Check, RefreshCw, Loader2, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PlayerLinkingCodeManagerProps {
   playerId: string;
@@ -17,11 +18,52 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Check if linking_code column exists
+  const checkAndSetupColumn = async () => {
+    try {
+      // Try to query for the column to check if it exists
+      const { data, error } = await supabase
+        .from('information_schema.columns')
+        .select('column_name')
+        .eq('table_schema', 'public')
+        .eq('table_name', 'players')
+        .eq('column_name', 'linking_code');
+      
+      if (error) {
+        console.error("Error checking linking_code column:", error);
+        setDbError("Database schema check failed. Some features may not work properly.");
+        return false;
+      }
+      
+      const columnExists = Array.isArray(data) && data.length > 0;
+      
+      if (!columnExists) {
+        setDbError("The linking_code column doesn't exist in the players table. Some features may not work properly.");
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error checking linking_code column:", error);
+      setDbError("Failed to verify database schema. Some features may not work properly.");
+      return false;
+    }
+  };
 
   // Fetch the current linking code when component mounts
   const fetchLinkingCode = async () => {
     setIsLoading(true);
+    
+    // First check if the column exists
+    const columnExists = await checkAndSetupColumn();
+    if (!columnExists) {
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       const { data, error } = await supabase
         .from("players")
@@ -48,6 +90,18 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
   // Generate a new linking code and save it to the database
   const generateNewLinkingCode = async () => {
     setIsGenerating(true);
+    
+    // First check if the column exists
+    const columnExists = await checkAndSetupColumn();
+    if (!columnExists) {
+      setIsGenerating(false);
+      toast({
+        variant: "destructive",
+        description: "Cannot generate code: Database schema issue",
+      });
+      return;
+    }
+    
     try {
       // Generate a new code
       const newCode = generateChildLinkingCode();
@@ -89,9 +143,11 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
   };
 
   // If we don't have the code yet and we're not loading, fetch it
-  if (!linkingCode && !isLoading) {
-    fetchLinkingCode();
-  }
+  useEffect(() => {
+    if (!linkingCode && !isLoading) {
+      fetchLinkingCode();
+    }
+  }, [linkingCode, isLoading]);
 
   return (
     <Card>
@@ -102,7 +158,7 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
             variant="outline" 
             size="sm"
             onClick={generateNewLinkingCode}
-            disabled={isGenerating}
+            disabled={isGenerating || !!dbError}
           >
             {isGenerating ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -117,6 +173,13 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {dbError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{dbError}</AlertDescription>
+          </Alert>
+        )}
+        
         {isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -141,15 +204,17 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
           </div>
         ) : (
           <div className="text-center py-4">
-            <p className="text-muted-foreground">No linking code found.</p>
-            <Button 
-              variant="outline" 
-              className="mt-2"
-              onClick={generateNewLinkingCode}
-              disabled={isGenerating}
-            >
-              Generate Code
-            </Button>
+            <p className="text-muted-foreground">{dbError ? "Cannot generate linking code due to database issue." : "No linking code found."}</p>
+            {!dbError && (
+              <Button 
+                variant="outline" 
+                className="mt-2"
+                onClick={generateNewLinkingCode}
+                disabled={isGenerating}
+              >
+                Generate Code
+              </Button>
+            )}
           </div>
         )}
       </CardContent>
