@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useState } from "react";
 import { Fixture } from "@/types/fixture";

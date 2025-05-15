@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -97,20 +96,36 @@ export function TeamInfoSettings() {
         console.error('Error fetching team settings:', error);
       } else {
         setTeamSettings(data);
-        setFormData({
+        
+        // For each kit icon, ensure it has the pattern part (backward compatibility)
+        const updatedData = {
           team_name: data.team_name || "",
           team_colors: data.team_colors || "",
           team_logo: data.team_logo || "",
-          home_kit_icon: data.home_kit_icon || "",
-          away_kit_icon: data.away_kit_icon || "",
-          training_kit_icon: data.training_kit_icon || "",
-        });
+          home_kit_icon: ensurePatternFormat(data.home_kit_icon),
+          away_kit_icon: ensurePatternFormat(data.away_kit_icon),
+          training_kit_icon: ensurePatternFormat(data.training_kit_icon),
+        };
+        
+        setFormData(updatedData);
       }
     } catch (error) {
       console.error('Error in team settings setup:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Ensure the color values include the pattern information (for backward compatibility)
+  const ensurePatternFormat = (value: string | null): string => {
+    if (!value) return "";
+    
+    const parts = value.split("|");
+    // If only has primary and secondary colors, add the default "solid" pattern
+    if (parts.length === 2) {
+      return `${parts[0]}|${parts[1]}|solid`;
+    }
+    return value;
   };
 
   const updateTeamSettings = async () => {
@@ -231,7 +246,8 @@ export function TeamInfoSettings() {
           <div className="mt-6">
             <h3 className="text-lg font-medium mb-4">Kit Icons</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Create visual indicators for different kits that will be shown in fixture details
+              Create visual indicators for different kits that will be shown in fixture details.
+              Choose colors and patterns for each kit type.
             </p>
             
             <div className="grid gap-6 md:grid-cols-3">
