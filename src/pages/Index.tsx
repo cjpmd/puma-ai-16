@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Plus, Users, Trophy, Calendar, CheckCircle, LogIn, AlertCircle, RefreshCw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ensureDatabaseSetup } from "@/utils/database/ensureDatabaseSetup";
+import { Loader2 } from "lucide-react";
 
 export default function Index() {
   const [session, setSession] = useState<any>(null);
@@ -35,20 +36,22 @@ export default function Index() {
         if (data.session) {
           setSetupInProgress(true);
           
-          // Set a timeout to prevent eternal loading
-          const timeoutId = setTimeout(() => {
-            console.log("Setup timeout triggered");
-            setSetupTimeout(true);
-            setSetupInProgress(false);
-            setDatabaseError(true);
-          }, 10000);
+          // Use Promise.race with a timeout to prevent hanging
+          const setupPromise = ensureDatabaseSetup();
+          const timeoutPromise = new Promise<boolean>((resolve) => {
+            setTimeout(() => {
+              console.log("Setup timeout reached - continuing anyway");
+              resolve(false);
+            }, 5000); // 5 seconds timeout
+          });
           
-          const dbSetup = await ensureDatabaseSetup();
-          clearTimeout(timeoutId);
+          // Use the result from whichever finishes first
+          const dbSetup = await Promise.race([setupPromise, timeoutPromise]);
           
           setDatabaseError(!dbSetup);
           setSetupInProgress(false);
           
+          // Even if there was an error, attempt to get team and club data
           try {
             let teamData = null;
             let clubData = null;
@@ -103,14 +106,19 @@ export default function Index() {
               }
               localStorage.setItem('team_name', teamData.team_name || 'My Team');
               
-              navigate("/home");
+              navigate("/platform");
               return;
             } else if (clubData) {
               navigate("/club-settings");
               return;
+            } else {
+              navigate("/platform");
+              return;
             }
           } catch (error) {
             console.error("Error checking user entities:", error);
+            navigate("/platform");
+            return;
           }
         }
         
@@ -131,20 +139,22 @@ export default function Index() {
           // Try to ensure database is set up
           setSetupInProgress(true);
           
-          // Set a timeout to prevent eternal loading
-          const timeoutId = setTimeout(() => {
-            console.log("Setup timeout triggered");
-            setSetupTimeout(true);
-            setSetupInProgress(false);
-            setDatabaseError(true);
-          }, 10000);
+          // Use Promise.race with a timeout to prevent hanging
+          const setupPromise = ensureDatabaseSetup();
+          const timeoutPromise = new Promise<boolean>((resolve) => {
+            setTimeout(() => {
+              console.log("Setup timeout reached - continuing anyway");
+              resolve(false);
+            }, 5000); // 5 seconds timeout
+          });
           
-          const dbSetup = await ensureDatabaseSetup();
-          clearTimeout(timeoutId);
+          // Use the result from whichever finishes first
+          const dbSetup = await Promise.race([setupPromise, timeoutPromise]);
           
           setDatabaseError(!dbSetup);
           setSetupInProgress(false);
           
+          // Even if there was an error, attempt to get team and club data
           try {
             let teamData = null;
             let clubData = null;
@@ -202,7 +212,7 @@ export default function Index() {
                 description: `You've been signed in to ${teamData.team_name}`,
               });
               
-              navigate("/home");
+              navigate("/platform");
             } else if (clubData) {
               navigate("/club-settings");
             } else {

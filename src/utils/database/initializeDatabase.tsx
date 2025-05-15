@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 /**
  * Gets the content of SQL files to execute in the database
@@ -41,8 +41,7 @@ export const executeSql = async (sql: string) => {
       if (error.code === 'PGRST202') {
         console.log("RPC method 'execute_sql' not found - this is expected");
         // Show a specific message about the RPC method
-        toast({
-          title: "Database Setup Note",
+        toast.warning("Database Setup Note", {
           description: "The 'execute_sql' RPC function is not available. Please run the SQL setup scripts in Supabase.",
           duration: 8000,
         });
@@ -101,8 +100,7 @@ export const initializeDatabase = async (): Promise<boolean> => {
     console.log("Tables don't exist, attempting auto-setup");
     
     // Display toast to inform user about setup
-    toast({
-      title: "Database Setup Required",
+    toast.warning("Database Setup Required", {
       description: "The application needs to initialize database tables. Please run the SQL setup scripts in Supabase.",
       duration: 8000,
     });
@@ -114,18 +112,15 @@ export const initializeDatabase = async (): Promise<boolean> => {
       
       if (result.success) {
         console.log("Database tables created successfully");
-        toast({
-          title: "Database Initialized",
+        toast.success("Database Initialized", {
           description: "Application database tables have been set up",
         });
         return true;
       }
     } catch (err) {
       console.error("Error executing SQL file:", err);
-      toast({
-        title: "Database Setup Failed",
+      toast.error("Database Setup Failed", {
         description: "Could not automatically set up the database. Please run the SQL setup scripts in Supabase.",
-        variant: "destructive",
         duration: 8000,
       });
     }

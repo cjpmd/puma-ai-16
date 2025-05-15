@@ -1,6 +1,6 @@
 
 import { Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Auth } from "./pages/Auth";
 import Index from "./pages/Index";
@@ -26,9 +26,31 @@ import { ParentDashboard } from "./pages/ParentDashboard";
 import { PlayerDashboard } from "./pages/PlayerDashboard";
 import { useAuth } from "./hooks/useAuth";
 import { initializeUserRoles } from "./utils/database/setupUserRolesTable";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { ensureDatabaseSetup } from "./utils/database/ensureDatabaseSetup";
 
 function App() {
   const { profile } = useAuth();
+  const [dbSetupError, setDbSetupError] = useState(false);
+  
+  // Attempt database setup once on initial load
+  useEffect(() => {
+    const checkDatabaseSetup = async () => {
+      try {
+        const setupResult = await ensureDatabaseSetup();
+        if (!setupResult) {
+          console.warn("Database setup check failed");
+          setDbSetupError(true);
+        }
+      } catch (error) {
+        console.error("Error checking database setup:", error);
+        setDbSetupError(true);
+      }
+    };
+    
+    checkDatabaseSetup();
+  }, []);
   
   // Initialize user roles system when profile loads
   useEffect(() => {
@@ -50,6 +72,18 @@ function App() {
       <div className="min-h-screen bg-slate-50">
         <ErrorBoundary>
           <NavBar />
+          
+          {dbSetupError && (
+            <Alert variant="warning" className="max-w-4xl mx-auto mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Database Configuration</AlertTitle>
+              <AlertDescription>
+                Some database tables may be missing. This won't prevent you from using the application,
+                but some features might not work correctly.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<Index />} />

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
@@ -8,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AuthError, AuthApiError } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
 import { ensureDatabaseSetup } from "@/utils/database/ensureDatabaseSetup";
+import { toast } from "sonner";
 
 export const Auth = () => {
   const navigate = useNavigate();
@@ -40,8 +40,17 @@ export const Auth = () => {
         if (session) {
           console.log("Auth: Found existing session", session);
           
-          // Ensure database is set up
-          await ensureDatabaseSetup();
+          // Use Promise.race with a timeout to prevent hanging
+          const setupPromise = ensureDatabaseSetup();
+          const timeoutPromise = new Promise<boolean>((resolve) => {
+            setTimeout(() => {
+              console.log("Setup timeout reached - continuing anyway");
+              resolve(false);
+            }, 3000); // 3 seconds timeout
+          });
+          
+          // Use the result from whichever finishes first
+          await Promise.race([setupPromise, timeoutPromise]);
           
           try {
             // Check if user has a team
@@ -67,15 +76,15 @@ export const Auth = () => {
             }
               
             if (teamData) {
-              console.log("Auth: Found team, redirecting to home");
+              console.log("Auth: Found team, redirecting to platform");
               // Store team data in localStorage
               if (teamData.team_logo) {
                 localStorage.setItem('team_logo', teamData.team_logo);
               }
               localStorage.setItem('team_name', teamData.team_name || 'My Team');
               
-              // Redirect to team dashboard
-              navigate("/home");
+              // Redirect to platform dashboard
+              navigate("/platform");
               return;
             } else if (clubData) {
               console.log("Auth: Found club, redirecting to club settings");
@@ -149,15 +158,15 @@ export const Auth = () => {
           }
             
           if (teamData) {
-            console.log("Auth: Found team after sign-in, redirecting to home");
+            console.log("Auth: Found team after sign-in, redirecting to platform");
             // Store team data in localStorage
             if (teamData.team_logo) {
               localStorage.setItem('team_logo', teamData.team_logo);
             }
             localStorage.setItem('team_name', teamData.team_name || 'My Team');
             
-            // Redirect to team dashboard
-            navigate("/home");
+            // Redirect to platform dashboard
+            navigate("/platform");
           } else if (clubData) {
             console.log("Auth: Found club after sign-in, redirecting to club settings");
             // Redirect to club dashboard
