@@ -1,6 +1,6 @@
 
 // Export all calendar components and hooks
-export { Calendar } from './useCalendarData';
+export { default as Calendar } from '../../components/calendar/CalendarPage';
 export * from './useCalendarData';
 export * from './useCalendarSubscriptions';
 export * from './useFestivals';

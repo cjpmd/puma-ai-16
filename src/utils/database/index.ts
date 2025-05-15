@@ -4,6 +4,6 @@ export * from './columnManagement';
 export * from './columnUtils';
 export * from './dataVerification';
 export * from './ensureDatabaseSetup';
-export * from './executeSql';
+export { executeSql } from './executeSql';
 export * from './initializeDatabase';
 export * from './setupUserRolesTable';
