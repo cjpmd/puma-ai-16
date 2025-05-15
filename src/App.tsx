@@ -29,11 +29,14 @@ import { initializeUserRoles } from "./utils/database/setupUserRolesTable";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { ensureDatabaseSetup } from "./utils/database/ensureDatabaseSetup";
+import { Button } from "@/components/ui/button";
+import { initializeDatabase } from "./utils/database/initializeDatabase";
 
 function App() {
   const { profile } = useAuth();
   const [dbSetupError, setDbSetupError] = useState(false);
   const [isCheckingDb, setIsCheckingDb] = useState(true);
+  const [isInitializingDb, setIsInitializingDb] = useState(false);
   
   // Attempt database setup once on initial load with a timeout
   useEffect(() => {
@@ -54,6 +57,8 @@ function App() {
         if (!setupResult) {
           console.warn("Database setup check failed");
           setDbSetupError(true);
+        } else {
+          setDbSetupError(false);
         }
       } catch (error) {
         console.error("Error checking database setup:", error);
@@ -84,6 +89,28 @@ function App() {
     }
   }, [profile]);
 
+  // Function to manually initialize database
+  const handleManualDbInit = async () => {
+    setIsInitializingDb(true);
+    try {
+      const result = await initializeDatabase();
+      if (result) {
+        setDbSetupError(false);
+        Toaster.success("Database initialized", {
+          description: "Database tables have been created successfully"
+        });
+      } else {
+        Toaster.error("Database initialization failed", {
+          description: "Could not create all required tables"
+        });
+      }
+    } catch (error) {
+      console.error("Error in manual database initialization:", error);
+    } finally {
+      setIsInitializingDb(false);
+    }
+  };
+
   return (
     <TeamsContextProvider>
       <Toaster position="top-center" />
@@ -95,9 +122,21 @@ function App() {
             <Alert variant="destructive" className="max-w-4xl mx-auto mt-4">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Database Configuration</AlertTitle>
-              <AlertDescription>
-                Some database tables may be missing. This won't prevent you from using the application,
-                but some features might not work correctly.
+              <AlertDescription className="flex flex-col gap-4">
+                <p>
+                  Some database tables may be missing. This won't prevent you from using the application,
+                  but some features might not work correctly.
+                </p>
+                <div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleManualDbInit}
+                    disabled={isInitializingDb}
+                  >
+                    {isInitializingDb ? "Initializing..." : "Initialize Database"}
+                  </Button>
+                </div>
               </AlertDescription>
             </Alert>
           )}

@@ -29,20 +29,36 @@ export async function ensureDatabaseSetup() {
   console.log("Ensuring database setup...");
   
   try {
-    // First, check if critical tables exist
-    const profilesExist = await tableExists('profiles');
-    const teamsExist = await tableExists('teams');
+    // Check if critical tables exist
+    const criticalTables = [
+      'profiles', 
+      'teams', 
+      'players', 
+      'performance_categories', 
+      'game_formats',
+      'team_settings'
+    ];
     
-    if (!profilesExist || !teamsExist) {
-      console.warn("Critical tables don't exist. Database may not be set up correctly.");
+    const tableChecks = await Promise.all(
+      criticalTables.map(async (table) => {
+        const exists = await tableExists(table);
+        console.log(`Table '${table}' exists: ${exists}`);
+        return { table, exists };
+      })
+    );
+    
+    const missingTables = tableChecks.filter(check => !check.exists).map(check => check.table);
+    
+    if (missingTables.length > 0) {
+      console.warn(`Missing tables: ${missingTables.join(', ')}. Attempting database initialization.`);
       
       // Try to initialize the database
       const initResult = await initializeDatabase();
       
-      // Show toast notification either way
+      // Show toast notification based on result
       if (!initResult) {
         toast.error("Database setup required", {
-          description: "Some tables weren't found. Please run the SQL setup scripts in Supabase.",
+          description: `Missing tables: ${missingTables.join(', ')}. Please run the SQL setup scripts in Supabase.`,
           duration: 6000,
         });
       } else {
@@ -50,14 +66,18 @@ export async function ensureDatabaseSetup() {
           description: "The database has been set up with required tables.",
           duration: 4000,
         });
+        
         // Re-check tables after initialization
-        const tablesExist = await tableExists('profiles') && await tableExists('teams');
-        if (tablesExist) {
+        const allTablesExistNow = await Promise.all(
+          missingTables.map(table => tableExists(table))
+        ).then(results => results.every(exists => exists));
+        
+        if (allTablesExistNow) {
           return true;
         }
       }
       
-      // Return false but don't block the app from loading
+      // Return false if we couldn't create all tables, but don't block the app
       return false;
     }
     

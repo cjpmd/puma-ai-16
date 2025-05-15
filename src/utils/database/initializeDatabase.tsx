@@ -56,6 +56,8 @@ export const executeSql = async (sql: string) => {
       const { error: profilesError } = await createProfilesTable();
       if (!profilesError) {
         console.log("Successfully created profiles table directly");
+      } else {
+        console.error("Error creating profiles table:", profilesError);
       }
     } catch (e) {
       console.error("Error creating profiles table:", e);
@@ -66,6 +68,8 @@ export const executeSql = async (sql: string) => {
       const { error: teamsError } = await createTeamsTable();
       if (!teamsError) {
         console.log("Successfully created teams table directly");
+      } else {
+        console.error("Error creating teams table:", teamsError);
       }
     } catch (e) {
       console.error("Error creating teams table:", e);
@@ -76,10 +80,17 @@ export const executeSql = async (sql: string) => {
       const { error: playersError } = await createPlayersTable();
       if (!playersError) {
         console.log("Successfully created players table directly");
+      } else {
+        console.error("Error creating players table:", playersError);
       }
     } catch (e) {
       console.error("Error creating players table:", e);
     }
+    
+    // Try to create additional required tables
+    await createGameFormatsTable();
+    await createPerformanceCategoriesTable();
+    await createTeamSettingsTable();
     
     // Return success
     return { success: true };
@@ -121,6 +132,7 @@ async function createTeamsTable() {
         contact_email TEXT,
         team_color TEXT,
         admin_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+        club_id UUID,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       );
@@ -143,12 +155,150 @@ async function createPlayersTable() {
         date_of_birth DATE,
         player_type TEXT,
         profile_image TEXT,
-        team_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
+        team_id UUID,
         created_at TIMESTAMPTZ DEFAULT now(),
         updated_at TIMESTAMPTZ DEFAULT now()
       );
     `
   });
+}
+
+/**
+ * Helper function to create performance_categories table
+ */
+async function createPerformanceCategoriesTable() {
+  try {
+    const { error } = await supabase.rpc('execute_sql', {
+      sql_string: `
+        CREATE TABLE IF NOT EXISTS public.performance_categories (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          description TEXT,
+          created_at TIMESTAMPTZ DEFAULT now()
+        );
+        
+        -- Insert default values if table is empty
+        INSERT INTO public.performance_categories (id, name, description)
+        SELECT 'messi', 'Messi', 'Messi performance category'
+        WHERE NOT EXISTS (SELECT 1 FROM public.performance_categories WHERE id = 'messi');
+        
+        INSERT INTO public.performance_categories (id, name, description)
+        SELECT 'ronaldo', 'Ronaldo', 'Ronaldo performance category'
+        WHERE NOT EXISTS (SELECT 1 FROM public.performance_categories WHERE id = 'ronaldo');
+        
+        INSERT INTO public.performance_categories (id, name, description)
+        SELECT 'jags', 'Jags', 'Jags performance category'
+        WHERE NOT EXISTS (SELECT 1 FROM public.performance_categories WHERE id = 'jags');
+      `
+    });
+    
+    if (error) {
+      console.error("Error creating performance_categories table:", error);
+      
+      // Direct approach as fallback
+      await supabase.from('performance_categories').upsert([
+        { id: 'messi', name: 'Messi', description: 'Messi performance category' },
+        { id: 'ronaldo', name: 'Ronaldo', description: 'Ronaldo performance category' },
+        { id: 'jags', name: 'Jags', description: 'Jags performance category' }
+      ], { onConflict: 'id' });
+    }
+    
+    return { success: !error };
+  } catch (e) {
+    console.error("Error creating performance_categories table:", e);
+    return { success: false, error: e };
+  }
+}
+
+/**
+ * Helper function to create game_formats table
+ */
+async function createGameFormatsTable() {
+  try {
+    const { error } = await supabase.rpc('execute_sql', {
+      sql_string: `
+        CREATE TABLE IF NOT EXISTS public.game_formats (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          description TEXT,
+          created_at TIMESTAMPTZ DEFAULT now()
+        );
+        
+        -- Insert default values if table is empty
+        INSERT INTO public.game_formats (id, name, description)
+        SELECT '4-a-side', '4-a-side', '4 players per team'
+        WHERE NOT EXISTS (SELECT 1 FROM public.game_formats WHERE id = '4-a-side');
+        
+        INSERT INTO public.game_formats (id, name, description)
+        SELECT '5-a-side', '5-a-side', '5 players per team'
+        WHERE NOT EXISTS (SELECT 1 FROM public.game_formats WHERE id = '5-a-side');
+        
+        INSERT INTO public.game_formats (id, name, description)
+        SELECT '7-a-side', '7-a-side', '7 players per team'
+        WHERE NOT EXISTS (SELECT 1 FROM public.game_formats WHERE id = '7-a-side');
+        
+        INSERT INTO public.game_formats (id, name, description)
+        SELECT '9-a-side', '9-a-side', '9 players per team'
+        WHERE NOT EXISTS (SELECT 1 FROM public.game_formats WHERE id = '9-a-side');
+        
+        INSERT INTO public.game_formats (id, name, description)
+        SELECT '11-a-side', '11-a-side', '11 players per team'
+        WHERE NOT EXISTS (SELECT 1 FROM public.game_formats WHERE id = '11-a-side');
+      `
+    });
+    
+    if (error) {
+      console.error("Error creating game_formats table:", error);
+      
+      // Direct approach as fallback
+      await supabase.from('game_formats').upsert([
+        { id: '4-a-side', name: '4-a-side', description: '4 players per team' },
+        { id: '5-a-side', name: '5-a-side', description: '5 players per team' },
+        { id: '7-a-side', name: '7-a-side', description: '7 players per team' },
+        { id: '9-a-side', name: '9-a-side', description: '9 players per team' },
+        { id: '11-a-side', name: '11-a-side', description: '11 players per team' }
+      ], { onConflict: 'id' });
+    }
+    
+    return { success: !error };
+  } catch (e) {
+    console.error("Error creating game_formats table:", e);
+    return { success: false, error: e };
+  }
+}
+
+/**
+ * Helper function to create team_settings table
+ */
+async function createTeamSettingsTable() {
+  try {
+    const { error } = await supabase.rpc('execute_sql', {
+      sql_string: `
+        CREATE TABLE IF NOT EXISTS public.team_settings (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          team_name TEXT,
+          team_logo TEXT,
+          team_colors TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+        );
+        
+        -- Insert default record if none exists
+        INSERT INTO public.team_settings (id)
+        SELECT '00000000-0000-0000-0000-000000000003'
+        WHERE NOT EXISTS (SELECT 1 FROM public.team_settings LIMIT 1);
+      `
+    });
+    
+    if (error) {
+      console.error("Error creating team_settings table:", error);
+    }
+    
+    return { success: !error };
+  } catch (e) {
+    console.error("Error creating team_settings table:", e);
+    return { success: false, error: e };
+  }
 }
 
 /**
@@ -182,27 +332,44 @@ export const initializeDatabase = async (): Promise<boolean> => {
       setTimeout(() => {
         console.warn("Database initialization timed out");
         resolve(false);
-      }, 10000); // 10 second timeout
+      }, 15000); // 15 second timeout (increased from 10)
     });
     
     // Actual initialization logic
     const initPromise = (async () => {
-      // Check if clubs table already exists
-      const clubsExist = await tableExists('clubs');
-      const profilesExist = await tableExists('profiles');
-      const teamsExist = await tableExists('teams');
+      console.log("Checking if critical tables exist...");
       
-      if (clubsExist && profilesExist && teamsExist) {
-        console.log("Database tables already exist");
+      // Check if key tables already exist
+      const criticalTables = [
+        'profiles', 
+        'teams', 
+        'players', 
+        'performance_categories', 
+        'game_formats',
+        'team_settings'
+      ];
+      
+      const tableChecks = await Promise.all(
+        criticalTables.map(async (table) => {
+          const exists = await tableExists(table);
+          console.log(`Table '${table}' exists: ${exists}`);
+          return { table, exists };
+        })
+      );
+      
+      const missingTables = tableChecks.filter(check => !check.exists).map(check => check.table);
+      
+      if (missingTables.length === 0) {
+        console.log("All required database tables exist");
         return true;
       }
       
-      console.log("Tables don't exist, attempting auto-setup");
+      console.log(`Missing tables: ${missingTables.join(', ')}. Attempting auto-setup`);
       
       // Display toast to inform user about setup
-      toast.warning("Database Setup Required", {
+      toast.loading("Database Setup Required", {
         description: "The application needs to initialize database tables. Please wait...",
-        duration: 5000,
+        duration: 10000,
       });
       
       // Try to execute SQL file
@@ -223,17 +390,51 @@ export const initializeDatabase = async (): Promise<boolean> => {
         console.error("Error executing SQL file:", err);
         
         // Try direct table creation as a fallback
-        const profilesCreated = await createProfilesTable();
-        const teamsCreated = await createTeamsTable();
-        const playersCreated = await createPlayersTable();
+        let tablesCreated = true;
         
-        // Check if we succeeded
-        const profilesExistNow = await tableExists('profiles');
-        const teamsExistNow = await tableExists('teams');
+        // Create each missing table directly
+        for (const table of missingTables) {
+          let success = false;
+          
+          if (table === 'profiles') {
+            const result = await createProfilesTable();
+            success = !result.error;
+          } else if (table === 'teams') {
+            const result = await createTeamsTable();
+            success = !result.error;
+          } else if (table === 'players') {
+            const result = await createPlayersTable();
+            success = !result.error;
+          } else if (table === 'performance_categories') {
+            const result = await createPerformanceCategoriesTable();
+            success = result.success;
+          } else if (table === 'game_formats') {
+            const result = await createGameFormatsTable();
+            success = result.success;
+          } else if (table === 'team_settings') {
+            const result = await createTeamSettingsTable();
+            success = result.success;
+          }
+          
+          if (!success) {
+            tablesCreated = false;
+            console.error(`Failed to create table: ${table}`);
+          }
+        }
         
-        if (profilesExistNow && teamsExistNow) {
+        // Check if we succeeded in creating all tables
+        const allTablesExistNow = await Promise.all(
+          missingTables.map(table => tableExists(table))
+        ).then(results => results.every(exists => exists));
+        
+        if (allTablesExistNow) {
           toast.success("Database Setup Complete", {
-            description: "Critical database tables have been created",
+            description: "All database tables have been created",
+          });
+          return true;
+        } else if (tablesCreated) {
+          toast.success("Database Setup Partially Complete", {
+            description: "Most critical database tables have been created",
           });
           return true;
         } else {
