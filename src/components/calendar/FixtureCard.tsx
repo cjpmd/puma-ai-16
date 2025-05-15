@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,7 @@ const FixtureCard = ({ fixture, onEdit, onDelete, onDateChange }: FixtureCardPro
   const fixtureDate = fixture.date ? new Date(fixture.date) : null;
   const formattedDate = fixtureDate ? format(fixtureDate, 'EEE, d MMM yyyy') : 'Date not set';
   const formattedTime = fixtureDate ? format(fixtureDate, 'h:mm a') : 'Time not set';
-
+  
   const homeTeamName = fixture.home_team_name || 'Home Team';
   const awayTeamName = fixture.away_team_name || 'Away Team';
 
