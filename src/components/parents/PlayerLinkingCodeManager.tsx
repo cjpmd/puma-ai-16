@@ -5,8 +5,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { generateChildLinkingCode } from "@/utils/database/setupUserRolesTable";
-import { Copy, Check, RefreshCw, Loader2, AlertCircle } from "lucide-react";
+import { Copy, Check, RefreshCw, Loader2, AlertCircle, Wrench } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { addLinkingCodeColumn } from "@/utils/database/createTables";
 
 interface PlayerLinkingCodeManagerProps {
   playerId: string;
@@ -17,6 +18,7 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
   const [linkingCode, setLinkingCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isFixing, setIsFixing] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -27,7 +29,7 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
     setDbError(null);
     
     try {
-      // Try direct query first - this avoids schema checks that might fail
+      // Try direct query first
       const { data, error } = await supabase
         .from("players")
         .select("linking_code")
@@ -35,9 +37,8 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
         .single();
       
       if (error) {
-        // If this specific error about column not existing
         if (error.message?.includes("column") && error.message?.includes("does not exist")) {
-          setDbError("The linking_code column doesn't exist in the players table yet. Please initialize the database.");
+          setDbError("The linking_code column doesn't exist yet. Please use the 'Fix Database' button below.");
         } else {
           console.error("Error fetching linking code:", error);
           setDbError("Failed to fetch linking code. Database issue detected.");
@@ -62,6 +63,17 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
       // Generate a new code
       const newCode = generateChildLinkingCode();
       
+      // First check if we need to fix the schema
+      const { data: checkData, error: checkError } = await supabase
+        .from("players")
+        .select("linking_code")
+        .limit(1);
+        
+      if (checkError && checkError.message?.includes("does not exist")) {
+        setDbError("Cannot generate code: The linking_code column doesn't exist yet. Please use the 'Fix Database' button.");
+        return;
+      }
+      
       // Try to save it directly to the database
       const { error } = await supabase
         .from("players")
@@ -69,14 +81,14 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
         .eq("id", playerId);
       
       if (error) {
-        // If this specific error about column not existing
-        if (error.message?.includes("column") && error.message?.includes("does not exist")) {
-          setDbError("Cannot generate code: The linking_code column doesn't exist yet. Please initialize the database.");
+        // Handle other types of errors
+        console.error("Error generating new linking code:", error);
+        if (error.message?.includes("update") && error.message?.includes("player_category")) {
+          setDbError("Database trigger error. Please update the player profile first or contact support.");
         } else {
-          console.error("Error generating new linking code:", error);
           toast({
             variant: "destructive",
-            description: "Failed to generate new linking code. Database issue detected.",
+            description: "Failed to generate new linking code: " + error.message,
           });
         }
       } else {
@@ -94,6 +106,37 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // Fix database schema
+  const fixDatabaseSchema = async () => {
+    setIsFixing(true);
+    try {
+      const success = await addLinkingCodeColumn();
+      
+      if (success) {
+        setDbError(null);
+        toast({
+          description: "Database fixed successfully. Try generating a code now.",
+        });
+        
+        // Refresh
+        await fetchLinkingCode();
+      } else {
+        toast({
+          variant: "destructive",
+          description: "Failed to fix database schema. Please contact support.",
+        });
+      }
+    } catch (error) {
+      console.error("Error fixing database:", error);
+      toast({
+        variant: "destructive",
+        description: "An error occurred while fixing the database.",
+      });
+    } finally {
+      setIsFixing(false);
     }
   };
 
@@ -143,7 +186,24 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
         {dbError && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{dbError}</AlertDescription>
+            <AlertDescription className="flex flex-col gap-2">
+              <span>{dbError}</span>
+              {dbError.includes("column doesn't exist") && (
+                <Button 
+                  size="sm" 
+                  onClick={fixDatabaseSchema}
+                  disabled={isFixing}
+                  className="mt-2 self-start"
+                >
+                  {isFixing ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Wrench className="h-4 w-4 mr-2" />
+                  )}
+                  Fix Database
+                </Button>
+              )}
+            </AlertDescription>
           </Alert>
         )}
         

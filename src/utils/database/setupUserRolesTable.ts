@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
@@ -181,13 +180,22 @@ export const ensurePlayerLinkingCodeColumn = async (): Promise<boolean> => {
 };
 
 /**
- * Generate a random code for linking a child/player account to a parent
- * @returns A randomly generated 6-character alphanumeric code
+ * Generates a random code that can be used for child account linking
+ * @returns A string code like "A1B2C3"
  */
 export const generateChildLinkingCode = (): string => {
-  // Generate a 6-character code from alphanumeric characters
-  // Use nanoid for secure random generation
-  return nanoid(6).toUpperCase();
+  // Create a code with numbers and uppercase letters
+  // Format: 6 characters like "A1B2C3"
+  const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed confusing chars: 0/O, 1/I
+  let code = '';
+  
+  // Generate 6 random characters
+  for (let i = 0; i < 6; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    code += characters.charAt(randomIndex);
+  }
+  
+  return code;
 };
 
 /**

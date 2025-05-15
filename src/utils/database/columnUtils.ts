@@ -1,40 +1,76 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Checks if a column exists in a table using a simpler approach
- * @param tableName The name of the table to check
- * @param columnName The name of the column to check for
- * @returns Promise<boolean> Whether the column exists
+ * Direct way to check if a column exists in a table
+ * This handles the cases where the normal RPC function is not available
  */
-export const columnExists = async (tableName: string, columnName: string): Promise<boolean> => {
+export const columnExists = async (table: string, column: string): Promise<boolean> => {
   try {
-    console.log(`Checking if column ${columnName} exists in ${tableName}...`);
-    
-    // Try to select from the table with the column name
-    // If it works, the column exists
-    const { data, error } = await supabase
-      .from(tableName)
-      .select(columnName)
-      .limit(1);
-    
-    // If there's no error, the column exists
-    if (!error) {
-      console.log(`Column ${columnName} exists in ${tableName}`);
-      return true;
+    // Try the direct query approach first
+    try {
+      // Try selecting the column directly - if no error, the column exists
+      const { error } = await supabase
+        .from(table)
+        .select(column)
+        .limit(1);
+      
+      if (!error) {
+        console.log(`Direct query: ${column} column exists in ${table}`);
+        return true;
+      }
+      
+      // If error mentions column doesn't exist, then return false
+      if (error.message?.includes("column") && error.message?.includes("does not exist")) {
+        console.log(`Direct query: ${column} column does not exist in ${table}`);
+        return false;
+      }
+      
+      // Other error, try alternative approach
+      console.error(`Error checking if column ${column} exists in ${table}:`, error);
+    } catch (error) {
+      console.error(`Exception in direct query for ${column} in ${table}:`, error);
+      // Continue to alternative approaches
+    }
+
+    // Try the RPC method as a backup (though it may not be available)
+    try {
+      const { data, error } = await supabase.rpc('get_table_columns', {
+        table_name: table
+      });
+      
+      if (error) {
+        console.error(`RPC error checking if column ${column} exists in ${table}:`, error);
+        // Continue to next approach
+      } else if (data && Array.isArray(data)) {
+        return data.includes(column);
+      }
+    } catch (rpcError) {
+      console.error(`RPC exception checking if column ${column} exists in ${table}:`, rpcError);
+      // Continue to next approach
     }
     
-    // If the error is specifically about the column not existing
-    if (error.message?.includes(`column "${columnName}" does not exist`)) {
-      console.log(`Column ${columnName} does not exist in ${tableName}`);
+    // Fallback to information_schema (may not have permissions)
+    try {
+      const { data, error } = await supabase
+        .from('information_schema.columns')
+        .select('column_name')
+        .eq('table_schema', 'public')
+        .eq('table_name', table)
+        .eq('column_name', column);
+        
+      if (error) {
+        console.error(`Information schema error checking if column ${column} exists in ${table}:`, error);
+        // Last resort approach failed
+        return false;
+      }
+      
+      return data && data.length > 0;
+    } catch (error) {
+      console.error(`Information schema exception checking if column ${column} exists in ${table}:`, error);
       return false;
     }
-    
-    // If there's another kind of error, log it and return false
-    console.error(`Error checking if column ${columnName} exists in ${tableName}:`, error);
-    return false;
   } catch (error) {
-    console.error(`Error checking if column ${columnName} exists in ${tableName}:`, error);
+    console.error(`Error checking if column ${column} exists in ${table}:`, error);
     return false;
   }
 };
