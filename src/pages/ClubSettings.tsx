@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { ClubSubscriptionReport } from "@/components/clubs/ClubSubscriptionReport";
 import { Settings, CreditCard, Users, ArrowLeft, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { NavBar } from "@/components/NavBar";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -31,60 +30,106 @@ export default function ClubSettings() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchClubData = async () => {
-      if (!profile) return;
+    fetchClubData();
+  }, [profile]);
+
+  const fetchClubData = async () => {
+    if (!profile) return;
+    
+    try {
+      setLoading(true);
       
-      try {
-        setLoading(true);
-        
-        // Check if user has clubs - changed to get all clubs, not just one
-        const { data: clubsData, error: clubError } = await supabase
-          .from('clubs')
-          .select('*')
-          .eq('admin_id', profile.id);
+      // Check if user has clubs - changed to get all clubs, not just one
+      const { data: clubsData, error: clubError } = await supabase
+        .from('clubs')
+        .select('*')
+        .eq('admin_id', profile.id);
           
-        if (clubError) {
-          console.error('Error fetching club:', clubError);
+      if (clubError) {
+        console.error('Error fetching club:', clubError);
+        return;
+      }
+      
+      if (clubsData && clubsData.length > 0) {
+        setClubs(clubsData);
+        setSelectedClub(clubsData[0]); // Select the first club by default
+        
+        // Fetch team settings to get the actual team name
+        const { data: teamSettingsData } = await supabase
+          .from('team_settings')
+          .select('*')
+          .single();
+        
+        const teamSettings = teamSettingsData || {};
+        
+        // Fetch teams in this club - now also joining with team_settings
+        const { data: teamsData, error: teamsError } = await supabase
+          .from('teams')
+          .select(`
+            id,
+            team_name,
+            age_group,
+            location,
+            club_id,
+            joined_club_at
+          `)
+          .eq('club_id', clubsData[0].id);
+            
+        if (teamsError) {
+          console.error('Error fetching teams:', teamsError);
           return;
         }
         
-        if (clubsData && clubsData.length > 0) {
-          setClubs(clubsData);
-          setSelectedClub(clubsData[0]); // Select the first club by default
+        // If team settings exist and contains team_name, use it to update team names
+        if (teamSettings?.team_name) {
+          const updatedTeams = teamsData?.map(team => {
+            // Only update team name if it matches the default "My Team" name
+            if (team.team_name === "My Team") {
+              return {
+                ...team,
+                team_name: teamSettings.team_name
+              };
+            }
+            return team;
+          }) || [];
           
-          // Fetch teams in this club
-          const { data: teamsData, error: teamsError } = await supabase
-            .from('teams')
-            .select('*')
-            .eq('club_id', clubsData[0].id);
-            
-          if (teamsError) {
-            console.error('Error fetching teams:', teamsError);
-            return;
-          }
-          
+          setTeams(updatedTeams);
+        } else {
           setTeams(teamsData || []);
         }
-      } catch (error) {
-        console.error('Error in fetchClubData:', error);
-      } finally {
-        setLoading(false);
       }
-    };
-    
-    fetchClubData();
-  }, [profile]);
+    } catch (error) {
+      console.error('Error in fetchClubData:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleClubChange = async (clubId: string) => {
     const club = clubs.find(c => c.id === clubId);
     if (club) {
       setSelectedClub(club);
       
+      // Fetch team settings to get the actual team name
+      const { data: teamSettingsData } = await supabase
+        .from('team_settings')
+        .select('*')
+        .single();
+      
+      const teamSettings = teamSettingsData || {};
+      
       // Fetch teams for the selected club
       try {
         const { data: teamsData, error: teamsError } = await supabase
           .from('teams')
-          .select('*')
+          .select(`
+            id,
+            team_name,
+            age_group,
+            location,
+            club_id,
+            joined_club_at
+          `)
           .eq('club_id', club.id);
           
         if (teamsError) {
@@ -92,7 +137,23 @@ export default function ClubSettings() {
           return;
         }
         
-        setTeams(teamsData || []);
+        // If team settings exist and contains team_name, use it to update team names
+        if (teamSettings?.team_name) {
+          const updatedTeams = teamsData?.map(team => {
+            // Only update team name if it matches the default "My Team" name
+            if (team.team_name === "My Team") {
+              return {
+                ...team,
+                team_name: teamSettings.team_name
+              };
+            }
+            return team;
+          }) || [];
+          
+          setTeams(updatedTeams);
+        } else {
+          setTeams(teamsData || []);
+        }
       } catch (error) {
         console.error('Error fetching teams for club:', error);
       }

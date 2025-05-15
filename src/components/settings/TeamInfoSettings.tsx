@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -25,7 +26,11 @@ interface TeamSettings {
   created_at: string;
 }
 
-export function TeamInfoSettings() {
+interface TeamInfoSettingsProps {
+  onTeamInfoUpdated?: () => void;
+}
+
+export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
   const [teamSettings, setTeamSettings] = useState<TeamSettings | null>(null);
   const [formData, setFormData] = useState({
     team_name: "",
@@ -148,6 +153,13 @@ export function TeamInfoSettings() {
     try {
       setIsSaving(true);
       const { error } = await supabase
+        .from('teams')
+        .update({
+          team_name: formData.team_name,
+        })
+        .eq('id', teamSettings.id);
+      
+      const { error: settingsError } = await supabase
         .from('team_settings')
         .update({
           team_name: formData.team_name,
@@ -160,8 +172,8 @@ export function TeamInfoSettings() {
         })
         .eq('id', teamSettings.id);
       
-      if (error) {
-        console.error('Error updating team settings:', error);
+      if (error || settingsError) {
+        console.error('Error updating team settings:', error || settingsError);
         toast({
           title: "Error",
           description: "Failed to update team settings",
@@ -186,6 +198,29 @@ export function TeamInfoSettings() {
           away_kit_icon: formData.away_kit_icon,
           training_kit_icon: formData.training_kit_icon,
         });
+        
+        // Notify parent that team info was updated
+        if (onTeamInfoUpdated) {
+          onTeamInfoUpdated();
+        }
+        
+        // Also update both tables to ensure consistency
+        try {
+          const { data: teamData } = await supabase
+            .from('teams')
+            .select('id')
+            .limit(1)
+            .single();
+            
+          if (teamData) {
+            await supabase
+              .from('teams')
+              .update({ team_name: formData.team_name })
+              .eq('id', teamData.id);
+          }
+        } catch (teamUpdateError) {
+          console.error('Error updating team name in teams table:', teamUpdateError);
+        }
       }
     } catch (error) {
       console.error('Error updating team settings:', error);

@@ -18,6 +18,7 @@ import { Users, Settings, CreditCard, Plus } from "lucide-react";
 export default function TeamSettings() {
   const [debugInfo, setDebugInfo] = useState<any>({});
   const [teamId, setTeamId] = useState<string | null>(null);
+  const [teamName, setTeamName] = useState<string | null>(null);
   const [clubInfo, setClubInfo] = useState<any>(null);
   const navigate = useNavigate();
   const { profile } = useAuth();
@@ -89,9 +90,19 @@ export default function TeamSettings() {
       
       console.log("Team data fetched:", teamData);
       
+      // Also fetch team settings to get the custom team name if it exists
+      const { data: teamSettings } = await supabase
+        .from('team_settings')
+        .select('team_name')
+        .maybeSingle();
+        
       if (teamData) {
         setTeamId(teamData.id);
         console.log("Setting team ID:", teamData.id);
+        
+        // Use team_name from team_settings if available, otherwise use the default team name
+        const displayName = teamSettings?.team_name || teamData.team_name;
+        setTeamName(displayName);
         
         if (teamData.club_id) {
           setClubInfo(teamData.clubs);
@@ -134,8 +145,31 @@ export default function TeamSettings() {
       
       console.log("Created default team:", newTeam);
       setTeamId(newTeam.id);
+      setTeamName(newTeam.team_name);
+      
+      // Also ensure there's an entry in team_settings
+      await ensureTeamSettings();
     } catch (error) {
       console.error('Error in createDefaultTeam:', error);
+    }
+  };
+  
+  // Ensure team_settings table has an entry
+  const ensureTeamSettings = async () => {
+    try {
+      const { data: existingSettings } = await supabase
+        .from('team_settings')
+        .select('*')
+        .maybeSingle();
+        
+      if (!existingSettings) {
+        await supabase.from('team_settings').insert({
+          team_name: 'My Team',
+          created_at: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error ensuring team settings:', error);
     }
   };
 
@@ -227,12 +261,19 @@ export default function TeamSettings() {
   const handleClubJoined = async () => {
     await fetchTeamAndClubData();
   };
+  
+  // Function to handle team info updates
+  const handleTeamInfoUpdated = async () => {
+    await fetchTeamAndClubData();
+  };
 
   return (
     <>
       <div className="container mx-auto py-6 max-w-4xl">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Team Settings</h1>
+          <h1 className="text-3xl font-bold">
+            {teamName ? `${teamName} Settings` : "Team Settings"}
+          </h1>
           
           <div className="flex gap-2">
             {profile?.role === 'admin' && (
@@ -271,7 +312,7 @@ export default function TeamSettings() {
           </TabsList>
           
           <TabsContent value="general" className="space-y-6">
-            <TeamInfoSettings />
+            <TeamInfoSettings onTeamInfoUpdated={handleTeamInfoUpdated} />
             
             {teamId ? (
               <JoinClubSection 
@@ -306,7 +347,7 @@ export default function TeamSettings() {
           <div className="mt-8 p-4 border rounded-md bg-gray-50">
             <h3 className="text-sm font-medium mb-2">Debug Info:</h3>
             <pre className="text-xs overflow-auto">
-              {JSON.stringify({teamId, clubInfo: !!clubInfo, profile: !!profile}, null, 2)}
+              {JSON.stringify({teamId, teamName, clubInfo: !!clubInfo, profile: !!profile}, null, 2)}
             </pre>
           </div>
         )}
