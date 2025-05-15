@@ -1,97 +1,64 @@
-
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, Clock } from 'lucide-react';
-import { KitIcon } from '@/components/fixtures/KitIcon';
+import { cn } from "@/lib/utils";
+import { Fixture } from "@/types";
+import { KitIcon } from "@/components/fixtures/KitIcon";
 
-interface FixtureStatusProps {
-  fixture: {
-    id: string;
-    date?: string;
-    is_home?: boolean;
-  };
-  currentTime: Date;
+type FixtureStatusProps = {
+  fixture: Fixture;
+  condensed?: boolean;
 }
 
-export const FixtureStatus = ({ fixture, currentTime }: FixtureStatusProps) => {
-  // Determine the status based on fixture date and current time
-  const getStatus = () => {
-    if (!fixture.date) return 'SCHEDULED';
-    
-    const fixtureDate = new Date(fixture.date);
-    
-    // If fixture date is in the past, consider it completed
-    if (fixtureDate < currentTime) {
-      return 'COMPLETED';
-    }
-    
-    // If fixture date is today, consider it in progress
-    const isToday = 
-      fixtureDate.getDate() === currentTime.getDate() &&
-      fixtureDate.getMonth() === currentTime.getMonth() &&
-      fixtureDate.getFullYear() === currentTime.getFullYear();
-    
-    if (isToday) {
-      return 'IN_PROGRESS';
-    }
-    
-    // Otherwise it's scheduled for the future
-    return 'SCHEDULED';
-  };
-
-  const status = getStatus();
-
-  // Define the full status type to include all possible values
-  type FixtureStatusType = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'IN_PROGRESS' | 'TRAINING';
-
-  const getStatusDetails = () => {
-    // Use type assertion to allow comparison with the expanded set of status types
-    switch (status as FixtureStatusType) {
-      case 'COMPLETED':
-        return {
-          label: 'Completed',
-          variant: 'default' as const,
-          icon: <CheckCircle className="h-3 w-3 mr-1" />,
-          isTraining: false
-        };
-      case 'CANCELLED':
-        return {
-          label: 'Cancelled',
-          variant: 'destructive' as const,
-          icon: <XCircle className="h-3 w-3 mr-1" />,
-          isTraining: false
-        };
-      case 'IN_PROGRESS':
-        return {
-          label: 'In Progress',
-          variant: 'secondary' as const,
-          icon: <Clock className="h-3 w-3 mr-1 animate-pulse" />,
-          isTraining: false
-        };
-      case 'TRAINING':
-        return {
-          label: 'Training',
-          variant: 'outline' as const,
-          icon: <KitIcon type="training" size={14} />,
-          isTraining: true
-        };
-      case 'SCHEDULED':
-      default:
-        return {
-          label: 'Scheduled',
-          variant: 'outline' as const,
-          icon: <Clock className="h-3 w-3 mr-1" />,
-          isTraining: false
-        };
-    }
-  };
-
-  const { label, variant, icon, isTraining } = getStatusDetails();
+export const FixtureStatus = ({ fixture, condensed = false }: FixtureStatusProps) => {
+  const { status, home_team_name, away_team_name, home_team_data, away_team_data } = fixture;
+  
+  const homeTeamName = home_team_name || 'Home Team';
+  const awayTeamName = away_team_name || 'Away Team';
+  const homeTeamData = home_team_data || null;
+  const awayTeamData = away_team_data || null;
 
   return (
-    <Badge variant={variant} className="flex items-center text-xs">
-      {icon}
-      {isTraining ? <span className="ml-1">{label}</span> : label}
-    </Badge>
+    <div className={cn("flex items-center", condensed ? "gap-1" : "gap-2")}>
+      {status === 'scheduled' && (
+        <span className="text-muted-foreground">Upcoming</span>
+      )}
+      
+      {status === 'live' && (
+        <span className="text-green-500">Live</span>
+      )}
+      
+      {status === 'completed' ? (
+        <div className="flex items-center gap-1">
+          <span className="text-muted-foreground">{fixture.home_team_score}</span>
+          <span>-</span>
+          <span className="text-muted-foreground">{fixture.away_team_score}</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {homeTeamData && (
+              <KitIcon 
+                teamData={homeTeamData} 
+                type="home" 
+                size="small" // Changed from numeric to string value
+              />
+            )}
+            <span className="text-sm">{homeTeamName}</span>
+          </div>
+          
+          <span className="text-muted-foreground">vs</span>
+          
+          <div className="flex items-center gap-1">
+            {awayTeamData && (
+              <KitIcon 
+                teamData={awayTeamData} 
+                type="away" 
+                size="small" // Changed from numeric to string value
+              />
+            )}
+            <span className="text-sm">{awayTeamName}</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };

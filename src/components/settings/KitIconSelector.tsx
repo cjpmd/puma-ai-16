@@ -1,210 +1,165 @@
 
-import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
+import { KitIcon } from "@/components/fixtures/KitIcon";
+import { HexColorPicker, HexColorInput } from "react-colorful";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
-import { HexColorPicker } from "react-colorful";
-import { Shirt } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-
-type KitIconType = "home_kit_icon" | "away_kit_icon" | "training_kit_icon";
-type PatternType = "solid" | "stripes" | "hoops";
 
 interface KitIconSelectorProps {
-  type: KitIconType;
+  type: 'home_kit_icon' | 'away_kit_icon' | 'training_kit_icon';
   label: string;
   value: string;
-  onChange: (type: KitIconType, value: string) => void;
+  onChange: (type: 'home_kit_icon' | 'away_kit_icon' | 'training_kit_icon', value: string) => void;
   disabled?: boolean;
 }
 
-export function KitIconSelector({ type, label, value, onChange, disabled }: KitIconSelectorProps) {
-  // Parse the existing value to extract colors and pattern
-  const valueParts = value?.split("|") || [];
+export function KitIconSelector({
+  type,
+  label,
+  value,
+  onChange,
+  disabled = false
+}: KitIconSelectorProps) {
+  const [primaryColor, setPrimaryColor] = useState("#ffffff");
+  const [secondaryColor, setSecondaryColor] = useState("#000000");
+  const [pattern, setPattern] = useState("solid");
   
-  const [primaryColor, setPrimaryColor] = useState(valueParts[0] || "#ffffff");
-  const [secondaryColor, setSecondaryColor] = useState(valueParts[1] || "#000000");
-  const [pattern, setPattern] = useState<PatternType>(
-    (valueParts[2] as PatternType) || "solid"
-  );
-  
-  // When any value changes, update the parent component
-  const handleChange = (primary: string, secondary: string, newPattern: PatternType) => {
-    const combinedValue = `${primary}|${secondary}|${newPattern}`;
-    onChange(type, combinedValue);
-  };
-
-  // Update primary color and notify parent
-  const handlePrimaryColorChange = (color: string) => {
-    setPrimaryColor(color);
-    handleChange(color, secondaryColor, pattern);
-  };
-
-  // Update secondary color and notify parent
-  const handleSecondaryColorChange = (color: string) => {
-    setSecondaryColor(color);
-    handleChange(primaryColor, color, pattern);
-  };
-
-  // Update pattern and notify parent
-  const handlePatternChange = (newPattern: PatternType) => {
-    setPattern(newPattern);
-    handleChange(primaryColor, secondaryColor, newPattern);
-  };
-
-  // Create SVG patterns for the preview
-  const getShirtStyle = () => {
-    switch (pattern) {
-      case "stripes":
-        return {
-          fill: `url(#stripes-${type})`,
-          color: secondaryColor,
-        };
-      case "hoops":
-        return {
-          fill: `url(#hoops-${type})`,
-          color: secondaryColor,
-        };
-      default:
-        return {
-          fill: primaryColor,
-          color: secondaryColor,
-        };
+  // Parse initial value if provided
+  useEffect(() => {
+    if (value) {
+      const parts = value.split('|');
+      if (parts.length >= 2) {
+        setPrimaryColor(parts[0]);
+        setSecondaryColor(parts[1]);
+        if (parts.length >= 3) {
+          setPattern(parts[2]);
+        }
+      }
     }
-  };
+  }, [value]);
+  
+  // Update the output value when any input changes
+  useEffect(() => {
+    const newValue = `${primaryColor}|${secondaryColor}|${pattern}`;
+    if (newValue !== value) {
+      onChange(type, newValue);
+    }
+  }, [primaryColor, secondaryColor, pattern, type]);
+  
+  const patterns = [
+    { value: "solid", label: "Solid" },
+    { value: "stripes", label: "Vertical Stripes" },
+    { value: "hoops", label: "Horizontal Stripes" },
+    { value: "quarters", label: "Quarters" },
+    { value: "halves", label: "Halves" }
+  ];
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center space-y-4">
-          <div 
-            className="w-24 h-24 flex items-center justify-center border border-gray-200 rounded-md overflow-hidden"
-            style={{ backgroundColor: "#f9f9f9" }}
+    <div className="space-y-3">
+      <div className="flex flex-col">
+        <Label className="mb-2">{label}</Label>
+        <div className="flex items-center gap-2 mb-3">
+          <KitIcon value={`${primaryColor}|${secondaryColor}|${pattern}`} size="medium" />
+          <span className="text-sm text-muted-foreground">Kit Preview</span>
+        </div>
+      </div>
+      
+      <div className="space-y-3">
+        <div>
+          <Label className="text-xs">Pattern</Label>
+          <Select
+            value={pattern}
+            onValueChange={setPattern}
+            disabled={disabled}
           >
-            <div className="relative">
-              <svg width="0" height="0" style={{ position: "absolute" }}>
-                <defs>
-                  {/* Vertical stripes pattern - running up and down */}
-                  <pattern
-                    id={`stripes-${type}`}
-                    patternUnits="userSpaceOnUse"
-                    width="6"
-                    height="6"
-                  >
-                    <rect width="3" height="6" fill={primaryColor} />
-                    <rect x="3" width="3" height="6" fill={secondaryColor} />
-                  </pattern>
-                  
-                  {/* Horizontal hoops pattern */}
-                  <pattern
-                    id={`hoops-${type}`}
-                    patternUnits="userSpaceOnUse"
-                    width="6"
-                    height="6"
-                  >
-                    <rect width="6" height="3" fill={primaryColor} />
-                    <rect y="3" width="6" height="3" fill={secondaryColor} />
-                  </pattern>
-                </defs>
-              </svg>
-              <Shirt 
-                size={64}
-                className="text-slate-800"
-                {...getShirtStyle()}
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2 w-full">
-            <div className="space-y-1">
-              <Label htmlFor={`${type}-primary`}>Primary</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    style={{ backgroundColor: primaryColor }}
-                    disabled={disabled}
-                  >
-                    <span className="sr-only">Primary color</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-3">
-                  <HexColorPicker color={primaryColor} onChange={handlePrimaryColorChange} />
-                  <Input
-                    value={primaryColor}
-                    onChange={(e) => handlePrimaryColorChange(e.target.value)}
-                    className="mt-2"
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Select pattern" />
+            </SelectTrigger>
+            <SelectContent>
+              {patterns.map((p) => (
+                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div>
+          <Label className="text-xs">Primary Color</Label>
+          <div className="flex items-center gap-2 mt-1">
+            <Popover>
+              <PopoverTrigger disabled={disabled}>
+                <div 
+                  className="h-8 w-8 rounded-md border"
+                  style={{ backgroundColor: primaryColor }}
+                />
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-3">
+                <HexColorPicker color={primaryColor} onChange={setPrimaryColor} />
+                <div className="mt-2 flex items-center">
+                  <span className="text-xs mr-2">#</span>
+                  <HexColorInput
+                    color={primaryColor}
+                    onChange={setPrimaryColor}
+                    className="w-full text-sm p-1 border rounded"
+                    prefixed={false}
                   />
-                </PopoverContent>
-              </Popover>
-            </div>
-            
-            <div className="space-y-1">
-              <Label htmlFor={`${type}-secondary`}>Secondary</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    style={{ backgroundColor: secondaryColor }}
-                    disabled={disabled}
-                  >
-                    <span className="sr-only">Secondary color</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-3">
-                  <HexColorPicker color={secondaryColor} onChange={handleSecondaryColorChange} />
-                  <Input
-                    value={secondaryColor}
-                    onChange={(e) => handleSecondaryColorChange(e.target.value)}
-                    className="mt-2"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-          
-          <div className="w-full pt-2">
-            <Label className="mb-2 block">Pattern</Label>
-            <RadioGroup 
-              value={pattern} 
-              onValueChange={(value) => handlePatternChange(value as PatternType)}
-              className="flex space-x-2"
+                </div>
+              </PopoverContent>
+            </Popover>
+            <HexColorInput
+              color={primaryColor}
+              onChange={setPrimaryColor}
+              className="flex-1 text-sm p-2 border rounded"
+              prefixed={true}
               disabled={disabled}
-            >
-              <div className="flex items-center space-x-2 border rounded-md p-2 flex-1">
-                <RadioGroupItem value="solid" id={`${type}-solid`} />
-                <Label htmlFor={`${type}-solid`}>Solid</Label>
-              </div>
-              
-              <div className="flex items-center space-x-2 border rounded-md p-2 flex-1">
-                <RadioGroupItem value="stripes" id={`${type}-stripes`} />
-                <Label htmlFor={`${type}-stripes`}>Stripes</Label>
-              </div>
-              
-              <div className="flex items-center space-x-2 border rounded-md p-2 flex-1">
-                <RadioGroupItem value="hoops" id={`${type}-hoops`} />
-                <Label htmlFor={`${type}-hoops`}>Hoops</Label>
-              </div>
-            </RadioGroup>
+            />
           </div>
         </div>
-      </CardContent>
-    </Card>
+        
+        <div>
+          <Label className="text-xs">Secondary Color</Label>
+          <div className="flex items-center gap-2 mt-1">
+            <Popover>
+              <PopoverTrigger disabled={disabled}>
+                <div 
+                  className="h-8 w-8 rounded-md border"
+                  style={{ backgroundColor: secondaryColor }}
+                />
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-3">
+                <HexColorPicker color={secondaryColor} onChange={setSecondaryColor} />
+                <div className="mt-2 flex items-center">
+                  <span className="text-xs mr-2">#</span>
+                  <HexColorInput
+                    color={secondaryColor}
+                    onChange={setSecondaryColor}
+                    className="w-full text-sm p-1 border rounded"
+                    prefixed={false}
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+            <HexColorInput
+              color={secondaryColor}
+              onChange={setSecondaryColor}
+              className="flex-1 text-sm p-2 border rounded"
+              prefixed={true}
+              disabled={disabled}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

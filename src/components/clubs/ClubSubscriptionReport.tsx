@@ -1,204 +1,200 @@
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function ClubSubscriptionReport() {
   const [loading, setLoading] = useState(true);
-  const [clubData, setClubData] = useState<any>(null);
-  const [subscriptionData, setSubscriptionData] = useState<any[]>([]);
-  const { profile } = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
+  const [clubSubscription, setClubSubscription] = useState<any>(null);
+  const [teamSubscriptions, setTeamSubscriptions] = useState<any[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!profile?.id) return;
-      
-      setLoading(true);
-      
-      try {
-        // Fetch club data
-        const { data: clubResult, error: clubError } = await supabase
-          .from('clubs')
-          .select('*')
-          .eq('admin_id', profile.id)
-          .maybeSingle();
-          
-        if (clubError) throw clubError;
-        if (!clubResult) return;
-        
-        setClubData(clubResult);
-        
-        // Fetch teams in this club
-        const { data: teamsData, error: teamsError } = await supabase
-          .from('teams')
-          .select('id, team_name')
-          .eq('club_id', clubResult.id);
-          
-        if (teamsError) throw teamsError;
-        if (!teamsData?.length) return;
-        
-        const teamIds = teamsData.map(team => team.id);
-        
-        // Get all players in these teams
-        const { data: playersData, error: playersError } = await supabase
-          .from('players')
-          .select('id, name, team_id')
-          .in('team_id', teamIds);
-          
-        if (playersError) throw playersError;
-        
-        // Get subscription data for all players
-        const { data: subsData, error: subsError } = await supabase
-          .from('player_subscriptions')
-          .select('*')
-          .in('player_id', playersData?.map(p => p.id) || []);
-          
-        if (subsError) throw subsError;
-        
-        // Combine data for reporting
-        const reportData = teamsData.map(team => {
-          const teamPlayers = playersData?.filter(p => p.team_id === team.id) || [];
-          const teamSubs = subsData?.filter(s => 
-            teamPlayers.some(p => p.id === s.player_id)
-          ) || [];
-          
-          const activeCount = teamSubs.filter(s => s.status === 'active').length;
-          const totalAmount = teamSubs
-            .filter(s => s.status === 'active')
-            .reduce((sum, sub) => sum + (parseFloat(sub.subscription_amount) || 0), 0);
-            
-          return {
-            id: team.id,
-            name: team.team_name,
-            playerCount: teamPlayers.length,
-            subscribedCount: activeCount,
-            totalMonthlyAmount: totalAmount,
-            subscriptionRate: teamPlayers.length ? Math.round((activeCount / teamPlayers.length) * 100) : 0
-          };
-        });
-        
-        setSubscriptionData(reportData);
-      } catch (error) {
-        console.error("Error fetching club subscription data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [profile]);
-  
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Club Subscription Report</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-  
-  if (!clubData) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Club Subscription Report</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">No club data found.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+    fetchSubscriptions();
+  }, []);
 
-  const totalPlayers = subscriptionData.reduce((sum, team) => sum + team.playerCount, 0);
-  const totalSubscribed = subscriptionData.reduce((sum, team) => sum + team.subscribedCount, 0);
-  const overallRate = totalPlayers ? Math.round((totalSubscribed / totalPlayers) * 100) : 0;
-  const totalMonthlyRevenue = subscriptionData.reduce((sum, team) => sum + team.totalMonthlyAmount, 0);
-  const totalAnnualRevenue = totalMonthlyRevenue * 12;
-  
+  const fetchSubscriptions = async () => {
+    setLoading(true);
+    try {
+      // Fetch club subscription (assuming the user is a club admin)
+      const { data: clubSubData, error: clubSubError } = await supabase
+        .from('club_subscriptions')
+        .select(`
+          id, 
+          status,
+          subscription_plan,
+          subscription_amount,
+          subscription_period,
+          start_date,
+          end_date,
+          clubs (name)
+        `)
+        .eq('status', 'active')
+        .maybeSingle();
+        
+      if (clubSubError) {
+        console.error("Error fetching club subscription:", clubSubError);
+      } else {
+        setClubSubscription(clubSubData);
+      }
+
+      // Fetch team subscriptions that are part of this club
+      const { data: teamSubsData, error: teamSubsError } = await supabase
+        .from('team_subscriptions')
+        .select(`
+          id,
+          team_id,
+          status,
+          subscription_plan,
+          subscription_amount,
+          start_date,
+          end_date,
+          teams (team_name)
+        `)
+        .eq('status', 'active');
+        
+      if (teamSubsError) {
+        console.error("Error fetching team subscriptions:", teamSubsError);
+      } else {
+        setTeamSubscriptions(teamSubsData || []);
+      }
+    } catch (error) {
+      console.error("Error loading subscriptions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load subscription data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchSubscriptions();
+    setRefreshing(false);
+    
+    toast({
+      title: "Refreshed",
+      description: "Subscription data has been updated",
+    });
+  };
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Club Subscription Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border p-4">
-              <h4 className="text-sm font-medium text-muted-foreground">Total Players</h4>
-              <p className="mt-2 text-3xl font-bold">{totalPlayers}</p>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Club Subscription Status</CardTitle>
+          <CardDescription>Subscription details for your club and associated teams</CardDescription>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={loading || refreshing}
+        >
+          <RefreshCw className={`h-4 w-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <p className="text-muted-foreground">Loading subscription data...</p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Club Subscription */}
+            <div>
+              <h3 className="text-lg font-medium mb-4">Club Platform Subscription</h3>
+              {clubSubscription ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Club</TableHead>
+                      <TableHead>Plan</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Renewal Date</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell>{clubSubscription.clubs?.name || 'Your Club'}</TableCell>
+                      <TableCell>{clubSubscription.subscription_plan || 'Standard'}</TableCell>
+                      <TableCell>
+                        £{clubSubscription.subscription_amount?.toFixed(2) || '0.00'}
+                        /{clubSubscription.subscription_period || 'month'}
+                      </TableCell>
+                      <TableCell>
+                        {clubSubscription.end_date 
+                          ? format(new Date(clubSubscription.end_date), 'dd MMM yyyy') 
+                          : 'Not set'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          Active
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-muted-foreground italic">No active club subscription</p>
+              )}
             </div>
-            <div className="rounded-lg border p-4">
-              <h4 className="text-sm font-medium text-muted-foreground">Subscribed Players</h4>
-              <p className="mt-2 text-3xl font-bold">{totalSubscribed}</p>
-            </div>
-            <div className="rounded-lg border p-4">
-              <h4 className="text-sm font-medium text-muted-foreground">Subscription Rate</h4>
-              <p className="mt-2 text-3xl font-bold">{overallRate}%</p>
-            </div>
-            <div className="rounded-lg border p-4">
-              <h4 className="text-sm font-medium text-muted-foreground">Monthly Revenue</h4>
-              <p className="mt-2 text-3xl font-bold">£{totalMonthlyRevenue.toFixed(2)}</p>
+            
+            {/* Team Subscriptions */}
+            <div>
+              <h3 className="text-lg font-medium mb-4">Team Subscriptions</h3>
+              {teamSubscriptions.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Team</TableHead>
+                      <TableHead>Plan</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Renewal Date</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {teamSubscriptions.map((sub) => (
+                      <TableRow key={sub.id}>
+                        <TableCell>{sub.teams?.team_name || 'Team'}</TableCell>
+                        <TableCell>{sub.subscription_plan || 'Standard'}</TableCell>
+                        <TableCell>
+                          £{sub.subscription_amount?.toFixed(2) || '0.00'}/month
+                        </TableCell>
+                        <TableCell>
+                          {sub.end_date 
+                            ? format(new Date(sub.end_date), 'dd MMM yyyy') 
+                            : 'Not set'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            Active
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-muted-foreground italic">No active team subscriptions</p>
+              )}
             </div>
           </div>
-          <div className="mt-4">
-            <p className="text-sm text-muted-foreground">
-              Projected Annual Revenue: <span className="font-medium">£{totalAnnualRevenue.toFixed(2)}</span>
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Report Date: {format(new Date(), "PPP")}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Subscription Breakdown</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {subscriptionData.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Team</TableHead>
-                  <TableHead className="text-right">Players</TableHead>
-                  <TableHead className="text-right">Subscribed</TableHead>
-                  <TableHead className="text-right">Rate</TableHead>
-                  <TableHead className="text-right">Monthly Revenue</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {subscriptionData.map((team) => (
-                  <TableRow key={team.id}>
-                    <TableCell className="font-medium">{team.name}</TableCell>
-                    <TableCell className="text-right">{team.playerCount}</TableCell>
-                    <TableCell className="text-right">{team.subscribedCount}</TableCell>
-                    <TableCell className="text-right">{team.subscriptionRate}%</TableCell>
-                    <TableCell className="text-right">£{team.totalMonthlyAmount.toFixed(2)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-center py-4 text-muted-foreground">
-              No team subscription data available.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
