@@ -75,8 +75,11 @@ export function ClubSubscriptionReport({ clubId }: ClubSubscriptionReportProps) 
         // If clubId is provided, filter to only teams in this club
         if (clubId) {
           const filteredTeams = teamSubsData?.filter(sub => {
-            // Fix: Treat teams as an object, not an array, and safely check club_id
-            return sub.teams && typeof sub.teams === 'object' && sub.teams.club_id === clubId;
+            // Fix: Check if teams is not null, is an object, and access club_id as a property
+            return sub.teams && 
+                   typeof sub.teams === 'object' && 
+                   'club_id' in sub.teams && 
+                   sub.teams.club_id === clubId;
           }) || [];
           
           setTeamSubscriptions(filteredTeams);
