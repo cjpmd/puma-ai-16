@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ensureDatabaseSetup } from "@/utils/database/ensureDatabaseSetup";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Index() {
   const [session, setSession] = useState<any>(null);

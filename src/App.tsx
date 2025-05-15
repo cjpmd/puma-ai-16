@@ -74,7 +74,7 @@ function App() {
           <NavBar />
           
           {dbSetupError && (
-            <Alert variant="warning" className="max-w-4xl mx-auto mt-4">
+            <Alert variant="destructive" className="max-w-4xl mx-auto mt-4">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Database Configuration</AlertTitle>
               <AlertDescription>
