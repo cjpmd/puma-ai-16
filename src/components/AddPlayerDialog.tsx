@@ -169,16 +169,17 @@ export const AddPlayerDialog = () => {
         description: "Player added successfully",
       });
 
-      // If parent info was provided, move to parent tab
-      if (values.parentName || values.parentEmail) {
-        setActiveTab("parent");
-      } else {
-        queryClient.invalidateQueries({ queryKey: ["players"] });
-        setTimeout(() => {
-          setIsSaving(false);
+      setTimeout(() => {
+        setIsSaving(false);
+        // Move to parent tab if parent info was provided or the linking code tab if not
+        if (values.parentName || values.parentEmail) {
+          setActiveTab("parent");
+        } else {
           setActiveTab("linkingCode");
-        }, 500);
-      }
+          queryClient.invalidateQueries({ queryKey: ["players"] });
+        }
+      }, 500);
+      
     } catch (error) {
       console.error("Error adding player:", error);
       toast({
@@ -241,6 +242,10 @@ export const AddPlayerDialog = () => {
     setOpen(false);
   };
 
+  // This ensures tab navigation works correctly
+  const canAccessParentTab = !!playerData;
+  const canAccessLinkingCodeTab = !!linkingCode;
+
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogTrigger asChild>
@@ -257,8 +262,8 @@ export const AddPlayerDialog = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="player" disabled={isSaving}>Player Info</TabsTrigger>
-            <TabsTrigger value="parent" disabled={!playerData || isSaving}>Parent Info</TabsTrigger>
-            <TabsTrigger value="linkingCode" disabled={!linkingCode || isSaving}>Linking Code</TabsTrigger>
+            <TabsTrigger value="parent" disabled={!canAccessParentTab || isSaving}>Parent Info</TabsTrigger>
+            <TabsTrigger value="linkingCode" disabled={!canAccessLinkingCodeTab || isSaving}>Linking Code</TabsTrigger>
           </TabsList>
           
           <TabsContent value="player">
@@ -354,120 +359,124 @@ export const AddPlayerDialog = () => {
           </TabsContent>
           
           <TabsContent value="parent">
-            <div className="space-y-4 py-2">
-              <div className="bg-muted/50 p-3 rounded-md">
-                <p className="font-medium">Player: {playerData?.name}</p>
-                <p className="text-sm text-muted-foreground">Squad #: {playerData?.squad_number}</p>
-              </div>
-              
-              <Form {...form}>
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="parentName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Parent Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Enter parent name" />
-                        </FormControl>
-                        <FormDescription>Optional: Add parent name now</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="parentEmail"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Parent Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="parent@example.com" type="email" />
-                        </FormControl>
-                        <FormDescription>
-                          Optional: Parent can use this email to register and link to the player
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            {playerData && (
+              <div className="space-y-4 py-2">
+                <div className="bg-muted/50 p-3 rounded-md">
+                  <p className="font-medium">Player: {playerData?.name}</p>
+                  <p className="text-sm text-muted-foreground">Squad #: {playerData?.squad_number}</p>
                 </div>
-              </Form>
-              
-              <div className="flex justify-between pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setActiveTab("player")}
-                  disabled={isSaving}
-                >
-                  Back
-                </Button>
-                <Button 
-                  onClick={onAddParent}
-                  disabled={isSaving}
-                  className={isSaving ? 'bg-green-500 hover:bg-green-600' : ''}
-                >
-                  {isSaving ? (
-                    <span className="flex items-center gap-2">
-                      <Check className="h-4 w-4" />
-                      Saving...
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Add Parent Info
-                    </span>
-                  )}
-                </Button>
+                
+                <Form {...form}>
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="parentName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Parent Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter parent name" />
+                          </FormControl>
+                          <FormDescription>Optional: Add parent name now</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="parentEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Parent Email</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="parent@example.com" type="email" />
+                          </FormControl>
+                          <FormDescription>
+                            Optional: Parent can use this email to register and link to the player
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </Form>
+                
+                <div className="flex justify-between pt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setActiveTab("player")}
+                    disabled={isSaving}
+                  >
+                    Back
+                  </Button>
+                  <Button 
+                    onClick={onAddParent}
+                    disabled={isSaving}
+                    className={isSaving ? 'bg-green-500 hover:bg-green-600' : ''}
+                  >
+                    {isSaving ? (
+                      <span className="flex items-center gap-2">
+                        <Check className="h-4 w-4" />
+                        Saving...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Add Parent Info
+                      </span>
+                    )}
+                  </Button>
+                </div>
+                
+                <div className="text-center pt-4">
+                  <Button 
+                    variant="link" 
+                    onClick={() => setActiveTab("linkingCode")}
+                    className="text-sm"
+                    disabled={isSaving}
+                  >
+                    Skip & Go to Linking Code
+                  </Button>
+                </div>
               </div>
-              
-              <div className="text-center pt-4">
-                <Button 
-                  variant="link" 
-                  onClick={() => setActiveTab("linkingCode")}
-                  className="text-sm"
-                  disabled={isSaving}
-                >
-                  Skip & Go to Linking Code
-                </Button>
-              </div>
-            </div>
+            )}
           </TabsContent>
           
           <TabsContent value="linkingCode">
-            <div className="space-y-5 py-2">
-              <div className="bg-muted/50 p-4 rounded-md">
-                <p className="font-medium">Player: {playerData?.name}</p>
-                <p className="text-sm text-muted-foreground">Squad #: {playerData?.squad_number}</p>
-              </div>
-              
-              <div className="bg-primary/5 border border-primary/20 rounded-md p-4">
-                <p className="text-sm font-medium mb-2">Player Linking Code:</p>
-                <div className="flex items-center gap-2">
-                  <div className="bg-white p-3 rounded border flex-1 text-center font-mono text-lg tracking-wider">
-                    {linkingCode}
-                  </div>
-                  <Button 
-                    size="icon" 
-                    variant="outline" 
-                    onClick={copyCodeToClipboard}
-                  >
-                    {codeCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
+            {playerData && linkingCode && (
+              <div className="space-y-5 py-2">
+                <div className="bg-muted/50 p-4 rounded-md">
+                  <p className="font-medium">Player: {playerData?.name}</p>
+                  <p className="text-sm text-muted-foreground">Squad #: {playerData?.squad_number}</p>
                 </div>
-                <p className="text-sm mt-2 text-muted-foreground">
-                  Share this code with the player's parent. They can use it to link to their child in the parent dashboard.
-                </p>
+                
+                <div className="bg-primary/5 border border-primary/20 rounded-md p-4">
+                  <p className="text-sm font-medium mb-2">Player Linking Code:</p>
+                  <div className="flex items-center gap-2">
+                    <div className="bg-white p-3 rounded border flex-1 text-center font-mono text-lg tracking-wider">
+                      {linkingCode}
+                    </div>
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      onClick={copyCodeToClipboard}
+                    >
+                      {codeCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-sm mt-2 text-muted-foreground">
+                    Share this code with the player's parent. They can use it to link to their child in the parent dashboard.
+                  </p>
+                </div>
+                
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <p className="text-sm text-amber-800">
+                    <strong>Note:</strong> This code can only be used once and will securely link a parent account to this player.
+                  </p>
+                </div>
               </div>
-              
-              <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
-                <p className="text-sm text-amber-800">
-                  <strong>Note:</strong> This code can only be used once and will securely link a parent account to this player.
-                </p>
-              </div>
-            </div>
+            )}
             
             <DialogFooter className="mt-6">
               <Button onClick={finishProcess}>

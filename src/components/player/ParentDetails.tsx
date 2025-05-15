@@ -3,16 +3,18 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ParentDetailsDialog } from "@/components/parents/ParentDetailsDialog";
 import { ParentSubscriptionManager } from "@/components/parents/ParentSubscriptionManager";
+import { PlayerLinkingCodeManager } from "@/components/parents/PlayerLinkingCodeManager"; 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, CreditCard } from "lucide-react";
+import { Users, CreditCard, Key } from "lucide-react";
 
 interface ParentDetailsProps {
   playerId: string;
+  playerName?: string; // Add optional player name prop
 }
 
-export const ParentDetails = ({ playerId }: ParentDetailsProps) => {
+export const ParentDetails = ({ playerId, playerName = "this player" }: ParentDetailsProps) => {
   const [parents, setParents] = useState<{
     id: string;
     name: string;
@@ -75,6 +77,10 @@ export const ParentDetails = ({ playerId }: ParentDetailsProps) => {
               <CreditCard className="h-4 w-4" />
               <span>Subscription</span>
             </TabsTrigger>
+            <TabsTrigger value="linking" className="flex items-center gap-1">
+              <Key className="h-4 w-4" />
+              <span>Linking Code</span>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="details">
@@ -99,6 +105,10 @@ export const ParentDetails = ({ playerId }: ParentDetailsProps) => {
           
           <TabsContent value="subscription">
             <ParentSubscriptionManager playerId={playerId} />
+          </TabsContent>
+          
+          <TabsContent value="linking">
+            <PlayerLinkingCodeManager playerId={playerId} playerName={playerName} />
           </TabsContent>
         </Tabs>
       </CardContent>
