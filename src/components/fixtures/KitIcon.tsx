@@ -50,12 +50,17 @@ export function KitIcon({ type, size = 24 }: KitIconProps) {
           return;
         }
 
+        // Default tooltip text if we can't extract team name
+        let teamNameStr = "";
+        
         if (data) {
+          // Safely access the icon data
           const iconData = data[typeToColumn[type]];
-          // Safely handle team name extraction with proper type checking
-          const teamName = typeof data === 'object' && data !== null && 'team_name' in data 
-            ? String(data?.team_name || "") 
-            : "";
+          
+          // Safely extract team name with proper null checking
+          if (typeof data === 'object' && data !== null && 'team_name' in data) {
+            teamNameStr = String(data.team_name || "");
+          }
           
           if (iconData) {
             const [primary, secondary] = iconData.split('|');
@@ -63,13 +68,16 @@ export function KitIcon({ type, size = 24 }: KitIconProps) {
             setSecondaryColor(secondary || "#000000");
             
             // Set tooltip text including team name if available
-            setTooltipText(teamName 
-              ? `${teamName} ${typeToText[type]}` 
+            setTooltipText(teamNameStr 
+              ? `${teamNameStr} ${typeToText[type]}` 
               : typeToText[type]);
           } else {
             // Default tooltip text
             setTooltipText(typeToText[type]);
           }
+        } else {
+          // Handle case where data is null
+          setTooltipText(typeToText[type]);
         }
       } catch (error) {
         console.error('Error fetching kit icon:', error);
