@@ -189,7 +189,7 @@ export function Auth() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="max-w-md w-full space-y-4 p-4">
           <AccountLinkingOptions />
-          <RoleManager userId={session.user.id} />
+          <RoleManager />
         </div>
       </div>
     );
