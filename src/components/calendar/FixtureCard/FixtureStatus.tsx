@@ -1,14 +1,45 @@
-
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
 import { KitIcon } from '@/components/fixtures/KitIcon';
 
 interface FixtureStatusProps {
-  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'IN_PROGRESS' | 'TRAINING' | string;
+  fixture: {
+    id: string;
+    date?: string;
+    is_home?: boolean;
+  };
+  currentTime: Date;
 }
 
-export const FixtureStatus = ({ status }: FixtureStatusProps) => {
+export const FixtureStatus = ({ fixture, currentTime }: FixtureStatusProps) => {
+  // Determine the status based on fixture date and current time
+  const getStatus = () => {
+    if (!fixture.date) return 'SCHEDULED';
+    
+    const fixtureDate = new Date(fixture.date);
+    
+    // If fixture date is in the past, consider it completed
+    if (fixtureDate < currentTime) {
+      return 'COMPLETED';
+    }
+    
+    // If fixture date is today, consider it in progress
+    const isToday = 
+      fixtureDate.getDate() === currentTime.getDate() &&
+      fixtureDate.getMonth() === currentTime.getMonth() &&
+      fixtureDate.getFullYear() === currentTime.getFullYear();
+    
+    if (isToday) {
+      return 'IN_PROGRESS';
+    }
+    
+    // Otherwise it's scheduled for the future
+    return 'SCHEDULED';
+  };
+
+  const status = getStatus();
+
   const getStatusDetails = () => {
     switch (status) {
       case 'COMPLETED':

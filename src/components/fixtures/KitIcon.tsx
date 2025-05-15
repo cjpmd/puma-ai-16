@@ -52,6 +52,7 @@ export function KitIcon({ type, size = 24 }: KitIconProps) {
 
         if (data) {
           const iconData = data[typeToColumn[type]];
+          const teamName = data.team_name || "";
           
           if (iconData) {
             const [primary, secondary] = iconData.split('|');
@@ -59,8 +60,8 @@ export function KitIcon({ type, size = 24 }: KitIconProps) {
             setSecondaryColor(secondary || "#000000");
             
             // Set tooltip text including team name if available
-            setTooltipText(data.team_name 
-              ? `${data.team_name} ${typeToText[type]}` 
+            setTooltipText(teamName 
+              ? `${teamName} ${typeToText[type]}` 
               : typeToText[type]);
           } else {
             // Default tooltip text
