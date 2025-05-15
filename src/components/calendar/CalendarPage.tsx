@@ -7,7 +7,7 @@ import { CalendarContent } from "./CalendarContent";
 import { CalendarDialogs } from "./CalendarDialogs";
 import { ErrorBoundary } from "../ErrorBoundary";
 
-export const CalendarPage = () => {
+const CalendarPage = () => {
   const { toast } = useToast();
   const calendarState = useCalendarState();
   const {
@@ -87,3 +87,5 @@ export const CalendarPage = () => {
     </ErrorBoundary>
   );
 };
+
+export default CalendarPage;
