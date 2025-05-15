@@ -23,6 +23,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Toaster } from "sonner";
 import { NavBar } from "./components/NavBar";
 import { ParentDashboard } from "./pages/ParentDashboard";
+import { PlayerDashboard } from "./pages/PlayerDashboard";
 import { useAuth } from "./hooks/useAuth";
 import { initializeUserRoles } from "./utils/database/setupUserRolesTable";
 
@@ -67,6 +68,7 @@ function App() {
             <Route path="/club-settings" element={<ProtectedRoute><ClubSettings /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><TeamSettings /></ProtectedRoute>} />
             <Route path="/parent-dashboard" element={<ProtectedRoute><ParentDashboard /></ProtectedRoute>} />
+            <Route path="/player-dashboard" element={<ProtectedRoute allowedRoles={['player']}><PlayerDashboard /></ProtectedRoute>} />
           </Routes>
         </ErrorBoundary>
       </div>

@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 
-export type UserRole = 'admin' | 'manager' | 'coach' | 'parent';
+export type UserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player';
 
 interface UserProfile {
   id: string;
@@ -201,6 +200,8 @@ export const useAuth = () => {
     // Navigate to appropriate dashboard based on role
     if (role === 'parent') {
       navigate('/parent-dashboard');
+    } else if (role === 'player') {
+      navigate('/player-dashboard');
     } else {
       navigate('/platform');
     }

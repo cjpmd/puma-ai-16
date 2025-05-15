@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,12 +7,17 @@ import { Link } from "react-router-dom";
 import { RoleManager } from "@/components/auth/RoleManager";
 import { ParentChildLinkingDialog } from "@/components/parents/ParentChildLinkingDialog";
 import { ParentCodeLinkingDialog } from "@/components/parents/ParentCodeLinkingDialog";
+import { AccountLinkingOptions } from "@/components/auth/AccountLinkingOptions";
 
-export function PlatformLanding() {
+export const PlatformLanding = () => {
   const { profile, hasRole } = useAuth();
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container py-8">
+      <h1 className="text-3xl font-bold mb-6">Puma.AI Platform</h1>
+      
+      <AccountLinkingOptions />
+      
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-2">Welcome to Your Platform</h1>
@@ -123,4 +127,4 @@ export function PlatformLanding() {
       </div>
     </div>
   );
-}
+};

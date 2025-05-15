@@ -1,83 +1,27 @@
 
-import { tableExists, initializeDatabase } from "./initializeDatabase";
+import { supabase } from "@/integrations/supabase/client";
+import { ensureParentChildLinkingSetup } from "./columnUtils";
 
 /**
- * Automatically ensures database tables are set up without user interaction
- * This replaces the manual initialization button and prevents reload loops
- * @returns Promise<boolean> indicating success/failure
+ * Ensure all required database tables and columns exist
+ * Called at app initialization
  */
-export const ensureDatabaseSetup = async (): Promise<boolean> => {
+export async function ensureDatabaseSetup() {
+  console.log("Ensuring database setup...");
+  
   try {
-    console.log("Checking database setup status...");
-    
-    // Check if we've already attempted setup recently to avoid loops
-    const setupFlag = localStorage.getItem('db_setup_attempted');
-    const lastAttempt = localStorage.getItem('db_setup_last_attempt');
-    
-    // Only attempt setup once every 60 seconds
-    const now = Date.now();
-    const timeSinceLastAttempt = lastAttempt ? now - parseInt(lastAttempt, 10) : Infinity;
-    
-    if (setupFlag === 'true' && timeSinceLastAttempt < 60000) {
-      console.log("Database setup was recently attempted, skipping");
-      // Return true to avoid further setup attempts in this session
-      // This prevents endless loading loops
-      return true;
+    // Ensure parent-child linking setup (includes player self-linking columns)
+    const parentChildLinkingSetup = await ensureParentChildLinkingSetup();
+    if (!parentChildLinkingSetup) {
+      console.warn("Failed to set up parent-child linking columns");
     }
     
-    localStorage.setItem('db_setup_last_attempt', now.toString());
-    localStorage.setItem('db_setup_attempted', 'true');
+    // Call other setup functions as needed
     
-    // Create a promise that will resolve after a maximum of 2 seconds
-    // This prevents hanging if Supabase is unreachable
-    const setupPromise = new Promise<boolean>(async (resolve) => {
-      try {
-        // Check if tables exist before attempting full initialization
-        const tablesExist = await tableExists('clubs');
-        if (tablesExist) {
-          console.log("Tables already exist, skipping initialization");
-          resolve(true);
-          return;
-        }
-        
-        console.log("Setting up database tables automatically...");
-        const success = await initializeDatabase();
-        
-        if (success) {
-          console.log("Database automatically initialized successfully");
-          resolve(true);
-        } else {
-          console.log("Database setup failed, but allowing app to proceed");
-          // Always resolve true to let the user continue using the app
-          // The UI will show appropriate messages for missing tables
-          resolve(true);
-        }
-      } catch (error) {
-        console.error("Error in setup promise:", error);
-        // Even on error, allow the app to proceed
-        resolve(true);
-      }
-    });
-    
-    // Set a hard timeout to prevent hanging
-    const timeoutPromise = new Promise<boolean>((resolve) => {
-      setTimeout(() => {
-        console.log("Database setup timed out after 2 seconds");
-        resolve(true); // Resolve as true to let the user proceed
-      }, 2000); // 2s timeout for faster feedback
-    });
-    
-    // Race the setup against the timeout
-    // This ensures we never wait longer than the timeout period
-    const setupResult = await Promise.race([setupPromise, timeoutPromise]);
-    
-    // Store this flag to avoid multiple setup attempts
-    localStorage.setItem('db_setup_completed', 'true');
-    
-    return setupResult;
-  } catch (error) {
-    console.error("Error checking/initializing database:", error);
-    // Even on error, allow the user to proceed
+    console.log("Database setup completed");
     return true;
+  } catch (err) {
+    console.error("Error in database setup:", err);
+    return false;
   }
-};
+}

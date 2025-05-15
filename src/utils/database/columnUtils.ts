@@ -73,6 +73,22 @@ export const ensureParentChildLinkingSetup = async (): Promise<boolean> => {
       'gen_random_uuid()::text'
     );
     
+    // Add self_linked column to players if it doesn't exist
+    const selfLinkedAdded = await addColumnIfNotExists(
+      'players',
+      'self_linked',
+      'BOOLEAN',
+      'FALSE'
+    );
+    
+    // Add user_id column to players if it doesn't exist
+    const userIdAdded = await addColumnIfNotExists(
+      'players',
+      'user_id',
+      'UUID',
+      'NULL'
+    );
+    
     // Create a unique index on the linking_code column if it doesn't exist
     if (linkingCodeAdded) {
       const indexSql = `
@@ -90,7 +106,7 @@ export const ensureParentChildLinkingSetup = async (): Promise<boolean> => {
       await supabase.rpc('execute_sql', { sql_query: indexSql });
     }
     
-    return parentVerifiedAdded && linkingCodeAdded;
+    return parentVerifiedAdded && linkingCodeAdded && selfLinkedAdded && userIdAdded;
   } catch (error) {
     console.error('Error setting up parent-child linking:', error);
     return false;
