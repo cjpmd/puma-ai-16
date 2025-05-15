@@ -1,286 +1,310 @@
-import { useEffect, useState } from "react";
-import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
-import { ThemeSupa } from "@supabase/auth-ui-shared";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthError, AuthResponse, Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AuthError, AuthApiError } from "@supabase/supabase-js";
+import { 
+  Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle 
+} from "@/components/ui/card";
+import { 
+  Tabs, TabsContent, TabsList, TabsTrigger 
+} from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AccountLinkingOptions } from "@/components/auth/AccountLinkingOptions";
+import { RoleManager } from "@/components/auth/RoleManager";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { ensureDatabaseSetup } from "@/utils/database/ensureDatabaseSetup";
-import { toast } from "sonner";
 
-export const Auth = () => {
+export function Auth() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [authUiError, setAuthUiError] = useState<string | null>(null);
-
-  // Get the return path from location state, default to platform dashboard
-  const returnTo = location.state?.returnTo || "/platform";
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
+  const [signUpError, setSignUpError] = useState<string | null>(null);
+  const [dbCheckComplete, setDbCheckComplete] = useState(false);
+  const [dbSetupError, setDbSetupError] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-
-    const initializeAuth = async () => {
-      console.log("Auth: Starting initialization");
-      try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-        
-        if (sessionError) {
-          console.error("Auth: Session error", sessionError);
-          if (sessionError.message.includes('refresh_token_not_found')) {
-            await supabase.auth.signOut();
-          }
-          throw sessionError;
-        }
-
-        if (session) {
-          console.log("Auth: Found existing session", session);
-          
-          // Use Promise.race with a timeout to prevent hanging
-          const setupPromise = ensureDatabaseSetup();
-          const timeoutPromise = new Promise<boolean>((resolve) => {
-            setTimeout(() => {
-              console.log("Setup timeout reached - continuing anyway");
-              resolve(false);
-            }, 3000); // 3 seconds timeout
-          });
-          
-          // Use the result from whichever finishes first
-          await Promise.race([setupPromise, timeoutPromise]);
-          
-          try {
-            // Check if user has a team
-            const { data: teamData, error: teamError } = await supabase
-              .from('teams')
-              .select('id, team_name, team_logo')
-              .eq('admin_id', session.user.id)
-              .maybeSingle();
-              
-            if (teamError) {
-              console.error("Auth: Team lookup error", teamError);
-            }
-              
-            // Check if user has a club  
-            const { data: clubData, error: clubError } = await supabase
-              .from('clubs')
-              .select('id')
-              .eq('admin_id', session.user.id)
-              .maybeSingle();
-              
-            if (clubError) {
-              console.error("Auth: Club lookup error", clubError);
-            }
-              
-            if (teamData) {
-              console.log("Auth: Found team, redirecting to platform");
-              // Store team data in localStorage
-              if (teamData.team_logo) {
-                localStorage.setItem('team_logo', teamData.team_logo);
-              }
-              localStorage.setItem('team_name', teamData.team_name || 'My Team');
-              
-              // Redirect to platform dashboard
-              navigate("/platform");
-              return;
-            } else if (clubData) {
-              console.log("Auth: Found club, redirecting to club settings");
-              // Redirect to club dashboard
-              navigate("/club-settings");
-              return;
-            } else {
-              console.log("Auth: No team or club, redirecting to platform");
-              // No team or club yet, go to platform landing
-              navigate(returnTo);
-              return;
-            }
-          } catch (error) {
-            console.error("Error checking user entities:", error);
-            navigate(returnTo);
-            return;
-          }
-        } else {
-          console.log("Auth: No existing session found");
-        }
-      } catch (err) {
-        if (!mounted) return;
-        console.error("Auth initialization error:", err);
-        if (err instanceof Error) {
-          setErrorMessage(getErrorMessage(err as AuthError));
-        } else {
-          setErrorMessage("An error occurred while checking your session.");
-        }
-      } finally {
-        if (mounted) {
-          console.log("Auth: Initialization complete, showing auth UI");
-          setIsLoading(false);
-        }
-      }
-    };
-    
-    initializeAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-      
-      console.log("Auth state changed:", event, session);
-      
-      if (event === "SIGNED_IN" && session) {
-        setErrorMessage("");
-        
-        // Ensure database is set up when user signs in
-        await ensureDatabaseSetup();
-        
-        try {
-          // Check if user has a team
-          const { data: teamData, error: teamError } = await supabase
-            .from('teams')
-            .select('id, team_name, team_logo')
-            .eq('admin_id', session.user.id)
-            .maybeSingle();
-            
-          if (teamError) {
-            console.error("Auth: Team lookup error after sign-in", teamError);
-          }
-            
-          // Check if user has a club  
-          const { data: clubData, error: clubError } = await supabase
-            .from('clubs')
-            .select('id')
-            .eq('admin_id', session.user.id)
-            .maybeSingle();
-            
-          if (clubError) {
-            console.error("Auth: Club lookup error after sign-in", clubError);
-          }
-            
-          if (teamData) {
-            console.log("Auth: Found team after sign-in, redirecting to platform");
-            // Store team data in localStorage
-            if (teamData.team_logo) {
-              localStorage.setItem('team_logo', teamData.team_logo);
-            }
-            localStorage.setItem('team_name', teamData.team_name || 'My Team');
-            
-            // Redirect to platform dashboard
-            navigate("/platform");
-          } else if (clubData) {
-            console.log("Auth: Found club after sign-in, redirecting to club settings");
-            // Redirect to club dashboard
-            navigate("/club-settings");
-          } else {
-            console.log("Auth: No team or club after sign-in, redirecting to specific path:", returnTo);
-            // No team or club yet, go to platform landing or returnTo path
-            navigate(returnTo);
-          }
-        } catch (error) {
-          console.error("Error checking user entities:", error);
-          navigate(returnTo);
-        }
-      } else if (event === "SIGNED_OUT") {
-        setErrorMessage("");
-        // Clear team data from localStorage
-        localStorage.removeItem('team_logo');
-        localStorage.removeItem('team_name');
-      }
+    // Check if the user is already authenticated
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) navigate("/platform");
     });
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [navigate, returnTo]);
-
-  const getErrorMessage = (error: AuthError) => {
-    if (error instanceof AuthApiError) {
-      switch (error.status) {
-        case 400:
-          if (error.message.includes("refresh_token_not_found")) {
-            return "Your session has expired. Please sign in again.";
-          }
-          return "Invalid credentials. Please check your email and password.";
-        case 401:
-          return "You are not authorized. Please sign in again.";
-        case 403:
-          return "Access forbidden. Please check your credentials.";
-        case 404:
-          return "User not found. Please check your credentials.";
-        case 422:
-          return "Invalid input. Please check your credentials.";
-        case 429:
-          return "Too many requests. Please try again later.";
-        default:
-          return error.message;
+    // Set up a listener for changes to auth state
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        if (session) navigate("/platform");
       }
+    );
+
+    // Check database setup
+    checkDatabaseSetup();
+
+    return () => {
+      subscription.unsubscribe();
     }
-    return error.message;
+  }, [navigate]);
+
+  const checkDatabaseSetup = async () => {
+    try {
+      // Set a timeout to prevent hanging on database check
+      const timeoutPromise = new Promise<boolean>((resolve) => {
+        setTimeout(() => {
+          console.warn("Database setup check timed out");
+          resolve(false);
+        }, 5000); // 5 second timeout
+      });
+      
+      // Actual check
+      const checkPromise = ensureDatabaseSetup()
+        .then(result => {
+          setDbSetupError(!result);
+          return result;
+        })
+        .catch(error => {
+          console.error("Error checking database setup:", error);
+          setDbSetupError(true);
+          return false;
+        });
+      
+      // Use Promise.race to handle timeout
+      await Promise.race([checkPromise, timeoutPromise]);
+    } finally {
+      // Always mark check as complete, even if it errored or timed out
+      setDbCheckComplete(true);
+    }
   };
 
-  // If there's an error with the Supabase auth UI
-  const handleAuthUiError = () => {
-    setAuthUiError("Failed to load authentication interface. Please try refreshing the page.");
+  const handleSignIn = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSignInError(null);
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setSignInError(error.message);
+        console.error("Sign in error:", error.message);
+        toast({
+          variant: "destructive",
+          title: "Sign in failed",
+          description: error.message,
+        });
+      } else {
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully signed in.",
+        });
+      }
+    } catch (error: any) {
+      console.error("Sign in error:", error);
+      setSignInError(error.message || "An unexpected error occurred.");
+      toast({
+        variant: "destructive",
+        title: "Sign in failed",
+        description: "An unexpected error occurred during sign in.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (isLoading) {
+  const handleSignUp = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSignUpError(null);
+    setCreating(true);
+
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+        }
+      });
+
+      if (error) {
+        setSignUpError(error.message);
+        console.error("Sign up error:", error.message);
+        toast({
+          variant: "destructive",
+          title: "Sign up failed",
+          description: error.message,
+        });
+      } else {
+        toast({
+          title: "Check your email",
+          description: "We've sent you a confirmation link to complete your sign up.",
+        });
+        setIsSignUp(false); // Switch back to sign in tab
+      }
+    } catch (error: any) {
+      console.error("Sign up error:", error);
+      setSignUpError(error.message || "An unexpected error occurred.");
+      toast({
+        variant: "destructive",
+        title: "Sign up failed",
+        description: "An unexpected error occurred during sign up.",
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  // If we're still checking the database setup and don't have a session yet, show a loading state
+  if (!dbCheckComplete && !session) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-muted-foreground">Loading authentication...</p>
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="w-[350px]">
+          <CardHeader>
+            <CardTitle className="text-center">Initializing System</CardTitle>
+            <CardDescription className="text-center">
+              Checking database configuration...
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center p-6">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // If user has a session, show role manager or redirect
+  if (session?.user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="max-w-md w-full space-y-4 p-4">
+          <AccountLinkingOptions userId={session.user.id} />
+          <RoleManager userId={session.user.id} />
         </div>
       </div>
     );
   }
 
+  // Otherwise show sign in / sign up form
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-6">
-          <img 
-            src="/lovable-uploads/47160456-08d9-4525-b5da-08312ba94630.png" 
-            alt="Puma.AI Logo" 
-            className="h-32 w-auto mx-auto"
-          />
-          <div>
-            <h1 className="text-4xl font-bold">Welcome Back</h1>
-            <p className="mt-2 text-muted-foreground">Sign in to continue to Puma.AI</p>
-            {returnTo !== "/platform" && (
-              <p className="mt-1 text-sm text-primary">You'll be redirected to: {returnTo.replace("/", "")}</p>
-            )}
-          </div>
-        </div>
-        <div className="bg-card p-6 rounded-lg shadow-lg">
-          {errorMessage && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{errorMessage}</AlertDescription>
-            </Alert>
-          )}
+    <div className="flex min-h-screen items-center justify-center">
+      <Card className="w-[350px]">
+        <CardHeader>
+          <CardTitle className="text-center">Team Manager</CardTitle>
+          <CardDescription className="text-center">
+            Sign in to access your dashboard
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="signin" value={isSignUp ? "signup" : "signin"}>
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="signin" onClick={() => setIsSignUp(false)}>Sign In</TabsTrigger>
+              <TabsTrigger value="signup" onClick={() => setIsSignUp(true)}>Sign Up</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="signin">
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signin-email">Email</Label>
+                  <Input
+                    id="signin-email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="signin-password">Password</Label>
+                    <a href="#" className="text-xs text-primary hover:underline">
+                      Forgot password?
+                    </a>
+                  </div>
+                  <Input
+                    id="signin-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                {signInError && (
+                  <p className="text-sm text-destructive">{signInError}</p>
+                )}
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="signup">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Password</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                {signUpError && (
+                  <p className="text-sm text-destructive">{signUpError}</p>
+                )}
+                <Button type="submit" className="w-full" disabled={creating}>
+                  {creating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Create Account"
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
           
-          {authUiError && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{authUiError}</AlertDescription>
-            </Alert>
+          {dbSetupError && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+              <p className="text-sm text-amber-700">
+                Note: Database setup is incomplete. Some features may not work correctly.
+              </p>
+            </div>
           )}
-
-          <div id="auth-container">
-            {!authUiError && (
-              <SupabaseAuth 
-                supabaseClient={supabase}
-                appearance={{ theme: ThemeSupa }}
-                theme="light"
-                providers={[]}
-              />
-            )}
-          </div>
-          
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            <p>Sign in to access your team</p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
-};
+}

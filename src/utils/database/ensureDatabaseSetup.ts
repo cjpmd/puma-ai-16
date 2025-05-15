@@ -2,9 +2,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ensureParentChildLinkingSetup } from "./columnUtils";
 import { toast } from "sonner";
+import { initializeDatabase } from "./initializeDatabase";
 
 /**
- * Check if a table exists in the database
+ * Check if a table exists in the database with improved error handling
  */
 async function tableExists(tableName: string): Promise<boolean> {
   try {
@@ -22,7 +23,7 @@ async function tableExists(tableName: string): Promise<boolean> {
 
 /**
  * Ensure all required database tables and columns exist
- * Called at app initialization
+ * Called at app initialization with improved timeout and retry logic
  */
 export async function ensureDatabaseSetup() {
   console.log("Ensuring database setup...");
@@ -35,17 +36,32 @@ export async function ensureDatabaseSetup() {
     if (!profilesExist || !teamsExist) {
       console.warn("Critical tables don't exist. Database may not be set up correctly.");
       
-      // Show toast notification
-      toast.error("Database setup required", {
-        description: "Some tables weren't found. Please run the SQL setup scripts in Supabase.",
-        duration: 6000,
-      });
+      // Try to initialize the database
+      const initResult = await initializeDatabase();
+      
+      // Show toast notification either way
+      if (!initResult) {
+        toast.error("Database setup required", {
+          description: "Some tables weren't found. Please run the SQL setup scripts in Supabase.",
+          duration: 6000,
+        });
+      } else {
+        toast.success("Database initialized", {
+          description: "The database has been set up with required tables.",
+          duration: 4000,
+        });
+        // Re-check tables after initialization
+        const tablesExist = await tableExists('profiles') && await tableExists('teams');
+        if (tablesExist) {
+          return true;
+        }
+      }
       
       // Return false but don't block the app from loading
       return false;
     }
     
-    // Ensure parent-child linking setup (includes player self-linking columns)
+    // Ensure parent-child linking setup
     const parentChildLinkingSetup = await ensureParentChildLinkingSetup();
     if (!parentChildLinkingSetup) {
       console.warn("Failed to set up parent-child linking columns");
