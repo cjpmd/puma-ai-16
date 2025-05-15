@@ -21,67 +21,33 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
   const [dbError, setDbError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Check if linking_code column exists
-  const checkAndSetupColumn = async () => {
-    try {
-      // Try to query for the column to check if it exists
-      const { data, error } = await supabase
-        .from('information_schema.columns')
-        .select('column_name')
-        .eq('table_schema', 'public')
-        .eq('table_name', 'players')
-        .eq('column_name', 'linking_code');
-      
-      if (error) {
-        console.error("Error checking linking_code column:", error);
-        setDbError("Database schema check failed. Some features may not work properly.");
-        return false;
-      }
-      
-      const columnExists = Array.isArray(data) && data.length > 0;
-      
-      if (!columnExists) {
-        setDbError("The linking_code column doesn't exist in the players table. Some features may not work properly.");
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error checking linking_code column:", error);
-      setDbError("Failed to verify database schema. Some features may not work properly.");
-      return false;
-    }
-  };
-
   // Fetch the current linking code when component mounts
   const fetchLinkingCode = async () => {
     setIsLoading(true);
-    
-    // First check if the column exists
-    const columnExists = await checkAndSetupColumn();
-    if (!columnExists) {
-      setIsLoading(false);
-      return;
-    }
+    setDbError(null);
     
     try {
+      // Try direct query first - this avoids schema checks that might fail
       const { data, error } = await supabase
         .from("players")
         .select("linking_code")
         .eq("id", playerId)
         .single();
       
-      if (error) throw error;
-      
-      if (data && data.linking_code) {
+      if (error) {
+        // If this specific error about column not existing
+        if (error.message?.includes("column") && error.message?.includes("does not exist")) {
+          setDbError("The linking_code column doesn't exist in the players table yet. Please initialize the database.");
+        } else {
+          console.error("Error fetching linking code:", error);
+          setDbError("Failed to fetch linking code. Database issue detected.");
+        }
+      } else if (data && data.linking_code) {
         setLinkingCode(data.linking_code);
       }
     } catch (error) {
-      console.error("Error fetching linking code:", error);
-      toast({
-        variant: "destructive",
-        description: "Failed to fetch linking code",
-      });
+      console.error("Exception fetching linking code:", error);
+      setDbError("An unexpected error occurred while fetching the linking code.");
     } finally {
       setIsLoading(false);
     }
@@ -90,40 +56,41 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
   // Generate a new linking code and save it to the database
   const generateNewLinkingCode = async () => {
     setIsGenerating(true);
-    
-    // First check if the column exists
-    const columnExists = await checkAndSetupColumn();
-    if (!columnExists) {
-      setIsGenerating(false);
-      toast({
-        variant: "destructive",
-        description: "Cannot generate code: Database schema issue",
-      });
-      return;
-    }
+    setDbError(null);
     
     try {
       // Generate a new code
       const newCode = generateChildLinkingCode();
       
-      // Save it to the database
+      // Try to save it directly to the database
       const { error } = await supabase
         .from("players")
         .update({ linking_code: newCode })
         .eq("id", playerId);
       
-      if (error) throw error;
-      
-      // Update the UI
-      setLinkingCode(newCode);
-      toast({
-        description: "New linking code generated successfully",
-      });
+      if (error) {
+        // If this specific error about column not existing
+        if (error.message?.includes("column") && error.message?.includes("does not exist")) {
+          setDbError("Cannot generate code: The linking_code column doesn't exist yet. Please initialize the database.");
+        } else {
+          console.error("Error generating new linking code:", error);
+          toast({
+            variant: "destructive",
+            description: "Failed to generate new linking code. Database issue detected.",
+          });
+        }
+      } else {
+        // Update the UI
+        setLinkingCode(newCode);
+        toast({
+          description: "New linking code generated successfully",
+        });
+      }
     } catch (error) {
-      console.error("Error generating new linking code:", error);
+      console.error("Exception generating new linking code:", error);
       toast({
         variant: "destructive",
-        description: "Failed to generate new linking code",
+        description: "An unexpected error occurred while generating a new linking code.",
       });
     } finally {
       setIsGenerating(false);
@@ -142,12 +109,12 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
     }
   };
 
-  // If we don't have the code yet and we're not loading, fetch it
+  // Fetch code on initial load
   useEffect(() => {
-    if (!linkingCode && !isLoading) {
+    if (!isLoading) {
       fetchLinkingCode();
     }
-  }, [linkingCode, isLoading]);
+  }, [playerId]);
 
   return (
     <Card>

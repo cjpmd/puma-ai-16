@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,13 +31,15 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { ensureDatabaseSetup } from "./utils/database/ensureDatabaseSetup";
 import { Button } from "@/components/ui/button";
-import { initializeDatabase, createParentChildLinkingColumns } from "./utils/database/initializeDatabase";
+import { initializeDatabase } from "./utils/database/initializeDatabase";
+import { createParentChildLinkingTable, addLinkingCodeColumn } from "./utils/database/createTables";
 
 function App() {
   const { profile } = useAuth();
   const [dbSetupError, setDbSetupError] = useState(false);
   const [isCheckingDb, setIsCheckingDb] = useState(true);
   const [isInitializingDb, setIsInitializingDb] = useState(false);
+  const [isFixingParentLinking, setIsFixingParentLinking] = useState(false);
   
   // Attempt database setup once on initial load with a timeout
   useEffect(() => {
@@ -96,10 +99,7 @@ function App() {
       // First try to initialize the database
       const result = await initializeDatabase();
       
-      // Then specifically try to create parent-child linking columns
-      const linkingResult = await createParentChildLinkingColumns();
-      
-      if (result && linkingResult) {
+      if (result) {
         setDbSetupError(false);
         toast({
           title: "Database Initialized",
@@ -107,8 +107,8 @@ function App() {
         });
       } else {
         toast({
-          title: "Database initialization partially failed",
-          description: "Some tables or columns could not be created",
+          title: "Database initialization failed",
+          description: "Some tables could not be created",
           variant: "destructive"
         });
       }
@@ -116,6 +116,34 @@ function App() {
       console.error("Error in manual database initialization:", error);
     } finally {
       setIsInitializingDb(false);
+    }
+  };
+
+  // Function to specifically fix parent-child linking
+  const handleFixParentLinking = async () => {
+    setIsFixingParentLinking(true);
+    try {
+      // First try to create the parent_child_linking table
+      await createParentChildLinkingTable();
+      
+      // Then add the linking_code column to players
+      const result = await addLinkingCodeColumn();
+      
+      if (result) {
+        toast({
+          title: "Parent Linking Fixed",
+          description: "Player linking code column has been created successfully"
+        });
+      }
+    } catch (error) {
+      console.error("Error fixing parent linking:", error);
+      toast({
+        title: "Parent Linking Fix Failed",
+        description: "Could not create required columns or tables",
+        variant: "destructive"
+      });
+    } finally {
+      setIsFixingParentLinking(false);
     }
   };
 
@@ -135,7 +163,7 @@ function App() {
                   Some database tables may be missing. This won't prevent you from using the application,
                   but some features might not work correctly.
                 </p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -147,10 +175,10 @@ function App() {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => createParentChildLinkingColumns()}
-                    disabled={isInitializingDb}
+                    onClick={handleFixParentLinking}
+                    disabled={isFixingParentLinking}
                   >
-                    Fix Parent Linking
+                    {isFixingParentLinking ? "Fixing..." : "Fix Parent Linking"}
                   </Button>
                 </div>
               </AlertDescription>
