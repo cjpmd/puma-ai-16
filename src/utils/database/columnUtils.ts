@@ -2,14 +2,17 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Enhanced column existence check with proper error handling and multiple approaches
+ * Checks if a column exists in a table
+ * @param tableName The name of the table to check
+ * @param columnName The name of the column to check for
+ * @returns Promise<boolean> Whether the column exists
  */
 export const columnExists = async (tableName: string, columnName: string): Promise<boolean> => {
   try {
-    console.log(`Checking if column ${columnName} exists in ${tableName}...`);
+    const { data, error } = await supabase.rpc('get_table_columns', { table_name: tableName });
+    if (error) throw error;
     
-    // First approach: Try a direct select of the column
-    return await checkColumnBySelect(tableName, columnName);
+    return Array.isArray(data) && data.includes(columnName);
   } catch (error) {
     console.error(`Error checking if column ${columnName} exists in ${tableName}:`, error);
     return false;
@@ -17,91 +20,79 @@ export const columnExists = async (tableName: string, columnName: string): Promi
 };
 
 /**
- * Check column existence by attempting to select it
+ * Add a column to a table if it doesn't exist
+ * @param tableName The name of the table to modify
+ * @param columnName The name of the column to add
+ * @param columnType The SQL type of the column
+ * @param defaultValue Optional default value for the column
+ * @returns Promise<boolean> Whether the operation succeeded
  */
-async function checkColumnBySelect(tableName: string, columnName: string): Promise<boolean> {
+export const addColumnIfNotExists = async (
+  tableName: string,
+  columnName: string,
+  columnType: string,
+  defaultValue?: string
+): Promise<boolean> => {
   try {
-    console.log(`Testing column ${columnName} in ${tableName} via select query`);
+    // Check if the column already exists
+    const exists = await columnExists(tableName, columnName);
+    if (exists) return true;
     
-    // We build a dynamic select that only includes the target column
-    const selectObject: Record<string, string> = {};
-    selectObject[columnName] = columnName;
+    // Construct the SQL to add the column
+    const defaultClause = defaultValue ? ` DEFAULT ${defaultValue}` : '';
+    const sql = `ALTER TABLE public.${tableName} ADD COLUMN IF NOT EXISTS ${columnName} ${columnType}${defaultClause};`;
     
-    const { error } = await supabase
-      .from(tableName)
-      .select(columnName)
-      .limit(1);
+    const { error } = await supabase.rpc('execute_sql', { sql_query: sql });
+    if (error) throw error;
     
-    // If no error, the column exists
-    if (!error) {
-      console.log(`Column ${columnName} exists in ${tableName} (query check: true)`);
-      return true;
-    }
-    
-    // Check if error indicates column doesn't exist
-    if (error.message.includes(`column "${columnName}" does not exist`) || 
-        error.message.includes(`${columnName}' does not exist`)) {
-      console.log(`Column ${columnName} does not exist in ${tableName} (query check: false)`);
-      return false;
-    }
-    
-    // For other errors, log but assume column doesn't exist
-    console.error(`Error checking column by select:`, error);
-    return false;
+    return true;
   } catch (error) {
-    console.error(`Exception in checkColumnBySelect:`, error);
+    console.error(`Error adding column ${columnName} to ${tableName}:`, error);
     return false;
   }
-}
+};
 
 /**
- * Gets a list of columns for a table with enhanced error handling
+ * Ensure the necessary database setup for parent-child linking
  */
-export const getTableColumns = async (tableName: string): Promise<string[]> => {
+export const ensureParentChildLinkingSetup = async (): Promise<boolean> => {
   try {
-    console.log(`Getting columns for ${tableName}...`);
+    // Add is_verified column to player_parents if it doesn't exist
+    const parentVerifiedAdded = await addColumnIfNotExists(
+      'player_parents',
+      'is_verified',
+      'BOOLEAN',
+      'FALSE'
+    );
     
-    // Try querying one row to get the structure
-    const { data, error } = await supabase
-      .from(tableName)
-      .select('*')
-      .limit(1);
+    // Add linking_code column to players if it doesn't exist
+    const linkingCodeAdded = await addColumnIfNotExists(
+      'players',
+      'linking_code',
+      'TEXT',
+      'gen_random_uuid()::text'
+    );
     
-    if (error) {
-      console.error(`Error getting columns for ${tableName}:`, error);
-      return [];
-    }
-    
-    // If data exists, get the keys from the first row
-    if (data && data.length > 0) {
-      const columns = Object.keys(data[0]);
-      console.log(`Retrieved columns for ${tableName} from row:`, columns);
-      return columns;
-    }
-    
-    // If no rows, try an empty insert/select to get column structure
-    try {
-      const { data: emptyData, error: emptyError } = await supabase
-        .from(tableName)
-        .select('*')
-        .limit(1);
+    // Create a unique index on the linking_code column if it doesn't exist
+    if (linkingCodeAdded) {
+      const indexSql = `
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_indexes 
+            WHERE indexname = 'players_linking_code_idx'
+          ) THEN
+            CREATE UNIQUE INDEX players_linking_code_idx ON public.players(linking_code);
+          END IF;
+        END $$;
+      `;
       
-      if (!emptyError && emptyData) {
-        // May return column metadata even without rows
-        const columns = Object.keys(emptyData);
-        if (columns.length > 0) {
-          console.log(`Retrieved columns for ${tableName} from empty response:`, columns);
-          return columns;
-        }
-      }
-    } catch (emptyError) {
-      console.error(`Failed to get empty columns for ${tableName}:`, emptyError);
+      await supabase.rpc('execute_sql', { sql_query: indexSql });
     }
     
-    console.log(`No data found for ${tableName} to determine columns`);
-    return [];
+    return parentVerifiedAdded && linkingCodeAdded;
   } catch (error) {
-    console.error(`Failed to get columns for ${tableName}:`, error);
-    return [];
+    console.error('Error setting up parent-child linking:', error);
+    return false;
   }
 };

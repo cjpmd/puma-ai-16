@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserPlus, CalendarDays, School, Building, ShieldCheck } from "lucide-react";
+import { Users, UserPlus, CalendarDays, School, Building, ShieldCheck, Key } from "lucide-react";
 import { Link } from "react-router-dom";
 import { RoleManager } from "@/components/auth/RoleManager";
 import { ParentChildLinkingDialog } from "@/components/parents/ParentChildLinkingDialog";
+import { ParentCodeLinkingDialog } from "@/components/parents/ParentCodeLinkingDialog";
 
 export function PlatformLanding() {
   const { profile, hasRole } = useAuth();
@@ -23,7 +24,7 @@ export function PlatformLanding() {
         
         <div className="flex flex-wrap gap-2">
           <RoleManager />
-          {hasRole('parent') && <ParentChildLinkingDialog />}
+          {hasRole('parent') && <ParentCodeLinkingDialog />}
         </div>
       </div>
       

@@ -27,9 +27,11 @@ export const RoleManager = () => {
   
   // Function to add a role
   const handleAddRole = async (role: UserRole) => {
-    const success = await addRole(role);
-    if (success) {
-      setShowRoleDialog(false);
+    if (addRole) {
+      const success = await addRole(role);
+      if (success) {
+        setShowRoleDialog(false);
+      }
     }
   };
 
@@ -52,12 +54,12 @@ export const RoleManager = () => {
           <div className="py-4">
             <h3 className="font-medium mb-2">Current Roles:</h3>
             <div className="flex flex-wrap gap-2 mb-6">
-              {profile?.roles?.map(role => (
-                <Badge key={role} variant="outline">
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
+              {profile?.role && (
+                <Badge key={profile.role} variant="outline">
+                  {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
                 </Badge>
-              ))}
-              {(!profile?.roles || profile.roles.length === 0) && (
+              )}
+              {(!profile?.role) && (
                 <span className="text-muted-foreground text-sm">No roles assigned</span>
               )}
             </div>

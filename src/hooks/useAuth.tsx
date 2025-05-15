@@ -154,6 +154,47 @@ export const useAuth = () => {
     };
   }, [navigate, refetchProfile]);
 
+  // Function to add a role to the current user
+  const addRole = async (role: UserRole): Promise<boolean> => {
+    if (!profile) return false;
+    
+    try {
+      // Update the user's role in the profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role })
+        .eq('id', profile.id);
+        
+      if (error) {
+        console.error('Error adding role:', error);
+        toast({
+          title: "Error",
+          description: `Failed to add ${role} role`,
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      // Refresh profile data
+      await refetchProfile();
+      
+      toast({
+        title: "Success",
+        description: `Added ${role} role to your account`,
+      });
+      
+      return true;
+    } catch (err) {
+      console.error('Error adding role:', err);
+      toast({
+        title: "Error",
+        description: "Failed to update roles",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   // Function to switch between roles
   const switchRole = (role: UserRole) => {
     setActiveRole(role);
@@ -192,6 +233,7 @@ export const useAuth = () => {
     profile,
     activeRole,
     switchRole,
+    addRole,
     isLoading: isInitializing || profileLoading,
     hasPermission,
     hasRole,

@@ -1,34 +1,33 @@
 
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth, UserRole } from '@/hooks/useAuth';
-import { Loader2 } from "lucide-react";
+import { Navigate } from "react-router-dom";
+import { useAuth, UserRole } from "@/hooks/useAuth";
 
-interface ProtectedRouteProps {
+export interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles: UserRole[];
+  allowedRoles?: UserRole[];
 }
 
 export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-  const { profile, isLoading, hasPermission } = useAuth();
-  const location = useLocation();
+  const { profile, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
+  // If not authenticated, redirect to auth page
   if (!profile) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/auth" replace />;
   }
 
-  if (!hasPermission(allowedRoles)) {
-    return <Navigate to="/unauthorized" state={{ from: location }} replace />;
+  // If no specific roles are required, or the user has admin role, allow access
+  if (!allowedRoles || profile.role === 'admin') {
+    return <>{children}</>;
+  }
+
+  // Check if user has any of the required roles
+  const hasRequiredRole = allowedRoles.includes(profile.role);
+  if (!hasRequiredRole) {
+    return <Navigate to="/platform" replace />;
   }
 
   return <>{children}</>;
