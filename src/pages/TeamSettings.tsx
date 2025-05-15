@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
 import { FAConnectionSettings } from "@/components/settings/FAConnectionSettings";
@@ -8,12 +7,13 @@ import { FormatsAndCategoriesSettings } from "@/components/settings/FormatsAndCa
 import { JoinClubSection } from "@/components/settings/JoinClubSection";
 import { PlayerSubscriptionManager } from "@/components/subscription/PlayerSubscriptionManager";
 import { TeamPlatformSubscription } from "@/components/subscription/TeamPlatformSubscription";
+import { ActiveSubscriptionsTable } from "@/components/subscription/ActiveSubscriptionsTable";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Settings, CreditCard } from "lucide-react";
+import { Users, Settings, CreditCard, Plus } from "lucide-react";
 
 export default function TeamSettings() {
   const [debugInfo, setDebugInfo] = useState<any>({});
@@ -196,6 +196,14 @@ export default function TeamSettings() {
               Club Management
             </Button>
           )}
+          
+          <Button 
+            onClick={() => navigate("/create-club")}
+            className="flex items-center gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Create Club</span>
+          </Button>
         </div>
       </div>
 
@@ -233,6 +241,7 @@ export default function TeamSettings() {
         
         <TabsContent value="subscriptions" className="space-y-6">
           <TeamPlatformSubscription />
+          <ActiveSubscriptionsTable />
           <PlayerSubscriptionManager />
         </TabsContent>
         

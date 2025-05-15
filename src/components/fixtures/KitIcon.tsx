@@ -1,174 +1,136 @@
 
-import { useEffect, useState } from "react";
-import { Shirt } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import React from 'react';
 
-interface KitIconProps {
-  type: 'home' | 'away' | 'training';
-  size?: number;
+type KitColorProps = {
+  primaryColor?: string;
+  secondaryColor?: string;
+  pattern?: string;
+  size?: 'small' | 'medium' | 'large';
 }
 
-export function KitIcon({ type, size = 24 }: KitIconProps) {
-  const [primaryColor, setPrimaryColor] = useState("#ffffff");
-  const [secondaryColor, setSecondaryColor] = useState("#000000");
-  const [pattern, setPattern] = useState<"solid" | "stripes" | "hoops">("solid");
-  const [isLoading, setIsLoading] = useState(true);
-  const [tooltipText, setTooltipText] = useState("");
+type KitIconProps = {
+  value?: string;
+  type?: 'home_kit_icon' | 'away_kit_icon' | 'training_kit_icon';
+  teamData?: any;
+  size?: 'small' | 'medium' | 'large';
+}
 
-  // Map type to database column
-  const typeToColumn = {
-    'home': 'home_kit_icon',
-    'away': 'away_kit_icon',
-    'training': 'training_kit_icon'
-  };
-
-  // Map type to display text
-  const typeToText = {
-    'home': 'Home Kit',
-    'away': 'Away Kit', 
-    'training': 'Training Kit'
-  };
-
-  useEffect(() => {
-    const fetchKitIcon = async () => {
-      try {
-        setIsLoading(true);
-        
-        const { data, error } = await supabase
-          .from('team_settings')
-          .select(`team_name, ${typeToColumn[type]}`)
-          .limit(1)
-          .single();
-        
-        if (error) {
-          console.error('Error fetching kit icon:', error);
-          setTooltipText(typeToText[type]); // Default tooltip when error occurs
-          return;
-        }
-
-        // Default tooltip text if we can't extract team name
-        let teamNameStr = "";
-        
-        if (data) {
-          // Safely access the icon data
-          const iconData = data[typeToColumn[type]];
-          
-          // Safely extract team name with proper null checking
-          if (data && typeof data === 'object' && 'team_name' in data && data.team_name !== null) {
-            teamNameStr = String(data.team_name);
-          }
-          
-          if (iconData) {
-            // Format: primaryColor|secondaryColor|pattern
-            const iconParts = iconData.split('|');
-            
-            // Set primary and secondary colors
-            setPrimaryColor(iconParts[0] || "#ffffff");
-            setSecondaryColor(iconParts[1] || "#000000");
-            
-            // Set pattern if available (backward compatible with old format)
-            if (iconParts.length > 2) {
-              setPattern(iconParts[2] as "solid" | "stripes" | "hoops" || "solid");
-            } else {
-              setPattern("solid");
-            }
-            
-            // Set tooltip text including team name if available
-            setTooltipText(teamNameStr 
-              ? `${teamNameStr} ${typeToText[type]}` 
-              : typeToText[type]);
-          } else {
-            // Default tooltip text when iconData is not available
-            setTooltipText(typeToText[type]);
-          }
-        } else {
-          // Handle case where data is null
-          setTooltipText(typeToText[type]);
-        }
-      } catch (error) {
-        console.error('Error fetching kit icon:', error);
-        // Set default tooltip text in case of error
-        setTooltipText(typeToText[type]);
-      } finally {
-        setIsLoading(false);
-      }
+export const KitIcon: React.FC<KitIconProps> = ({ 
+  value, 
+  type = 'home_kit_icon',
+  teamData,
+  size = 'medium' 
+}) => {
+  // Parse kit colors from value string if provided
+  let kitColors: KitColorProps = {};
+  let teamNameStr = "Team";
+  
+  if (value) {
+    const parts = value.split('|');
+    if (parts.length >= 2) {
+      kitColors = {
+        primaryColor: parts[0],
+        secondaryColor: parts[1],
+        pattern: parts[2] || 'solid'
+      };
+    }
+  } else if (teamData) {
+    const typeToColumn: Record<string, string> = {
+      'home_kit_icon': 'home_kit_icon',
+      'away_kit_icon': 'away_kit_icon',
+      'training_kit_icon': 'training_kit_icon'
     };
-
-    fetchKitIcon();
-  }, [type]);
-
-  if (isLoading) {
-    return <div className="animate-pulse w-6 h-6 bg-gray-200 rounded-full" />;
+    
+    const data = teamData;
+    
+    if (data && typeof data === 'object') {
+      // Extract kit colors if data exists
+      if (typeToColumn[type] && data[typeToColumn[type]]) {
+        const iconData = data[typeToColumn[type]];
+        
+        // Safely extract team name with proper null checking
+        if (data && typeof data === 'object' && 'team_name' in data && data.team_name !== null) {
+          teamNameStr = String(data.team_name);
+        }
+        
+        if (iconData) {
+          const parts = iconData.split('|');
+          if (parts.length >= 2) {
+            kitColors = {
+              primaryColor: parts[0],
+              secondaryColor: parts[1],
+              pattern: parts[2] || 'solid'
+            };
+          }
+        }
+      }
+    }
   }
-
-  // Create SVG patterns based on the selected pattern type
-  const getShirtStyle = () => {
-    switch (pattern) {
-      case "stripes":
-        return {
-          fill: `url(#stripes-${type})`,
-          color: secondaryColor,
-        };
-      case "hoops":
-        return {
-          fill: `url(#hoops-${type})`,
-          color: secondaryColor,
-        };
-      default:
-        return {
-          fill: primaryColor,
-          color: secondaryColor,
-        };
+  
+  const { primaryColor = '#ffffff', secondaryColor = '#000000', pattern = 'solid' } = kitColors;
+  
+  // Size mappings
+  const sizeMap = {
+    small: {
+      width: '24px',
+      height: '24px',
+      borderWidth: '1px'
+    },
+    medium: {
+      width: '32px',
+      height: '32px',
+      borderWidth: '1px'
+    },
+    large: {
+      width: '48px',
+      height: '48px',
+      borderWidth: '2px'
     }
   };
-
+  
+  const { width, height, borderWidth } = sizeMap[size];
+  
+  // Render pattern based on type
+  let patternStyle: React.CSSProperties = { backgroundColor: primaryColor };
+  
+  switch (pattern) {
+    case 'stripes':
+      patternStyle = {
+        backgroundColor: primaryColor,
+        backgroundImage: `repeating-linear-gradient(0deg, ${secondaryColor}, ${secondaryColor} 4px, ${primaryColor} 4px, ${primaryColor} 12px)`
+      };
+      break;
+    case 'hoops':
+      patternStyle = {
+        backgroundColor: primaryColor,
+        backgroundImage: `repeating-linear-gradient(90deg, ${secondaryColor}, ${secondaryColor} 4px, ${primaryColor} 4px, ${primaryColor} 12px)`
+      };
+      break;
+    case 'quarters':
+      patternStyle = {
+        background: `linear-gradient(to right, ${primaryColor} 50%, ${secondaryColor} 50%)`
+      };
+      break;
+    case 'halves':
+      patternStyle = {
+        background: `linear-gradient(to bottom, ${primaryColor} 50%, ${secondaryColor} 50%)`
+      };
+      break;
+    default:
+      // Solid is the default
+      patternStyle = { backgroundColor: primaryColor };
+  }
+  
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger>
-          <div className="relative">
-            <svg width="0" height="0" style={{ position: "absolute" }}>
-              <defs>
-                {/* Vertical stripes pattern - running up and down */}
-                <pattern
-                  id={`stripes-${type}`}
-                  patternUnits="userSpaceOnUse"
-                  width="6"
-                  height="6"
-                >
-                  <rect width="3" height="6" fill={primaryColor} />
-                  <rect x="3" width="3" height="6" fill={secondaryColor} />
-                </pattern>
-                
-                {/* Horizontal hoops pattern */}
-                <pattern
-                  id={`hoops-${type}`}
-                  patternUnits="userSpaceOnUse"
-                  width="6"
-                  height="6"
-                >
-                  <rect width="6" height="3" fill={primaryColor} />
-                  <rect y="3" width="6" height="3" fill={secondaryColor} />
-                </pattern>
-              </defs>
-            </svg>
-            <Shirt 
-              size={size}
-              className="text-slate-800"
-              {...getShirtStyle()}
-            />
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{tooltipText}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <div 
+      className="relative rounded-sm overflow-hidden"
+      style={{
+        width,
+        height,
+        border: `${borderWidth} solid #111`,
+        ...patternStyle
+      }}
+      title={teamNameStr}
+    />
   );
-}
+};
