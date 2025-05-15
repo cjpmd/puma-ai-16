@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { User, Users } from "lucide-react";
 
 export const AccountLinkingOptions = () => {
-  const { hasRole } = useAuth();
+  const { hasRole, profile } = useAuth();
   
   return (
     <Card className="mb-8">
