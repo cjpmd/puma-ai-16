@@ -3,29 +3,10 @@ import { CardTitle } from "@/components/ui/card";
 import { Trophy } from "lucide-react";
 import { format } from "date-fns";
 import { FixtureStatus } from "./FixtureStatus";
+import { Fixture } from "@/types/fixture";
 
 interface FixtureHeaderProps {
-  fixture: {
-    id: string;
-    team_name?: string;
-    opponent: string;
-    is_home?: boolean;
-    format?: string;
-    date?: string;
-    fixture_team_times?: Array<{
-      team_number: number;
-      start_time?: string | null;
-      end_time?: string | null;
-      performance_category?: string;
-    }>;
-    status?: string;
-    home_team_name?: string;
-    away_team_name?: string;
-    home_team_data?: any;
-    away_team_data?: any;
-    home_team_score?: number;
-    away_team_score?: number;
-  };
+  fixture: Fixture;
 }
 
 export const FixtureHeader = ({ fixture }: FixtureHeaderProps) => {
