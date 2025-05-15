@@ -52,8 +52,10 @@ export function KitIcon({ type, size = 24 }: KitIconProps) {
 
         if (data) {
           const iconData = data[typeToColumn[type]];
-          // Safely extract team name with fallback to empty string
-          const teamName = data?.team_name || "";
+          // Safely handle team name extraction with proper type checking
+          const teamName = typeof data === 'object' && data !== null && 'team_name' in data 
+            ? (data.team_name as string) || ""
+            : "";
           
           if (iconData) {
             const [primary, secondary] = iconData.split('|');

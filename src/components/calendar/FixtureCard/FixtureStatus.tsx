@@ -41,8 +41,12 @@ export const FixtureStatus = ({ fixture, currentTime }: FixtureStatusProps) => {
 
   const status = getStatus();
 
+  // Define the full status type to include all possible values
+  type FixtureStatusType = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'IN_PROGRESS' | 'TRAINING';
+
   const getStatusDetails = () => {
-    switch (status) {
+    // Use type assertion to allow comparison with the expanded set of status types
+    switch (status as FixtureStatusType) {
       case 'COMPLETED':
         return {
           label: 'Completed',
@@ -82,8 +86,6 @@ export const FixtureStatus = ({ fixture, currentTime }: FixtureStatusProps) => {
     }
   };
 
-  // Manually type the result of getStatusDetails() to prevent TypeScript errors
-  // This allows for the status values that aren't explicitly returned by getStatus()
   const { label, variant, icon, isTraining } = getStatusDetails();
 
   return (
