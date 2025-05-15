@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,12 +12,16 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
+import { KitIconSelector } from "./KitIconSelector";
 
 interface TeamSettings {
   id: string;
   team_name: string | null;
   team_logo: string | null;
   team_colors: string | null;
+  home_kit_icon: string | null;
+  away_kit_icon: string | null;
+  training_kit_icon: string | null;
   created_at: string;
 }
 
@@ -27,6 +31,9 @@ export function TeamInfoSettings() {
     team_name: "",
     team_colors: "",
     team_logo: "",
+    home_kit_icon: "",
+    away_kit_icon: "",
+    training_kit_icon: "",
   });
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -39,7 +46,7 @@ export function TeamInfoSettings() {
     try {
       setIsLoading(true);
       
-      // Ensure table exists
+      // Ensure table exists with kit icon fields
       await supabase.rpc('execute_sql', {
         sql: `
         CREATE TABLE IF NOT EXISTS team_settings (
@@ -47,6 +54,9 @@ export function TeamInfoSettings() {
           team_name TEXT,
           team_logo TEXT,
           team_colors TEXT,
+          home_kit_icon TEXT,
+          away_kit_icon TEXT,
+          training_kit_icon TEXT,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
         );
@@ -55,6 +65,25 @@ export function TeamInfoSettings() {
         INSERT INTO team_settings (id)
         SELECT '00000000-0000-0000-0000-000000000003'
         WHERE NOT EXISTS (SELECT 1 FROM team_settings LIMIT 1);
+
+        -- Add kit icon columns if they don't exist
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name = 'team_settings' AND column_name = 'home_kit_icon') THEN
+            ALTER TABLE team_settings ADD COLUMN home_kit_icon TEXT;
+          END IF;
+
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name = 'team_settings' AND column_name = 'away_kit_icon') THEN
+            ALTER TABLE team_settings ADD COLUMN away_kit_icon TEXT;
+          END IF;
+
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name = 'team_settings' AND column_name = 'training_kit_icon') THEN
+            ALTER TABLE team_settings ADD COLUMN training_kit_icon TEXT;
+          END IF;
+        END $$;
         `
       });
       
@@ -72,6 +101,9 @@ export function TeamInfoSettings() {
           team_name: data.team_name || "",
           team_colors: data.team_colors || "",
           team_logo: data.team_logo || "",
+          home_kit_icon: data.home_kit_icon || "",
+          away_kit_icon: data.away_kit_icon || "",
+          training_kit_icon: data.training_kit_icon || "",
         });
       }
     } catch (error) {
@@ -91,6 +123,9 @@ export function TeamInfoSettings() {
           team_name: formData.team_name,
           team_colors: formData.team_colors,
           team_logo: formData.team_logo,
+          home_kit_icon: formData.home_kit_icon,
+          away_kit_icon: formData.away_kit_icon,
+          training_kit_icon: formData.training_kit_icon,
           updated_at: new Date().toISOString(),
         })
         .eq('id', teamSettings.id);
@@ -114,6 +149,9 @@ export function TeamInfoSettings() {
           team_name: formData.team_name,
           team_colors: formData.team_colors,
           team_logo: formData.team_logo,
+          home_kit_icon: formData.home_kit_icon,
+          away_kit_icon: formData.away_kit_icon,
+          training_kit_icon: formData.training_kit_icon,
         });
       }
     } catch (error) {
@@ -129,6 +167,10 @@ export function TeamInfoSettings() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleKitIconChange = (type: 'home_kit_icon' | 'away_kit_icon' | 'training_kit_icon', value: string) => {
+    setFormData(prev => ({ ...prev, [type]: value }));
   };
 
   return (
@@ -184,6 +226,39 @@ export function TeamInfoSettings() {
             <p className="text-xs text-muted-foreground">
               Enter a URL to your team's logo image
             </p>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-4">Kit Icons</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Create visual indicators for different kits that will be shown in fixture details
+            </p>
+            
+            <div className="grid gap-6 md:grid-cols-3">
+              <KitIconSelector
+                type="home_kit_icon"
+                label="Home Kit"
+                value={formData.home_kit_icon}
+                onChange={handleKitIconChange}
+                disabled={isLoading}
+              />
+              
+              <KitIconSelector
+                type="away_kit_icon"
+                label="Away Kit"
+                value={formData.away_kit_icon}
+                onChange={handleKitIconChange}
+                disabled={isLoading}
+              />
+              
+              <KitIconSelector
+                type="training_kit_icon"
+                label="Training Kit"
+                value={formData.training_kit_icon}
+                onChange={handleKitIconChange}
+                disabled={isLoading}
+              />
+            </div>
           </div>
         </div>
       </CardContent>

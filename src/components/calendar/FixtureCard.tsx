@@ -8,6 +8,7 @@ import { TeamDetails } from "./FixtureCard/TeamDetails";
 import { FixtureFooter } from "./FixtureCard/FixtureFooter";
 import { useFixtureHelpers } from "./FixtureCard/useFixtureHelpers";
 import { useFixturePlayerNames } from "./FixtureCard/useFixturePlayerNames";
+import { KitIcon } from "@/components/fixtures/KitIcon";
 
 interface FixtureCardProps {
   fixture: Fixture;
@@ -52,6 +53,9 @@ export const FixtureCard = ({
     }
   };
 
+  // Determine kit type based on home/away status
+  const kitType = fixture.is_home ? 'home' : 'away';
+
   return (
     <>
       <Card className="shadow-sm hover:shadow-md transition-shadow">
@@ -63,9 +67,16 @@ export const FixtureCard = ({
         </CardHeader>
 
         <CardContent>
-          <p className="font-semibold text-muted-foreground mb-4 text-sm">
+          <p className="font-semibold text-muted-foreground mb-1 text-sm flex items-center gap-2">
             Date: {fixture.date ? new Date(fixture.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : "Date TBD"}
           </p>
+          
+          <div className="mb-3 flex items-center gap-2">
+            <KitIcon type={kitType} size={20} />
+            <span className="text-sm text-muted-foreground">
+              {fixture.is_home ? "Home Kit" : "Away Kit"}
+            </span>
+          </div>
 
           {Array.from({ length: fixture.number_of_teams || 1 }).map((_, index) => (
             <TeamDetails 
