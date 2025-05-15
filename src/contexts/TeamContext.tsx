@@ -1,87 +1,99 @@
 
-import { createContext, useContext, useState, ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
+// Team interface
 interface Team {
   id: string;
   team_name: string;
   age_group?: string;
-  team_logo?: string;
+  location?: string;
+  contact_email?: string;
+  team_color?: string;
 }
 
-interface TeamsContextType {
+interface TeamsContextProps {
   teams: Team[];
-  activeTeam: Team | null;
   loading: boolean;
-  setActiveTeam: (team: Team) => void;
+  error: any;
+  currentTeam: Team | null;
+  setCurrentTeam: (team: Team | null) => void;
   refreshTeams: () => Promise<void>;
 }
 
-const TeamsContext = createContext<TeamsContextType | undefined>(undefined);
+const TeamsContext = createContext<TeamsContextProps | undefined>(undefined);
 
 export const useTeams = () => {
   const context = useContext(TeamsContext);
   if (context === undefined) {
-    throw new Error("useTeams must be used within a TeamsContextProvider");
+    throw new Error('useTeams must be used within a TeamsProvider');
   }
   return context;
 };
 
-interface TeamsContextProviderProps {
-  children: ReactNode;
-}
-
-export const TeamsContextProvider = ({ children }: TeamsContextProviderProps) => {
+export const TeamsContextProvider = ({ children }: { children: React.ReactNode }) => {
   const [teams, setTeams] = useState<Team[]>([]);
-  const [activeTeam, setActiveTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
+  const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
 
-  const refreshTeams = async () => {
-    setLoading(true);
+  // Function to fetch teams
+  const fetchTeams = async () => {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) {
-        setTeams([]);
-        setActiveTeam(null);
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("teams")
-        .select("*")
-        .eq("admin_id", user.user.id);
-
-      if (error) throw error;
-
-      const teamsData = data as Team[];
-      setTeams(teamsData);
+      setLoading(true);
+      setError(null);
       
-      // If there are teams but no active team, set the first one as active
-      if (teamsData.length > 0 && !activeTeam) {
-        setActiveTeam(teamsData[0]);
+      const { data: userProfile, error: profileError } = await supabase.auth.getUser();
+      
+      if (profileError) throw profileError;
+      
+      // Use only fields that are guaranteed to exist
+      const { data, error: teamsError } = await supabase
+        .from('teams')
+        .select('id, team_name, age_group, location, contact_email, team_color')
+        .eq('admin_id', userProfile.user?.id);
+      
+      if (teamsError) {
+        throw teamsError;
       }
       
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching teams:", error);
+      setTeams(data || []);
+      
+      // Set first team as current if we have teams and no current team
+      if (data && data.length > 0 && !currentTeam) {
+        setCurrentTeam(data[0]);
+      }
+    } catch (err) {
+      console.error('Error fetching teams:', err);
+      setError(err);
+      toast.error('Failed to load teams', {
+        description: 'There was a problem loading your teams'
+      });
+    } finally {
       setLoading(false);
     }
   };
 
-  // Load teams on context mount
-  useState(() => {
-    refreshTeams();
-  });
+  // Fetch teams on component mount
+  useEffect(() => {
+    fetchTeams();
+  }, []);
+
+  // Refresh teams data
+  const refreshTeams = async () => {
+    await fetchTeams();
+  };
 
   return (
     <TeamsContext.Provider
       value={{
         teams,
-        activeTeam,
         loading,
-        setActiveTeam,
-        refreshTeams,
+        error,
+        currentTeam,
+        setCurrentTeam,
+        refreshTeams
       }}
     >
       {children}

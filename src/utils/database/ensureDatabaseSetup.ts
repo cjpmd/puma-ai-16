@@ -9,9 +9,9 @@ import { initializeDatabase } from "./initializeDatabase";
  */
 async function tableExists(tableName: string): Promise<boolean> {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from(tableName)
-      .select('count(*)', { count: 'exact', head: true })
+      .select('id')
       .limit(1);
     
     return !error;
@@ -23,7 +23,7 @@ async function tableExists(tableName: string): Promise<boolean> {
 
 /**
  * Ensure all required database tables and columns exist
- * Called at app initialization with improved timeout and retry logic
+ * Called at app initialization with improved error handling
  */
 export async function ensureDatabaseSetup() {
   console.log("Ensuring database setup...");
@@ -55,30 +55,8 @@ export async function ensureDatabaseSetup() {
       // Try to initialize the database
       const initResult = await initializeDatabase();
       
-      // Show toast notification based on result
-      if (!initResult) {
-        toast.error("Database setup required", {
-          description: `Missing tables: ${missingTables.join(', ')}. Please run the SQL setup scripts in Supabase.`,
-          duration: 6000,
-        });
-      } else {
-        toast.success("Database initialized", {
-          description: "The database has been set up with required tables.",
-          duration: 4000,
-        });
-        
-        // Re-check tables after initialization
-        const allTablesExistNow = await Promise.all(
-          missingTables.map(table => tableExists(table))
-        ).then(results => results.every(exists => exists));
-        
-        if (allTablesExistNow) {
-          return true;
-        }
-      }
-      
-      // Return false if we couldn't create all tables, but don't block the app
-      return false;
+      // Return result without showing toasts (they're already shown in initializeDatabase)
+      return initResult;
     }
     
     // Ensure parent-child linking setup
@@ -92,7 +70,6 @@ export async function ensureDatabaseSetup() {
   } catch (err) {
     console.error("Error in database setup:", err);
     
-    // Show toast notification
     toast.error("Database setup error", {
       description: "There was a problem checking database tables. Please try again later.",
       duration: 6000,
