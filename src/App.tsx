@@ -20,7 +20,8 @@ import ClubDashboard from "./pages/ClubDashboard";
 import ClubSettings from "./pages/ClubSettings";
 import { PlatformLanding } from "./pages/PlatformLanding";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "@/hooks/use-toast";
 import { NavBar } from "./components/NavBar";
 import { ParentDashboard } from "./pages/ParentDashboard";
 import { PlayerDashboard } from "./pages/PlayerDashboard";
@@ -96,12 +97,15 @@ function App() {
       const result = await initializeDatabase();
       if (result) {
         setDbSetupError(false);
-        Toaster.success("Database initialized", {
+        toast({
+          title: "Database Initialized",
           description: "Database tables have been created successfully"
         });
       } else {
-        Toaster.error("Database initialization failed", {
-          description: "Could not create all required tables"
+        toast({
+          title: "Database initialization failed",
+          description: "Could not create all required tables",
+          variant: "destructive"
         });
       }
     } catch (error) {
