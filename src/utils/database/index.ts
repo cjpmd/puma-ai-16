@@ -1,10 +1,9 @@
 
-// Re-export all database utilities for easier imports
-export * from './columnUtils';
+// Export all database utility functions
 export * from './columnManagement';
+export * from './columnUtils';
 export * from './dataVerification';
 export * from './ensureDatabaseSetup';
+export * from './executeSql';
 export * from './initializeDatabase';
-
-// Export executeSql separately to avoid re-export conflict
-export { executeSql } from './executeSql';
+export * from './setupUserRolesTable';

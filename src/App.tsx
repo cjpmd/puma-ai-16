@@ -1,14 +1,14 @@
 
-import { Routes, Route, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import Auth from "./pages/Auth";
+import { Auth } from "./pages/Auth";
 import Index from "./pages/Index";
 import SquadManagement from "./pages/SquadManagement";
-import Analytics from "./pages/Analytics";
+import { Analytics } from "./pages/Analytics";
 import TopRatedByPosition from "./pages/TopRatedByPosition";
 import FormationSelector from "./pages/FormationSelector";
-import { Calendar } from "./hooks/calendar";
+import { Calendar as CalendarComponent } from "./hooks/calendar";
 import PlayerDetailsPage from "./pages/PlayerDetailsPage";
 import RoleSuitabilityPage from "./pages/RoleSuitabilityPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -63,7 +63,7 @@ function App() {
               <Route path="/top-rated" element={<ProtectedRoute><TopRatedByPosition /></ProtectedRoute>} />
               <Route path="/role-suitability/:playerId" element={<ProtectedRoute><RoleSuitabilityPage /></ProtectedRoute>} />
               <Route path="/formation" element={<ProtectedRoute><FormationSelector /></ProtectedRoute>} />
-              <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+              <Route path="/calendar" element={<ProtectedRoute><CalendarComponent /></ProtectedRoute>} />
               <Route path="/fixtures" element={<ProtectedRoute><Fixtures /></ProtectedRoute>} />
               <Route path="/platform" element={<ProtectedRoute><PlatformLanding /></ProtectedRoute>} />
               <Route path="/create-team" element={<ProtectedRoute><CreateTeam /></ProtectedRoute>} />
