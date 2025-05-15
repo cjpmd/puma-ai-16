@@ -57,7 +57,7 @@ export function KitIcon({ type, size = 24 }: KitIconProps) {
         
         if (data) {
           // Safely access the icon data
-          const iconData = data?.[typeToColumn[type]];
+          const iconData = data[typeToColumn[type]];
           
           // Safely extract team name with proper null checking
           if (typeof data === 'object' && data !== null && 'team_name' in data && data.team_name !== null) {
@@ -135,19 +135,18 @@ export function KitIcon({ type, size = 24 }: KitIconProps) {
           <div className="relative">
             <svg width="0" height="0" style={{ position: "absolute" }}>
               <defs>
-                {/* Vertical stripes pattern - making stripes finer */}
+                {/* Vertical stripes pattern - running up and down */}
                 <pattern
                   id={`stripes-${type}`}
                   patternUnits="userSpaceOnUse"
                   width="6"
                   height="6"
-                  patternTransform="rotate(90)"
                 >
                   <rect width="3" height="6" fill={primaryColor} />
                   <rect x="3" width="3" height="6" fill={secondaryColor} />
                 </pattern>
                 
-                {/* Horizontal hoops pattern - making hoops finer */}
+                {/* Horizontal hoops pattern */}
                 <pattern
                   id={`hoops-${type}`}
                   patternUnits="userSpaceOnUse"
