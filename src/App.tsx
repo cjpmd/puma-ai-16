@@ -1,182 +1,81 @@
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Index from "./pages/Index";
-import Squad from "./pages/SquadManagement";
-import { CalendarPage } from "./pages/Calendar";
-import Fixtures from "./pages/Fixtures";
-import { Analytics } from "./pages/Analytics";
-import PlayerDetails from "./pages/PlayerDetailsPage";
-import FormationSelector from "./pages/FormationSelector";
-import RoleSuitability from "./pages/RoleSuitabilityPage";
-import TopRatedByPosition from "./pages/TopRatedByPosition";
-import TeamSettings from "./pages/TeamSettings";
-import ClubSettings from "./pages/ClubSettings";
-import ClubDashboard from "./pages/ClubDashboard";
-import CreateTeam from "./pages/CreateTeam";
-import PlatformLanding from "./pages/PlatformLanding";
-import { ParentDashboard } from "./pages/ParentDashboard";
+import { Routes, Route, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Auth } from "./pages/Auth";
-import { Coaches } from "./pages/Coaches";
-import { NavBar } from "./components/NavBar";
+import { Index } from "./pages/Index";
+import { SquadManagement } from "./pages/SquadManagement";
+import { Analytics } from "./pages/Analytics";
+import { TopRatedByPosition } from "./pages/TopRatedByPosition";
+import { FormationSelector } from "./pages/FormationSelector";
+import { Calendar } from "./pages/Calendar";
+import { PlayerDetailsPage } from "./pages/PlayerDetailsPage";
+import { RoleSuitabilityPage } from "./pages/RoleSuitabilityPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { Fixtures } from "./pages/Fixtures";
+import { TeamsContextProvider } from "./contexts/TeamContext";
+import { CreateTeam } from "./pages/CreateTeam";
+import { TeamSettings } from "./pages/TeamSettings";
+import { ClubDashboard } from "./pages/ClubDashboard";
+import { ClubSettings } from "./pages/ClubSettings";
+import { PlatformLanding } from "./pages/PlatformLanding";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "sonner";
+import { NavBar } from "./components/NavBar";
+import { ParentDashboard } from "./pages/ParentDashboard";
+import { useAuth } from "./hooks/useAuth";
+import { initializeUserRoles } from "./utils/database/setupUserRolesTable";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+// Create a client
+const queryClient = new QueryClient();
 
 function App() {
+  const { profile } = useAuth();
+  
+  // Initialize user roles system when profile loads
+  useEffect(() => {
+    if (profile?.id && profile?.role) {
+      initializeUserRoles(profile.id, profile.role)
+        .then(success => {
+          if (success) {
+            console.log("User roles system initialized successfully");
+          } else {
+            console.error("Failed to initialize user roles system");
+          }
+        });
+    }
+  }, [profile]);
+
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <NavBar />
-        <Routes>
-          {/* Public routes - accessible without login */}
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/create-team" element={<CreateTeam />} />
-          <Route path="/club-settings" element={<ClubSettings />} />
-          
-          {/* Platform Routes */}
-          <Route
-            path="/platform"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'coach', 'parent']}>
-                <PlatformLanding />
-              </ProtectedRoute>
-            }
-          />
-          
-          {/* Parent Routes */}
-          <Route
-            path="/parent-dashboard"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'parent', 'coach']}>
-                <ParentDashboard />
-              </ProtectedRoute>
-            }
-          />
-          
-          {/* Admin and Manager Routes */}
-          <Route 
-            path="/home" 
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'coach', 'parent']}>
-                <Index />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Club Routes */}
-          <Route
-            path="/club/:clubId"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                <ClubDashboard />
-              </ProtectedRoute>
-            }
-          />
-          
-          {/* Admin and Manager Only Routes */}
-          <Route 
-            path="/squad" 
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                <Squad />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Shared Routes with Different Views */}
-          <Route 
-            path="/calendar" 
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'coach', 'parent']}>
-                <CalendarPage />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/fixtures" 
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'coach']}>
-                <Fixtures />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/analytics" 
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'coach']}>
-                <Analytics />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/player/:id" 
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'coach', 'parent']}>
-                <PlayerDetails />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Admin Only Routes */}
-          <Route 
-            path="/settings" 
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <TeamSettings />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/coaches" 
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <Coaches />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Technical Routes */}
-          <Route 
-            path="/formation" 
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'manager']}>
-                <FormationSelector />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/role-suitability" 
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'coach']}>
-                <RoleSuitability />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/top-rated" 
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'coach']}>
-                <TopRatedByPosition />
-              </ProtectedRoute>
-            } 
-          />
-        </Routes>
-      </Router>
+      <TeamsContextProvider>
+        <Toaster position="top-center" />
+        <div className="min-h-screen bg-slate-50">
+          <ErrorBoundary>
+            <NavBar />
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<Index />} />
+              <Route path="/player/:id" element={<ProtectedRoute><PlayerDetailsPage /></ProtectedRoute>} />
+              <Route path="/squad" element={<ProtectedRoute><SquadManagement /></ProtectedRoute>} />
+              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+              <Route path="/top-rated" element={<ProtectedRoute><TopRatedByPosition /></ProtectedRoute>} />
+              <Route path="/role-suitability/:playerId" element={<ProtectedRoute><RoleSuitabilityPage /></ProtectedRoute>} />
+              <Route path="/formation" element={<ProtectedRoute><FormationSelector /></ProtectedRoute>} />
+              <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+              <Route path="/fixtures" element={<ProtectedRoute><Fixtures /></ProtectedRoute>} />
+              <Route path="/platform" element={<ProtectedRoute><PlatformLanding /></ProtectedRoute>} />
+              <Route path="/create-team" element={<ProtectedRoute><CreateTeam /></ProtectedRoute>} />
+              <Route path="/team-settings" element={<ProtectedRoute><TeamSettings /></ProtectedRoute>} />
+              <Route path="/club/:clubId" element={<ProtectedRoute><ClubDashboard /></ProtectedRoute>} />
+              <Route path="/club-settings" element={<ProtectedRoute><ClubSettings /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><TeamSettings /></ProtectedRoute>} />
+              <Route path="/parent-dashboard" element={<ProtectedRoute><ParentDashboard /></ProtectedRoute>} />
+            </Routes>
+          </ErrorBoundary>
+        </div>
+      </TeamsContextProvider>
     </QueryClientProvider>
   );
 }
