@@ -11,6 +11,7 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
+import { Check } from "lucide-react";
 import { KitIconSelector } from "./KitIconSelector";
 
 interface TeamSettings {
@@ -35,11 +36,24 @@ export function TeamInfoSettings() {
     training_kit_icon: "",
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchTeamSettings();
   }, []);
+
+  // Reset the success indicator after a delay
+  useEffect(() => {
+    if (saveSuccess) {
+      const timer = setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000); // Reset after 3 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [saveSuccess]);
 
   const fetchTeamSettings = async () => {
     try {
@@ -132,6 +146,7 @@ export function TeamInfoSettings() {
     if (!teamSettings) return;
     
     try {
+      setIsSaving(true);
       const { error } = await supabase
         .from('team_settings')
         .update({
@@ -153,6 +168,9 @@ export function TeamInfoSettings() {
           variant: "destructive",
         });
       } else {
+        // Visual feedback - set success state
+        setSaveSuccess(true);
+        
         toast({
           title: "Success",
           description: "Team settings updated successfully",
@@ -176,6 +194,8 @@ export function TeamInfoSettings() {
         description: "An unexpected error occurred",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -281,9 +301,19 @@ export function TeamInfoSettings() {
       <CardFooter>
         <Button 
           onClick={updateTeamSettings}
-          disabled={isLoading}
+          disabled={isLoading || isSaving}
+          className="relative"
         >
-          Save Changes
+          {isSaving ? (
+            <span>Saving...</span>
+          ) : saveSuccess ? (
+            <>
+              <Check className="h-4 w-4 mr-2" />
+              <span>Saved!</span>
+            </>
+          ) : (
+            <span>Save Changes</span>
+          )}
         </Button>
       </CardFooter>
     </Card>

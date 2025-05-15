@@ -98,27 +98,27 @@ export function KitIconSelector({ type, label, value, onChange, disabled }: KitI
             <div className="relative">
               <svg width="0" height="0" style={{ position: "absolute" }}>
                 <defs>
-                  {/* Vertical stripes pattern */}
+                  {/* Vertical stripes pattern - making stripes finer */}
                   <pattern
                     id={`stripes-${type}`}
                     patternUnits="userSpaceOnUse"
-                    width="10"
-                    height="10"
+                    width="6"
+                    height="6"
                     patternTransform="rotate(90)"
                   >
-                    <rect width="5" height="10" fill={primaryColor} />
-                    <rect x="5" width="5" height="10" fill={secondaryColor} />
+                    <rect width="3" height="6" fill={primaryColor} />
+                    <rect x="3" width="3" height="6" fill={secondaryColor} />
                   </pattern>
                   
-                  {/* Horizontal hoops pattern */}
+                  {/* Horizontal hoops pattern - making hoops finer */}
                   <pattern
                     id={`hoops-${type}`}
                     patternUnits="userSpaceOnUse"
-                    width="10"
-                    height="10"
+                    width="6"
+                    height="6"
                   >
-                    <rect width="10" height="5" fill={primaryColor} />
-                    <rect y="5" width="10" height="5" fill={secondaryColor} />
+                    <rect width="6" height="3" fill={primaryColor} />
+                    <rect y="3" width="6" height="3" fill={secondaryColor} />
                   </pattern>
                 </defs>
               </svg>
