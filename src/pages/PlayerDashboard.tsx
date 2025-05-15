@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Trophy, ChartLineUp, Calendar } from "lucide-react";
+import { User, Trophy, ChartLine, Calendar } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 interface PlayerProfile {
@@ -137,7 +136,7 @@ export const PlayerDashboard = () => {
           <Tabs defaultValue="stats">
             <TabsList className="mb-4">
               <TabsTrigger value="stats" className="flex items-center gap-1">
-                <ChartLineUp className="h-4 w-4" />
+                <ChartLine className="h-4 w-4" />
                 <span>Statistics</span>
               </TabsTrigger>
               <TabsTrigger value="fixtures" className="flex items-center gap-1">
