@@ -52,7 +52,8 @@ export function KitIcon({ type, size = 24 }: KitIconProps) {
 
         if (data) {
           const iconData = data[typeToColumn[type]];
-          const teamName = data.team_name || "";
+          // Safely extract team name with fallback to empty string
+          const teamName = data?.team_name || "";
           
           if (iconData) {
             const [primary, secondary] = iconData.split('|');

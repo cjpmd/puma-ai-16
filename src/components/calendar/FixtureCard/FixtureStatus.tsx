@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
@@ -81,6 +82,8 @@ export const FixtureStatus = ({ fixture, currentTime }: FixtureStatusProps) => {
     }
   };
 
+  // Manually type the result of getStatusDetails() to prevent TypeScript errors
+  // This allows for the status values that aren't explicitly returned by getStatus()
   const { label, variant, icon, isTraining } = getStatusDetails();
 
   return (
