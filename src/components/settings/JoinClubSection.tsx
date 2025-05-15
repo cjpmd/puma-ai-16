@@ -1,11 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Check } from "lucide-react";
+import { AlertCircle, Check, InfoIcon, SearchIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface JoinClubSectionProps {
@@ -17,23 +17,32 @@ interface JoinClubSectionProps {
 export function JoinClubSection({ teamId, currentClub, onClubJoined }: JoinClubSectionProps) {
   const [serialNumber, setSerialNumber] = useState("");
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [foundClub, setFoundClub] = useState<any | null>(null);
   const { toast } = useToast();
 
-  const handleJoinClub = async () => {
+  useEffect(() => {
+    if (!currentClub) {
+      setFoundClub(null);
+    }
+  }, [currentClub]);
+
+  const handleSearchClub = async () => {
     if (!serialNumber.trim()) {
       setError("Please enter a club serial number");
       return;
     }
     
-    setLoading(true);
+    setSearching(true);
     setError(null);
+    setFoundClub(null);
     
     try {
       // Find the club with this serial number
       const { data: clubData, error: clubError } = await supabase
         .from('clubs')
-        .select('*')
+        .select('id, name, location, contact_email')
         .eq('serial_number', serialNumber.trim())
         .maybeSingle();
         
@@ -44,11 +53,34 @@ export function JoinClubSection({ teamId, currentClub, onClubJoined }: JoinClubS
         return;
       }
       
+      setFoundClub(clubData);
+      toast({
+        title: "Club Found",
+        description: `Found ${clubData.name}`,
+      });
+    } catch (err) {
+      console.error("Error searching club:", err);
+      setError("Failed to search for club. Please try again.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleJoinClub = async () => {
+    if (!foundClub) {
+      setError("Please search for a club first");
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
       // Update the team's club_id
       const { error: updateError } = await supabase
         .from('teams')
         .update({ 
-          club_id: clubData.id,
+          club_id: foundClub.id,
           joined_club_at: new Date().toISOString()
         })
         .eq('id', teamId);
@@ -57,10 +89,12 @@ export function JoinClubSection({ teamId, currentClub, onClubJoined }: JoinClubS
       
       toast({
         title: "Success",
-        description: `Your team has joined ${clubData.name}`,
+        description: `Your team has joined ${foundClub.name}`,
       });
       
       onClubJoined();
+      setFoundClub(null);
+      setSerialNumber("");
     } catch (err) {
       console.error("Error joining club:", err);
       setError("Failed to join club. Please try again.");
@@ -122,6 +156,15 @@ export function JoinClubSection({ teamId, currentClub, onClubJoined }: JoinClubS
                 <div>
                   <h3 className="font-medium mb-1">Connected to {currentClub.name}</h3>
                   <p className="text-sm text-muted-foreground">Your team is part of this club</p>
+                  
+                  <div className="mt-4 space-y-1 text-sm">
+                    <p><strong>Location:</strong> {currentClub.location || 'Not specified'}</p>
+                    <p><strong>Contact:</strong> {currentClub.contact_email || 'Not specified'}</p>
+                    <p><strong>Club ID:</strong> {currentClub.id}</p>
+                    <p><strong>Joined:</strong> {currentClub.joined_club_at 
+                      ? new Date(currentClub.joined_club_at).toLocaleDateString() 
+                      : 'Unknown'}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -143,19 +186,51 @@ export function JoinClubSection({ teamId, currentClub, onClubJoined }: JoinClubS
               </Alert>
             )}
             
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter club serial number"
-                value={serialNumber}
-                onChange={(e) => setSerialNumber(e.target.value)}
-              />
-              <Button onClick={handleJoinClub} disabled={loading}>
-                {loading ? "Processing..." : "Join Club"}
-              </Button>
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter club serial number"
+                  value={serialNumber}
+                  onChange={(e) => setSerialNumber(e.target.value)}
+                />
+                <Button 
+                  onClick={handleSearchClub} 
+                  disabled={searching || !serialNumber.trim()}
+                  variant="secondary"
+                >
+                  <SearchIcon className="h-4 w-4 mr-1" />
+                  {searching ? "Searching..." : "Search"}
+                </Button>
+              </div>
+              
+              <p className="text-sm text-muted-foreground">
+                Enter the serial number provided by the club administrator to find and join their club
+              </p>
+              
+              {foundClub && (
+                <div className="mt-4 p-4 border rounded-md bg-blue-50">
+                  <div className="flex items-start gap-3">
+                    <InfoIcon className="h-5 w-5 text-blue-500 mt-0.5" />
+                    <div>
+                      <h3 className="font-medium mb-1">Club Found: {foundClub.name}</h3>
+                      
+                      <div className="mt-2 space-y-1 text-sm">
+                        <p><strong>Location:</strong> {foundClub.location || 'Not specified'}</p>
+                        <p><strong>Contact:</strong> {foundClub.contact_email || 'Not specified'}</p>
+                      </div>
+                      
+                      <Button 
+                        className="mt-4" 
+                        onClick={handleJoinClub} 
+                        disabled={loading}
+                      >
+                        {loading ? "Joining..." : "Join This Club"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <p className="text-sm text-muted-foreground">
-              Enter the serial number provided by the club administrator to join their club
-            </p>
           </div>
         )}
       </CardContent>

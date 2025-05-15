@@ -7,12 +7,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { ClubSubscriptionReport } from "@/components/clubs/ClubSubscriptionReport";
-import { Settings, CreditCard, Users, ArrowLeft } from "lucide-react";
+import { Settings, CreditCard, Users, ArrowLeft, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { NavBar } from "@/components/NavBar"; // Add this import for navigation
+import { NavBar } from "@/components/NavBar";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function ClubSettings() {
-  const [clubs, setClubs] = useState<any[]>([]); // Change to array
+  const [clubs, setClubs] = useState<any[]>([]); 
   const [selectedClub, setSelectedClub] = useState<any>(null);
   const [teams, setTeams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +99,77 @@ export default function ClubSettings() {
       }
     }
   };
+  
+  const handleDeleteClub = async () => {
+    if (!selectedClub) return;
+    
+    try {
+      // First update all teams to remove connection to this club
+      const { error: teamsError } = await supabase
+        .from('teams')
+        .update({ 
+          club_id: null,
+          joined_club_at: null
+        })
+        .eq('club_id', selectedClub.id);
+        
+      if (teamsError) {
+        console.error('Error removing team connections:', teamsError);
+        toast({
+          title: "Error",
+          description: "Failed to disconnect teams from club",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Then delete the club
+      const { error: deleteError } = await supabase
+        .from('clubs')
+        .delete()
+        .eq('id', selectedClub.id);
+        
+      if (deleteError) {
+        console.error('Error deleting club:', deleteError);
+        toast({
+          title: "Error",
+          description: "Failed to delete club",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      toast({
+        title: "Success",
+        description: `${selectedClub.name} has been deleted`,
+      });
+      
+      // Remove the deleted club from state
+      setClubs(prevClubs => prevClubs.filter(c => c.id !== selectedClub.id));
+      
+      // If we have remaining clubs, select the first one
+      if (clubs.length > 1) {
+        const remainingClubs = clubs.filter(c => c.id !== selectedClub.id);
+        if (remainingClubs.length > 0) {
+          setSelectedClub(remainingClubs[0]);
+          handleClubChange(remainingClubs[0].id);
+        } else {
+          // No more clubs, navigate back to team settings
+          navigate('/team-settings');
+        }
+      } else {
+        // No more clubs, navigate back to team settings
+        navigate('/team-settings');
+      }
+    } catch (error) {
+      console.error('Error in handleDeleteClub:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -147,6 +229,27 @@ export default function ClubSettings() {
                 ))}
               </select>
             )}
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="icon">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Club</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete "{selectedClub?.name}" and remove all team associations.
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteClub}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
         
@@ -221,7 +324,7 @@ export default function ClubSettings() {
           </TabsContent>
           
           <TabsContent value="subscriptions">
-            <ClubSubscriptionReport />
+            <ClubSubscriptionReport clubId={selectedClub?.id} />
           </TabsContent>
         </Tabs>
       </div>

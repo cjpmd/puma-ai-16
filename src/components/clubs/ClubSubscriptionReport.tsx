@@ -8,41 +8,50 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export function ClubSubscriptionReport() {
+interface ClubSubscriptionReportProps {
+  clubId?: string;
+}
+
+export function ClubSubscriptionReport({ clubId }: ClubSubscriptionReportProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [clubSubscription, setClubSubscription] = useState<any>(null);
   const [teamSubscriptions, setTeamSubscriptions] = useState<any[]>([]);
+  const [globalSubscriptions, setGlobalSubscriptions] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSubscriptions();
-  }, []);
+  }, [clubId]);
 
   const fetchSubscriptions = async () => {
     setLoading(true);
     try {
-      // Fetch club subscription (assuming the user is a club admin)
-      const { data: clubSubData, error: clubSubError } = await supabase
-        .from('club_subscriptions')
-        .select(`
-          id, 
-          status,
-          subscription_plan,
-          subscription_amount,
-          subscription_period,
-          start_date,
-          end_date,
-          clubs (name)
-        `)
-        .eq('status', 'active')
-        .maybeSingle();
-        
-      if (clubSubError) {
-        console.error("Error fetching club subscription:", clubSubError);
-      } else {
-        setClubSubscription(clubSubData);
+      // Fetch club subscription for the selected club
+      if (clubId) {
+        const { data: clubSubData, error: clubSubError } = await supabase
+          .from('club_subscriptions')
+          .select(`
+            id, 
+            status,
+            subscription_plan,
+            subscription_amount,
+            subscription_period,
+            start_date,
+            end_date,
+            clubs (name)
+          `)
+          .eq('status', 'active')
+          .eq('club_id', clubId)
+          .maybeSingle();
+          
+        if (clubSubError) {
+          console.error("Error fetching club subscription:", clubSubError);
+        } else {
+          setClubSubscription(clubSubData);
+        }
       }
 
       // Fetch team subscriptions that are part of this club
@@ -56,14 +65,42 @@ export function ClubSubscriptionReport() {
           subscription_amount,
           start_date,
           end_date,
-          teams (team_name)
+          teams (team_name, club_id)
         `)
         .eq('status', 'active');
         
       if (teamSubsError) {
         console.error("Error fetching team subscriptions:", teamSubsError);
       } else {
-        setTeamSubscriptions(teamSubsData || []);
+        // If clubId is provided, filter to only teams in this club
+        if (clubId) {
+          const filteredTeams = teamSubsData?.filter(sub => sub.teams?.club_id === clubId) || [];
+          setTeamSubscriptions(filteredTeams);
+        } else {
+          setTeamSubscriptions(teamSubsData || []);
+        }
+      }
+      
+      // Fetch all club subscriptions for the global view
+      const { data: allClubSubs, error: allClubSubsError } = await supabase
+        .from('club_subscriptions')
+        .select(`
+          id, 
+          club_id,
+          status,
+          subscription_plan,
+          subscription_amount,
+          subscription_period,
+          start_date,
+          end_date,
+          clubs (name)
+        `)
+        .eq('status', 'active');
+        
+      if (allClubSubsError) {
+        console.error("Error fetching all club subscriptions:", allClubSubsError);
+      } else {
+        setGlobalSubscriptions(allClubSubs || []);
       }
     } catch (error) {
       console.error("Error loading subscriptions:", error);
@@ -88,11 +125,59 @@ export function ClubSubscriptionReport() {
     });
   };
 
+  const renderSubscriptionTable = (subscriptions: any[], type: 'club' | 'team') => {
+    if (subscriptions.length === 0) {
+      return (
+        <p className="text-muted-foreground italic">No active {type} subscriptions</p>
+      );
+    }
+    
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{type === 'club' ? 'Club' : 'Team'}</TableHead>
+            <TableHead>Plan</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Renewal Date</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {subscriptions.map((sub) => (
+            <TableRow key={sub.id}>
+              <TableCell>
+                {type === 'club' 
+                  ? (sub.clubs?.name || 'Club') 
+                  : (sub.teams?.team_name || 'Team')}
+              </TableCell>
+              <TableCell>{sub.subscription_plan || 'Standard'}</TableCell>
+              <TableCell>
+                £{sub.subscription_amount?.toFixed(2) || '0.00'}
+                /{sub.subscription_period || 'month'}
+              </TableCell>
+              <TableCell>
+                {sub.end_date 
+                  ? format(new Date(sub.end_date), 'dd MMM yyyy') 
+                  : 'Not set'}
+              </TableCell>
+              <TableCell>
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  Active
+                </Badge>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Club Subscription Status</CardTitle>
+          <CardTitle>Subscription Management</CardTitle>
           <CardDescription>Subscription details for your club and associated teams</CardDescription>
         </div>
         <Button 
@@ -111,88 +196,54 @@ export function ClubSubscriptionReport() {
             <p className="text-muted-foreground">Loading subscription data...</p>
           </div>
         ) : (
-          <div className="space-y-8">
-            {/* Club Subscription */}
-            <div>
-              <h3 className="text-lg font-medium mb-4">Club Platform Subscription</h3>
-              {clubSubscription ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Club</TableHead>
-                      <TableHead>Plan</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Renewal Date</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>{clubSubscription.clubs?.name || 'Your Club'}</TableCell>
-                      <TableCell>{clubSubscription.subscription_plan || 'Standard'}</TableCell>
-                      <TableCell>
-                        £{clubSubscription.subscription_amount?.toFixed(2) || '0.00'}
-                        /{clubSubscription.subscription_period || 'month'}
-                      </TableCell>
-                      <TableCell>
-                        {clubSubscription.end_date 
-                          ? format(new Date(clubSubscription.end_date), 'dd MMM yyyy') 
-                          : 'Not set'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                          Active
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              ) : (
-                <p className="text-muted-foreground italic">No active club subscription</p>
-              )}
-            </div>
+          <Tabs defaultValue="current">
+            <TabsList className="mb-4">
+              <TabsTrigger value="current">Current Club</TabsTrigger>
+              <TabsTrigger value="global">Global View</TabsTrigger>
+            </TabsList>
             
-            {/* Team Subscriptions */}
-            <div>
-              <h3 className="text-lg font-medium mb-4">Team Subscriptions</h3>
-              {teamSubscriptions.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Team</TableHead>
-                      <TableHead>Plan</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Renewal Date</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {teamSubscriptions.map((sub) => (
-                      <TableRow key={sub.id}>
-                        <TableCell>{sub.teams?.team_name || 'Team'}</TableCell>
-                        <TableCell>{sub.subscription_plan || 'Standard'}</TableCell>
-                        <TableCell>
-                          £{sub.subscription_amount?.toFixed(2) || '0.00'}/month
-                        </TableCell>
-                        <TableCell>
-                          {sub.end_date 
-                            ? format(new Date(sub.end_date), 'dd MMM yyyy') 
-                            : 'Not set'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                            Active
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <p className="text-muted-foreground italic">No active team subscriptions</p>
-              )}
-            </div>
-          </div>
+            <TabsContent value="current" className="space-y-8">
+              {/* Club Subscription */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Club Platform Subscription</h3>
+                {clubId ? (
+                  clubSubscription ? renderSubscriptionTable([clubSubscription], 'club') : 
+                  <p className="text-muted-foreground italic">No active club subscription</p>
+                ) : (
+                  <p className="text-muted-foreground italic">Select a club to view its subscription</p>
+                )}
+              </div>
+              
+              {/* Team Subscriptions */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Team Subscriptions</h3>
+                {teamSubscriptions.length > 0 
+                  ? renderSubscriptionTable(teamSubscriptions, 'team')
+                  : <p className="text-muted-foreground italic">No active team subscriptions</p>
+                }
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="global" className="space-y-8">
+              {/* All Club Subscriptions */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">All Club Subscriptions</h3>
+                {globalSubscriptions.length > 0 
+                  ? renderSubscriptionTable(globalSubscriptions, 'club')
+                  : <p className="text-muted-foreground italic">No active club subscriptions</p>
+                }
+              </div>
+              
+              {/* All Team Subscriptions */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">All Team Subscriptions</h3>
+                {teamSubscriptions.length > 0 
+                  ? renderSubscriptionTable(teamSubscriptions, 'team')
+                  : <p className="text-muted-foreground italic">No active team subscriptions</p>
+                }
+              </div>
+            </TabsContent>
+          </Tabs>
         )}
       </CardContent>
     </Card>
