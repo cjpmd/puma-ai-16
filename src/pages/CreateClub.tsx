@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { NavBar } from "@/components/NavBar"; // Add this import for navigation
 
 export default function CreateClub() {
   const navigate = useNavigate();
@@ -76,125 +77,129 @@ export default function CreateClub() {
         description: "Club created successfully",
       });
       
+      // After successful creation, go to club settings page
       navigate("/club-settings");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating club:", err);
-      setError("Failed to create club. Please try again.");
+      setError(`Failed to create club: ${err.message || "Please try again."}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto py-6 max-w-2xl">
-      <div className="mb-6">
-        <Button 
-          variant="outline" 
-          onClick={() => navigate(-1)}
-          className="mb-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <h1 className="text-3xl font-bold">Create a Club</h1>
-        <p className="text-muted-foreground mt-1">
-          Set up a new club and manage multiple teams
-        </p>
+    <>
+      <NavBar />
+      <div className="container mx-auto py-6 max-w-2xl">
+        <div className="mb-6">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate(-1)}
+            className="mb-4"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold">Create a Club</h1>
+          <p className="text-muted-foreground mt-1">
+            Set up a new club and manage multiple teams
+          </p>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Club Details</CardTitle>
+            <CardDescription>
+              Enter the information about your club. You can edit these details later.
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="name">Club Name *</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Enter club name"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  placeholder="City, Country"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="contact_email">Contact Email</Label>
+                <Input
+                  id="contact_email"
+                  name="contact_email"
+                  type="email"
+                  value={formData.contact_email}
+                  onChange={handleInputChange}
+                  placeholder="contact@yourclub.com"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="website">Website</Label>
+                <Input
+                  id="website"
+                  name="website"
+                  value={formData.website}
+                  onChange={handleInputChange}
+                  placeholder="https://yourclub.com"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  placeholder="Tell us about your club..."
+                  rows={4}
+                />
+              </div>
+            </CardContent>
+            
+            <CardFooter>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Creating..." : "Create Club"}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Club Details</CardTitle>
-          <CardDescription>
-            Enter the information about your club. You can edit these details later.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            
-            <div className="space-y-2">
-              <Label htmlFor="name">Club Name *</Label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="Enter club name"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                placeholder="City, Country"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="contact_email">Contact Email</Label>
-              <Input
-                id="contact_email"
-                name="contact_email"
-                type="email"
-                value={formData.contact_email}
-                onChange={handleInputChange}
-                placeholder="contact@yourclub.com"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                placeholder="+1 (555) 123-4567"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="website">Website</Label>
-              <Input
-                id="website"
-                name="website"
-                value={formData.website}
-                onChange={handleInputChange}
-                placeholder="https://yourclub.com"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Tell us about your club..."
-                rows={4}
-              />
-            </div>
-          </CardContent>
-          
-          <CardFooter>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create Club"}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+    </>
   );
 }

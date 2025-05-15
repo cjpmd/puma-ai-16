@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Settings, CreditCard, Plus } from "lucide-react";
+import { NavBar } from "@/components/NavBar";
 
 export default function TeamSettings() {
   const [debugInfo, setDebugInfo] = useState<any>({});
@@ -183,72 +184,75 @@ export default function TeamSettings() {
   };
 
   return (
-    <div className="container mx-auto py-6 max-w-4xl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Team Settings</h1>
-        
-        <div className="flex gap-2">
-          {profile?.role === 'admin' && (
+    <>
+      <NavBar />
+      <div className="container mx-auto py-6 max-w-4xl">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Team Settings</h1>
+          
+          <div className="flex gap-2">
+            {profile?.role === 'admin' && (
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/club-settings")}
+              >
+                Club Management
+              </Button>
+            )}
+            
             <Button 
-              variant="outline" 
-              onClick={() => navigate("/club-settings")}
+              onClick={() => navigate("/create-club")}
+              className="flex items-center gap-1"
             >
-              Club Management
+              <Plus className="h-4 w-4" />
+              <span>Create Club</span>
             </Button>
-          )}
-          
-          <Button 
-            onClick={() => navigate("/create-club")}
-            className="flex items-center gap-1"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create Club</span>
-          </Button>
+          </div>
         </div>
-      </div>
 
-      <Tabs defaultValue="general" className="mb-8">
-        <TabsList className="mb-4">
-          <TabsTrigger value="general" className="flex items-center gap-1">
-            <Settings className="h-4 w-4" />
-            <span>General</span>
-          </TabsTrigger>
-          <TabsTrigger value="subscriptions" className="flex items-center gap-1">
-            <CreditCard className="h-4 w-4" />
-            <span>Subscriptions</span>
-          </TabsTrigger>
-          <TabsTrigger value="attributes" className="flex items-center gap-1">
-            <Users className="h-4 w-4" />
-            <span>Player Attributes</span>
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="general" className="space-y-6">
-          <TeamInfoSettings />
+        <Tabs defaultValue="general" className="mb-8">
+          <TabsList className="mb-4">
+            <TabsTrigger value="general" className="flex items-center gap-1">
+              <Settings className="h-4 w-4" />
+              <span>General</span>
+            </TabsTrigger>
+            <TabsTrigger value="subscriptions" className="flex items-center gap-1">
+              <CreditCard className="h-4 w-4" />
+              <span>Subscriptions</span>
+            </TabsTrigger>
+            <TabsTrigger value="attributes" className="flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              <span>Player Attributes</span>
+            </TabsTrigger>
+          </TabsList>
           
-          {teamId && (
-            <JoinClubSection 
-              teamId={teamId} 
-              currentClub={clubInfo} 
-              onClubJoined={handleClubJoined} 
-            />
-          )}
+          <TabsContent value="general" className="space-y-6">
+            <TeamInfoSettings />
+            
+            {teamId && (
+              <JoinClubSection 
+                teamId={teamId} 
+                currentClub={clubInfo} 
+                onClubJoined={handleClubJoined} 
+              />
+            )}
+            
+            <FormatsAndCategoriesSettings />
+            <FAConnectionSettings />
+            <WhatsAppIntegration />
+          </TabsContent>
           
-          <FormatsAndCategoriesSettings />
-          <FAConnectionSettings />
-          <WhatsAppIntegration />
-        </TabsContent>
-        
-        <TabsContent value="subscriptions" className="space-y-6">
-          <TeamPlatformSubscription />
-          <ActiveSubscriptionsTable />
-          <PlayerSubscriptionManager />
-        </TabsContent>
-        
-        <TabsContent value="attributes">
-          <AttributeSettingsManager />
-        </TabsContent>
-      </Tabs>
-    </div>
+          <TabsContent value="subscriptions" className="space-y-6">
+            <TeamPlatformSubscription />
+            <ActiveSubscriptionsTable />
+            <PlayerSubscriptionManager />
+          </TabsContent>
+          
+          <TabsContent value="attributes">
+            <AttributeSettingsManager />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </>
   );
 }
