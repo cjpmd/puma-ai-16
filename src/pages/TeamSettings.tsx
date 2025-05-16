@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
 import { FAConnectionSettings } from "@/components/settings/FAConnectionSettings";
@@ -8,6 +9,7 @@ import { JoinClubSection } from "@/components/settings/JoinClubSection";
 import { PlayerSubscriptionManager } from "@/components/subscription/PlayerSubscriptionManager";
 import { TeamPlatformSubscription } from "@/components/subscription/TeamPlatformSubscription";
 import { ActiveSubscriptionsTable } from "@/components/subscription/ActiveSubscriptionsTable";
+import { TeamUsersManager } from "@/components/settings/TeamUsersManager";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -326,6 +328,12 @@ export default function TeamSettings() {
               <Users className="h-4 w-4" />
               <span>Player Attributes</span>
             </TabsTrigger>
+            {(profile?.role === 'admin' || profile?.role === 'globalAdmin') && (
+              <TabsTrigger value="users" className="flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                <span>Users</span>
+              </TabsTrigger>
+            )}
           </TabsList>
           
           <TabsContent value="general" className="space-y-6">
@@ -357,6 +365,12 @@ export default function TeamSettings() {
           <TabsContent value="attributes">
             <AttributeSettingsManager />
           </TabsContent>
+          
+          {(profile?.role === 'admin' || profile?.role === 'globalAdmin') && (
+            <TabsContent value="users">
+              <TeamUsersManager />
+            </TabsContent>
+          )}
         </Tabs>
         
         {/* Debug information - can be removed in production */}
