@@ -31,11 +31,27 @@ interface PositionDistribution {
   value: number;
 }
 
+interface PlayerTimeSeries {
+  date: string;
+  opponent: string;
+  total: number;
+  [playerName: string]: string | number;
+}
+
+interface PlayerMetrics {
+  id: string;
+  name: string;
+  squad_number: number | null;
+  versatility: number;
+  consistency: number;
+  development: number;
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A569BD', '#5DADE2', '#48C9B0'];
 
 export const EnhancedAnalytics = () => {
   // Player performance over time
-  const { data: performanceTrends, isLoading: loadingTrends } = useQuery({
+  const { data: performanceTrends, isLoading: loadingTrends } = useQuery<PlayerTimeSeries[]>({
     queryKey: ["performance-trends"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -56,7 +72,7 @@ export const EnhancedAnalytics = () => {
       if (error) throw error;
       
       // Process data to track player minutes over time
-      const playerTimeSeries: Record<string, any> = {};
+      const playerTimeSeries: Record<string, PlayerTimeSeries> = {};
       
       data?.forEach(fixture => {
         const date = new Date(fixture.date).toISOString().split('T')[0];
@@ -113,7 +129,7 @@ export const EnhancedAnalytics = () => {
   });
 
   // Advanced player metrics
-  const { data: advancedMetrics, isLoading: loadingMetrics } = useQuery({
+  const { data: advancedMetrics, isLoading: loadingMetrics } = useQuery<PlayerMetrics[]>({
     queryKey: ["player-advanced-metrics"],
     queryFn: async () => {
       // This would ideally come from a more sophisticated data source

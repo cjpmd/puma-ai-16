@@ -18,7 +18,7 @@ interface FixtureCategory {
 }
 
 export const BasicAnalytics = () => {
-  const { data: playerMinutes, isLoading: loadingMinutes } = useQuery({
+  const { data: playerMinutes, isLoading: loadingMinutes } = useQuery<PlayerMinutes[]>({
     queryKey: ["basic-minutes"],
     queryFn: async () => {
       const { data, error } = await supabase
