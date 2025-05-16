@@ -9,9 +9,11 @@ export function AppLayout() {
   const isAuthPage = location.pathname === '/auth' || location.pathname === '/login';
   
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       {!isAuthPage && <NavBar />}
-      <Outlet />
-    </>
+      <div className="flex-1">
+        <Outlet />
+      </div>
+    </div>
   );
 }

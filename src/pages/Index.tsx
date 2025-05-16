@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ensureDatabaseSetup } from "@/utils/database/ensureDatabaseSetup";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PlatformLanding } from "./PlatformLanding";
 
 export default function Index() {
   const [session, setSession] = useState<any>(null);
@@ -93,12 +94,12 @@ export default function Index() {
     );
   }
 
+  // If user is logged in, show the platform landing page
   if (session) {
-    // If user is logged in, redirect them to the platform page
-    navigate("/platform");
-    return null;
+    return <PlatformLanding />;
   }
 
+  // If not logged in, show the welcome screen
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
       <div className="w-full max-w-md space-y-6">

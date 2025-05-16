@@ -19,7 +19,9 @@ import { PlatformLanding } from "./pages/PlatformLanding";
 import { PlayerDashboard } from "./pages/PlayerDashboard";
 import CreateTeam from "./pages/CreateTeam";
 import { AppLayout } from "./components/layout/AppLayout";
+import { TeamDashboard } from "./pages/TeamDashboard";
 import "./App.css";
+import Index from "./pages/Index";
 
 function App() {
   return (
@@ -31,7 +33,8 @@ function App() {
 
         {/* All other routes use the layout with NavBar */}
         <Route element={<AppLayout />}>
-          <Route path="/" element={<SquadManagement />} />
+          <Route path="/" element={<Index />} />
+          <Route path="/home" element={<TeamDashboard />} />
           <Route path="/squad" element={<Navigate to="/squad-management" replace />} />
           <Route path="/squad-management" element={<SquadManagement />} />
           <Route path="/player/:id" element={<PlayerDetailsPage />} />
