@@ -14,6 +14,7 @@ import { Analytics } from "./pages/Analytics";
 import { PlayerDashboard } from "./pages/PlayerDashboard";
 import { ParentDashboard } from "./pages/ParentDashboard";
 import { SubscriptionPage } from "./pages/SubscriptionPage";
+import { PlatformLanding } from "./pages/PlatformLanding";
 
 export function App() {
   const [session, setSession] = useState(null);
@@ -41,7 +42,7 @@ export function App() {
             !session ? (
               <Navigate to="/auth" />
             ) : (
-              <TeamDashboard />
+              <PlatformLanding />
             )
           }
         />
