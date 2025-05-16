@@ -17,7 +17,7 @@ import { SubscriptionPage } from "./pages/SubscriptionPage";
 import { PlatformLanding } from "./pages/PlatformLanding";
 import SquadManagement from "./pages/SquadManagement";
 import TeamSettings from "./pages/TeamSettings";
-import { Calendar } from "./pages/Calendar";
+import CalendarPage from "./components/calendar/CalendarPage";
 
 export function App() {
   const [session, setSession] = useState(null);
@@ -105,7 +105,7 @@ export function App() {
             !session ? (
               <Navigate to="/auth" />
             ) : (
-              <Calendar />
+              <CalendarPage />
             )
           }
         />
