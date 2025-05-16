@@ -11,7 +11,12 @@ export const usePlayers = () => {
         .select("*")
         .order('name');
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching players:", error);
+        throw error;
+      }
+      
+      console.log("Fetched players:", data?.length || 0);
       return data || [];
     },
   });

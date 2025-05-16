@@ -28,63 +28,79 @@ const SquadManagement = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const navigate = useNavigate();
 
-  const { data: players, isLoading } = useQuery({
+  const { data: players, isLoading, error } = useQuery({
     queryKey: ["players"],
     queryFn: async () => {
-      const { data: playersData, error: playersError } = await supabase
-        .from("players")
-        .select(`
-          *,
-          player_attributes (*),
-          position_suitability (
-            suitability_score,
-            position_definitions (
-              abbreviation,
-              full_name
+      try {
+        console.log("Fetching players data...");
+        const { data: playersData, error: playersError } = await supabase
+          .from("players")
+          .select(`
+            *,
+            player_attributes (*),
+            position_suitability (
+              suitability_score,
+              position_definitions (
+                abbreviation,
+                full_name
+              )
             )
-          )
-        `);
+          `);
 
-      if (playersError) throw playersError;
+        if (playersError) {
+          console.error("Error fetching players:", playersError);
+          throw playersError;
+        }
 
-      const { data: statsData, error: statsError } = await supabase
-        .from("player_stats")
-        .select('*');
+        console.log("Players data fetched:", playersData?.length || 0);
 
-      if (statsError) throw statsError;
+        const { data: statsData, error: statsError } = await supabase
+          .from("player_stats")
+          .select('*');
 
-      return (playersData as any[]).map((player): Player => ({
-        id: player.id,
-        name: player.name,
-        age: player.age,
-        dateOfBirth: player.date_of_birth,
-        squadNumber: player.squad_number,
-        playerType: player.player_type,
-        profileImage: player.profile_image,
-        attributes: player.player_attributes?.map((attr: any) => ({
-          id: attr.id,
-          name: attr.name,
-          value: attr.value,
-          category: attr.category,
-          player_id: attr.player_id,
-          created_at: attr.created_at,
-        })) || [],
-        attributeHistory: {},
-        objectives: statsData?.find((stat: any) => stat.player_id === player.id) ? {
-          completed: statsData.find((stat: any) => stat.player_id === player.id).completed_objectives,
-          improving: statsData.find((stat: any) => stat.player_id === player.id).improving_objectives,
-          ongoing: statsData.find((stat: any) => stat.player_id === player.id).ongoing_objectives,
-        } : undefined,
-        topPositions: player.position_suitability
-          ?.sort((a: any, b: any) => b.suitability_score - a.suitability_score)
-          .slice(0, 3)
-          .map((pos: any) => ({
-            position: pos.position_definitions.abbreviation,
-            suitability_score: Number(pos.suitability_score)
+        if (statsError) {
+          console.error("Error fetching player stats:", statsError);
+          throw statsError;
+        }
+
+        console.log("Player stats data fetched:", statsData?.length || 0);
+
+        return (playersData as any[]).map((player): Player => ({
+          id: player.id,
+          name: player.name,
+          age: player.age,
+          dateOfBirth: player.date_of_birth,
+          squadNumber: player.squad_number,
+          playerType: player.player_type,
+          profileImage: player.profile_image,
+          attributes: player.player_attributes?.map((attr: any) => ({
+            id: attr.id,
+            name: attr.name,
+            value: attr.value,
+            category: attr.category,
+            player_id: attr.player_id,
+            created_at: attr.created_at,
           })) || [],
-        created_at: player.created_at,
-        updated_at: player.updated_at,
-      }));
+          attributeHistory: {},
+          objectives: statsData?.find((stat: any) => stat.player_id === player.id) ? {
+            completed: statsData.find((stat: any) => stat.player_id === player.id).completed_objectives,
+            improving: statsData.find((stat: any) => stat.player_id === player.id).improving_objectives,
+            ongoing: statsData.find((stat: any) => stat.player_id === player.id).ongoing_objectives,
+          } : undefined,
+          topPositions: player.position_suitability
+            ?.sort((a: any, b: any) => b.suitability_score - a.suitability_score)
+            .slice(0, 3)
+            .map((pos: any) => ({
+              position: pos.position_definitions.abbreviation,
+              suitability_score: Number(pos.suitability_score)
+            })) || [],
+          created_at: player.created_at,
+          updated_at: player.updated_at,
+        }));
+      } catch (error) {
+        console.error("Error in players query:", error);
+        throw error;
+      }
     },
   });
 
@@ -145,6 +161,37 @@ const SquadManagement = () => {
     navigate(`/player/${playerId}`);
   };
 
+  // Show error state if there's an error
+  if (error) {
+    console.error("Rendering error state:", error);
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="container mx-auto space-y-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link to="/">
+                <Button variant="ghost" size="icon">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </Link>
+              <h1 className="text-4xl font-bold">Squad Management</h1>
+            </div>
+          </div>
+          <div className="p-8 text-center">
+            <h2 className="text-xl font-bold text-red-500 mb-2">Error loading players</h2>
+            <p className="text-muted-foreground">{String(error)}</p>
+            <Button 
+              className="mt-4" 
+              onClick={() => window.location.reload()}
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background p-6">
       <motion.div
@@ -174,7 +221,7 @@ const SquadManagement = () => {
 
         {isLoading ? (
           <div className="text-center py-8">Loading squad data...</div>
-        ) : (
+        ) : sortedPlayers && sortedPlayers.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -202,7 +249,7 @@ const SquadManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedPlayers?.map((player) => {
+              {sortedPlayers.map((player) => {
                 const performanceStatus = calculatePlayerPerformance(player);
 
                 return (
@@ -273,6 +320,10 @@ const SquadManagement = () => {
               })}
             </TableBody>
           </Table>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No players found. Add players to your squad to get started.</p>
+          </div>
         )}
       </motion.div>
     </div>
