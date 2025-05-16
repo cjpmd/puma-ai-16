@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserPlus, CalendarDays, School, Building, ShieldCheck, Key } from "lucide-react";
+import { Users, UserPlus, CalendarDays, School, Building, ShieldCheck, BarChart2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { RoleManager } from "@/components/auth/RoleManager";
 import { ParentChildLinkingDialog } from "@/components/parents/ParentChildLinkingDialog";
@@ -49,7 +49,7 @@ export const PlatformLanding = () => {
                   <Link to="/create-team">Create New Team</Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full">
-                  <Link to="/club-settings">Club Settings</Link>
+                  <Link to="/team-settings">Team Settings</Link>
                 </Button>
               </div>
             </CardContent>
@@ -72,7 +72,33 @@ export const PlatformLanding = () => {
                   <Link to="/calendar">View Calendar</Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full">
-                  <Link to="/analytics">Player Analytics</Link>
+                  <Link to="/team-dashboard">Team Dashboard</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Team Management */}
+        {(hasRole('coach') || hasRole('admin')) && (
+          <Card>
+            <CardHeader className="bg-primary/5">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                <span>Team Management</span>
+              </CardTitle>
+              <CardDescription>Manage your squad and track performance</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <Button asChild className="w-full">
+                  <Link to="/squad-management">Squad Management</Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full">
+                  <Link to="/analytics">
+                    <BarChart2 className="mr-2 h-4 w-4" />
+                    <span>Analytics</span>
+                  </Link>
                 </Button>
               </div>
             </CardContent>

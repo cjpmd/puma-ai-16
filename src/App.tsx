@@ -15,6 +15,9 @@ import { PlayerDashboard } from "./pages/PlayerDashboard";
 import { ParentDashboard } from "./pages/ParentDashboard";
 import { SubscriptionPage } from "./pages/SubscriptionPage";
 import { PlatformLanding } from "./pages/PlatformLanding";
+import SquadManagement from "./pages/SquadManagement";
+import TeamSettings from "./pages/TeamSettings";
+import { Calendar } from "./pages/Calendar";
 
 export function App() {
   const [session, setSession] = useState(null);
@@ -43,6 +46,16 @@ export function App() {
               <Navigate to="/auth" />
             ) : (
               <PlatformLanding />
+            )
+          }
+        />
+        <Route
+          path="/team-dashboard"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <TeamDashboard />
             )
           }
         />
@@ -82,7 +95,7 @@ export function App() {
             !session ? (
               <Navigate to="/auth" />
             ) : (
-              <div>squad-management</div>
+              <SquadManagement />
             )
           }
         />
@@ -92,7 +105,7 @@ export function App() {
             !session ? (
               <Navigate to="/auth" />
             ) : (
-              <div>calendar</div>
+              <Calendar />
             )
           }
         />
@@ -123,6 +136,16 @@ export function App() {
               <Navigate to="/auth" />
             ) : (
               <SubscriptionPage />
+            )
+          }
+        />
+        <Route
+          path="/team-settings"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <TeamSettings />
             )
           }
         />
