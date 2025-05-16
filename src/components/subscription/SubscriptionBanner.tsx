@@ -33,11 +33,11 @@ export const SubscriptionBanner = ({ isSubscribed, isLoading }: SubscriptionBann
       <CardContent className="text-amber-700">
         <p>Enhanced analytics features include:</p>
         <ul className="mt-2 ml-6 list-disc space-y-1">
+          <li>Connect to wearables for enhanced training data</li>
           <li>Performance trends over time</li>
           <li>Position distribution analysis</li>
           <li>Advanced player metrics</li>
           <li>Custom data visualizations</li>
-          <li>Export capabilities</li>
         </ul>
       </CardContent>
       <CardFooter>
