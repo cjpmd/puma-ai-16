@@ -29,6 +29,8 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
     setDbError(null);
     
     try {
+      console.log("Fetching linking code for player:", playerId);
+      
       // Try direct query first
       const { data, error } = await supabase
         .from("players")
@@ -37,14 +39,17 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
         .single();
       
       if (error) {
+        console.error("Error fetching linking code:", error);
         if (error.message?.includes("column") && error.message?.includes("does not exist")) {
           setDbError("The linking_code column doesn't exist yet. Please use the 'Fix Database' button below.");
         } else {
-          console.error("Error fetching linking code:", error);
           setDbError("Failed to fetch linking code. Database issue detected.");
         }
       } else if (data && data.linking_code) {
+        console.log("Found linking code:", data.linking_code);
         setLinkingCode(data.linking_code);
+      } else {
+        console.log("No linking code found for player. Will need to generate one.");
       }
     } catch (error) {
       console.error("Exception fetching linking code:", error);
@@ -62,6 +67,7 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
     try {
       // Generate a new code
       const newCode = generateChildLinkingCode();
+      console.log("Generated new linking code:", newCode);
       
       // First check if we need to fix the schema
       const { data: checkData, error: checkError } = await supabase
@@ -71,6 +77,7 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
         
       if (checkError && checkError.message?.includes("does not exist")) {
         setDbError("Cannot generate code: The linking_code column doesn't exist yet. Please use the 'Fix Database' button.");
+        setIsGenerating(false);
         return;
       }
       
@@ -97,6 +104,7 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
         toast({
           description: "New linking code generated successfully",
         });
+        console.log("Successfully saved new linking code to database");
       }
     } catch (error) {
       console.error("Exception generating new linking code:", error);
@@ -113,9 +121,11 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
   const fixDatabaseSchema = async () => {
     setIsFixing(true);
     try {
+      console.log("Adding linking_code column to players table...");
       const success = await addLinkingCodeColumn();
       
       if (success) {
+        console.log("Successfully added linking_code column");
         setDbError(null);
         toast({
           description: "Database fixed successfully. Try generating a code now.",
@@ -124,6 +134,7 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
         // Refresh
         await fetchLinkingCode();
       } else {
+        console.error("Failed to add linking_code column");
         toast({
           variant: "destructive",
           description: "Failed to fix database schema. Please contact support.",
@@ -154,10 +165,18 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
 
   // Fetch code on initial load
   useEffect(() => {
-    if (!isLoading) {
+    if (playerId) {
       fetchLinkingCode();
     }
   }, [playerId]);
+
+  // If no linking code found and no errors, automatically try to generate one
+  useEffect(() => {
+    if (!isLoading && !linkingCode && !dbError && !isGenerating && playerId) {
+      console.log("No linking code found and no errors. Attempting to generate one automatically.");
+      generateNewLinkingCode();
+    }
+  }, [isLoading, linkingCode, dbError, isGenerating, playerId]);
 
   return (
     <Card>
@@ -231,13 +250,12 @@ export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinking
           </div>
         ) : (
           <div className="text-center py-4">
-            <p className="text-muted-foreground">{dbError ? "Cannot generate linking code due to database issue." : "No linking code found."}</p>
-            {!dbError && (
+            <p className="text-muted-foreground">{dbError ? "Cannot generate linking code due to database issue." : "No linking code found. Generating..."}</p>
+            {!dbError && !isGenerating && (
               <Button 
                 variant="outline" 
                 className="mt-2"
                 onClick={generateNewLinkingCode}
-                disabled={isGenerating}
               >
                 Generate Code
               </Button>

@@ -102,6 +102,7 @@ export const NavBar = () => {
       if (teamError) throw teamError;
       
       if (teamData) {
+        console.log("Team data fetched:", teamData);
         setUserTeam(teamData);
         
         // Update team logo if available
@@ -141,7 +142,7 @@ export const NavBar = () => {
   if (session) {
     menuItems.push(
       { to: "/home", icon: <UserCircle className="mr-2 h-4 w-4" />, label: "Team Dashboard", roles: ['admin', 'manager', 'coach', 'parent'] },
-      { to: "/squad", icon: <Users className="mr-2 h-4 w-4" />, label: "Squad", roles: ['admin', 'manager'] },
+      { to: "/squad-management", icon: <Users className="mr-2 h-4 w-4" />, label: "Squad", roles: ['admin', 'manager'] },
       { to: "/analytics", icon: <BarChart2 className="mr-2 h-4 w-4" />, label: "Analytics", roles: ['admin', 'manager', 'coach'] },
       { to: "/calendar", icon: <Calendar className="mr-2 h-4 w-4" />, label: "Calendar", roles: ['admin', 'manager', 'coach', 'parent'] },
       { to: "/settings", icon: <Cog className="mr-2 h-4 w-4" />, label: "Team Settings", roles: ['admin'] }
@@ -208,7 +209,7 @@ export const NavBar = () => {
   const isParentRoute = location.pathname.includes('/parent-dashboard');
 
   // Hide navbar on auth page
-  if (location.pathname === '/auth') {
+  if (location.pathname === '/auth' || location.pathname === '/login') {
     return null;
   }
 
@@ -248,8 +249,8 @@ export const NavBar = () => {
           )}
           {isTeamRoute && userTeam && (
             <div className="ml-4 hidden sm:block">
-              <div className="text-xl font-bold">{userTeam.team_name}</div>
-              <div className="text-sm text-muted-foreground">{userTeam.age_group}</div>
+              <div className="text-xl font-bold">{userTeam.team_name || "My Team"}</div>
+              <div className="text-sm text-muted-foreground">{userTeam.age_group || ""}</div>
             </div>
           )}
           {isPlatformRoute && (
@@ -281,7 +282,7 @@ export const NavBar = () => {
           ))}
           
           {/* Always visible buttons for creating teams and clubs */}
-          {!loading && (
+          {!loading && session && (
             <>
               <Button 
                 variant="outline"

@@ -1,5 +1,5 @@
 
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import FormationSelector from "./pages/FormationSelector";
 import SquadManagement from "./pages/SquadManagement";
@@ -32,6 +32,7 @@ function App() {
         {/* All other routes use the layout with NavBar */}
         <Route element={<AppLayout />}>
           <Route path="/" element={<SquadManagement />} />
+          <Route path="/squad" element={<Navigate to="/squad-management" replace />} />
           <Route path="/squad-management" element={<SquadManagement />} />
           <Route path="/player/:id" element={<PlayerDetailsPage />} />
           <Route path="/calendar" element={<Calendar />} />
