@@ -47,6 +47,25 @@ interface PlayerMetrics {
   development: number;
 }
 
+// Define additional interfaces for better type safety
+interface FixturePlayerPosition {
+  player_id: string;
+  position: string;
+  players?: {
+    name: string;
+  };
+  fixture_playing_periods?: {
+    duration_minutes: number;
+  }[];
+}
+
+interface Fixture {
+  id: string;
+  date: string;
+  opponent: string;
+  fixture_player_positions?: FixturePlayerPosition[];
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A569BD', '#5DADE2', '#48C9B0'];
 
 export const EnhancedAnalytics = () => {
@@ -74,7 +93,7 @@ export const EnhancedAnalytics = () => {
       // Process data to track player minutes over time
       const playerTimeSeries: Record<string, PlayerTimeSeries> = {};
       
-      data?.forEach(fixture => {
+      (data as Fixture[] || []).forEach(fixture => {
         const date = new Date(fixture.date).toISOString().split('T')[0];
         
         fixture.fixture_player_positions?.forEach(position => {
