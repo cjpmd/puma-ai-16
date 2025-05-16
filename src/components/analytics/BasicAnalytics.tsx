@@ -89,6 +89,7 @@ export const BasicAnalytics = () => {
   const { data: fixtureCount, isLoading: loadingFixtures } = useQuery<FixtureCategory[]>({
     queryKey: ["fixture-stats"],
     queryFn: async () => {
+      // Removed the reference to sessions.type which doesn't exist
       const { data, error } = await supabase
         .from("fixtures")
         .select("date, category");

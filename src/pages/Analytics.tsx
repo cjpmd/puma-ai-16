@@ -7,10 +7,41 @@ import { BasicAnalytics } from "@/components/analytics/BasicAnalytics";
 import { EnhancedAnalytics } from "@/components/analytics/EnhancedAnalytics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Lock, Unlock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Lock, Unlock } from "lucide-react";
+import { useState } from "react";
 
 export const Analytics = () => {
   const { isSubscribed, isLoading } = useSubscriptionStatus();
+  const [showFullAnalytics, setShowFullAnalytics] = useState(false);
+
+  const handleBackClick = () => {
+    setShowFullAnalytics(false);
+  };
+
+  if (showFullAnalytics && isSubscribed) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleBackClick} 
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Analytics
+          </Button>
+          <h1 className="text-3xl font-bold">Full Analytics Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Detailed performance metrics and player statistics
+          </p>
+        </div>
+        
+        <EnhancedAnalytics />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6">
@@ -53,7 +84,20 @@ export const Analytics = () => {
         
         <TabsContent value="enhanced">
           {isSubscribed ? (
-            <EnhancedAnalytics />
+            <div>
+              <div className="prose max-w-none mb-6">
+                <p>
+                  View key analytics insights below or explore our comprehensive analytics dashboard.
+                </p>
+                <Button 
+                  onClick={() => setShowFullAnalytics(true)}
+                  className="mt-2"
+                >
+                  View Full Analytics
+                </Button>
+              </div>
+              <EnhancedAnalytics />
+            </div>
           ) : (
             <div className="text-center py-10">
               <Lock className="mx-auto h-12 w-12 text-amber-500 mb-4" />
