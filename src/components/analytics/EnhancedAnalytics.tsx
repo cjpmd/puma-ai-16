@@ -79,7 +79,7 @@ export const EnhancedAnalytics = () => {
         
         fixture.fixture_player_positions?.forEach(position => {
           const playerId = position.player_id;
-          const playerName = position.players?.name;
+          const playerName = position.players?.name || 'Unknown Player';
           
           if (!playerName) return;
           
@@ -89,7 +89,7 @@ export const EnhancedAnalytics = () => {
           if (!playerTimeSeries[date]) {
             playerTimeSeries[date] = { 
               date, 
-              opponent: fixture.opponent, 
+              opponent: fixture.opponent || 'Unknown', 
               total: 0
             };
           }
@@ -248,7 +248,7 @@ export const EnhancedAnalytics = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={positionDistribution}
+                        data={positionDistribution || []}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
