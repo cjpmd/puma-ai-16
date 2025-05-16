@@ -36,7 +36,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { UserRole } from '@/hooks/useAuth';
+import { UserRole, useAuth } from '@/hooks/useAuth';
+import { useTeams } from '@/contexts/TeamContext';
 
 interface User {
   id: string;
@@ -62,10 +63,12 @@ export const TeamUsersManager = () => {
   const [filterTeam, setFilterTeam] = useState<string>('all');
   const [filterClub, setFilterClub] = useState<string>('all');
   const { toast } = useToast();
+  const { profile } = useAuth();
+  const { currentTeam } = useTeams();
 
   useEffect(() => {
     fetchUsersAndTeams();
-  }, []);
+  }, [profile, currentTeam]);
 
   const fetchUsersAndTeams = async () => {
     setLoading(true);
@@ -86,8 +89,11 @@ export const TeamUsersManager = () => {
       if (clubsError) throw clubsError;
       setClubs(clubsData || []);
       
+      // For global admin, fetch all users
+      // For regular admin, only fetch users for their team
+      const isGlobalAdmin = profile?.role === 'globalAdmin';
+      
       // Fetch auth users and profiles
-      // Note: In a real application with many users, you might want to paginate
       const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
       
       if (authError) {
@@ -139,7 +145,21 @@ export const TeamUsersManager = () => {
         };
       }) || [];
 
-      setUsers(mergedUsers);
+      // Filter users based on role
+      let filteredUsers = mergedUsers;
+      
+      if (!isGlobalAdmin && currentTeam) {
+        // For regular admin, only show users from their current team
+        filteredUsers = mergedUsers.filter(user => user.team_id === currentTeam.id);
+      }
+
+      setUsers(filteredUsers);
+      
+      // Set default filters based on role
+      if (!isGlobalAdmin && currentTeam) {
+        setFilterTeam(currentTeam.id);
+      }
+      
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -194,19 +214,28 @@ export const TeamUsersManager = () => {
       user.team_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.club_name?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // Apply filters
+    // Apply filters - for regular admin, team filter is already applied during data fetch
     const matchesTeam = filterTeam === 'all' || user.team_id === filterTeam;
     const matchesClub = filterClub === 'all' || user.club_id === filterClub;
     
-    return matchesSearch && matchesTeam && matchesClub;
+    // For global admin, apply all filters
+    if (profile?.role === 'globalAdmin') {
+      return matchesSearch && matchesTeam && matchesClub;
+    }
+    
+    // For regular admin, only apply search filter as team is already filtered
+    return matchesSearch;
   });
+
+  // Should we show filter options?
+  const showFilters = profile?.role === 'globalAdmin';
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          Users Management
+          {profile?.role === 'globalAdmin' ? 'Platform Users' : 'Team Users'}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -222,31 +251,35 @@ export const TeamUsersManager = () => {
               />
             </div>
             
-            <Select value={filterClub} onValueChange={setFilterClub}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by Club" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Clubs</SelectItem>
-                {clubs.map(club => (
-                  <SelectItem key={club.id} value={club.id}>{club.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select value={filterTeam} onValueChange={setFilterTeam}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by Team" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Teams</SelectItem>
-                {teams.map(team => (
-                  <SelectItem key={team.id} value={team.id}>{team.team_name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {showFilters && (
+              <>
+                <Select value={filterClub} onValueChange={setFilterClub}>
+                  <SelectTrigger className="w-full md:w-[180px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by Club" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Clubs</SelectItem>
+                    {clubs.map(club => (
+                      <SelectItem key={club.id} value={club.id}>{club.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={filterTeam} onValueChange={setFilterTeam}>
+                  <SelectTrigger className="w-full md:w-[180px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by Team" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Teams</SelectItem>
+                    {teams.map(team => (
+                      <SelectItem key={team.id} value={team.id}>{team.team_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
           </div>
           <Button>
             <UserPlus className="mr-2 h-4 w-4" />
@@ -267,7 +300,7 @@ export const TeamUsersManager = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Team</TableHead>
-                  <TableHead>Club</TableHead>
+                  {profile?.role === 'globalAdmin' && <TableHead>Club</TableHead>}
                   <TableHead>Last Sign In</TableHead>
                   <TableHead className="w-[80px]">Actions</TableHead>
                 </TableRow>
@@ -275,7 +308,7 @@ export const TeamUsersManager = () => {
               <TableBody>
                 {filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={profile?.role === 'globalAdmin' ? 7 : 6} className="text-center py-4 text-muted-foreground">
                       No users found
                     </TableCell>
                   </TableRow>
@@ -291,7 +324,7 @@ export const TeamUsersManager = () => {
                         </div>
                       </TableCell>
                       <TableCell>{user.team_name}</TableCell>
-                      <TableCell>{user.club_name}</TableCell>
+                      {profile?.role === 'globalAdmin' && <TableCell>{user.club_name}</TableCell>}
                       <TableCell>
                         {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'}
                       </TableCell>
@@ -316,9 +349,11 @@ export const TeamUsersManager = () => {
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleChangeRole(user.id, 'player'); }}>
                               Make Player
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleChangeRole(user.id, 'globalAdmin'); }}>
-                              Make Global Admin
-                            </DropdownMenuItem>
+                            {profile?.role === 'globalAdmin' && (
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleChangeRole(user.id, 'globalAdmin'); }}>
+                                Make Global Admin
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
 import { FAConnectionSettings } from "@/components/settings/FAConnectionSettings";
@@ -286,6 +285,9 @@ export default function TeamSettings() {
     await fetchTeamAndClubData();
   };
 
+  // Check if the current user should have access to the Users tab
+  const canAccessUsersTab = profile?.role === 'admin' || profile?.role === 'globalAdmin';
+
   return (
     <>
       <div className="container mx-auto py-6 max-w-4xl">
@@ -328,7 +330,7 @@ export default function TeamSettings() {
               <Users className="h-4 w-4" />
               <span>Player Attributes</span>
             </TabsTrigger>
-            {(profile?.role === 'admin' || profile?.role === 'globalAdmin') && (
+            {canAccessUsersTab && (
               <TabsTrigger value="users" className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
                 <span>Users</span>
@@ -366,7 +368,7 @@ export default function TeamSettings() {
             <AttributeSettingsManager />
           </TabsContent>
           
-          {(profile?.role === 'admin' || profile?.role === 'globalAdmin') && (
+          {canAccessUsersTab && (
             <TabsContent value="users">
               <TeamUsersManager />
             </TabsContent>
