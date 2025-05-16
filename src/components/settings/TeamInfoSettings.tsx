@@ -34,7 +34,7 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
   const [teamSettings, setTeamSettings] = useState<TeamSettings | null>(null);
   const [formData, setFormData] = useState({
     team_name: "",
-    team_colors: "",
+    team_colors: "", // We'll repurpose this for age group
     team_logo: "",
     home_kit_icon: "",
     away_kit_icon: "",
@@ -152,18 +152,13 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
     
     try {
       setIsSaving(true);
-      const { error } = await supabase
-        .from('teams')
-        .update({
-          team_name: formData.team_name,
-        })
-        .eq('id', teamSettings.id);
       
+      // Update both team_settings and teams tables
       const { error: settingsError } = await supabase
         .from('team_settings')
         .update({
           team_name: formData.team_name,
-          team_colors: formData.team_colors,
+          team_colors: formData.team_colors, // We're repurposing this field for age group
           team_logo: formData.team_logo,
           home_kit_icon: formData.home_kit_icon,
           away_kit_icon: formData.away_kit_icon,
@@ -172,56 +167,61 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
         })
         .eq('id', teamSettings.id);
       
-      if (error || settingsError) {
-        console.error('Error updating team settings:', error || settingsError);
+      if (settingsError) {
+        console.error('Error updating team settings:', settingsError);
         toast({
           title: "Error",
           description: "Failed to update team settings",
           variant: "destructive",
         });
-      } else {
-        // Visual feedback - set success state
-        setSaveSuccess(true);
-        
-        toast({
-          title: "Success",
-          description: "Team settings updated successfully",
-        });
-        
-        // Update local state with new values
-        setTeamSettings({
-          ...teamSettings,
-          team_name: formData.team_name,
-          team_colors: formData.team_colors,
-          team_logo: formData.team_logo,
-          home_kit_icon: formData.home_kit_icon,
-          away_kit_icon: formData.away_kit_icon,
-          training_kit_icon: formData.training_kit_icon,
-        });
-        
-        // Notify parent that team info was updated
-        if (onTeamInfoUpdated) {
-          onTeamInfoUpdated();
-        }
-        
-        // Also update both tables to ensure consistency
-        try {
-          const { data: teamData } = await supabase
-            .from('teams')
-            .select('id')
-            .limit(1)
-            .single();
-            
-          if (teamData) {
-            await supabase
-              .from('teams')
-              .update({ team_name: formData.team_name })
-              .eq('id', teamData.id);
-          }
-        } catch (teamUpdateError) {
-          console.error('Error updating team name in teams table:', teamUpdateError);
-        }
+        return;
       }
+      
+      // Also update the teams table with the new team name and age group
+      try {
+        const { data: teamData } = await supabase
+          .from('teams')
+          .select('id')
+          .limit(1)
+          .single();
+          
+        if (teamData) {
+          await supabase
+            .from('teams')
+            .update({ 
+              team_name: formData.team_name,
+              age_group: formData.team_colors // Use team_colors value for age_group
+            })
+            .eq('id', teamData.id);
+        }
+      } catch (teamUpdateError) {
+        console.error('Error updating team data in teams table:', teamUpdateError);
+      }
+      
+      // Visual feedback - set success state
+      setSaveSuccess(true);
+      
+      toast({
+        title: "Success",
+        description: "Team settings updated successfully",
+      });
+      
+      // Update local state with new values
+      setTeamSettings({
+        ...teamSettings,
+        team_name: formData.team_name,
+        team_colors: formData.team_colors,
+        team_logo: formData.team_logo,
+        home_kit_icon: formData.home_kit_icon,
+        away_kit_icon: formData.away_kit_icon,
+        training_kit_icon: formData.training_kit_icon,
+      });
+      
+      // Notify parent that team info was updated
+      if (onTeamInfoUpdated) {
+        onTeamInfoUpdated();
+      }
+      
     } catch (error) {
       console.error('Error updating team settings:', error);
       toast({
@@ -269,14 +269,14 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
           
           <div className="grid gap-2">
             <label htmlFor="team-colors" className="text-sm font-medium">
-              Team Colors
+              Age Group (e.g., Year Born or u18s)
             </label>
             <Input
               id="team-colors"
               name="team_colors"
               value={formData.team_colors}
               onChange={handleInputChange}
-              placeholder="e.g., Red and White"
+              placeholder="e.g., 2010 or u14s"
               disabled={isLoading}
             />
           </div>

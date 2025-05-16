@@ -93,7 +93,7 @@ export default function TeamSettings() {
       // Also fetch team settings to get the custom team name if it exists
       const { data: teamSettings } = await supabase
         .from('team_settings')
-        .select('team_name')
+        .select('team_name, team_colors')
         .maybeSingle();
         
       if (teamData) {
@@ -103,6 +103,16 @@ export default function TeamSettings() {
         // Use team_name from team_settings if available, otherwise use the default team name
         const displayName = teamSettings?.team_name || teamData.team_name;
         setTeamName(displayName);
+        
+        // If team data exists but doesn't have age_group, update it from team_settings
+        if (teamSettings?.team_colors && (!teamData.age_group || teamData.age_group === "")) {
+          await supabase
+            .from('teams')
+            .update({
+              age_group: teamSettings.team_colors
+            })
+            .eq('id', teamData.id);
+        }
         
         if (teamData.club_id) {
           setClubInfo(teamData.clubs);
@@ -128,10 +138,17 @@ export default function TeamSettings() {
       
       console.log("Creating default team for user:", profile.id);
       
+      // Get team settings first if they exist
+      const { data: teamSettings } = await supabase
+        .from('team_settings')
+        .select('team_name, team_colors')
+        .maybeSingle();
+      
       const { data: newTeam, error } = await supabase
         .from('teams')
         .insert({
-          team_name: 'My Team',
+          team_name: teamSettings?.team_name || 'My Team',
+          age_group: teamSettings?.team_colors || '', // Use team_colors as age_group
           admin_id: profile.id,
           created_at: new Date().toISOString()
         })
