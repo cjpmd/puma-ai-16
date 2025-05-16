@@ -56,7 +56,7 @@ export const EnhancedAnalytics = () => {
       if (error) throw error;
       
       // Process data to track player minutes over time
-      const playerTimeSeries = {};
+      const playerTimeSeries: Record<string, any> = {};
       
       data?.forEach(fixture => {
         const date = new Date(fixture.date).toISOString().split('T')[0];
@@ -97,11 +97,14 @@ export const EnhancedAnalytics = () => {
         
       if (error) throw error;
       
-      const positionCounts: Record<string, number> = data.reduce((acc, record) => {
-        const position = record.position || 'Unknown';
-        acc[position] = (acc[position] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+      const positionCounts: Record<string, number> = {};
+      
+      if (data) {
+        data.forEach(record => {
+          const position = record.position || 'Unknown';
+          positionCounts[position] = (positionCounts[position] || 0) + 1;
+        });
+      }
       
       return Object.entries(positionCounts)
         .map(([name, value]) => ({ name, value }))
@@ -129,7 +132,8 @@ export const EnhancedAnalytics = () => {
         `);
       
       // Calculate versatility (number of different positions played)
-      const versatility = {};
+      const versatility: Record<string, Set<string>> = {};
+      
       positions?.forEach(pos => {
         if (!pos.player_id || !pos.position) return;
         

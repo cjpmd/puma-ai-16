@@ -71,11 +71,14 @@ export const BasicAnalytics = () => {
         
       if (error) throw error;
       
-      const categories: Record<string, number> = data.reduce((acc, fixture) => {
-        const category = fixture.category || 'Uncategorized';
-        acc[category] = (acc[category] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+      const categories: Record<string, number> = {};
+      
+      if (data) {
+        data.forEach(fixture => {
+          const category = fixture.category || 'Uncategorized';
+          categories[category] = (categories[category] || 0) + 1;
+        });
+      }
       
       return Object.entries(categories).map(([name, value]) => ({ name, value }));
     }
