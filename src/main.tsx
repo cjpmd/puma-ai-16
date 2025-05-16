@@ -12,13 +12,19 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 30000,
-      onError: (error) => {
-        console.error('Query error:', error);
+      // Instead of using onError directly, we need to use the meta option
+      meta: {
+        onError: (error: Error) => {
+          console.error('Query error:', error);
+        },
       },
     },
     mutations: {
-      onError: (error) => {
-        console.error('Mutation error:', error);
+      // Similarly for mutations, we use meta for onError
+      meta: {
+        onError: (error: Error) => {
+          console.error('Mutation error:', error);
+        },
       },
     },
   },
