@@ -54,15 +54,16 @@ export default function ClubSettings() {
         setClubs(clubsData);
         setSelectedClub(clubsData[0]); // Select the first club by default
         
-        // Fetch team settings to get the actual team name
+        // Fetch team settings to get the actual team name and age group
         const { data: teamSettingsData } = await supabase
           .from('team_settings')
           .select('*')
           .single();
         
         const teamSettings = teamSettingsData || {};
+        console.log("Team settings data:", teamSettings);
         
-        // Fetch teams in this club - now also joining with team_settings
+        // Fetch teams in this club
         const { data: teamsData, error: teamsError } = await supabase
           .from('teams')
           .select(`
@@ -80,20 +81,36 @@ export default function ClubSettings() {
           return;
         }
         
-        // If team settings exist and contains team_name, use it to update team names
+        // If team settings exist, use it to update team display names and age groups
         if (teamSettings?.team_name) {
           const updatedTeams = teamsData?.map(team => {
+            const updates: any = {};
+            
             // Only update team name if it matches the default "My Team" name
             if (team.team_name === "My Team") {
-              return {
-                ...team,
-                team_name: teamSettings.team_name
-              };
+              updates.team_name = teamSettings.team_name;
             }
-            return team;
+            
+            // Always use the age group from team_settings if available
+            if (teamSettings.team_colors && (!team.age_group || team.age_group === "")) {
+              updates.age_group = teamSettings.team_colors;
+            }
+            
+            return { ...team, ...updates };
           }) || [];
           
           setTeams(updatedTeams);
+          
+          // Update database with age group if needed
+          for (const team of teamsData || []) {
+            if (teamSettings.team_colors && (!team.age_group || team.age_group === "")) {
+              console.log("Updating team age group from team settings:", teamSettings.team_colors);
+              await supabase
+                .from('teams')
+                .update({ age_group: teamSettings.team_colors })
+                .eq('id', team.id);
+            }
+          }
         } else {
           setTeams(teamsData || []);
         }
@@ -110,7 +127,7 @@ export default function ClubSettings() {
     if (club) {
       setSelectedClub(club);
       
-      // Fetch team settings to get the actual team name
+      // Fetch team settings to get the actual team name and age group
       const { data: teamSettingsData } = await supabase
         .from('team_settings')
         .select('*')
@@ -137,20 +154,35 @@ export default function ClubSettings() {
           return;
         }
         
-        // If team settings exist and contains team_name, use it to update team names
+        // Apply team settings data to the teams
         if (teamSettings?.team_name) {
           const updatedTeams = teamsData?.map(team => {
+            const updates: any = {};
+            
             // Only update team name if it matches the default "My Team" name
             if (team.team_name === "My Team") {
-              return {
-                ...team,
-                team_name: teamSettings.team_name
-              };
+              updates.team_name = teamSettings.team_name;
             }
-            return team;
+            
+            // Always use the age group from team_settings if available
+            if (teamSettings.team_colors && (!team.age_group || team.age_group === "")) {
+              updates.age_group = teamSettings.team_colors;
+            }
+            
+            return { ...team, ...updates };
           }) || [];
           
           setTeams(updatedTeams);
+          
+          // Update database with age group if needed
+          for (const team of teamsData || []) {
+            if (teamSettings.team_colors && (!team.age_group || team.age_group === "")) {
+              await supabase
+                .from('teams')
+                .update({ age_group: teamSettings.team_colors })
+                .eq('id', team.id);
+            }
+          }
         } else {
           setTeams(teamsData || []);
         }

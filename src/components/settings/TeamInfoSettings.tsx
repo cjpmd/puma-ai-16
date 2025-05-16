@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -153,12 +152,14 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
     try {
       setIsSaving(true);
       
+      console.log("Updating team settings with age group:", formData.team_colors);
+      
       // Update both team_settings and teams tables
       const { error: settingsError } = await supabase
         .from('team_settings')
         .update({
           team_name: formData.team_name,
-          team_colors: formData.team_colors, // We're repurposing this field for age group
+          team_colors: formData.team_colors, // Age group data
           team_logo: formData.team_logo,
           home_kit_icon: formData.home_kit_icon,
           away_kit_icon: formData.away_kit_icon,
@@ -182,15 +183,17 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
         const { data: teamData } = await supabase
           .from('teams')
           .select('id')
+          .eq('admin_id', (await supabase.auth.getUser()).data.user?.id)
           .limit(1)
           .single();
           
         if (teamData) {
+          console.log("Updating team in teams table with age group:", formData.team_colors);
           await supabase
             .from('teams')
             .update({ 
               team_name: formData.team_name,
-              age_group: formData.team_colors // Use team_colors value for age_group
+              age_group: formData.team_colors // Explicitly update age_group with team_colors value
             })
             .eq('id', teamData.id);
         }
