@@ -26,10 +26,16 @@ interface PlayingPeriod {
   duration_minutes: number;
 }
 
-interface FixturePlayerRecord {
+// Define the shape of the raw data from Supabase
+interface FixturePlayerApiRecord {
   player_id: string;
-  players?: PlayerData;
-  fixture_playing_periods?: PlayingPeriod[];
+  fixture_id: string;
+  players: {
+    name: string;
+  };
+  fixture_playing_periods: {
+    duration_minutes: number;
+  }[];
 }
 
 export const BasicAnalytics = () => {
@@ -51,7 +57,10 @@ export const BasicAnalytics = () => {
       // Process the data to get minutes by player
       const playerMap = new Map<string, PlayerMinutes>();
       
-      (data as FixturePlayerRecord[] || []).forEach(record => {
+      // Use type assertion with the correct type that matches the API response
+      const recordsArray = data as unknown as FixturePlayerApiRecord[];
+      
+      (recordsArray || []).forEach(record => {
         const playerId = record.player_id;
         const playerName = record.players?.name || 'Unknown Player';
         const minutes = record.fixture_playing_periods?.reduce((sum, period) => 

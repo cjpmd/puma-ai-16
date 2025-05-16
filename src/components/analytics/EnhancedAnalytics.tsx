@@ -66,15 +66,15 @@ interface Fixture {
   fixture_player_positions?: FixturePlayerPosition[];
 }
 
-// Define record type for API response
-interface FixtureRecord {
+// Define record type for API response that matches the actual shape of the data
+interface FixtureApiRecord {
   id: string;
   date: string;
   opponent: string;
   fixture_player_positions?: Array<{
     player_id: string;
     position: string;
-    players?: {
+    players: {
       name: string;
     };
     fixture_playing_periods?: Array<{
@@ -110,7 +110,10 @@ export const EnhancedAnalytics = () => {
       // Process data to track player minutes over time
       const playerTimeSeries: Record<string, PlayerTimeSeries> = {};
       
-      (data as FixtureRecord[] || []).forEach(fixture => {
+      // Use type assertion with the correct type that matches the API response
+      const recordsArray = data as unknown as FixtureApiRecord[];
+      
+      (recordsArray || []).forEach(fixture => {
         const date = new Date(fixture.date).toISOString().split('T')[0];
         
         fixture.fixture_player_positions?.forEach(position => {
