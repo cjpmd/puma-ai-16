@@ -66,6 +66,23 @@ interface Fixture {
   fixture_player_positions?: FixturePlayerPosition[];
 }
 
+// Define record type for API response
+interface FixtureRecord {
+  id: string;
+  date: string;
+  opponent: string;
+  fixture_player_positions?: Array<{
+    player_id: string;
+    position: string;
+    players?: {
+      name: string;
+    };
+    fixture_playing_periods?: Array<{
+      duration_minutes: number;
+    }>;
+  }>;
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A569BD', '#5DADE2', '#48C9B0'];
 
 export const EnhancedAnalytics = () => {
@@ -93,7 +110,7 @@ export const EnhancedAnalytics = () => {
       // Process data to track player minutes over time
       const playerTimeSeries: Record<string, PlayerTimeSeries> = {};
       
-      (data as Fixture[] || []).forEach(fixture => {
+      (data as FixtureRecord[] || []).forEach(fixture => {
         const date = new Date(fixture.date).toISOString().split('T')[0];
         
         fixture.fixture_player_positions?.forEach(position => {
@@ -113,7 +130,12 @@ export const EnhancedAnalytics = () => {
             };
           }
           
-          playerTimeSeries[date][playerName] = (playerTimeSeries[date][playerName] || 0) + minutes;
+          // Convert to number if it's a string, or use current value if already a number
+          const currentMinutes = typeof playerTimeSeries[date][playerName] === 'string' 
+            ? 0 
+            : (playerTimeSeries[date][playerName] as number || 0);
+          
+          playerTimeSeries[date][playerName] = currentMinutes + minutes;
           playerTimeSeries[date].total += minutes;
         });
       });

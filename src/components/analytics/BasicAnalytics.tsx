@@ -17,6 +17,21 @@ interface FixtureCategory {
   value: number;
 }
 
+// Define additional interfaces for better type safety
+interface PlayerData {
+  name: string;
+}
+
+interface PlayingPeriod {
+  duration_minutes: number;
+}
+
+interface FixturePlayerRecord {
+  player_id: string;
+  players?: PlayerData;
+  fixture_playing_periods?: PlayingPeriod[];
+}
+
 export const BasicAnalytics = () => {
   const { data: playerMinutes, isLoading: loadingMinutes } = useQuery<PlayerMinutes[]>({
     queryKey: ["basic-minutes"],
@@ -36,7 +51,7 @@ export const BasicAnalytics = () => {
       // Process the data to get minutes by player
       const playerMap = new Map<string, PlayerMinutes>();
       
-      data?.forEach(record => {
+      (data as FixturePlayerRecord[] || []).forEach(record => {
         const playerId = record.player_id;
         const playerName = record.players?.name || 'Unknown Player';
         const minutes = record.fixture_playing_periods?.reduce((sum, period) => 
