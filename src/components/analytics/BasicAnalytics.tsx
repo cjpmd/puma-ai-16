@@ -62,7 +62,7 @@ export const BasicAnalytics = () => {
     }
   });
 
-  const { data: fixtureCount, isLoading: loadingFixtures } = useQuery({
+  const { data: fixtureCount, isLoading: loadingFixtures } = useQuery<FixtureCategory[]>({
     queryKey: ["fixture-stats"],
     queryFn: async () => {
       const { data, error } = await supabase
