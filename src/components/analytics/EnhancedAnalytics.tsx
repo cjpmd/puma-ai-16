@@ -26,6 +26,11 @@ import {
   ResponsiveContainer 
 } from "recharts";
 
+interface PositionDistribution {
+  name: string;
+  value: number;
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A569BD', '#5DADE2', '#48C9B0'];
 
 export const EnhancedAnalytics = () => {
@@ -83,7 +88,7 @@ export const EnhancedAnalytics = () => {
   });
 
   // Position distribution analysis
-  const { data: positionDistribution, isLoading: loadingPositions } = useQuery({
+  const { data: positionDistribution, isLoading: loadingPositions } = useQuery<PositionDistribution[]>({
     queryKey: ["position-distribution"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -92,15 +97,15 @@ export const EnhancedAnalytics = () => {
         
       if (error) throw error;
       
-      const positionCounts = data.reduce((acc, record) => {
+      const positionCounts: Record<string, number> = data.reduce((acc, record) => {
         const position = record.position || 'Unknown';
         acc[position] = (acc[position] || 0) + 1;
         return acc;
-      }, {});
+      }, {} as Record<string, number>);
       
       return Object.entries(positionCounts)
         .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => (b.value as number) - (a.value as number));
+        .sort((a, b) => b.value - a.value);
     }
   });
 

@@ -10,7 +10,7 @@ import { ObjectiveStats } from "@/components/analytics/ObjectiveStats";
 import { AttributeTrends } from "@/components/analytics/AttributeTrends";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Lock } from "lucide-react";
+import { Lock, Unlock } from "lucide-react";
 
 export const Analytics = () => {
   const { isSubscribed, isLoading } = useSubscriptionStatus();

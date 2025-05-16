@@ -6,6 +6,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+interface PlayerMinutes {
+  id: string;
+  name: string;
+  minutes: number;
+}
+
+interface FixtureCategory {
+  name: string;
+  value: number;
+}
+
 export const BasicAnalytics = () => {
   const { data: playerMinutes, isLoading: loadingMinutes } = useQuery({
     queryKey: ["basic-minutes"],
@@ -23,7 +34,7 @@ export const BasicAnalytics = () => {
       if (error) throw error;
       
       // Process the data to get minutes by player
-      const playerMap = new Map();
+      const playerMap = new Map<string, PlayerMinutes>();
       
       data?.forEach(record => {
         const playerId = record.player_id;
@@ -40,7 +51,9 @@ export const BasicAnalytics = () => {
         }
         
         const player = playerMap.get(playerId);
-        player.minutes += minutes;
+        if (player) {
+          player.minutes += minutes;
+        }
       });
       
       return Array.from(playerMap.values())
@@ -58,7 +71,7 @@ export const BasicAnalytics = () => {
         
       if (error) throw error;
       
-      const categories = data.reduce((acc, fixture) => {
+      const categories: Record<string, number> = data.reduce((acc, fixture) => {
         const category = fixture.category || 'Uncategorized';
         acc[category] = (acc[category] || 0) + 1;
         return acc;

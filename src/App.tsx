@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Routes,
@@ -28,106 +29,104 @@ export function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <Routes>
+    <Routes>
+      <Route
+        path="/auth"
+        element={session ? <Navigate to="/platform" /> : <Auth />}
+      />
+      <Route element={<AppLayout />}>
         <Route
-          path="/auth"
-          element={session ? <Navigate to="/platform" /> : <Auth />}
+          path="/platform"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <TeamDashboard />
+            )
+          }
         />
-        <Route element={<AppLayout />}>
-          <Route
-            path="/platform"
-            element={
-              !session ? (
-                <Navigate to="/auth" />
-              ) : (
-                <TeamDashboard />
-              )
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              !session ? (
-                <Navigate to="/auth" />
-              ) : (
-                <Analytics />
-              )
-            }
-          />
-          <Route
-            path="/player-dashboard"
-            element={
-              !session ? (
-                <Navigate to="/auth" />
-              ) : (
-                <PlayerDashboard />
-              )
-            }
-          />
-          <Route
-            path="/parent-dashboard"
-            element={
-              !session ? (
-                <Navigate to="/auth" />
-              ) : (
-                <ParentDashboard />
-              )
-            }
-          />
-          <Route
-            path="/squad-management"
-            element={
-              !session ? (
-                <Navigate to="/auth" />
-              ) : (
-                <div>squad-management</div>
-              )
-            }
-          />
-          <Route
-            path="/calendar"
-            element={
-              !session ? (
-                <Navigate to="/auth" />
-              ) : (
-                <div>calendar</div>
-              )
-            }
-          />
-          <Route
-            path="/player/:id"
-            element={
-              !session ? (
-                <Navigate to="/auth" />
-              ) : (
-                <div>player</div>
-              )
-            }
-          />
-          <Route
-            path="/account"
-            element={
-              !session ? (
-                <Navigate to="/auth" />
-              ) : (
-                <div>account</div>
-              )
-            }
-          />
-          <Route
-            path="/subscription"
-            element={
-              !session ? (
-                <Navigate to="/auth" />
-              ) : (
-                <SubscriptionPage />
-              )
-            }
-          />
-        </Route>
-        <Route path="*" element={<Navigate to="/platform" />} />
-      </Routes>
-    </BrowserRouter>
+        <Route
+          path="/analytics"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <Analytics />
+            )
+          }
+        />
+        <Route
+          path="/player-dashboard"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <PlayerDashboard />
+            )
+          }
+        />
+        <Route
+          path="/parent-dashboard"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <ParentDashboard />
+            )
+          }
+        />
+        <Route
+          path="/squad-management"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <div>squad-management</div>
+            )
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <div>calendar</div>
+            )
+          }
+        />
+        <Route
+          path="/player/:id"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <div>player</div>
+            )
+          }
+        />
+        <Route
+          path="/account"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <div>account</div>
+            )
+          }
+        />
+        <Route
+          path="/subscription"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <SubscriptionPage />
+            )
+          }
+        />
+      </Route>
+      <Route path="*" element={<Navigate to="/platform" />} />
+    </Routes>
   );
 }
