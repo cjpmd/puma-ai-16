@@ -2,7 +2,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserPlus, CalendarDays, School, Building, ShieldCheck, BarChart2 } from "lucide-react";
+import { Users, UserPlus, CalendarDays, School, Building, ShieldCheck, BarChart2, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { RoleManager } from "@/components/auth/RoleManager";
 import { ParentChildLinkingDialog } from "@/components/parents/ParentChildLinkingDialog";
@@ -33,6 +33,26 @@ export const PlatformLanding = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Global Admin View */}
+        {hasRole('globalAdmin') && (
+          <Card>
+            <CardHeader className="bg-primary/5">
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                <span>Global Admin Dashboard</span>
+              </CardTitle>
+              <CardDescription>Complete platform administration and management</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <Button asChild className="w-full">
+                  <Link to="/global-admin">Global Admin Dashboard</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
         {/* Admin View */}
         {hasRole('admin') && (
           <Card>

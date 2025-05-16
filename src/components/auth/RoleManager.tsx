@@ -11,7 +11,7 @@ export const RoleManager = () => {
   const { toast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
 
-  const handleAddRole = async (role: 'admin' | 'coach' | 'parent' | 'player') => {
+  const handleAddRole = async (role: 'admin' | 'coach' | 'parent' | 'player' | 'globalAdmin') => {
     if (!profile) return;
     
     setIsAdding(true);
@@ -69,6 +69,14 @@ export const RoleManager = () => {
             disabled={isAdding || profile?.role === 'admin'}
           >
             {profile?.role === 'admin' ? 'Admin Role Added' : 'Add Admin Role'}
+          </Button>
+          <Button 
+            variant="outline" 
+            className="col-span-1 md:col-span-2"
+            onClick={() => handleAddRole('globalAdmin')}
+            disabled={isAdding || profile?.role === 'globalAdmin'}
+          >
+            {profile?.role === 'globalAdmin' ? 'Global Admin Role Added' : 'Add Global Admin Role'}
           </Button>
         </div>
       </CardContent>

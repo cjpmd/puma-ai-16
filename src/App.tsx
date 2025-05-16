@@ -18,6 +18,7 @@ import { PlatformLanding } from "./pages/PlatformLanding";
 import SquadManagement from "./pages/SquadManagement";
 import TeamSettings from "./pages/TeamSettings";
 import CalendarPage from "./components/calendar/CalendarPage";
+import GlobalAdminDashboard from "./pages/GlobalAdminDashboard";
 
 export function App() {
   const [session, setSession] = useState(null);
@@ -46,6 +47,16 @@ export function App() {
               <Navigate to="/auth" />
             ) : (
               <PlatformLanding />
+            )
+          }
+        />
+        <Route
+          path="/global-admin"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <GlobalAdminDashboard />
             )
           }
         />

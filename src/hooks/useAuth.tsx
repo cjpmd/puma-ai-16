@@ -1,10 +1,11 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 
-export type UserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player';
+export type UserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin';
 
 interface UserProfile {
   id: string;
@@ -202,6 +203,8 @@ export const useAuth = () => {
       navigate('/parent-dashboard');
     } else if (role === 'player') {
       navigate('/player-dashboard');
+    } else if (role === 'globalAdmin') {
+      navigate('/global-admin');
     } else {
       navigate('/platform');
     }
@@ -210,6 +213,7 @@ export const useAuth = () => {
   const hasPermission = (requiredRole: UserRole[]): boolean => {
     if (!profile) return false;
     
+    if (profile.role === 'globalAdmin') return true; // Global admin has all permissions
     if (profile.role === 'admin') return true;
     
     if (requiredRole.includes('parent') && profile.role === 'coach') return true;
@@ -221,8 +225,11 @@ export const useAuth = () => {
   const hasRole = (role: UserRole): boolean => {
     if (!profile) return false;
     
-    // Admin has access to all roles
-    if (profile.role === 'admin') return true;
+    // Global Admin has access to all roles
+    if (profile.role === 'globalAdmin') return true;
+    
+    // Admin has access to all roles except globalAdmin
+    if (profile.role === 'admin' && role !== 'globalAdmin') return true;
     
     // Coaches can also access parent role
     if (role === 'parent' && profile.role === 'coach') return true;
