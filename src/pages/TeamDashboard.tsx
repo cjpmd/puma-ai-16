@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Users, Award, Clock, BarChart2, TrendingUp, FileChart } from "lucide-react";
+import { CalendarDays, Users, Award, Clock, BarChart2, TrendingUp, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -95,7 +94,7 @@ export const TeamDashboard = () => {
             player_id,
             fixture_id,
             position,
-            fixture_playing_periods (
+            fixture_playing_periods!inner (
               duration_minutes
             )
           `);
@@ -126,7 +125,7 @@ export const TeamDashboard = () => {
           playerPositions.forEach(position => {
             const playerId = position.player_id;
             const fixtureId = position.fixture_id;
-            const minutes = position.fixture_playing_periods?.duration_minutes || 0;
+            const minutes = position.fixture_playing_periods?.[0]?.duration_minutes || 0;
             
             if (!playerMinutes.has(playerId)) {
               playerMinutes.set(playerId, { minutes: 0, games: new Set() });
@@ -261,7 +260,7 @@ export const TeamDashboard = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center text-lg">
-              <FileChart className="mr-2 h-5 w-5 text-primary" />
+              <FileText className="mr-2 h-5 w-5 text-primary" />
               Matches
             </CardTitle>
           </CardHeader>
