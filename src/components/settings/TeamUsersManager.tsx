@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -38,6 +37,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole, useAuth } from '@/hooks/useAuth';
 import { useTeams } from '@/contexts/TeamContext';
+import { UserAssignmentDialog } from '@/components/admin/UserAssignmentDialog';
 
 interface User {
   id: string;
@@ -62,6 +62,8 @@ export const TeamUsersManager = () => {
   const [clubs, setClubs] = useState<any[]>([]);
   const [filterTeam, setFilterTeam] = useState<string>('all');
   const [filterClub, setFilterClub] = useState<string>('all');
+  const [assignUserDialogOpen, setAssignUserDialogOpen] = useState(false);
+  const [userToAssign, setUserToAssign] = useState<User | null>(null);
   const { toast } = useToast();
   const { profile } = useAuth();
   const { currentTeam } = useTeams();
@@ -205,6 +207,11 @@ export const TeamUsersManager = () => {
     setDialogOpen(true);
   };
 
+  const handleAssignUser = (user: User) => {
+    setUserToAssign(user);
+    setAssignUserDialogOpen(true);
+  };
+
   // Apply filters and search to users
   const filteredUsers = users.filter(user => {
     // Apply search
@@ -337,6 +344,9 @@ export const TeamUsersManager = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleAssignUser(user); }}>
+                              Assign to Club/Team
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleChangeRole(user.id, 'admin'); }}>
                               Make Admin
                             </DropdownMenuItem>
@@ -413,10 +423,25 @@ export const TeamUsersManager = () => {
             
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Close</Button>
-              <Button>Update User</Button>
+              <Button onClick={() => {
+                setDialogOpen(false);
+                if (selectedUser) handleAssignUser(selectedUser);
+              }}>
+                Assign to Club/Team
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        
+        {/* Add the user assignment dialog */}
+        {userToAssign && (
+          <UserAssignmentDialog 
+            open={assignUserDialogOpen}
+            onOpenChange={setAssignUserDialogOpen}
+            user={userToAssign}
+            onSuccess={fetchUsersAndTeams}
+          />
+        )}
       </CardContent>
     </Card>
   );

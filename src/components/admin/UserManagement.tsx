@@ -37,6 +37,7 @@ import { UserRole } from '@/hooks/useAuth';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { UserAssignmentDialog } from './UserAssignmentDialog';
 
 interface User {
   id: string;
@@ -71,6 +72,8 @@ export const UserManagement = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [clubsWithTeams, setClubsWithTeams] = useState<Club[]>([]);
   const [filterView, setFilterView] = useState<'all' | 'organized'>('organized');
+  const [assignUserDialogOpen, setAssignUserDialogOpen] = useState(false);
+  const [userToAssign, setUserToAssign] = useState<any>(null);
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
 
@@ -311,6 +314,11 @@ export const UserManagement = () => {
     setDialogOpen(true);
   };
 
+  const handleAssignUser = (user: User) => {
+    setUserToAssign(user);
+    setAssignUserDialogOpen(true);
+  };
+
   const filteredUsers = users.filter(user => 
     user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -544,6 +552,9 @@ export const UserManagement = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleAssignUser(user); }}>
+                            Assign to Club/Team
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleChangeRole(user.id, 'admin'); }}>
                             Make Admin
                           </DropdownMenuItem>
@@ -618,10 +629,25 @@ export const UserManagement = () => {
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Close</Button>
-            <Button>Update User</Button>
+            <Button onClick={() => { 
+              setDialogOpen(false); 
+              if (selectedUser) handleAssignUser(selectedUser); 
+            }}>
+              Assign to Club/Team
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add the user assignment dialog */}
+      {userToAssign && (
+        <UserAssignmentDialog 
+          open={assignUserDialogOpen}
+          onOpenChange={setAssignUserDialogOpen}
+          user={userToAssign}
+          onSuccess={fetchUsersClubsAndTeams}
+        />
+      )}
     </div>
   );
 };
