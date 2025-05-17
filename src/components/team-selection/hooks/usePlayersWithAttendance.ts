@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from "@/types/player";
 
-interface PlayerWithAttendance extends Player {
-  status?: "available" | "unavailable" | "maybe";
+interface PlayerWithAttendance extends Omit<Player, 'status'> {
+  attendanceStatus?: "available" | "unavailable" | "maybe";
   attending?: boolean;
 }
 
@@ -49,7 +49,7 @@ export const usePlayersWithAttendance = () => {
       // For now, we'll just enhance the players with a mock attendance status
       const enhancedPlayers = players.map(player => ({
         ...player,
-        status: "available", // Mock status: "available", "unavailable", "maybe"
+        attendanceStatus: "available", // Mock status changed from status to attendanceStatus
         attending: true
       }));
       
