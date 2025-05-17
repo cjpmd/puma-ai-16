@@ -187,11 +187,41 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
       console.log("Selected team:", selectedTeam);
       console.log("Is club only:", isClubOnly);
       
-      // First, update the user's profile with club association
+      // First, check if the profiles table has the club_id column
+      const { data: columns, error: columnsError } = await supabase
+        .rpc('get_table_columns', { table_name: 'profiles' });
+      
+      if (columnsError) {
+        console.error("Error checking table columns:", columnsError);
+        throw columnsError;
+      }
+      
+      // If club_id doesn't exist in profiles table, we need to add it first
+      const hasClubIdColumn = columns.some((column: any) => column.column_name === 'club_id');
+      
+      if (!hasClubIdColumn) {
+        console.log("club_id column doesn't exist, attempting to add it...");
+        // Try to execute the SQL function to add the column
+        const { error: addColumnError } = await supabase
+          .rpc('add_column_if_not_exists', { 
+            p_table_name: 'profiles', 
+            p_column_name: 'club_id', 
+            p_column_def: 'uuid references clubs(id)' 
+          });
+          
+        if (addColumnError) {
+          console.error("Error adding club_id column:", addColumnError);
+          throw new Error("Failed to add club_id column to profiles. Please contact support to update your database schema.");
+        }
+        
+        console.log("club_id column added successfully");
+      }
+      
+      // Determine club_id to save (null if "no-club" is selected)
       const clubIdToSave = selectedClub === 'no-club' ? null : selectedClub;
       console.log("Club ID to save:", clubIdToSave);
       
-      // Check if the user has a profile entry
+      // Update the user's profile with club association
       const { data: existingProfile, error: profileCheckError } = await supabase
         .from('profiles')
         .select('*')
@@ -203,17 +233,16 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
         throw profileCheckError;
       }
       
+      // Update the profile with the club_id
       let profileUpdateResult;
       
       if (existingProfile) {
-        // Update existing profile
         console.log("Updating existing profile");
         profileUpdateResult = await supabase
           .from('profiles')
           .update({ club_id: clubIdToSave })
           .eq('id', user.id);
       } else {
-        // Insert new profile
         console.log("Creating new profile entry");
         profileUpdateResult = await supabase
           .from('profiles')
@@ -229,7 +258,7 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
         throw profileUpdateResult.error;
       }
       
-      console.log("Profile updated successfully");
+      console.log("Profile updated successfully with club_id");
       
       // Handle player assignment to team
       if (!isClubOnly && selectedTeam && selectedTeam !== 'no-team') {
@@ -248,6 +277,36 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
         let playerUpdateResult;
         
         if (existingPlayer) {
+          // If the player is being transferred to a different team, record the transfer
+          if (existingPlayer.team_id && existingPlayer.team_id !== selectedTeam) {
+            // Record the transfer in a player_transfers table if it exists
+            try {
+              // First check if the player_transfers table exists
+              const { data: tableExists } = await supabase
+                .from('player_transfers')
+                .select('id')
+                .limit(1);
+                
+              // If the table exists, record the transfer
+              if (tableExists !== null) {
+                await supabase
+                  .from('player_transfers')
+                  .insert({
+                    player_id: existingPlayer.id,
+                    from_team_id: existingPlayer.team_id,
+                    to_team_id: selectedTeam,
+                    transfer_date: new Date().toISOString(),
+                    status: 'completed'
+                  });
+                  
+                console.log("Player transfer record created");
+              }
+            } catch (transferError) {
+              // If the table doesn't exist, just log and continue
+              console.log("player_transfers table doesn't exist, skipping transfer record");
+            }
+          }
+          
           // Update existing player record
           console.log("Updating existing player record");
           playerUpdateResult = await supabase

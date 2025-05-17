@@ -19,6 +19,9 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlayerTransferManager } from "@/components/squad/PlayerTransferManager";
+import { useAuth } from "@/hooks/useAuth";
 
 type SortField = "squadNumber" | "technical" | "mental" | "physical" | "goalkeeping";
 type SortOrder = "asc" | "desc";
@@ -26,7 +29,10 @@ type SortOrder = "asc" | "desc";
 const SquadManagement = () => {
   const [sortField, setSortField] = useState<SortField>("squadNumber");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+  const [activeTab, setActiveTab] = useState<string>("squad");
   const navigate = useNavigate();
+  const { profile, hasRole } = useAuth();
+  const isAdmin = hasRole('admin') || hasRole('globalAdmin');
 
   const { data: players, isLoading, error } = useQuery({
     queryKey: ["players"],
@@ -45,7 +51,8 @@ const SquadManagement = () => {
                 full_name
               )
             )
-          `);
+          `)
+          .eq('status', 'active');
 
         if (playersError) {
           console.error("Error fetching players:", playersError);
@@ -219,112 +226,125 @@ const SquadManagement = () => {
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="text-center py-8">Loading squad data...</div>
-        ) : sortedPlayers && sortedPlayers.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[60px]"></TableHead>
-                <TableHead onClick={() => handleSort("squadNumber")} className="cursor-pointer">
-                  Squad # <ArrowUpDown className="inline h-4 w-4" />
-                </TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Age</TableHead>
-                <TableHead>Top Positions</TableHead>
-                <TableHead onClick={() => handleSort("technical")} className="text-center cursor-pointer">
-                  Technical <ArrowUpDown className="inline h-4 w-4" />
-                </TableHead>
-                <TableHead onClick={() => handleSort("mental")} className="text-center cursor-pointer">
-                  Mental <ArrowUpDown className="inline h-4 w-4" />
-                </TableHead>
-                <TableHead onClick={() => handleSort("physical")} className="text-center cursor-pointer">
-                  Physical <ArrowUpDown className="inline h-4 w-4" />
-                </TableHead>
-                <TableHead onClick={() => handleSort("goalkeeping")} className="text-center cursor-pointer">
-                  Goalkeeping <ArrowUpDown className="inline h-4 w-4" />
-                </TableHead>
-                <TableHead className="text-right">Objectives Status</TableHead>
-                <TableHead className="text-right">Current Performance</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedPlayers.map((player) => {
-                const performanceStatus = calculatePlayerPerformance(player);
-
-                return (
-                  <TableRow
-                    key={player.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleRowClick(player.id)}
-                  >
-                    <TableCell>
-                      <Avatar className="h-8 w-8">
-                        {player.profileImage ? (
-                          <AvatarImage src={player.profileImage} alt={player.name} />
-                        ) : (
-                          <AvatarFallback>
-                            {player.name.charAt(0)}
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {player.squadNumber}
-                    </TableCell>
-                    <TableCell>{player.name}</TableCell>
-                    <TableCell>{player.age}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        {player.topPositions?.map((pos, index) => (
-                          <Badge 
-                            key={index} 
-                            variant="outline" 
-                            className={`${index === 0 ? 'bg-green-500/10' : index === 1 ? 'bg-blue-500/10' : 'bg-amber-500/10'}`}
-                          >
-                            {pos.position} ({Number(pos.suitability_score).toFixed(1)}%)
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {calculateAttributeAverage(player.attributes, "TECHNICAL").toFixed(1)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {calculateAttributeAverage(player.attributes, "MENTAL").toFixed(1)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {calculateAttributeAverage(player.attributes, "PHYSICAL").toFixed(1)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {calculateAttributeAverage(player.attributes, "GOALKEEPING").toFixed(1)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Badge variant="outline" className="bg-green-500/10">
-                          {player.objectives?.completed || 0}
-                        </Badge>
-                        <Badge variant="outline" className="bg-amber-500/10">
-                          {player.objectives?.improving || 0}
-                        </Badge>
-                        <Badge variant="outline" className="bg-blue-500/10">
-                          {player.objectives?.ongoing || 0}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className={`text-right ${getPerformanceColor(performanceStatus)}`}>
-                      {getPerformanceText(performanceStatus)}
-                    </TableCell>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="squad">Current Squad</TabsTrigger>
+            <TabsTrigger value="transfers">Player Transfers</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="squad">
+            {isLoading ? (
+              <div className="text-center py-8">Loading squad data...</div>
+            ) : sortedPlayers && sortedPlayers.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[60px]"></TableHead>
+                    <TableHead onClick={() => handleSort("squadNumber")} className="cursor-pointer">
+                      Squad # <ArrowUpDown className="inline h-4 w-4" />
+                    </TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Age</TableHead>
+                    <TableHead>Top Positions</TableHead>
+                    <TableHead onClick={() => handleSort("technical")} className="text-center cursor-pointer">
+                      Technical <ArrowUpDown className="inline h-4 w-4" />
+                    </TableHead>
+                    <TableHead onClick={() => handleSort("mental")} className="text-center cursor-pointer">
+                      Mental <ArrowUpDown className="inline h-4 w-4" />
+                    </TableHead>
+                    <TableHead onClick={() => handleSort("physical")} className="text-center cursor-pointer">
+                      Physical <ArrowUpDown className="inline h-4 w-4" />
+                    </TableHead>
+                    <TableHead onClick={() => handleSort("goalkeeping")} className="text-center cursor-pointer">
+                      Goalkeeping <ArrowUpDown className="inline h-4 w-4" />
+                    </TableHead>
+                    <TableHead className="text-right">Objectives Status</TableHead>
+                    <TableHead className="text-right">Current Performance</TableHead>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No players found. Add players to your squad to get started.</p>
-          </div>
-        )}
+                </TableHeader>
+                <TableBody>
+                  {sortedPlayers.map((player) => {
+                    const performanceStatus = calculatePlayerPerformance(player);
+
+                    return (
+                      <TableRow
+                        key={player.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleRowClick(player.id)}
+                      >
+                        <TableCell>
+                          <Avatar className="h-8 w-8">
+                            {player.profileImage ? (
+                              <AvatarImage src={player.profileImage} alt={player.name} />
+                            ) : (
+                              <AvatarFallback>
+                                {player.name.charAt(0)}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {player.squadNumber}
+                        </TableCell>
+                        <TableCell>{player.name}</TableCell>
+                        <TableCell>{player.age}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            {player.topPositions?.map((pos, index) => (
+                              <Badge 
+                                key={index} 
+                                variant="outline" 
+                                className={`${index === 0 ? 'bg-green-500/10' : index === 1 ? 'bg-blue-500/10' : 'bg-amber-500/10'}`}
+                              >
+                                {pos.position} ({Number(pos.suitability_score).toFixed(1)}%)
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {calculateAttributeAverage(player.attributes, "TECHNICAL").toFixed(1)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {calculateAttributeAverage(player.attributes, "MENTAL").toFixed(1)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {calculateAttributeAverage(player.attributes, "PHYSICAL").toFixed(1)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {calculateAttributeAverage(player.attributes, "GOALKEEPING").toFixed(1)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Badge variant="outline" className="bg-green-500/10">
+                              {player.objectives?.completed || 0}
+                            </Badge>
+                            <Badge variant="outline" className="bg-amber-500/10">
+                              {player.objectives?.improving || 0}
+                            </Badge>
+                            <Badge variant="outline" className="bg-blue-500/10">
+                              {player.objectives?.ongoing || 0}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className={`text-right ${getPerformanceColor(performanceStatus)}`}>
+                          {getPerformanceText(performanceStatus)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No players found. Add players to your squad to get started.</p>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="transfers">
+            <PlayerTransferManager isAdmin={isAdmin} />
+          </TabsContent>
+        </Tabs>
       </motion.div>
     </div>
   );
