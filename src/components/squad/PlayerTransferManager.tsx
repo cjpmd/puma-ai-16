@@ -201,11 +201,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       
     } catch (error) {
       console.error('Error fetching players data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load players data",
-        variant: "destructive"
-      });
+      toast.error("Failed to load players data");
     } finally {
       setLoading(false);
     }
@@ -213,8 +209,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
 
   const handleTransferClick = (player: any) => {
     if (!transfersTableExists) {
-      toast({
-        title: "Transfer System Unavailable",
+      toast("Transfer System Unavailable", {
         description: "The transfer system is not set up yet. Please contact an administrator.",
         variant: "destructive"
       });
@@ -227,8 +222,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
 
   const handleApprovalClick = (transfer: any) => {
     if (!transfersTableExists) {
-      toast({
-        title: "Transfer System Unavailable",
+      toast("Transfer System Unavailable", {
         description: "The transfer system is not set up yet. Please contact an administrator.",
         variant: "destructive"
       });
