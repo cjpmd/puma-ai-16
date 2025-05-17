@@ -17,9 +17,10 @@ export const updateUserRole = async (userId: string, role: string): Promise<bool
       console.warn('RPC update_user_role_raw failed:', error);
       
       // Try with PostgreSQL's type casting as a fallback
+      // Remove the 'returning' property as it's not supported in this context
       const { error: sqlError } = await supabase
         .from('profiles')
-        .update({ role: role }, { returning: 'minimal' })
+        .update({ role: role })
         .eq('id', userId);
         
       if (sqlError) {
