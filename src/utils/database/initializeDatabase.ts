@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { createParentChildLinkingColumns } from "./parentChildLinking";
+import { setupTransferSystem } from "./transferSystem";
 
 // Define the SQL function to execute arbitrary SQL
 const createExecuteSqlFunction = `
@@ -60,6 +61,13 @@ export async function initializeDatabase(): Promise<boolean> {
       await createParentChildLinkingColumns();
     } catch (err) {
       console.warn("Error setting up parent-child linking columns:", err);
+    }
+    
+    // Try to setup transfer system, even if it might fail
+    try {
+      await setupTransferSystem();
+    } catch (err) {
+      console.warn("Error setting up transfer system:", err);
     }
     
     // We'll assume at least partial success

@@ -4,6 +4,7 @@ import { ensureParentChildLinkingSetup } from "./parentChildLinking";
 import { toast } from "sonner";
 import { initializeDatabase } from "./initializeDatabase";
 import { tableExists } from "./columnUtils";
+import { verifyTransferSystem } from "./transferSystem";
 
 /**
  * Ensure all required database tables and columns exist
@@ -79,6 +80,16 @@ export async function ensureDatabaseSetup() {
       }
     } catch (err) {
       console.warn("Error checking parent-child linking setup:", err);
+    }
+    
+    // Verify transfer system is properly set up
+    try {
+      const transferSystemSetup = await verifyTransferSystem();
+      if (!transferSystemSetup) {
+        console.warn("Failed to verify transfer system setup");
+      }
+    } catch (err) {
+      console.warn("Error checking transfer system setup:", err);
     }
     
     console.log("Database setup verified successfully");

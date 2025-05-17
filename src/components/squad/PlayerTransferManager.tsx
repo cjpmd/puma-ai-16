@@ -18,12 +18,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Search, Loader2, ArrowRight, ArrowLeft, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlayerTransferDialog } from '@/components/admin/PlayerTransferDialog';
 import { TransferApprovalDialog } from '@/components/admin/TransferApprovalDialog';
 import { columnExists, tableExists } from '@/utils/database/columnUtils';
+import { verifyTransferSystem, setupTransferSystem } from '@/utils/database/transferSystem';
 
 interface PlayerTransferManagerProps {
   teamId?: string;
@@ -37,6 +38,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
   const [pendingTransfers, setPendingTransfers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [settingUp, setSettingUp] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
@@ -66,6 +68,32 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       console.error("Error checking database structure:", error);
       setStatusColumnExists(false);
       setTransfersTableExists(false);
+    }
+  };
+
+  const setupDatabase = async () => {
+    setSettingUp(true);
+    try {
+      const success = await setupTransferSystem();
+      
+      if (success) {
+        toast.success("Transfer System", {
+          description: "Transfer system tables have been set up successfully."
+        });
+        await checkTables();
+        await fetchPlayersData();
+      } else {
+        toast.error("Setup Failed", {
+          description: "Could not set up transfer system tables. Please contact an administrator."
+        });
+      }
+    } catch (error) {
+      console.error("Error setting up database:", error);
+      toast.error("Setup Error", {
+        description: "An error occurred while setting up transfer system tables."
+      });
+    } finally {
+      setSettingUp(false);
     }
   };
 
@@ -259,9 +287,29 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
         <div className="bg-amber-50 border border-amber-300 rounded-md p-4 mb-4">
           <h3 className="text-amber-800 font-medium">Transfer System Not Available</h3>
           <p className="text-amber-700 text-sm mt-1">
-            The player transfer system tables have not been set up in the database yet. 
-            Database migrations are required to enable this functionality.
+            The player transfer system tables have not been set up in the database yet.
           </p>
+          {isAdmin && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={setupDatabase} 
+              disabled={settingUp}
+              className="mt-3 bg-white"
+            >
+              {settingUp ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Setting up...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Set Up Transfer System
+                </>
+              )}
+            </Button>
+          )}
         </div>
       );
     }
