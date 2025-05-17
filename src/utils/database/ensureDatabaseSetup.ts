@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { ensureParentChildLinkingSetup } from "./columnUtils";
+import { ensureParentChildLinkingSetup } from "./parentChildLinking";
 import { toast } from "sonner";
 import { initializeDatabase } from "./initializeDatabase";
 

@@ -6,6 +6,7 @@ export * from "./ensureDatabaseSetup";
 export * from "./setupUserRolesTable";
 export * from "./initializeDatabase";
 export * from "./columnUtils";
+export * from "./parentChildLinking";
 
 // Explicitly re-export executeSql to avoid ambiguity
 export { executeSql } from "./executeSql";
