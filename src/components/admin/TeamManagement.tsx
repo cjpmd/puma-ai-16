@@ -45,29 +45,54 @@ export const TeamManagement = () => {
   const fetchTeams = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Simple approach: just get teams without the problematic join
+      const { data: teamsData, error: teamsError } = await supabase
         .from('teams')
-        .select(`
-          *,
-          profiles:admin_id (name, email)
-        `)
+        .select('*')
         .order('team_name');
         
-      if (error) throw error;
+      if (teamsError) throw teamsError;
       
-      const teamsWithPlayerCounts = await Promise.all(data.map(async (team) => {
-        // Get player count for each team
-        const { count, error: countError } = await supabase
-          .from('players')
-          .select('*', { count: 'exact', head: true })
-          .eq('team_id', team.id);
-          
-        if (countError) throw countError;
+      // Now fetch admin profiles separately
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*');
         
+      if (profilesError) throw profilesError;
+      
+      // Manual join
+      const teamsWithAdmins = teamsData.map(team => {
+        const adminProfile = profiles.find(profile => profile.id === team.admin_id);
         return {
           ...team,
-          playerCount: count || 0
+          profiles: adminProfile ? {
+            name: adminProfile.name || 'Unknown',
+            email: adminProfile.email || 'No email'
+          } : null
         };
+      });
+
+      // Get player count for each team
+      const teamsWithPlayerCounts = await Promise.all(teamsWithAdmins.map(async (team) => {
+        try {
+          const { count, error: countError } = await supabase
+            .from('players')
+            .select('*', { count: 'exact', head: true })
+            .eq('team_id', team.id);
+            
+          if (countError) throw countError;
+          
+          return {
+            ...team,
+            playerCount: count || 0
+          };
+        } catch (countErr) {
+          console.error(`Error getting player count for team ${team.id}:`, countErr);
+          return {
+            ...team,
+            playerCount: 0
+          };
+        }
       }));
       
       setTeams(teamsWithPlayerCounts);
@@ -78,6 +103,7 @@ export const TeamManagement = () => {
         description: "There was a problem loading the team data.",
         variant: "destructive"
       });
+      setTeams([]); // Set empty array on error to avoid undefined issues
     } finally {
       setLoading(false);
     }

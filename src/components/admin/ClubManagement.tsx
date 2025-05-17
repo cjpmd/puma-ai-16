@@ -44,29 +44,54 @@ export const ClubManagement = () => {
   const fetchClubs = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Simple approach: just get clubs
+      const { data: clubsData, error: clubsError } = await supabase
         .from('clubs')
-        .select(`
-          *,
-          profiles:admin_id (name, email)
-        `)
+        .select('*')
         .order('name');
         
-      if (error) throw error;
+      if (clubsError) throw clubsError;
       
-      const clubsWithTeamCounts = await Promise.all((data || []).map(async (club) => {
-        // Get team count for each club
-        const { count: teamCount, error: teamCountError } = await supabase
-          .from('teams')
-          .select('*', { count: 'exact', head: true })
-          .eq('club_id', club.id);
-          
-        if (teamCountError) throw teamCountError;
+      // Fetch admin profiles separately
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*');
         
+      if (profilesError) throw profilesError;
+      
+      // Manual join
+      const clubsWithAdmins = clubsData.map(club => {
+        const adminProfile = profiles.find(profile => profile.id === club.admin_id);
         return {
           ...club,
-          teamCount: teamCount || 0
+          profiles: adminProfile ? {
+            name: adminProfile.name || 'Unknown',
+            email: adminProfile.email || 'No email'
+          } : null
         };
+      });
+      
+      // Get team counts for each club
+      const clubsWithTeamCounts = await Promise.all(clubsWithAdmins.map(async (club) => {
+        try {
+          const { count: teamCount, error: teamCountError } = await supabase
+            .from('teams')
+            .select('*', { count: 'exact', head: true })
+            .eq('club_id', club.id);
+            
+          if (teamCountError) throw teamCountError;
+          
+          return {
+            ...club,
+            teamCount: teamCount || 0
+          };
+        } catch (countErr) {
+          console.error(`Error getting team count for club ${club.id}:`, countErr);
+          return {
+            ...club,
+            teamCount: 0
+          };
+        }
       }));
       
       setClubs(clubsWithTeamCounts);
@@ -77,6 +102,7 @@ export const ClubManagement = () => {
         description: "There was a problem loading the club data.",
         variant: "destructive"
       });
+      setClubs([]); // Set empty array on error
     } finally {
       setLoading(false);
     }

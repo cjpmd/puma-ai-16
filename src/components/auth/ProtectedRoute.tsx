@@ -1,6 +1,8 @@
 
 import { Navigate } from "react-router-dom";
 import { useAuth, UserRole } from "@/hooks/useAuth";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 export interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -26,7 +28,7 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
     return <>{children}</>;
   }
 
-  // Special handling for globalAdmin - attempt to force the active role
+  // Check for globalAdmin access path
   if (allowedRoles.includes('globalAdmin' as UserRole)) {
     console.log('Route requires globalAdmin role, checking if user can access');
     
@@ -46,6 +48,22 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
   
   if (!hasRequiredRole) {
     console.log(`User has role ${profile.role} but needs one of ${allowedRoles.join(', ')}, denying access`);
+    // Provide a clearer message for globalAdmin route attempts
+    if (allowedRoles.includes('globalAdmin' as UserRole)) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen">
+          <Alert variant="warning" className="w-full max-w-lg">
+            <AlertTriangle className="h-4 w-4 text-yellow-600 mr-2" />
+            <AlertDescription>
+              You need globalAdmin privileges to access this page. Your current role is: {profile.role}.
+            </AlertDescription>
+          </Alert>
+          <div className="mt-4">
+            <Navigate to="/platform" replace />
+          </div>
+        </div>
+      );
+    }
     return <Navigate to="/platform" replace />;
   }
 

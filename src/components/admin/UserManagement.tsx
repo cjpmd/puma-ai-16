@@ -36,6 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/hooks/useAuth';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface User {
   id: string;
@@ -71,6 +72,7 @@ export const UserManagement = () => {
   const [clubsWithTeams, setClubsWithTeams] = useState<Club[]>([]);
   const [filterView, setFilterView] = useState<'all' | 'organized'>('organized');
   const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsersClubsAndTeams();
@@ -105,32 +107,7 @@ export const UserManagement = () => {
       
       console.log('Teams data:', teams);
 
-      // First get auth users
-      // Using non-admin API as the admin API might not be available for all users
-      let authUsers;
-      try {
-        const { data, error: authError } = await supabase.auth.admin.listUsers();
-        if (authError) {
-          console.warn('Admin API not available, fetching current user only:', authError);
-          const { data: sessionData } = await supabase.auth.getSession();
-          if (sessionData.session?.user) {
-            authUsers = { users: [sessionData.session.user] };
-          }
-        } else {
-          authUsers = data;
-        }
-      } catch (error) {
-        console.warn('Error with auth.admin.listUsers, trying alternative method:', error);
-        // Fallback to fetching profiles directly
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData.session?.user) {
-          authUsers = { users: [sessionData.session.user] };
-        }
-      }
-      
-      console.log('Auth users fetched:', authUsers?.users?.length);
-
-      // Then get profiles with roles
+      // Get profiles (this should work for anyone)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
@@ -154,58 +131,30 @@ export const UserManagement = () => {
       
       console.log('Players data:', players);
 
-      // Merge the data to create comprehensive user objects
-      let mergedUsers: User[] = [];
-      
-      if (authUsers?.users) {
-        mergedUsers = authUsers.users.map(user => {
-          const profile = profiles?.find(p => p.id === user.id);
-          const player = players?.find(p => p.user_id === user.id);
-          const playerTeam = player ? teams?.find(t => t.id === player.team_id) : null;
-          const adminTeam = teams?.find(t => t.admin_id === user.id);
-          const team = playerTeam || adminTeam;
-          
-          const clubId = team?.club_id;
-          const club = clubs?.find(c => c.id === clubId);
-          
-          return {
-            id: user.id,
-            email: user.email || 'No Email',
-            role: profile?.role || 'user',
-            name: profile?.name || user.email?.split('@')[0] || 'Unknown',
-            last_sign_in_at: user.last_sign_in_at,
-            created_at: user.created_at,
-            team_id: team?.id,
-            team_name: team?.team_name || 'No Team',
-            club_id: clubId,
-            club_name: club?.name || 'No Club'
-          };
-        });
-      } else if (profiles) {
-        // If we couldn't fetch auth users, build from profiles
-        mergedUsers = profiles.map(profile => {
-          const player = players?.find(p => p.user_id === profile.id);
-          const playerTeam = player ? teams?.find(t => t.id === player.team_id) : null;
-          const adminTeam = teams?.find(t => t.admin_id === profile.id);
-          const team = playerTeam || adminTeam;
-          
-          const clubId = team?.club_id;
-          const club = clubs?.find(c => c.id === clubId);
-          
-          return {
-            id: profile.id,
-            email: profile.email || 'No Email',
-            role: profile.role || 'user',
-            name: profile.name || 'Unknown',
-            last_sign_in_at: null,
-            created_at: profile.created_at || new Date().toISOString(),
-            team_id: team?.id,
-            team_name: team?.team_name || 'No Team',
-            club_id: clubId,
-            club_name: club?.name || 'No Club'
-          };
-        });
-      }
+      // Since we can't access admin.listUsers, we'll use the profiles table as our source of users
+      // This means we'll miss some Supabase auth metadata, but it's better than no data
+      const mergedUsers: User[] = profiles.map(profile => {
+        const player = players?.find(p => p.user_id === profile.id);
+        const playerTeam = player ? teams?.find(t => t.id === player.team_id) : null;
+        const adminTeam = teams?.find(t => t.admin_id === profile.id);
+        const team = playerTeam || adminTeam;
+        
+        const clubId = team?.club_id;
+        const club = clubs?.find(c => c.id === clubId);
+        
+        return {
+          id: profile.id,
+          email: profile.email || 'No Email',
+          role: profile.role || 'user',
+          name: profile.name || profile.email?.split('@')[0] || 'Unknown',
+          last_sign_in_at: null, // We don't have this from profiles table
+          created_at: profile.created_at || new Date().toISOString(),
+          team_id: team?.id,
+          team_name: team?.team_name || 'No Team',
+          club_id: clubId,
+          club_name: club?.name || 'No Club'
+        };
+      });
       
       console.log('Merged users:', mergedUsers.length);
       setUsers(mergedUsers);
@@ -295,13 +244,17 @@ export const UserManagement = () => {
       
       console.log('Organized clubs with teams:', filteredClubs.length);
       setClubsWithTeams(filteredClubs);
+      setError(null);
     } catch (error) {
       console.error('Error fetching users and organizations:', error);
+      setError("There was a problem loading the user data. The admin API might not be available.");
       toast({
         title: "Error fetching data",
         description: "There was a problem loading the user data.",
         variant: "destructive"
       });
+      setUsers([]);
+      setClubsWithTeams([]);
     } finally {
       setLoading(false);
     }
@@ -399,6 +352,12 @@ export const UserManagement = () => {
 
   return (
     <div className="space-y-4">
+      {error && (
+        <Alert variant="warning" className="bg-yellow-50 border-yellow-200">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex flex-col md:flex-row gap-4 justify-between">
         <div className="flex flex-col md:flex-row gap-2 w-full md:w-2/3">
           <div className="relative w-full md:w-1/2">
