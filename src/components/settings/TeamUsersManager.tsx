@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -78,10 +79,36 @@ export const TeamUsersManager = () => {
       // Fetch teams
       const { data: teamsData, error: teamsError } = await supabase
         .from('teams')
-        .select('id, team_name, club_id');
+        .select('id, team_name, club_id, admin_id');
         
       if (teamsError) throw teamsError;
-      setTeams(teamsData || []);
+      
+      // Get team_settings to get the custom team names
+      const { data: teamSettings, error: settingsError } = await supabase
+        .from('team_settings')
+        .select('*');
+        
+      if (settingsError) {
+        console.error('Error fetching team settings:', settingsError);
+      }
+      
+      // Process teams with custom names
+      const teamsWithCustomNames = teamsData.map(team => {
+        // Look for custom team name in team_settings based on admin_id
+        const teamSetting = teamSettings?.find(setting => {
+          return setting.team_id === team.id || setting.admin_id === team.admin_id;
+        });
+        
+        // Use custom team name if found, otherwise use default team name
+        const displayTeamName = teamSetting?.team_name || team.team_name;
+        
+        return {
+          ...team,
+          display_team_name: displayTeamName
+        };
+      });
+      
+      setTeams(teamsWithCustomNames || []);
       
       // Fetch clubs
       const { data: clubsData, error: clubsError } = await supabase
@@ -95,13 +122,6 @@ export const TeamUsersManager = () => {
       // For regular admin, only fetch users for their team
       const isGlobalAdmin = profile?.role === 'globalAdmin';
       
-      // Fetch auth users and profiles
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        throw authError;
-      }
-
       // Fetch profiles with roles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -119,7 +139,7 @@ export const TeamUsersManager = () => {
       if (playersError) throw playersError;
       
       // Map clubs to teams
-      const teamWithClub = teamsData?.map(team => {
+      const teamWithClub = teamsWithCustomNames?.map(team => {
         const club = clubsData?.find(club => club.id === team.club_id);
         return {
           ...team,
@@ -128,24 +148,26 @@ export const TeamUsersManager = () => {
       });
 
       // Merge the data to create a comprehensive user list
-      const mergedUsers = authUsers?.users?.map(user => {
-        const profile = profiles?.find(p => p.id === user.id);
-        const player = players?.find(p => p.user_id === user.id);
+      const mergedUsers = profiles.map(profile => {
+        const player = players?.find(p => p.user_id === profile.id);
         const team = player ? teamWithClub?.find(t => t.id === player.team_id) : null;
         
+        // If no team from player relationship, check if profile has club association
+        const clubObj = profile.club_id ? clubsData?.find(c => c.id === profile.club_id) : null;
+        
         return {
-          id: user.id,
-          email: user.email || 'No Email',
-          role: profile?.role || 'user',
-          name: profile?.name || user.email?.split('@')[0] || 'Unknown',
-          last_sign_in_at: user.last_sign_in_at,
-          created_at: user.created_at,
+          id: profile.id,
+          email: profile.email || 'No Email',
+          role: profile.role || 'user',
+          name: profile.name || profile.email?.split('@')[0] || 'Unknown',
+          last_sign_in_at: null, // We don't have this data
+          created_at: profile.created_at || new Date().toISOString(),
           team_id: team?.id || null,
-          team_name: team?.team_name || 'No Team',
-          club_id: team?.club_id || null,
-          club_name: team?.club_name || 'No Club'
+          team_name: team ? team.display_team_name : 'No Team',
+          club_id: team?.club_id || profile.club_id || null,
+          club_name: team ? team.club_name : (clubObj ? clubObj.name : 'No Club')
         };
-      }) || [];
+      });
 
       // Filter users based on role
       let filteredUsers = mergedUsers;
@@ -192,6 +214,11 @@ export const TeamUsersManager = () => {
         title: "Role updated",
         description: `User role successfully updated to ${newRole}.`,
       });
+      
+      // If the selected user is being shown in dialog, update it too
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser({ ...selectedUser, role: newRole });
+      }
     } catch (error) {
       console.error('Error updating role:', error);
       toast({
@@ -281,7 +308,7 @@ export const TeamUsersManager = () => {
                   <SelectContent>
                     <SelectItem value="all">All Teams</SelectItem>
                     {teams.map(team => (
-                      <SelectItem key={team.id} value={team.id}>{team.team_name}</SelectItem>
+                      <SelectItem key={team.id} value={team.id}>{team.display_team_name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

@@ -148,39 +148,57 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
     
     setSaving(true);
     try {
-      // Handle player assignment
-      const playerData = {
-        user_id: user.id,
-        team_id: !isClubOnly ? selectedTeam : null
+      // Update profile with club association
+      const profileUpdate = {
+        club_id: selectedClub === 'no-club' ? null : selectedClub
       };
       
-      // Check if player record exists
-      const { data: existingPlayer } = await supabase
-        .from('players')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      if (existingPlayer) {
-        // Update existing player
-        await supabase
-          .from('players')
-          .update(playerData)
-          .eq('user_id', user.id);
-      } else if (selectedTeam && !isClubOnly) {
-        // Create new player
-        await supabase
-          .from('players')
-          .insert(playerData);
-      }
-      
-      // Update profile with club association
-      await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
-        .update({
-          club_id: selectedClub
-        })
+        .update(profileUpdate)
         .eq('id', user.id);
+        
+      if (profileError) throw profileError;
+      
+      // Handle player assignment
+      if (!isClubOnly && selectedTeam && selectedTeam !== 'no-team') {
+        // Check if player record exists
+        const { data: existingPlayer } = await supabase
+          .from('players')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (existingPlayer) {
+          // Update existing player
+          await supabase
+            .from('players')
+            .update({ team_id: selectedTeam })
+            .eq('user_id', user.id);
+        } else {
+          // Create new player
+          await supabase
+            .from('players')
+            .insert({
+              user_id: user.id,
+              team_id: selectedTeam
+            });
+        }
+      } else {
+        // If club only or no team selected, remove team assignment if exists
+        const { data: existingPlayer } = await supabase
+          .from('players')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
+        if (existingPlayer) {
+          await supabase
+            .from('players')
+            .update({ team_id: null })
+            .eq('user_id', user.id);
+        }
+      }
       
       toast({
         title: "Success",
@@ -240,7 +258,7 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
               </Select>
             </div>
             
-            {selectedClub && (
+            {selectedClub && selectedClub !== 'no-club' && (
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
                   <Checkbox 

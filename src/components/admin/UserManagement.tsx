@@ -99,7 +99,7 @@ export const UserManagement = () => {
       console.log('Clubs data:', clubs);
 
       // Fetch teams with club associations
-      const { data: teams, error: teamsError } = await supabase
+      const { data: teamsData, error: teamsError } = await supabase
         .from('teams')
         .select('id, team_name, club_id, admin_id');
         
@@ -108,7 +108,16 @@ export const UserManagement = () => {
         throw teamsError;
       }
       
-      console.log('Teams data:', teams);
+      console.log('Teams data:', teamsData);
+      
+      // Get team_settings to get the custom team names
+      const { data: teamSettings, error: settingsError } = await supabase
+        .from('team_settings')
+        .select('*');
+        
+      if (settingsError) {
+        console.error('Error fetching team settings:', settingsError);
+      }
 
       // Get profiles (this should work for anyone)
       const { data: profiles, error: profilesError } = await supabase
@@ -134,15 +143,33 @@ export const UserManagement = () => {
       
       console.log('Players data:', players);
 
+      // Process teams with custom names
+      const teamsWithCustomNames = teamsData.map(team => {
+        // Find the admin profile for this team
+        const adminProfile = profiles?.find(profile => profile.id === team.admin_id);
+        
+        // Look for custom team name in team_settings based on admin_id
+        const teamSetting = teamSettings?.find(setting => {
+          const teamAdmin = adminProfile?.id;
+          return teamAdmin === team.admin_id;
+        });
+        
+        // Use custom team name if found, otherwise use default team name
+        const displayTeamName = teamSetting?.team_name || team.team_name;
+        
+        return {
+          ...team,
+          display_team_name: displayTeamName
+        };
+      });
+
       // Since we can't access admin.listUsers, we'll use the profiles table as our source of users
       // This means we'll miss some Supabase auth metadata, but it's better than no data
       const mergedUsers: User[] = profiles.map(profile => {
         const player = players?.find(p => p.user_id === profile.id);
-        const playerTeam = player ? teams?.find(t => t.id === player.team_id) : null;
-        const adminTeam = teams?.find(t => t.admin_id === profile.id);
-        const team = playerTeam || adminTeam;
+        const team = player ? teamsWithCustomNames?.find(t => t.id === player.team_id) : null;
         
-        const clubId = team?.club_id;
+        const clubId = team?.club_id || profile.club_id;
         const club = clubs?.find(c => c.id === clubId);
         
         return {
@@ -153,7 +180,7 @@ export const UserManagement = () => {
           last_sign_in_at: null, // We don't have this from profiles table
           created_at: profile.created_at || new Date().toISOString(),
           team_id: team?.id,
-          team_name: team?.team_name || 'No Team',
+          team_name: team ? team.display_team_name : 'No Team',
           club_id: clubId,
           club_name: club?.name || 'No Club'
         };
@@ -182,7 +209,7 @@ export const UserManagement = () => {
       });
       
       // Add teams to their clubs
-      teams?.forEach(team => {
+      teamsWithCustomNames?.forEach(team => {
         const clubIndex = team.club_id 
           ? organizedClubs.findIndex(c => c.id === team.club_id)
           : organizedClubs.findIndex(c => c.id === 'no-club');
@@ -190,7 +217,7 @@ export const UserManagement = () => {
         if (clubIndex !== -1) {
           organizedClubs[clubIndex].teams.push({
             id: team.id,
-            name: team.team_name,
+            name: team.display_team_name,
             users: []
           });
         }
@@ -207,14 +234,22 @@ export const UserManagement = () => {
       
       // Assign users to their teams
       mergedUsers.forEach(user => {
-        const clubIndex = user.club_id 
-          ? organizedClubs.findIndex(c => c.id === user.club_id)
-          : organizedClubs.findIndex(c => c.id === 'no-club');
+        let clubIndex: number;
+        
+        if (user.club_id) {
+          clubIndex = organizedClubs.findIndex(c => c.id === user.club_id);
+        } else {
+          clubIndex = organizedClubs.findIndex(c => c.id === 'no-club');
+        }
           
         if (clubIndex !== -1) {
-          const teamIndex = user.team_id
-            ? organizedClubs[clubIndex].teams.findIndex(t => t.id === user.team_id)
-            : organizedClubs[clubIndex].teams.findIndex(t => t.id === `${user.club_id}-no-team`);
+          let teamIndex: number;
+          
+          if (user.team_id) {
+            teamIndex = organizedClubs[clubIndex].teams.findIndex(t => t.id === user.team_id);
+          } else {
+            teamIndex = organizedClubs[clubIndex].teams.findIndex(t => t.id === `${user.club_id || 'no-club'}-no-team`);
+          }
             
           if (teamIndex !== -1) {
             organizedClubs[clubIndex].teams[teamIndex].users.push(user);
@@ -471,6 +506,9 @@ export const UserManagement = () => {
                                               </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
+                                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleAssignUser(user); }}>
+                                                Assign to Club/Team
+                                              </DropdownMenuItem>
                                               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleChangeRole(user.id, 'admin'); }}>
                                                 Make Admin
                                               </DropdownMenuItem>
