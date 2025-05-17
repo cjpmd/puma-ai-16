@@ -90,7 +90,46 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
         .order('team_name');
         
       if (teamsError) throw teamsError;
-      setTeams(teamsData || []);
+      
+      // Get team_settings to get the custom team names
+      const { data: teamSettings, error: settingsError } = await supabase
+        .from('team_settings')
+        .select('*');
+        
+      if (settingsError) {
+        console.error('Error fetching team settings:', settingsError);
+      }
+      
+      // Fetch admin profiles to help match team settings with teams
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*');
+        
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+      
+      // Merge team data with custom team names from team_settings
+      const teamsWithCustomNames = teamsData.map(team => {
+        // Find the admin profile for this team
+        const adminProfile = profiles?.find(profile => profile.id === team.admin_id);
+        
+        // Look for custom team name in team_settings based on admin_id
+        const teamSetting = teamSettings?.find(setting => {
+          const teamAdmin = adminProfile?.id;
+          return teamAdmin === team.admin_id;
+        });
+        
+        // Use custom team name if found, otherwise use default team name
+        const displayTeamName = teamSetting?.team_name || team.team_name;
+        
+        return {
+          ...team,
+          display_team_name: displayTeamName  // Add this field for display purposes
+        };
+      });
+      
+      setTeams(teamsWithCustomNames || []);
       
     } catch (error) {
       console.error('Error fetching clubs and teams:', error);
@@ -236,7 +275,7 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
                         <SelectItem value="no-team">No Team</SelectItem>
                         {filteredTeams.map((team) => (
                           <SelectItem key={team.id} value={team.id}>
-                            {team.team_name}
+                            {team.display_team_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
