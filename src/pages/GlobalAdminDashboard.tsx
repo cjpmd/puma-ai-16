@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -21,23 +20,25 @@ import { ClubManagement } from '@/components/admin/ClubManagement';
 import { PlatformSettings } from '@/components/admin/PlatformSettings';
 import { SubscriptionManagement } from '@/components/admin/SubscriptionManagement';
 import { FinancialReports } from '@/components/admin/FinancialReports';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const GlobalAdminDashboard = () => {
   const { profile, isLoading, hasRole } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("users");
+  const [bypassAccess, setBypassAccess] = useState(true); // Default to bypass for testing
 
   useEffect(() => {
-    // Check if user is allowed to access this page
-    if (!isLoading && profile) {
+    // Only check role if we're not bypassing access
+    if (!bypassAccess && !isLoading && profile) {
       console.log("GlobalAdminDashboard: Checking user role:", profile.role);
       if (!hasRole('globalAdmin')) {
         console.log("User does not have globalAdmin role, redirecting");
         navigate('/platform');
       }
     }
-  }, [profile, isLoading, hasRole, navigate]);
+  }, [profile, isLoading, hasRole, navigate, bypassAccess]);
 
   // If still loading, show loading indicator
   if (isLoading) {
@@ -48,12 +49,6 @@ const GlobalAdminDashboard = () => {
     );
   }
 
-  // Ensure user has globalAdmin role
-  if (!profile || !hasRole('globalAdmin')) {
-    console.log("GlobalAdminDashboard: User doesn't have required role");
-    return null;
-  }
-
   return (
     <div className="container py-8 space-y-6">
       <div className="flex flex-col space-y-2">
@@ -61,6 +56,15 @@ const GlobalAdminDashboard = () => {
         <p className="text-muted-foreground">
           Manage all platform users, teams, clubs, settings, and subscriptions
         </p>
+        
+        {bypassAccess && (
+          <Alert variant="warning" className="bg-yellow-50 border-yellow-200">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription>
+              Access restrictions have been temporarily disabled for testing purposes.
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
 
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">

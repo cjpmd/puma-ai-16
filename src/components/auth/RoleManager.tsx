@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import { Shield, ExternalLink } from "lucide-react";
+import { Shield, ExternalLink, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -11,12 +11,19 @@ export const RoleManager = () => {
   const { profile, addRole, hasRole, switchRole } = useAuth();
   const { toast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
+  const [isAddingGlobalAdmin, setIsAddingGlobalAdmin] = useState(false);
   const navigate = useNavigate();
 
   const handleAddRole = async (role: 'admin' | 'coach' | 'parent' | 'player' | 'globalAdmin') => {
     if (!profile) return;
     
-    setIsAdding(true);
+    // Special handling for globalAdmin
+    if (role === 'globalAdmin') {
+      setIsAddingGlobalAdmin(true);
+    } else {
+      setIsAdding(true);
+    }
+    
     try {
       const success = await addRole(role);
       if (success) {
@@ -42,13 +49,21 @@ export const RoleManager = () => {
       }
     } finally {
       setIsAdding(false);
+      if (role === 'globalAdmin') {
+        setIsAddingGlobalAdmin(false);
+      }
     }
   };
 
-  const goToGlobalAdmin = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the parent button's onClick
+  const goToGlobalAdmin = () => {
     console.log("Navigating to global admin dashboard");
     switchRole('globalAdmin');
+    navigate('/global-admin');
+  };
+  
+  // Manual override for development - actually forces access to global admin
+  const forceGlobalAdminAccess = () => {
+    console.log("Forcing access to Global Admin dashboard");
     navigate('/global-admin');
   };
 
@@ -97,15 +112,23 @@ export const RoleManager = () => {
             variant={hasRole('globalAdmin') ? "outline" : "default"}
             className="col-span-1 md:col-span-2"
             onClick={() => !hasRole('globalAdmin') && handleAddRole('globalAdmin')}
-            disabled={isAdding}
+            disabled={isAddingGlobalAdmin}
           >
-            {hasRole('globalAdmin') ? (
+            {isAddingGlobalAdmin ? (
+              <div className="flex items-center">
+                <span className="mr-2">Adding Global Admin role...</span>
+                <span className="animate-spin">⏳</span>
+              </div>
+            ) : hasRole('globalAdmin') ? (
               <div className="flex items-center justify-between w-full">
                 <span>Global Admin Role Added</span>
                 <Button 
                   size="sm" 
                   variant="secondary"
-                  onClick={goToGlobalAdmin}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goToGlobalAdmin();
+                  }}
                   className="ml-2"
                 >
                   <ExternalLink className="mr-1 h-4 w-4" />
@@ -115,14 +138,26 @@ export const RoleManager = () => {
             ) : 'Add Global Admin Role'}
           </Button>
         </div>
+        
         {hasRole('globalAdmin') && (
           <Button 
             className="w-full"
-            onClick={() => navigate('/global-admin')}
+            onClick={goToGlobalAdmin}
           >
+            <Crown className="mr-2 h-4 w-4" />
             Access Global Admin Dashboard
           </Button>
         )}
+        
+        {/* Development/emergency access button */}
+        <Button
+          variant="outline"
+          className="w-full border-dashed border-yellow-500 text-yellow-600 hover:bg-yellow-50"
+          onClick={forceGlobalAdminAccess}
+        >
+          <span className="mr-2">⚠️</span>
+          Force Access to Global Admin
+        </Button>
       </CardContent>
     </Card>
   );

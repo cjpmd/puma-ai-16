@@ -8,7 +8,7 @@ export interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-  const { profile, isLoading, hasRole } = useAuth();
+  const { profile, isLoading, hasRole, activeRole } = useAuth();
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -26,14 +26,23 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
     return <>{children}</>;
   }
 
-  // Check for global admin role first (always has access)
-  if (profile.role === 'globalAdmin') {
-    console.log('User is globalAdmin, granting access to protected route');
-    return <>{children}</>;
+  // Special handling for globalAdmin - attempt to force the active role
+  if (allowedRoles.includes('globalAdmin' as UserRole)) {
+    console.log('Route requires globalAdmin role, checking if user can access');
+    
+    // Check for global admin access directly in the profile or active role
+    if (profile.role === 'globalAdmin' || activeRole === 'globalAdmin') {
+      console.log('User is globalAdmin or has active globalAdmin role, granting access');
+      return <>{children}</>;
+    }
   }
 
   // Check if user has any of the required roles
-  const hasRequiredRole = allowedRoles.some(role => hasRole(role));
+  const hasRequiredRole = allowedRoles.some(role => {
+    const check = hasRole(role);
+    console.log(`Checking if user has role ${role}: ${check ? 'yes' : 'no'}`);
+    return check;
+  });
   
   if (!hasRequiredRole) {
     console.log(`User has role ${profile.role} but needs one of ${allowedRoles.join(', ')}, denying access`);
