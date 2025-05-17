@@ -184,14 +184,14 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
                 <Label htmlFor="club">Club Assignment</Label>
               </div>
               <Select
-                value={selectedClub || ""}
+                value={selectedClub || undefined}
                 onValueChange={(value) => setSelectedClub(value || null)}
               >
                 <SelectTrigger id="club" className="w-full">
                   <SelectValue placeholder="Select a club" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Club</SelectItem>
+                  <SelectItem value="no-club">No Club</SelectItem>
                   {clubs.map((club) => (
                     <SelectItem key={club.id} value={club.id}>
                       {club.name}
@@ -221,7 +221,7 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
                       <Label htmlFor="team">Team Assignment</Label>
                     </div>
                     <Select
-                      value={selectedTeam || ""}
+                      value={selectedTeam || undefined}
                       onValueChange={(value) => setSelectedTeam(value || null)}
                       disabled={filteredTeams.length === 0}
                     >
@@ -233,7 +233,7 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
                         } />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No Team</SelectItem>
+                        <SelectItem value="no-team">No Team</SelectItem>
                         {filteredTeams.map((team) => (
                           <SelectItem key={team.id} value={team.id}>
                             {team.team_name}
