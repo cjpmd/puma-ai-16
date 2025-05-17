@@ -1,7 +1,7 @@
-
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { Users, UserPlus, CalendarDays, School, Building, ShieldCheck, BarChart2, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { RoleManager } from "@/components/auth/RoleManager";
@@ -11,6 +11,13 @@ import { AccountLinkingOptions } from "@/components/auth/AccountLinkingOptions";
 
 export const PlatformLanding = () => {
   const { profile, hasRole } = useAuth();
+  const navigate = useNavigate();
+  
+  // Function to navigate to global admin dashboard
+  const goToGlobalAdmin = () => {
+    console.log("Navigating to global admin dashboard");
+    navigate("/global-admin");
+  };
 
   return (
     <div className="container py-8">
@@ -45,8 +52,8 @@ export const PlatformLanding = () => {
             </CardHeader>
             <CardContent className="pt-6">
               <div className="space-y-4">
-                <Button asChild className="w-full">
-                  <Link to="/global-admin">Global Admin Dashboard</Link>
+                <Button onClick={goToGlobalAdmin} className="w-full">
+                  Global Admin Dashboard
                 </Button>
               </div>
             </CardContent>

@@ -1,4 +1,3 @@
-
 import {
   BrowserRouter,
   Routes,
@@ -19,6 +18,7 @@ import SquadManagement from "./pages/SquadManagement";
 import TeamSettings from "./pages/TeamSettings";
 import CalendarPage from "./components/calendar/CalendarPage";
 import GlobalAdminDashboard from "./pages/GlobalAdminDashboard";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 export function App() {
   const [session, setSession] = useState(null);
@@ -26,9 +26,11 @@ export function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      console.log('Session loaded:', session ? 'Active' : 'None');
     });
 
     supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed:', _event, session ? 'Active' : 'None');
       setSession(session);
     });
   }, []);
@@ -56,7 +58,9 @@ export function App() {
             !session ? (
               <Navigate to="/auth" />
             ) : (
-              <GlobalAdminDashboard />
+              <ProtectedRoute allowedRoles={['globalAdmin']}>
+                <GlobalAdminDashboard />
+              </ProtectedRoute>
             )
           }
         />

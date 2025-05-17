@@ -159,20 +159,50 @@ export const useAuth = () => {
     if (!profile) return false;
     
     try {
-      // Update the user's role in the profiles table
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role })
-        .eq('id', profile.id);
+      // First check if the role is "globalAdmin" - it might not be in the enum
+      if (role === 'globalAdmin') {
+        console.log('Attempting to add globalAdmin role via direct update');
         
-      if (error) {
-        console.error('Error adding role:', error);
-        toast({
-          title: "Error",
-          description: `Failed to add ${role} role`,
-          variant: "destructive"
+        // Try a direct SQL update instead of using the enum
+        const { error } = await supabase.rpc('update_user_role', {
+          p_user_id: profile.id,
+          p_role: 'globalAdmin'
         });
-        return false;
+        
+        if (error) {
+          // If the RPC fails, try a direct update
+          console.warn('RPC failed, trying direct update:', error);
+          const { error: directError } = await supabase
+            .from('profiles')
+            .update({ role: role })
+            .eq('id', profile.id);
+            
+          if (directError) {
+            console.error('Error adding role via direct update:', directError);
+            toast({
+              title: "Error",
+              description: `Failed to add ${role} role. The role may not exist in the database.`,
+              variant: "destructive"
+            });
+            return false;
+          }
+        }
+      } else {
+        // Update the user's role in the profiles table
+        const { error } = await supabase
+          .from('profiles')
+          .update({ role })
+          .eq('id', profile.id);
+          
+        if (error) {
+          console.error('Error adding role:', error);
+          toast({
+            title: "Error",
+            description: `Failed to add ${role} role`,
+            variant: "destructive"
+          });
+          return false;
+        }
       }
       
       // Refresh profile data

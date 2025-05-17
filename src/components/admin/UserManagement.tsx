@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -80,64 +79,135 @@ export const UserManagement = () => {
   const fetchUsersClubsAndTeams = async () => {
     setLoading(true);
     try {
+      console.log('Fetching users, clubs, and teams data for global admin...');
+      
       // Fetch clubs
       const { data: clubs, error: clubsError } = await supabase
         .from('clubs')
         .select('id, name');
         
-      if (clubsError) throw clubsError;
+      if (clubsError) {
+        console.error('Error fetching clubs:', clubsError);
+        throw clubsError;
+      }
+      
+      console.log('Clubs data:', clubs);
 
       // Fetch teams with club associations
       const { data: teams, error: teamsError } = await supabase
         .from('teams')
         .select('id, team_name, club_id, admin_id');
         
-      if (teamsError) throw teamsError;
+      if (teamsError) {
+        console.error('Error fetching teams:', teamsError);
+        throw teamsError;
+      }
+      
+      console.log('Teams data:', teams);
 
       // First get auth users
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      // Using non-admin API as the admin API might not be available for all users
+      let authUsers;
+      try {
+        const { data, error: authError } = await supabase.auth.admin.listUsers();
+        if (authError) {
+          console.warn('Admin API not available, fetching current user only:', authError);
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session?.user) {
+            authUsers = { users: [sessionData.session.user] };
+          }
+        } else {
+          authUsers = data;
+        }
+      } catch (error) {
+        console.warn('Error with auth.admin.listUsers, trying alternative method:', error);
+        // Fallback to fetching profiles directly
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session?.user) {
+          authUsers = { users: [sessionData.session.user] };
+        }
+      }
       
-      if (authError) throw authError;
+      console.log('Auth users fetched:', authUsers?.users?.length);
 
       // Then get profiles with roles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
+      
+      console.log('Profiles data:', profiles);
 
       // Get player-team relationships
       const { data: players, error: playersError } = await supabase
         .from('players')
         .select('id, user_id, team_id');
         
-      if (playersError) throw playersError;
+      if (playersError) {
+        console.error('Error fetching players:', playersError);
+        throw playersError;
+      }
+      
+      console.log('Players data:', players);
 
       // Merge the data to create comprehensive user objects
-      const mergedUsers: User[] = authUsers?.users?.map(user => {
-        const profile = profiles?.find(p => p.id === user.id);
-        const player = players?.find(p => p.user_id === user.id);
-        const playerTeam = player ? teams?.find(t => t.id === player.team_id) : null;
-        const adminTeam = teams?.find(t => t.admin_id === user.id);
-        const team = playerTeam || adminTeam;
-        
-        const clubId = team?.club_id;
-        const club = clubs?.find(c => c.id === clubId);
-        
-        return {
-          id: user.id,
-          email: user.email || 'No Email',
-          role: profile?.role || 'user',
-          name: profile?.name || user.email?.split('@')[0] || 'Unknown',
-          last_sign_in_at: user.last_sign_in_at,
-          created_at: user.created_at,
-          team_id: team?.id,
-          team_name: team?.team_name || 'No Team',
-          club_id: clubId,
-          club_name: club?.name || 'No Club'
-        };
-      }) || [];
-
+      let mergedUsers: User[] = [];
+      
+      if (authUsers?.users) {
+        mergedUsers = authUsers.users.map(user => {
+          const profile = profiles?.find(p => p.id === user.id);
+          const player = players?.find(p => p.user_id === user.id);
+          const playerTeam = player ? teams?.find(t => t.id === player.team_id) : null;
+          const adminTeam = teams?.find(t => t.admin_id === user.id);
+          const team = playerTeam || adminTeam;
+          
+          const clubId = team?.club_id;
+          const club = clubs?.find(c => c.id === clubId);
+          
+          return {
+            id: user.id,
+            email: user.email || 'No Email',
+            role: profile?.role || 'user',
+            name: profile?.name || user.email?.split('@')[0] || 'Unknown',
+            last_sign_in_at: user.last_sign_in_at,
+            created_at: user.created_at,
+            team_id: team?.id,
+            team_name: team?.team_name || 'No Team',
+            club_id: clubId,
+            club_name: club?.name || 'No Club'
+          };
+        });
+      } else if (profiles) {
+        // If we couldn't fetch auth users, build from profiles
+        mergedUsers = profiles.map(profile => {
+          const player = players?.find(p => p.user_id === profile.id);
+          const playerTeam = player ? teams?.find(t => t.id === player.team_id) : null;
+          const adminTeam = teams?.find(t => t.admin_id === profile.id);
+          const team = playerTeam || adminTeam;
+          
+          const clubId = team?.club_id;
+          const club = clubs?.find(c => c.id === clubId);
+          
+          return {
+            id: profile.id,
+            email: profile.email || 'No Email',
+            role: profile.role || 'user',
+            name: profile.name || 'Unknown',
+            last_sign_in_at: null,
+            created_at: profile.created_at || new Date().toISOString(),
+            team_id: team?.id,
+            team_name: team?.team_name || 'No Team',
+            club_id: clubId,
+            club_name: club?.name || 'No Club'
+          };
+        });
+      }
+      
+      console.log('Merged users:', mergedUsers.length);
       setUsers(mergedUsers);
 
       // Organize users by club and team
@@ -223,6 +293,7 @@ export const UserManagement = () => {
           teams: club.teams.filter(team => team.users.length > 0)
         }));
       
+      console.log('Organized clubs with teams:', filteredClubs.length);
       setClubsWithTeams(filteredClubs);
     } catch (error) {
       console.error('Error fetching users and organizations:', error);
