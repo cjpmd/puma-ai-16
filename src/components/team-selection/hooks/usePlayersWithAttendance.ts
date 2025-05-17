@@ -18,6 +18,20 @@ export const usePlayersWithAttendance = () => {
     queryKey: ["all-players"],
     queryFn: async () => {
       try {
+        // First check if status column exists without using the ambiguous table_name
+        const { data: columnData, error: columnError } = await supabase
+          .from('players')
+          .select('status')
+          .limit(1)
+          .maybeSingle();
+          
+        const hasStatusColumn = columnError ? 
+          !columnError.message.includes("column \"status\" does not exist") : 
+          true;
+        
+        console.log("Status column exists:", hasStatusColumn);
+        
+        // Now fetch players with the appropriate query
         const { data, error } = await supabase
           .from("players")
           .select("*")
