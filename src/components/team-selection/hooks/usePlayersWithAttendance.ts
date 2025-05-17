@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from "@/types/player";
+import { columnExists } from "@/utils/database/columnUtils";
 
 interface PlayerWithAttendance extends Omit<Player, 'status'> {
   attendanceStatus?: "available" | "unavailable" | "maybe";
@@ -13,26 +14,29 @@ export const usePlayersWithAttendance = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [playersWithStatus, setPlayersWithStatus] = useState<PlayerWithAttendance[]>([]);
+  const [hasStatusColumn, setHasStatusColumn] = useState<boolean | null>(null);
+
+  // First check if status column exists
+  useEffect(() => {
+    const checkStatusColumn = async () => {
+      try {
+        const hasColumn = await columnExists('players', 'status');
+        console.log("Status column exists:", hasColumn);
+        setHasStatusColumn(hasColumn);
+      } catch (err) {
+        console.error("Error checking for status column:", err);
+        setHasStatusColumn(false);
+      }
+    };
+    
+    checkStatusColumn();
+  }, []);
 
   const { data: players, isLoading: playersLoading, error: playersError } = useQuery({
-    queryKey: ["all-players"],
+    queryKey: ["all-players", hasStatusColumn],
     queryFn: async () => {
       try {
-        // Try to use the get_table_columns function to check if status column exists
-        let hasStatusColumn = false;
-        
-        try {
-          const { data: columns, error: columnsError } = await supabase
-            .rpc('get_table_columns', { p_table_name: 'players' });
-          
-          if (!columnsError && columns) {
-            hasStatusColumn = columns.some((column: any) => column.column_name === 'status');
-          }
-        } catch (err) {
-          console.error("Error checking for status column:", err);
-        }
-        
-        console.log("Status column exists:", hasStatusColumn);
+        console.log("Fetching all players with status column check:", hasStatusColumn);
         
         // Now fetch players with the appropriate query
         let query = supabase.from("players").select("*").order("name");
@@ -51,6 +55,7 @@ export const usePlayersWithAttendance = () => {
         throw err;
       }
     },
+    enabled: hasStatusColumn !== null, // Only run query once we know if status column exists
   });
 
   useEffect(() => {

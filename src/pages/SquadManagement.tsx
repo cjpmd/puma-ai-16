@@ -21,6 +21,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlayerTransferManager } from "@/components/squad/PlayerTransferManager";
 import { useAuth } from "@/hooks/useAuth";
+import { columnExists } from "@/utils/database/columnUtils";
 
 type SortField = "squadNumber" | "technical" | "mental" | "physical" | "goalkeeping";
 type SortOrder = "asc" | "desc";
@@ -29,32 +30,32 @@ const SquadManagement = () => {
   const [sortField, setSortField] = useState<SortField>("squadNumber");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [activeTab, setActiveTab] = useState<string>("squad");
+  const [hasStatusColumn, setHasStatusColumn] = useState<boolean | null>(null);
   const navigate = useNavigate();
   const { profile, hasRole } = useAuth();
   const isAdmin = hasRole('admin') || hasRole('globalAdmin');
 
+  // Check if status column exists
+  useEffect(() => {
+    const checkStatusColumn = async () => {
+      try {
+        const hasColumn = await columnExists('players', 'status');
+        console.log("Status column exists:", hasColumn);
+        setHasStatusColumn(hasColumn);
+      } catch (err) {
+        console.error("Error checking for status column:", err);
+        setHasStatusColumn(false);
+      }
+    };
+    
+    checkStatusColumn();
+  }, []);
+
   const { data: players, isLoading, error } = useQuery({
-    queryKey: ["players"],
+    queryKey: ["players", hasStatusColumn],
     queryFn: async () => {
       try {
-        console.log("Fetching players data...");
-        
-        let hasStatusColumn = false;
-        
-        // First check if status column exists using rpc function
-        try {
-          const { data: columns, error: columnsError } = await supabase
-            .rpc('get_table_columns', { p_table_name: 'players' });
-          
-          if (columnsError) {
-            console.error("Error checking table columns:", columnsError);
-          } else {
-            hasStatusColumn = columns.some((column: any) => column.column_name === 'status');
-            console.log("Status column exists:", hasStatusColumn);
-          }
-        } catch (err) {
-          console.error("Error checking for status column:", err);
-        }
+        console.log("Fetching players data with status column check:", hasStatusColumn);
         
         // Fetch players - adapt query based on status column existence
         let query = supabase
@@ -135,6 +136,7 @@ const SquadManagement = () => {
         throw error;
       }
     },
+    enabled: hasStatusColumn !== null, // Only run once we know if status column exists
   });
 
   const calculateAttributeAverage = (attributes: Player['attributes'] = [], category: string): number => {
@@ -188,11 +190,11 @@ const SquadManagement = () => {
     }
   };
 
-  const sortedPlayers = players ? sortPlayers(players) : [];
-
   const handleRowClick = (playerId: string) => {
     navigate(`/player/${playerId}`);
   };
+
+  const sortedPlayers = players ? sortPlayers(players) : [];
 
   // Show error state if there's an error
   if (error) {
@@ -219,6 +221,29 @@ const SquadManagement = () => {
             >
               Try Again
             </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state if we're still loading data
+  if (isLoading || hasStatusColumn === null) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="container mx-auto space-y-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link to="/">
+                <Button variant="ghost" size="icon">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </Link>
+              <h1 className="text-4xl font-bold">Squad Management</h1>
+            </div>
+          </div>
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground">Loading squad data...</p>
           </div>
         </div>
       </div>
@@ -259,9 +284,7 @@ const SquadManagement = () => {
           </TabsList>
           
           <TabsContent value="squad">
-            {isLoading ? (
-              <div className="text-center py-8">Loading squad data...</div>
-            ) : sortedPlayers && sortedPlayers.length > 0 ? (
+            {sortedPlayers && sortedPlayers.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>

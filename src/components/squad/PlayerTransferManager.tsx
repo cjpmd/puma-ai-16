@@ -23,6 +23,7 @@ import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlayerTransferDialog } from '@/components/admin/PlayerTransferDialog';
 import { TransferApprovalDialog } from '@/components/admin/TransferApprovalDialog';
+import { columnExists, tableExists } from '@/utils/database/columnUtils';
 
 interface PlayerTransferManagerProps {
   teamId?: string;
@@ -41,65 +42,36 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [selectedTransfer, setSelectedTransfer] = useState<any>(null);
   const [statusColumnExists, setStatusColumnExists] = useState(false);
+  const [transfersTableExists, setTransfersTableExists] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    checkStatusColumn();
+    checkTables();
     fetchPlayersData();
   }, [teamId]);
 
-  // Check if status column exists in players table
-  const checkStatusColumn = async () => {
+  // Check required database structure
+  const checkTables = async () => {
     try {
-      // Try to use the RPC function
-      const { data, error } = await supabase
-        .rpc('get_table_columns', { p_table_name: 'players' });
-      
-      if (error) {
-        console.error("Error checking table columns:", error);
-        return;
-      }
-      
-      const hasStatusColumn = data.some((column: any) => column.column_name === 'status');
+      // Check if status column exists
+      const hasStatusColumn = await columnExists('players', 'status');
       console.log("Status column exists:", hasStatusColumn);
       setStatusColumnExists(hasStatusColumn);
       
+      // Check if transfers table exists
+      const hasTransfersTable = await tableExists('player_transfers');
+      console.log("Player transfers table exists:", hasTransfersTable);
+      setTransfersTableExists(hasTransfersTable);
     } catch (error) {
-      console.error("Error checking status column:", error);
+      console.error("Error checking database structure:", error);
       setStatusColumnExists(false);
+      setTransfersTableExists(false);
     }
   };
 
   const fetchPlayersData = async () => {
     setLoading(true);
     try {
-      // First, ensure we have the player_transfers table for tracking transfers
-      await supabase.rpc('create_table_if_not_exists', { 
-        p_table_name: 'player_transfers',
-        p_table_definition: `
-          id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-          player_id uuid REFERENCES players(id) NOT NULL,
-          from_team_id uuid REFERENCES teams(id),
-          to_team_id uuid REFERENCES teams(id),
-          transfer_date timestamp with time zone DEFAULT now(),
-          status text DEFAULT 'pending',
-          reason text,
-          type text NOT NULL,
-          created_at timestamp with time zone DEFAULT now(),
-          updated_at timestamp with time zone
-        `
-      });
-      
-      // Add status column to players table if it doesn't exist
-      await supabase.rpc('add_column_if_not_exists', {
-        p_table_name: 'players',
-        p_column_name: 'status',
-        p_column_def: 'text DEFAULT \'active\''
-      });
-      
-      // Re-check if status column was added
-      await checkStatusColumn();
-      
       // Fetch current active players - adapt query based on status column existence
       let query = supabase
         .from('players')
@@ -146,17 +118,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       }
         
       if (teamId) {
-        // Also include players that were transferred from this team
-        const { data: transfers } = await supabase
-          .from('player_transfers')
-          .select('player_id')
-          .eq('from_team_id', teamId)
-          .eq('status', 'completed');
-          
-        if (transfers && transfers.length > 0) {
-          const playerIds = transfers.map(t => t.player_id);
-          previousQuery = previousQuery.or(`id.in.(${playerIds.join(',')}),team_id.is.null`);
-        }
+        previousQuery = previousQuery.eq('team_id', teamId);
       }
       
       const { data: previousPlayersData, error: previousError } = await previousQuery;
@@ -164,26 +126,57 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       if (previousError) throw previousError;
       setPreviousPlayers(previousPlayersData || []);
       
-      // Fetch pending transfers
-      let transfersQuery = supabase
-        .from('player_transfers')
-        .select(`
-          *,
-          player:player_id (*),
-          from_team:from_team_id (*),
-          to_team:to_team_id (*)
-        `)
-        .eq('status', 'pending');
-      
-      if (teamId) {
-        // If we're in a specific team view, only show transfers to/from this team
-        transfersQuery = transfersQuery.or(`from_team_id.eq.${teamId},to_team_id.eq.${teamId}`);
+      // Only fetch transfers if the table exists
+      if (transfersTableExists) {
+        // Try fetching pending transfers with simpler query (no joins)
+        try {
+          const { data: transfersData, error: transfersError } = await supabase
+            .from('player_transfers')
+            .select('*')
+            .eq('status', 'pending');
+            
+          if (transfersError) throw transfersError;
+          
+          // Then fetch related data separately for each transfer
+          const enhancedTransfers = await Promise.all((transfersData || []).map(async (transfer) => {
+            // Get player details
+            const { data: player } = await supabase
+              .from('players')
+              .select('*')
+              .eq('id', transfer.player_id)
+              .single();
+              
+            // Get from team
+            const { data: fromTeam } = transfer.from_team_id ? await supabase
+              .from('teams')
+              .select('*')
+              .eq('id', transfer.from_team_id)
+              .single() : { data: null };
+              
+            // Get to team
+            const { data: toTeam } = transfer.to_team_id ? await supabase
+              .from('teams')
+              .select('*')
+              .eq('id', transfer.to_team_id)
+              .single() : { data: null };
+              
+            return {
+              ...transfer,
+              player,
+              from_team: fromTeam,
+              to_team: toTeam
+            };
+          }));
+          
+          setPendingTransfers(enhancedTransfers);
+        } catch (error) {
+          console.error('Error fetching pending transfers:', error);
+          setPendingTransfers([]);
+        }
+      } else {
+        console.log("Transfers table doesn't exist, skipping transfer data fetch");
+        setPendingTransfers([]);
       }
-      
-      const { data: transfersData, error: transfersError } = await transfersQuery;
-      
-      if (transfersError) throw transfersError;
-      setPendingTransfers(transfersData || []);
       
     } catch (error) {
       console.error('Error fetching players data:', error);
@@ -198,11 +191,29 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
   };
 
   const handleTransferClick = (player: any) => {
+    if (!transfersTableExists) {
+      toast({
+        title: "Transfer System Unavailable",
+        description: "The transfer system is not set up yet. Please contact an administrator.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setSelectedPlayer(player);
     setTransferDialogOpen(true);
   };
 
   const handleApprovalClick = (transfer: any) => {
+    if (!transfersTableExists) {
+      toast({
+        title: "Transfer System Unavailable",
+        description: "The transfer system is not set up yet. Please contact an administrator.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setSelectedTransfer(transfer);
     setApprovalDialogOpen(true);
   };
@@ -242,8 +253,25 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
     }
   };
 
+  const renderTransferSystemMessage = () => {
+    if (!transfersTableExists) {
+      return (
+        <div className="bg-amber-50 border border-amber-300 rounded-md p-4 mb-4">
+          <h3 className="text-amber-800 font-medium">Transfer System Not Available</h3>
+          <p className="text-amber-700 text-sm mt-1">
+            The player transfer system tables have not been set up in the database yet. 
+            Database migrations are required to enable this functionality.
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-4">
+      {renderTransferSystemMessage()}
+      
       <div className="flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
         <Tabs 
           value={activeTab} 
@@ -420,6 +448,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
                               variant="outline" 
                               size="sm" 
                               onClick={() => handleTransferClick(player)}
+                              disabled={!transfersTableExists}
                             >
                               <ArrowLeft className="h-4 w-4 mr-2" />
                               Reactivate
@@ -448,7 +477,13 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {getFilteredTransfers(pendingTransfers).length === 0 ? (
+                  {!transfersTableExists ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                        Transfer system is not enabled
+                      </TableCell>
+                    </TableRow>
+                  ) : getFilteredTransfers(pendingTransfers).length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                         No pending transfers
@@ -480,7 +515,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          {isAdmin && transfer.to_team_id === teamId && (
+                          {isAdmin && teamId && transfer.to_team_id === teamId && (
                             <Button 
                               variant="outline" 
                               size="sm"
@@ -501,7 +536,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       )}
       
       {/* Transfer Dialog */}
-      {selectedPlayer && (
+      {selectedPlayer && transfersTableExists && (
         <PlayerTransferDialog
           open={transferDialogOpen}
           onOpenChange={setTransferDialogOpen}
@@ -511,7 +546,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       )}
       
       {/* Approval Dialog */}
-      {selectedTransfer && (
+      {selectedTransfer && transfersTableExists && (
         <TransferApprovalDialog
           open={approvalDialogOpen}
           onOpenChange={setApprovalDialogOpen}
