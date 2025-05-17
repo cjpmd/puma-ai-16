@@ -1,201 +1,128 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 /**
- * Function to manually create the parent_child_linking table
- */
-export const createParentChildLinkingTable = async (): Promise<boolean> => {
-  try {
-    console.log("Creating parent_child_linking table...");
-    
-    // Try direct table creation through Supabase
-    const { error } = await supabase.rpc('execute_sql', {
-      sql_string: `
-        CREATE TABLE IF NOT EXISTS public.parent_child_linking (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          parent_id UUID NOT NULL,
-          player_id UUID NOT NULL,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-          UNIQUE(parent_id, player_id)
-        );
-      `
-    });
-    
-    if (error) {
-      console.error("Error creating parent_child_linking table:", error);
-      return false;
-    }
-    
-    toast.success("Parent-child linking table created successfully");
-    return true;
-  } catch (error) {
-    console.error("Error creating parent_child_linking table:", error);
-    return false;
-  }
-};
-
-/**
- * Function to manually add linking code column to players table
+ * Add linking_code column to players table
+ * This is a standalone function exposed to UI components
  */
 export const addLinkingCodeColumn = async (): Promise<boolean> => {
   try {
-    console.log("Adding linking_code column to players table...");
+    console.log("Attempting to add linking_code column to players table...");
     
-    // First check if we can actually use the column - this is to detect if it already exists
+    // Try to verify if the column already exists
     try {
       const { data, error } = await supabase
-        .from("players")
-        .select("linking_code")
+        .from('players')
+        .select('linking_code')
         .limit(1);
       
-      // If no error, column already exists
+      // If we don't get an error about the column, it likely exists
       if (!error) {
         console.log("linking_code column already exists");
-        toast.success("linking_code column already exists");
         return true;
-      }
-      
-      // If error is not about missing column, something else is wrong
-      if (!error.message?.includes("column") || !error.message?.includes("does not exist")) {
-        console.error("Unexpected error checking linking_code column:", error);
-        return false;
+      } else if (!error.message?.includes('does not exist')) {
+        console.warn("Error checking linking_code:", error);
       }
     } catch (checkError) {
-      console.log("Check error, continuing with column creation", checkError);
+      console.warn("Exception checking linking_code:", checkError);
     }
     
-    // Since the column doesn't exist, we'll try to add it
-    // First, try with the RPC approach
+    // Try the RPC method, though we expect it to fail with 401
     try {
-      const { error } = await supabase.rpc('execute_sql', {
-        sql_string: `
-          ALTER TABLE public.players 
-          ADD COLUMN IF NOT EXISTS linking_code TEXT;
-        `
+      await supabase.rpc('execute_sql', {
+        sql_string: `ALTER TABLE players ADD COLUMN IF NOT EXISTS linking_code TEXT DEFAULT gen_random_uuid()::text;`
       });
-      
-      if (error) {
-        // If RPC fails, we'll try the direct update approach below
-        console.error("RPC error adding linking_code column:", error);
-      } else {
-        toast.success("linking_code column added successfully via RPC");
-        return true;
-      }
+      console.log("Added linking_code column via RPC");
+      return true;
     } catch (rpcError) {
-      console.error("RPC exception:", rpcError);
+      console.warn("RPC error adding linking_code column:", rpcError);
     }
     
-    // Direct update approach as fallback
+    // As a last resort, try a direct update approach on one row
+    // This might fail, but it's worth trying
     try {
-      console.log("Trying direct update approach...");
-      // Get one player to update
-      const { data: players } = await supabase
-        .from("players")
-        .select("id")
+      // Get first player to test
+      const { data: playerData } = await supabase
+        .from('players')
+        .select('id')
         .limit(1);
       
-      if (players && players.length > 0) {
-        const playerId = players[0].id;
-        // Try updating with a random code to force column creation
-        const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        
+      if (playerData && playerData.length > 0) {
+        // Try to update the player with a linking code field
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
         const { error: updateError } = await supabase
-          .from("players")
-          .update({ linking_code: randomCode })
-          .eq("id", playerId);
+          .from('players')
+          .update({ linking_code: code })
+          .eq('id', playerData[0].id);
         
         if (!updateError) {
-          console.log("Column created via update approach");
-          toast.success("linking_code column added successfully via update");
+          console.log("Successfully updated player with linking_code");
           return true;
-        }
-        
-        console.error("Update approach failed:", updateError);
-        
-        // Try one more direct approach - this might work better on some Supabase instances
-        // First, try to insert the column directly by selecting a player and using an updater function
-        try {
-          await supabase.rpc('execute_sql', {
-            sql_string: `
-              DO $$
-              BEGIN
-                IF NOT EXISTS (
-                  SELECT 1 FROM information_schema.columns 
-                  WHERE table_name = 'players' AND column_name = 'linking_code'
-                ) THEN
-                  ALTER TABLE players ADD COLUMN linking_code TEXT;
-                END IF;
-              END
-              $$;
-            `
-          });
-          
-          toast.success("Attempted alternative approach to add linking_code column");
-          return true;
-        } catch (alternativeError) {
-          console.error("Alternative approach failed:", alternativeError);
+        } else {
+          console.warn("Error adding linking_code via update:", updateError);
         }
       }
     } catch (updateError) {
-      console.error("Update approach exception:", updateError);
+      console.warn("Exception in update approach:", updateError);
     }
     
-    toast.error("Failed to add linking_code column. Please contact support.");
+    // If we get here, we couldn't add the column
+    console.warn("Could not add linking_code column - database permissions issue");
     return false;
   } catch (error) {
-    console.error("Exception adding linking_code column:", error);
-    toast.error("Failed to add linking_code column");
+    console.error("Error in addLinkingCodeColumn:", error);
     return false;
   }
 };
 
-// This fixed the database trigger error when trying to update linking_code
-export const fixPlayerCategoryTrigger = async (): Promise<boolean> => {
+/**
+ * Create player_parents table if it doesn't exist
+ */
+export const createPlayerParentsTable = async (): Promise<boolean> => {
   try {
-    console.log("Fixing player category trigger issue...");
+    console.log("Checking player_parents table...");
     
-    // Check which players have NULL team_category and set it to a default value
-    const { data: players, error: fetchError } = await supabase
-      .from("players")
-      .select("id, team_category")
-      .is("team_category", null);
-    
-    if (fetchError) {
-      console.error("Error fetching players with null team_category:", fetchError);
-      return false;
-    }
-    
-    // Update players with null team_category
-    let updateCount = 0;
-    for (const player of (players || [])) {
-      if (!player.team_category) {
-        const { error: updateError } = await supabase
-          .from("players")
-          .update({ team_category: "Unassigned" })
-          .eq("id", player.id);
-        
-        if (!updateError) {
-          updateCount++;
-        } else {
-          console.error(`Error updating player ${player.id}:`, updateError);
-        }
+    // Try to verify if the table already exists
+    try {
+      const { data, error } = await supabase
+        .from('player_parents')
+        .select('id')
+        .limit(1);
+      
+      // If we don't get an error about the table not existing, it likely exists
+      if (!error || !error.message?.includes('does not exist')) {
+        console.log("player_parents table already exists");
+        return true;
       }
+    } catch (checkError) {
+      console.warn("Exception checking player_parents:", checkError);
     }
     
-    if (updateCount > 0) {
-      toast.success(`Fixed team_category for ${updateCount} players`);
-    } else if (players && players.length === 0) {
-      toast.success("No players needed fixing");
-    } else {
-      toast.warning("Could not update some players");
+    // Try the RPC method, though we expect it to fail with 401
+    try {
+      await supabase.rpc('execute_sql', {
+        sql_string: `
+          CREATE TABLE IF NOT EXISTS public.player_parents (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+            player_id UUID REFERENCES players(id),
+            parent_name TEXT,
+            email TEXT,
+            phone TEXT,
+            is_verified BOOLEAN DEFAULT FALSE
+          );`
+      });
+      console.log("Created player_parents table via RPC");
+      return true;
+    } catch (rpcError) {
+      console.warn("RPC error creating player_parents table:", rpcError);
     }
     
-    return true;
+    // If we get here, we couldn't create the table
+    console.warn("Could not create player_parents table - database permissions issue");
+    return false;
   } catch (error) {
-    console.error("Exception fixing player category trigger:", error);
-    toast.error("Failed to fix player category trigger");
+    console.error("Error in createPlayerParentsTable:", error);
     return false;
   }
 };

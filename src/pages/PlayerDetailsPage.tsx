@@ -35,19 +35,8 @@ const PlayerDetailsPage = () => {
         console.log(`Profile image column available: ${exists}`);
         setProfileImageAvailable(exists);
         
-        // If column doesn't exist, let's try to add it
-        if (!exists) {
-          try {
-            // Try to add profile_image column using execute_sql function
-            await supabase.rpc('execute_sql', {
-              sql_string: `ALTER TABLE players ADD COLUMN IF NOT EXISTS profile_image TEXT;`
-            });
-            console.log("Added profile_image column to players table");
-            setProfileImageAvailable(true);
-          } catch (alterError) {
-            console.error("Error adding profile_image column:", alterError);
-          }
-        }
+        // Note: We're no longer trying to add the column since it requires SQL execution privileges
+        // We'll just adapt the UI to work with or without the column
       } catch (error) {
         console.error('Error checking profile image column:', error);
         setProfileImageAvailable(false);
@@ -98,9 +87,10 @@ const PlayerDetailsPage = () => {
         .eq("player_id", id)
         .order("created_at", { ascending: true });
 
+      // Handle potential error silently
       if (historyError) {
-        console.error("Error fetching player attribute history:", historyError);
-        throw historyError;
+        console.warn("Error fetching player attribute history:", historyError);
+        // Continue without history data rather than throwing error
       }
 
       // Transform history data into the required format
@@ -123,13 +113,13 @@ const PlayerDetailsPage = () => {
       // Transform the player data to match the Player type
       const transformedPlayer: Player = {
         id: playerResult.id,
-        name: playerResult.name,
-        age: calculatedAge,
+        name: playerResult.name || "Unknown Player",
+        age: calculatedAge || 0,
         dateOfBirth: playerResult.date_of_birth,
-        squadNumber: playerResult.squad_number,
-        playerType: playerResult.player_type as PlayerType,
+        squadNumber: playerResult.squad_number || 0,
+        playerType: playerResult.player_type as PlayerType || "OUTFIELD",
         profileImage: profileImageAvailable ? playerResult.profile_image : undefined,
-        teamCategory: playerResult.team_category,
+        teamCategory: playerResult.team_category || "",
         attributes: playerResult.attributes ? playerResult.attributes.map((attr: any) => ({
           id: attr.id,
           name: attr.name,
@@ -141,7 +131,7 @@ const PlayerDetailsPage = () => {
         attributeHistory,
         created_at: playerResult.created_at,
         updated_at: playerResult.updated_at,
-        status: playerResult.status,
+        status: playerResult.status || "active",
       };
 
       return transformedPlayer;
@@ -166,47 +156,27 @@ const PlayerDetailsPage = () => {
       const fetchParents = async () => {
         setIsLoading(true);
         try {
-          // Check if player_parents table exists
-          const tableCheck = await supabase
-            .from('pg_tables')
-            .select('tablename')
-            .eq('schemaname', 'public')
-            .eq('tablename', 'player_parents');
-            
-          if (!tableCheck.data || tableCheck.data.length === 0) {
-            console.log("player_parents table doesn't exist, creating it");
-            try {
-              await supabase.rpc('execute_sql', {
-                sql_string: `
-                  CREATE TABLE IF NOT EXISTS public.player_parents (
-                    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-                    created_at timestamp with time zone DEFAULT now(),
-                    player_id uuid REFERENCES players(id),
-                    parent_name TEXT,
-                    email TEXT,
-                    phone TEXT,
-                    is_verified BOOLEAN DEFAULT FALSE
-                  );
-                `
-              });
-              console.log("player_parents table created");
-            } catch (createError) {
-              console.error("Failed to create player_parents table:", createError);
-            }
-          }
-          
+          // Don't try to create the table, just check if it exists
           const { data, error } = await supabase
             .from("player_parents")
             .select("*")
             .eq("player_id", id);
 
           if (error) {
-            console.error("Error fetching parents:", error);
+            // If table doesn't exist, handle it silently
+            if (error.code === '42P01') { // Relation doesn't exist
+              console.warn("player_parents table doesn't exist");
+              setParents([]);
+            } else {
+              console.error("Error fetching parents:", error);
+              setParents([]);
+            }
           } else {
             setParents(data || []);
           }
         } catch (error) {
           console.error("Failed to fetch parents:", error);
+          setParents([]);
         } finally {
           setIsLoading(false);
         }
@@ -227,14 +197,16 @@ const PlayerDetailsPage = () => {
     // Refresh parents after saving
     if (id) {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("player_parents")
           .select("*")
           .eq("player_id", id);
         
-        setParents(data || []);
-        // Force data refresh
-        setDataVersion(v => v + 1);
+        if (!error) {
+          setParents(data || []);
+          // Force data refresh
+          setDataVersion(v => v + 1);
+        }
       } catch (error) {
         console.error("Error refreshing parents after save:", error);
       }
