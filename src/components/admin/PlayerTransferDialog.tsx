@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -167,21 +166,50 @@ export const PlayerTransferDialog = ({
     
     setSaving(true);
     try {
-      // Create player_transfers table if it doesn't exist
-      await supabase.rpc('create_table_if_not_exists', { 
-        p_table_name: 'player_transfers',
-        p_table_definition: `
-          id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-          player_id uuid REFERENCES players(id) NOT NULL,
-          from_team_id uuid REFERENCES teams(id),
-          to_team_id uuid REFERENCES teams(id),
-          transfer_date timestamp with time zone DEFAULT now(),
-          status text DEFAULT 'pending',
-          reason text,
-          type text NOT NULL,
-          created_at timestamp with time zone DEFAULT now()
-        `
-      });
+      // Check if player_transfers table exists
+      const { data: tablesData, error: tablesError } = await supabase
+        .from('pg_tables')
+        .select('tablename')
+        .eq('schemaname', 'public')
+        .eq('tablename', 'player_transfers');
+      
+      let tableExists = tablesData && tablesData.length > 0;
+      
+      // If table doesn't exist, try to create it
+      if (!tableExists) {
+        try {
+          // Attempt to create the player_transfers table
+          const createTableSQL = `
+            CREATE TABLE IF NOT EXISTS public.player_transfers (
+              id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+              player_id uuid REFERENCES players(id) NOT NULL,
+              from_team_id uuid REFERENCES teams(id),
+              to_team_id uuid REFERENCES teams(id),
+              transfer_date timestamp with time zone DEFAULT now(),
+              status text DEFAULT 'pending',
+              reason text,
+              type text NOT NULL,
+              created_at timestamp with time zone DEFAULT now(),
+              updated_at timestamp with time zone DEFAULT now()
+            );
+          `;
+          
+          // Try to use the execute_sql RPC function if available
+          await supabase.rpc('execute_sql', { sql_string: createTableSQL });
+          
+          console.log('Successfully created player_transfers table');
+          tableExists = true;
+        } catch (createError) {
+          console.error('Failed to create player_transfers table:', createError);
+          toast({
+            title: "Error",
+            description: "Failed to create transfers table. Please contact an administrator.",
+            variant: "destructive"
+          });
+          setSaving(false);
+          return;
+        }
+      }
       
       // Create a transfer record
       const transferData = {
@@ -190,7 +218,8 @@ export const PlayerTransferDialog = ({
         to_team_id: transferType === 'transfer' ? selectedTeam : null,
         reason: transferReason,
         type: transferType,
-        status: transferType === 'transfer' ? 'pending' : 'completed'
+        status: transferType === 'transfer' ? 'pending' : 'completed',
+        updated_at: new Date().toISOString()
       };
       
       const { error: transferError } = await supabase
@@ -201,12 +230,13 @@ export const PlayerTransferDialog = ({
       
       // If the player is leaving (not transferring), update their team_id to null immediately
       if (transferType === 'leave') {
-        // Update player status to 'inactive' or create a player_status table if necessary
+        // Update player status to 'inactive'
         const { error: playerUpdateError } = await supabase
           .from('players')
           .update({ 
             team_id: null,
-            status: 'inactive'
+            status: 'inactive',
+            updated_at: new Date().toISOString()
           })
           .eq('id', player.id);
           

@@ -1,5 +1,7 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { createParentChildLinkingColumns } from "./parentChildLinking";
 
 // Define the SQL function to execute arbitrary SQL
 const createExecuteSqlFunction = `
@@ -84,7 +86,9 @@ export async function initializeDatabase(): Promise<boolean> {
         squad_number INT,
         team_category TEXT,
         date_of_birth DATE,
-        player_type TEXT
+        player_type TEXT,
+        status TEXT DEFAULT 'active',
+        profile_image TEXT
       `
     );
 
@@ -120,6 +124,25 @@ export async function initializeDatabase(): Promise<boolean> {
       `
     );
     
+    // Create player_transfers table
+    await createTableIfNotExists(
+      'player_transfers',
+      `
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+        player_id UUID REFERENCES players(id),
+        from_team_id UUID REFERENCES teams(id),
+        to_team_id UUID REFERENCES teams(id),
+        status TEXT DEFAULT 'pending',
+        type TEXT NOT NULL,
+        reason TEXT
+      `
+    );
+    
+    // Create parent-child linking columns
+    await createParentChildLinkingColumns();
+    
     return true;
   } catch (error) {
     console.error("Database initialization failed:", error);
@@ -128,47 +151,3 @@ export async function initializeDatabase(): Promise<boolean> {
   }
 }
 
-// Create table columns for parent-child linking
-export async function createParentChildLinkingColumns(): Promise<boolean> {
-  try {
-    console.log("Setting up parent-child linking columns...");
-    
-    const sqlStatements = [
-      // Add linking_code to players
-      `ALTER TABLE IF EXISTS public.players 
-       ADD COLUMN IF NOT EXISTS linking_code TEXT DEFAULT gen_random_uuid()::text;`,
-      
-      // Add self_linked to players
-      `ALTER TABLE IF EXISTS public.players 
-       ADD COLUMN IF NOT EXISTS self_linked BOOLEAN DEFAULT FALSE;`,
-      
-      // Add user_id to players
-      `ALTER TABLE IF EXISTS public.players 
-       ADD COLUMN IF NOT EXISTS user_id UUID DEFAULT NULL;`,
-      
-      // Add is_verified to player_parents
-      `ALTER TABLE IF EXISTS public.player_parents 
-       ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;`
-    ];
-    
-    for (const sql of sqlStatements) {
-      try {
-        // Try standard RPC first
-        await supabase.rpc('execute_sql', { sql_string: sql });
-      } catch (error) {
-        console.warn(`RPC error, trying direct SQL: ${error}`);
-        // Try direct SQL as fallback
-        try {
-          await supabase.from('_exec_sql').select('*').eq('query', sql);
-        } catch (innerError) {
-          console.error("Direct SQL execution failed:", innerError);
-        }
-      }
-    }
-    
-    return true;
-  } catch (error) {
-    console.error("Failed to create parent-child linking columns:", error);
-    return false;
-  }
-}

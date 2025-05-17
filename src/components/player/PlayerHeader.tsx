@@ -23,7 +23,7 @@ export const PlayerHeader = ({
   const [imageError, setImageError] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(player.profileImage);
   const [lastUpdate, setLastUpdate] = useState(Date.now());
-  const [columnAvailable, setColumnAvailable] = useState(false);
+  const [columnAvailable, setColumnAvailable] = useState<boolean | null>(null);
   
   // Check if profile_image column exists
   useEffect(() => {
@@ -32,6 +32,20 @@ export const PlayerHeader = ({
         const exists = await columnExists('players', 'profile_image');
         console.log(`Profile image column exists: ${exists}`);
         setColumnAvailable(exists);
+        
+        // If column doesn't exist, try to add it
+        if (!exists) {
+          try {
+            // Try to add profile_image column
+            await supabase.rpc('execute_sql', {
+              sql_string: `ALTER TABLE players ADD COLUMN IF NOT EXISTS profile_image TEXT;`
+            });
+            console.log("Added profile_image column to players table");
+            setColumnAvailable(true);
+          } catch (alterError) {
+            console.error("Error adding profile_image column:", alterError);
+          }
+        }
         
         if (!exists && profileImage) {
           console.log("Profile image column doesn't exist but we have an image - using local state");
@@ -95,7 +109,9 @@ export const PlayerHeader = ({
       }
     };
     
-    fetchLatestProfileImage();
+    if (columnAvailable !== null) {
+      fetchLatestProfileImage();
+    }
   }, [player.id, player.profileImage, lastUpdate, columnAvailable]);
   
   const handlePlayerUpdated = () => {

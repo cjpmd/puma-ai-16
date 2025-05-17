@@ -48,7 +48,6 @@ export const tableExists = async (tableName: string): Promise<boolean> => {
       .limit(1);
     
     // If there's no error, the table exists
-    // Note: there could be permission errors, but those would be different
     if (!error) {
       return true;
     }
@@ -115,3 +114,4 @@ export const addColumnIfNotExists = async (
     return false;
   }
 };
+

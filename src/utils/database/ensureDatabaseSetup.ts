@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ensureParentChildLinkingSetup } from "./parentChildLinking";
 import { toast } from "sonner";
@@ -36,7 +35,8 @@ export async function ensureDatabaseSetup() {
       'players', 
       'performance_categories', 
       'game_formats',
-      'team_settings'
+      'team_settings',
+      'player_transfers'
     ];
     
     const tableChecks = await Promise.all(

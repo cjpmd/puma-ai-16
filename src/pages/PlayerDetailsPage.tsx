@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ParentDetailsDialog } from "@/components/parents/ParentDetailsDialog";
 import { Player, PlayerType } from "@/types/player";
 import { differenceInYears } from "date-fns";
+import { toast } from "sonner";
 import { columnExists } from "@/utils/database";
 
 interface Parent {
@@ -22,31 +23,49 @@ const PlayerDetailsPage = () => {
   const [parents, setParents] = useState<Parent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dataVersion, setDataVersion] = useState(0); // Add version to force data refresh
-  const [profileImageAvailable, setProfileImageAvailable] = useState(false);
+  const [profileImageAvailable, setProfileImageAvailable] = useState<boolean | null>(null);
 
-  // Check for profile_image column
+  // Check for profile_image column and add it if missing
   useEffect(() => {
-    const checkProfileImageColumn = async () => {
+    const checkAndAddProfileImageColumn = async () => {
       if (!id) return;
       
       try {
         const exists = await columnExists('players', 'profile_image');
         console.log(`Profile image column available: ${exists}`);
         setProfileImageAvailable(exists);
+        
+        // If column doesn't exist, let's try to add it
+        if (!exists) {
+          try {
+            // Try to add profile_image column using execute_sql function
+            await supabase.rpc('execute_sql', {
+              sql_string: `ALTER TABLE players ADD COLUMN IF NOT EXISTS profile_image TEXT;`
+            });
+            console.log("Added profile_image column to players table");
+            setProfileImageAvailable(true);
+          } catch (alterError) {
+            console.error("Error adding profile_image column:", alterError);
+          }
+        }
       } catch (error) {
         console.error('Error checking profile image column:', error);
         setProfileImageAvailable(false);
       }
     };
     
-    checkProfileImageColumn();
+    checkAndAddProfileImageColumn();
   }, [id]);
 
   // Query for player details, attributes, and attribute history
-  const { data: playerData, refetch: refetchPlayerData } = useQuery({
+  const { data: playerData, refetch: refetchPlayerData, isLoading: playerLoading, error: playerError } = useQuery({
     queryKey: ["player-with-attributes", id, dataVersion],
     queryFn: async () => {
       console.log("Fetching player data for ID:", id);
+      
+      if (!id) {
+        throw new Error("No player ID provided");
+      }
       
       // Fetch player details
       const { data: playerResult, error: playerError } = await supabase
@@ -58,7 +77,10 @@ const PlayerDetailsPage = () => {
         .eq("id", id)
         .single();
 
-      if (playerError) throw playerError;
+      if (playerError) {
+        console.error("Error fetching player:", playerError);
+        throw playerError;
+      }
 
       console.log("Player data fetched:", playerResult);
       
@@ -66,7 +88,7 @@ const PlayerDetailsPage = () => {
       if (profileImageAvailable && playerResult.profile_image) {
         console.log("Profile image URL:", playerResult.profile_image);
       } else {
-        console.log("Profile image URL:", undefined);
+        console.log("No profile image available");
       }
 
       // Fetch attribute history
@@ -76,7 +98,10 @@ const PlayerDetailsPage = () => {
         .eq("player_id", id)
         .order("created_at", { ascending: true });
 
-      if (historyError) throw historyError;
+      if (historyError) {
+        console.error("Error fetching player attribute history:", historyError);
+        throw historyError;
+      }
 
       // Transform history data into the required format
       const attributeHistory: Record<string, { date: string; value: number }[]> = {};
@@ -105,21 +130,35 @@ const PlayerDetailsPage = () => {
         playerType: playerResult.player_type as PlayerType,
         profileImage: profileImageAvailable ? playerResult.profile_image : undefined,
         teamCategory: playerResult.team_category,
-        attributes: playerResult.attributes.map((attr: any) => ({
+        attributes: playerResult.attributes ? playerResult.attributes.map((attr: any) => ({
           id: attr.id,
           name: attr.name,
           value: attr.value,
           category: attr.category,
-        })),
+          player_id: attr.player_id,
+          created_at: attr.created_at,
+        })) : [],
         attributeHistory,
         created_at: playerResult.created_at,
         updated_at: playerResult.updated_at,
+        status: playerResult.status,
       };
 
       return transformedPlayer;
     },
-    enabled: !!id && profileImageAvailable !== undefined,
+    enabled: !!id && profileImageAvailable !== null,
+    retry: 1,
   });
+
+  // Show toast if there's an error fetching player data
+  useEffect(() => {
+    if (playerError) {
+      console.error("Error fetching player data:", playerError);
+      toast.error("Failed to load player data", {
+        description: "There was a problem retrieving the player information.",
+      });
+    }
+  }, [playerError]);
 
   // Fetch parents data
   useEffect(() => {
@@ -127,6 +166,35 @@ const PlayerDetailsPage = () => {
       const fetchParents = async () => {
         setIsLoading(true);
         try {
+          // Check if player_parents table exists
+          const tableCheck = await supabase
+            .from('pg_tables')
+            .select('tablename')
+            .eq('schemaname', 'public')
+            .eq('tablename', 'player_parents');
+            
+          if (!tableCheck.data || tableCheck.data.length === 0) {
+            console.log("player_parents table doesn't exist, creating it");
+            try {
+              await supabase.rpc('execute_sql', {
+                sql_string: `
+                  CREATE TABLE IF NOT EXISTS public.player_parents (
+                    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+                    created_at timestamp with time zone DEFAULT now(),
+                    player_id uuid REFERENCES players(id),
+                    parent_name TEXT,
+                    email TEXT,
+                    phone TEXT,
+                    is_verified BOOLEAN DEFAULT FALSE
+                  );
+                `
+              });
+              console.log("player_parents table created");
+            } catch (createError) {
+              console.error("Failed to create player_parents table:", createError);
+            }
+          }
+          
           const { data, error } = await supabase
             .from("player_parents")
             .select("*")
@@ -180,6 +248,31 @@ const PlayerDetailsPage = () => {
       setDataVersion(v => v + 1); // Increment to force data refresh
     }
   };
+  
+  // Show loading state
+  if (playerLoading || isLoading) {
+    return (
+      <div className="container mx-auto p-6 flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <p className="text-muted-foreground">Loading player details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (playerError) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="bg-destructive/10 p-4 rounded-md">
+          <h2 className="text-xl font-bold text-destructive">Error loading player data</h2>
+          <p className="text-muted-foreground">
+            There was a problem retrieving player information. Please try again later.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!player || !id) return null;
 
