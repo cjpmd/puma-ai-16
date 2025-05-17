@@ -45,13 +45,20 @@ export const TeamManagement = () => {
   const fetchTeams = async () => {
     setLoading(true);
     try {
-      // Simple approach: just get teams without the problematic join
+      // Get teams data
       const { data: teamsData, error: teamsError } = await supabase
         .from('teams')
         .select('*')
         .order('team_name');
         
       if (teamsError) throw teamsError;
+      
+      // Get team_settings to get the custom team names
+      const { data: teamSettings, error: settingsError } = await supabase
+        .from('team_settings')
+        .select('*');
+        
+      if (settingsError) console.error('Error fetching team settings:', settingsError);
       
       // Now fetch admin profiles separately
       const { data: profiles, error: profilesError } = await supabase
@@ -60,11 +67,23 @@ export const TeamManagement = () => {
         
       if (profilesError) throw profilesError;
       
-      // Manual join
+      // Manual join with team_settings to get the custom team name
       const teamsWithAdmins = teamsData.map(team => {
         const adminProfile = profiles.find(profile => profile.id === team.admin_id);
+        
+        // Look for custom team name in team_settings
+        const teamSetting = teamSettings?.find(setting => {
+          // Try to match by admin_id since team_settings might not have a direct link to teams table
+          const teamAdmin = adminProfile?.id;
+          return teamAdmin === team.admin_id;
+        });
+        
+        // Use custom team name if found, otherwise use default team name
+        const displayTeamName = teamSetting?.team_name || team.team_name;
+        
         return {
           ...team,
+          display_team_name: displayTeamName, // Add this field for display purposes
           profiles: adminProfile ? {
             name: adminProfile.name || 'Unknown',
             email: adminProfile.email || 'No email'
@@ -95,6 +114,7 @@ export const TeamManagement = () => {
         }
       }));
       
+      console.log('Teams with custom names:', teamsWithPlayerCounts);
       setTeams(teamsWithPlayerCounts);
     } catch (error) {
       console.error('Error fetching teams:', error);
@@ -115,7 +135,7 @@ export const TeamManagement = () => {
   };
 
   const filteredTeams = teams.filter(team => 
-    team.team_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    team.display_team_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     team.profiles?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -168,12 +188,12 @@ export const TeamManagement = () => {
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                           {team.team_logo ? (
-                            <AvatarImage src={team.team_logo} alt={team.team_name} />
+                            <AvatarImage src={team.team_logo} alt={team.display_team_name} />
                           ) : (
-                            <AvatarFallback>{team.team_name?.charAt(0) || 'T'}</AvatarFallback>
+                            <AvatarFallback>{team.display_team_name?.charAt(0) || 'T'}</AvatarFallback>
                           )}
                         </Avatar>
-                        <span className="font-medium">{team.team_name}</span>
+                        <span className="font-medium">{team.display_team_name}</span>
                       </div>
                     </TableCell>
                     <TableCell>{team.profiles?.name || 'Unknown'}</TableCell>
@@ -224,7 +244,7 @@ export const TeamManagement = () => {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <div className="font-medium">Team Name:</div>
-                <div className="col-span-3">{selectedTeam.team_name}</div>
+                <div className="col-span-3">{selectedTeam.display_team_name}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <div className="font-medium">Admin:</div>
