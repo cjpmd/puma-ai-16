@@ -117,7 +117,7 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
         // Look for custom team name in team_settings based on admin_id
         const teamSetting = teamSettings?.find(setting => {
           const teamAdmin = adminProfile?.id;
-          return teamAdmin === team.admin_id;
+          return teamAdmin === team.admin_id || setting.team_id === team.id;
         });
         
         // Use custom team name if found, otherwise use default team name
@@ -148,55 +148,111 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
     
     setSaving(true);
     try {
-      // Update profile with club association
-      const profileUpdate = {
-        club_id: selectedClub === 'no-club' ? null : selectedClub
-      };
+      console.log("Updating user:", user.id);
+      console.log("Selected club:", selectedClub);
+      console.log("Selected team:", selectedTeam);
+      console.log("Is club only:", isClubOnly);
       
-      const { error: profileError } = await supabase
+      // Check if the club_id column exists in the profiles table
+      const { data: columns, error: columnsError } = await supabase
         .from('profiles')
-        .update(profileUpdate)
-        .eq('id', user.id);
+        .select('id')
+        .limit(1);
         
-      if (profileError) throw profileError;
+      if (columnsError) {
+        console.error("Error checking profiles table:", columnsError);
+        throw columnsError;
+      }
+      
+      // Update RLS profile with club association
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .update({ 
+          club_id: selectedClub === 'no-club' ? null : selectedClub 
+        })
+        .eq('id', user.id)
+        .select();
+        
+      if (profileError) {
+        console.error("Error updating profile:", profileError);
+        throw profileError;
+      }
+      
+      console.log("Profile updated:", profileData);
       
       // Handle player assignment
       if (!isClubOnly && selectedTeam && selectedTeam !== 'no-team') {
         // Check if player record exists
-        const { data: existingPlayer } = await supabase
-          .from('players')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        if (existingPlayer) {
-          // Update existing player
-          await supabase
-            .from('players')
-            .update({ team_id: selectedTeam })
-            .eq('user_id', user.id);
-        } else {
-          // Create new player
-          await supabase
-            .from('players')
-            .insert({
-              user_id: user.id,
-              team_id: selectedTeam
-            });
-        }
-      } else {
-        // If club only or no team selected, remove team assignment if exists
-        const { data: existingPlayer } = await supabase
+        const { data: existingPlayer, error: playerError } = await supabase
           .from('players')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
           
+        if (playerError) {
+          console.error("Error checking player:", playerError);
+          throw playerError;
+        }
+        
+        console.log("Existing player:", existingPlayer);
+        
         if (existingPlayer) {
-          await supabase
+          // Update existing player
+          const { data: updatedPlayer, error: updateError } = await supabase
+            .from('players')
+            .update({ team_id: selectedTeam })
+            .eq('user_id', user.id)
+            .select();
+            
+          if (updateError) {
+            console.error("Error updating player:", updateError);
+            throw updateError;
+          }
+          
+          console.log("Player updated:", updatedPlayer);
+        } else {
+          // Create new player
+          const { data: newPlayer, error: insertError } = await supabase
+            .from('players')
+            .insert({
+              user_id: user.id,
+              team_id: selectedTeam
+            })
+            .select();
+            
+          if (insertError) {
+            console.error("Error creating player:", insertError);
+            throw insertError;
+          }
+          
+          console.log("New player created:", newPlayer);
+        }
+      } else {
+        // If club only or no team selected, remove team assignment if exists
+        const { data: existingPlayer, error: playerError } = await supabase
+          .from('players')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
+        if (playerError) {
+          console.error("Error checking player for removal:", playerError);
+          throw playerError;
+        }
+          
+        if (existingPlayer) {
+          const { data: updatedPlayer, error: updateError } = await supabase
             .from('players')
             .update({ team_id: null })
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .select();
+            
+          if (updateError) {
+            console.error("Error removing team from player:", updateError);
+            throw updateError;
+          }
+          
+          console.log("Team assignment removed:", updatedPlayer);
         }
       }
       
@@ -207,11 +263,11 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
       
       onSuccess(); // Refresh parent component data
       onOpenChange(false); // Close dialog
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating user assignments:', error);
       toast({
         title: "Error",
-        description: "Failed to update user assignments",
+        description: error.message || "Failed to update user assignments",
         variant: "destructive"
       });
     } finally {
