@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { generateChildLinkingCode } from "@/utils/database/setupUserRolesTable";
+import { generateChildLinkingCode } from "@/utils/database/parentChildLinking";
 import { Copy, Check, RefreshCw, Loader2, AlertCircle, Wrench } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { addLinkingCodeColumn } from "@/utils/database/createTables";

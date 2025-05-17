@@ -63,18 +63,15 @@ export async function initializeDatabase(): Promise<boolean> {
     }
     
     // We'll assume at least partial success
-    toast({
-      title: "Database Initialization",
+    toast.success("Database Initialization", {
       description: "Database initialization attempted. Some features may have limited functionality.",
     });
     
     return true;
   } catch (error) {
     console.error("Database initialization failed:", error);
-    toast({
-      title: "Database Initialization Issue",
+    toast.error("Database Initialization Issue", {
       description: "Database initialization encountered problems. Some features may not work.",
-      variant: "destructive",
     });
     return false;
   }

@@ -53,8 +53,7 @@ export async function ensureDatabaseSetup() {
         const initResult = await Promise.race([initPromise, timeoutPromise]);
         
         if (!initResult) {
-          toast({
-            title: "Database Setup Note",
+          toast.message("Database Setup Note", {
             description: "Some database tables could not be verified. App functionality may be limited.",
             duration: 8000,
           });
@@ -64,10 +63,8 @@ export async function ensureDatabaseSetup() {
         return true;
       } catch (err) {
         console.error("Error in database initialization:", err);
-        toast({
-          title: "Database Setup Issue",
+        toast.error("Database Setup Issue", {
           description: "Could not set up required database tables. Some features may not work correctly.",
-          variant: "destructive",
           duration: 8000,
         });
         return false;
