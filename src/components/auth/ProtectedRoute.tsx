@@ -8,7 +8,7 @@ export interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-  const { profile, isLoading } = useAuth();
+  const { profile, isLoading, hasRole } = useAuth();
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -19,16 +19,19 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/auth" replace />;
   }
 
-  // If no specific roles are required, or the user has admin role, allow access
-  if (!allowedRoles || profile.role === 'admin') {
+  // If no specific roles are required, allow access
+  if (!allowedRoles) {
     return <>{children}</>;
   }
 
   // Check if user has any of the required roles
-  const hasRequiredRole = allowedRoles.includes(profile.role);
+  const hasRequiredRole = allowedRoles.some(role => hasRole(role));
+  
   if (!hasRequiredRole) {
+    console.log(`User has role ${profile.role} but needs one of ${allowedRoles.join(', ')}`);
     return <Navigate to="/platform" replace />;
   }
 
+  console.log(`User with role ${profile.role} granted access to protected route`);
   return <>{children}</>;
 };

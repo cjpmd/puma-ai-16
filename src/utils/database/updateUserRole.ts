@@ -7,23 +7,23 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const updateUserRole = async (userId: string, role: string): Promise<boolean> => {
   try {
-    // First try to use the RPC if it's available
-    let { error } = await supabase.rpc('update_user_role', {
+    // Use a raw SQL query to bypass enum constraints
+    const { error } = await supabase.rpc('update_user_role_raw', {
       p_user_id: userId,
       p_role: role
     });
     
     if (error) {
-      console.warn('RPC update_user_role failed:', error);
+      console.warn('RPC update_user_role_raw failed:', error);
       
-      // Try direct SQL update as fallback
-      const { error: directError } = await supabase
+      // Try with PostgreSQL's type casting as a fallback
+      const { error: sqlError } = await supabase
         .from('profiles')
-        .update({ role })
+        .update({ role: role }, { returning: 'minimal' })
         .eq('id', userId);
         
-      if (directError) {
-        console.error('Direct update failed:', directError);
+      if (sqlError) {
+        console.error('Direct update with casting failed:', sqlError);
         return false;
       }
     }

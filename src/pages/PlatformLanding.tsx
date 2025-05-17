@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,13 +11,13 @@ import { ParentCodeLinkingDialog } from "@/components/parents/ParentCodeLinkingD
 import { AccountLinkingOptions } from "@/components/auth/AccountLinkingOptions";
 
 export const PlatformLanding = () => {
-  const { profile, hasRole } = useAuth();
+  const { profile, hasRole, switchRole } = useAuth();
   const navigate = useNavigate();
   
   // Function to navigate to global admin dashboard
   const goToGlobalAdmin = () => {
     console.log("Navigating to global admin dashboard");
-    navigate("/global-admin");
+    switchRole('globalAdmin');
   };
 
   return (
@@ -42,8 +43,8 @@ export const PlatformLanding = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Global Admin View */}
         {hasRole('globalAdmin') && (
-          <Card>
-            <CardHeader className="bg-primary/5">
+          <Card className="border-primary border-2">
+            <CardHeader className="bg-primary/10">
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />
                 <span>Global Admin Dashboard</span>
