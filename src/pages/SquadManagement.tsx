@@ -39,20 +39,22 @@ const SquadManagement = () => {
       try {
         console.log("Fetching players data...");
         
-        // First check if status column exists
-        const { data: columns, error: columnsError } = await supabase
-          .from('information_schema.columns')
-          .select('column_name')
-          .eq('table_schema', 'public')
-          .eq('table_name', 'players');
+        let hasStatusColumn = false;
         
-        if (columnsError) {
-          console.error("Error checking table columns:", columnsError);
-          throw columnsError;
+        // First check if status column exists using rpc function
+        try {
+          const { data: columns, error: columnsError } = await supabase
+            .rpc('get_table_columns', { p_table_name: 'players' });
+          
+          if (columnsError) {
+            console.error("Error checking table columns:", columnsError);
+          } else {
+            hasStatusColumn = columns.some((column: any) => column.column_name === 'status');
+            console.log("Status column exists:", hasStatusColumn);
+          }
+        } catch (err) {
+          console.error("Error checking for status column:", err);
         }
-        
-        const hasStatusColumn = columns?.some((column: any) => column.column_name === 'status');
-        console.log("Status column exists:", hasStatusColumn);
         
         // Fetch players - adapt query based on status column existence
         let query = supabase

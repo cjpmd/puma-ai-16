@@ -51,19 +51,16 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
   // Check if status column exists in players table
   const checkStatusColumn = async () => {
     try {
-      // Direct query against information_schema to avoid ambiguity
+      // Try to use the RPC function
       const { data, error } = await supabase
-        .from('information_schema.columns')
-        .select('column_name')
-        .eq('table_schema', 'public')
-        .eq('table_name', 'players');
+        .rpc('get_table_columns', { p_table_name: 'players' });
       
       if (error) {
         console.error("Error checking table columns:", error);
         return;
       }
       
-      const hasStatusColumn = data?.some((column: any) => column.column_name === 'status');
+      const hasStatusColumn = data.some((column: any) => column.column_name === 'status');
       console.log("Status column exists:", hasStatusColumn);
       setStatusColumnExists(hasStatusColumn);
       
