@@ -209,9 +209,8 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
 
   const handleTransferClick = (player: any) => {
     if (!transfersTableExists) {
-      toast("Transfer System Unavailable", {
-        description: "The transfer system is not set up yet. Please contact an administrator.",
-        variant: "destructive"
+      toast.error("The transfer system is not set up yet. Please contact an administrator.", {
+        description: "Transfer System Unavailable"
       });
       return;
     }
@@ -222,9 +221,8 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
 
   const handleApprovalClick = (transfer: any) => {
     if (!transfersTableExists) {
-      toast("Transfer System Unavailable", {
-        description: "The transfer system is not set up yet. Please contact an administrator.",
-        variant: "destructive"
+      toast.error("The transfer system is not set up yet. Please contact an administrator.", {
+        description: "Transfer System Unavailable"
       });
       return;
     }
