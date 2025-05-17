@@ -50,7 +50,7 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
 
   // Filter teams based on selected club
   useEffect(() => {
-    if (selectedClub) {
+    if (selectedClub && selectedClub !== 'no-club') {
       const teamsInClub = teams.filter(team => team.club_id === selectedClub);
       setFilteredTeams(teamsInClub);
       
@@ -82,6 +82,7 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
         
       if (clubsError) throw clubsError;
       setClubs(clubsData || []);
+      console.log("Clubs loaded:", clubsData);
       
       // Fetch teams
       const { data: teamsData, error: teamsError } = await supabase
@@ -130,6 +131,35 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
       });
       
       setTeams(teamsWithCustomNames || []);
+      console.log("Teams loaded:", teamsWithCustomNames);
+      
+      // Set initial values based on the user's current assignments
+      if (user) {
+        // Get the user's current team assignment
+        const { data: playerData, error: playerError } = await supabase
+          .from('players')
+          .select('team_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
+        if (playerError) {
+          console.error('Error fetching player data:', playerError);
+        }
+        
+        if (playerData && playerData.team_id) {
+          setSelectedTeam(playerData.team_id);
+          setIsClubOnly(false);
+          
+          // Find the team to get club_id
+          const team = teamsWithCustomNames.find(t => t.id === playerData.team_id);
+          if (team) {
+            setSelectedClub(team.club_id);
+          }
+        } else if (user.club_id) {
+          setSelectedClub(user.club_id);
+          setIsClubOnly(true);
+        }
+      }
       
     } catch (error) {
       console.error('Error fetching clubs and teams:', error);
@@ -144,115 +174,129 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
   };
 
   const handleSaveAssignment = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.error("No user ID provided for assignment");
+      return;
+    }
     
     setSaving(true);
     try {
-      console.log("Updating user:", user.id);
+      console.log("Starting user assignment update...");
+      console.log("User ID:", user.id);
       console.log("Selected club:", selectedClub);
       console.log("Selected team:", selectedTeam);
       console.log("Is club only:", isClubOnly);
       
-      // Check if the club_id column exists in the profiles table
-      const { data: columns, error: columnsError } = await supabase
-        .from('profiles')
-        .select('id')
-        .limit(1);
-        
-      if (columnsError) {
-        console.error("Error checking profiles table:", columnsError);
-        throw columnsError;
-      }
+      // First, update the user's profile with club association
+      const clubIdToSave = selectedClub === 'no-club' ? null : selectedClub;
+      console.log("Club ID to save:", clubIdToSave);
       
-      // Update RLS profile with club association
-      const { data: profileData, error: profileError } = await supabase
+      // Check if the user has a profile entry
+      const { data: existingProfile, error: profileCheckError } = await supabase
         .from('profiles')
-        .update({ 
-          club_id: selectedClub === 'no-club' ? null : selectedClub 
-        })
+        .select('*')
         .eq('id', user.id)
-        .select();
+        .maybeSingle();
         
-      if (profileError) {
-        console.error("Error updating profile:", profileError);
-        throw profileError;
+      if (profileCheckError) {
+        console.error("Error checking if profile exists:", profileCheckError);
+        throw profileCheckError;
       }
       
-      console.log("Profile updated:", profileData);
+      let profileUpdateResult;
       
-      // Handle player assignment
+      if (existingProfile) {
+        // Update existing profile
+        console.log("Updating existing profile");
+        profileUpdateResult = await supabase
+          .from('profiles')
+          .update({ club_id: clubIdToSave })
+          .eq('id', user.id);
+      } else {
+        // Insert new profile
+        console.log("Creating new profile entry");
+        profileUpdateResult = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            club_id: clubIdToSave,
+            name: user.name || user.email
+          });
+      }
+      
+      if (profileUpdateResult.error) {
+        console.error("Error updating profile:", profileUpdateResult.error);
+        throw profileUpdateResult.error;
+      }
+      
+      console.log("Profile updated successfully");
+      
+      // Handle player assignment to team
       if (!isClubOnly && selectedTeam && selectedTeam !== 'no-team') {
         // Check if player record exists
-        const { data: existingPlayer, error: playerError } = await supabase
+        const { data: existingPlayer, error: playerCheckError } = await supabase
           .from('players')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
           
-        if (playerError) {
-          console.error("Error checking player:", playerError);
-          throw playerError;
+        if (playerCheckError) {
+          console.error("Error checking if player exists:", playerCheckError);
+          throw playerCheckError;
         }
         
-        console.log("Existing player:", existingPlayer);
+        let playerUpdateResult;
         
         if (existingPlayer) {
-          // Update existing player
-          const { data: updatedPlayer, error: updateError } = await supabase
+          // Update existing player record
+          console.log("Updating existing player record");
+          playerUpdateResult = await supabase
             .from('players')
             .update({ team_id: selectedTeam })
-            .eq('user_id', user.id)
-            .select();
-            
-          if (updateError) {
-            console.error("Error updating player:", updateError);
-            throw updateError;
-          }
-          
-          console.log("Player updated:", updatedPlayer);
+            .eq('user_id', user.id);
         } else {
-          // Create new player
-          const { data: newPlayer, error: insertError } = await supabase
+          // Create new player record
+          console.log("Creating new player record");
+          playerUpdateResult = await supabase
             .from('players')
             .insert({
               user_id: user.id,
               team_id: selectedTeam
-            })
-            .select();
-            
-          if (insertError) {
-            console.error("Error creating player:", insertError);
-            throw insertError;
-          }
-          
-          console.log("New player created:", newPlayer);
+            });
         }
-      } else {
-        // If club only or no team selected, remove team assignment if exists
-        const { data: existingPlayer, error: playerError } = await supabase
+        
+        if (playerUpdateResult.error) {
+          console.error("Error updating player:", playerUpdateResult.error);
+          throw playerUpdateResult.error;
+        }
+        
+        console.log("Player record updated successfully");
+      } else if (isClubOnly || selectedTeam === 'no-team') {
+        // Remove team assignment if club-only or no team selected
+        const { data: existingPlayer, error: playerCheckError } = await supabase
           .from('players')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
           
-        if (playerError) {
-          console.error("Error checking player for removal:", playerError);
-          throw playerError;
+        if (playerCheckError) {
+          console.error("Error checking player record:", playerCheckError);
+          throw playerCheckError;
         }
-          
+        
         if (existingPlayer) {
-          const { data: updatedPlayer, error: updateError } = await supabase
+          console.log("Removing team assignment from player");
+          const { error: playerRemoveError } = await supabase
             .from('players')
             .update({ team_id: null })
-            .eq('user_id', user.id)
-            .select();
+            .eq('user_id', user.id);
             
-          if (updateError) {
-            console.error("Error removing team from player:", updateError);
-            throw updateError;
+          if (playerRemoveError) {
+            console.error("Error removing team assignment:", playerRemoveError);
+            throw playerRemoveError;
           }
           
-          console.log("Team assignment removed:", updatedPlayer);
+          console.log("Team assignment removed successfully");
         }
       }
       
