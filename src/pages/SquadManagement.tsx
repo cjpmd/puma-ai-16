@@ -49,7 +49,7 @@ const SquadManagement = () => {
           throw columnsError;
         }
         
-        const hasStatusColumn = columns.some((column: any) => column.column_name === 'status');
+        const hasStatusColumn = columns?.some((column: any) => column.column_name === 'status');
         console.log("Status column exists:", hasStatusColumn);
         
         // Fetch players - adapt query based on status column existence

@@ -24,6 +24,8 @@ export interface Attribute {
   created_at?: string;
 }
 
+export type PlayerStatus = "active" | "transferred_out" | "left" | "transfer_pending";
+
 export interface Player {
   id: string;
   name: string;
@@ -39,4 +41,5 @@ export interface Player {
   topPositions?: TopPosition[];
   created_at?: string;
   updated_at?: string;
+  status?: PlayerStatus;
 }
