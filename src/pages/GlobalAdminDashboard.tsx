@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Tabs, 
@@ -22,14 +22,24 @@ import { PlatformSettings } from '@/components/admin/PlatformSettings';
 import { SubscriptionManagement } from '@/components/admin/SubscriptionManagement';
 import { FinancialReports } from '@/components/admin/FinancialReports';
 import { Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 const GlobalAdminDashboard = () => {
-  const { profile, isLoading } = useAuth();
+  const { profile, isLoading, hasRole } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("users");
 
-  // If still loading or user doesn't have globalAdmin role, show loading or redirect
+  useEffect(() => {
+    // Check if user is allowed to access this page
+    if (!isLoading && profile) {
+      console.log("GlobalAdminDashboard: Checking user role:", profile.role);
+      if (!hasRole('globalAdmin')) {
+        console.log("User does not have globalAdmin role, redirecting");
+        navigate('/platform');
+      }
+    }
+  }, [profile, isLoading, hasRole, navigate]);
+
+  // If still loading, show loading indicator
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -39,9 +49,8 @@ const GlobalAdminDashboard = () => {
   }
 
   // Ensure user has globalAdmin role
-  if (profile?.role !== 'globalAdmin') {
-    // Redirect to platform page if not globalAdmin
-    navigate('/platform');
+  if (!profile || !hasRole('globalAdmin')) {
+    console.log("GlobalAdminDashboard: User doesn't have required role");
     return null;
   }
 

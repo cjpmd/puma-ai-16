@@ -7,28 +7,57 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const updateUserRole = async (userId: string, role: string): Promise<boolean> => {
   try {
-    // Use a raw SQL query to bypass enum constraints
-    const { error } = await supabase.rpc('update_user_role_raw', {
-      p_user_id: userId,
-      p_role: role
-    });
+    console.log(`Attempting to update user ${userId} role to ${role}`);
     
-    if (error) {
-      console.warn('RPC update_user_role_raw failed:', error);
+    // First try with RPC method
+    try {
+      console.log('Trying RPC update_user_role_raw method...');
+      const { error } = await supabase.rpc('update_user_role_raw', {
+        p_user_id: userId,
+        p_role: role
+      });
       
-      // Try with PostgreSQL's type casting as a fallback
-      // Remove the 'returning' property as it's not supported in this context
-      const { error: sqlError } = await supabase
-        .from('profiles')
-        .update({ role: role })
-        .eq('id', userId);
+      if (!error) {
+        console.log('RPC update successful');
+        return true;
+      }
+      
+      console.warn('RPC update_user_role_raw failed:', error);
+    } catch (rpcError) {
+      console.warn('RPC method failed:', rpcError);
+    }
+    
+    // Try with direct update as a fallback
+    console.log('Trying direct SQL update...');
+    const { error: sqlError } = await supabase
+      .from('profiles')
+      .update({ role: role })
+      .eq('id', userId);
+      
+    if (sqlError) {
+      console.error('Direct update failed:', sqlError);
+      
+      // As another fallback, try a raw SQL query
+      try {
+        console.log('Trying raw SQL update via RPC...');
+        const { error: rawSqlError } = await supabase.rpc('execute_sql', { 
+          sql_string: `UPDATE profiles SET role = '${role}' WHERE id = '${userId}'` 
+        });
         
-      if (sqlError) {
-        console.error('Direct update with casting failed:', sqlError);
+        if (rawSqlError) {
+          console.error('Raw SQL update failed:', rawSqlError);
+          return false;
+        }
+        
+        console.log('Raw SQL update successful');
+        return true;
+      } catch (rawSqlError) {
+        console.error('Raw SQL method failed:', rawSqlError);
         return false;
       }
     }
     
+    console.log('Direct SQL update successful');
     return true;
   } catch (error) {
     console.error('Error in updateUserRole:', error);

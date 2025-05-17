@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,11 +40,12 @@ export const useAuth = () => {
           return null;
         }
 
+        console.log("Fetching profile for user ID:", user.id);
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
-          .maybeSingle();
+          .single();
 
         if (error) {
           console.error('Error fetching profile:', error);
@@ -55,8 +57,11 @@ export const useAuth = () => {
           return null;
         }
 
+        console.log("Profile fetched:", data);
+        
         // If no profile exists, create one with default role
         if (!data) {
+          console.log("No profile found, creating one with default admin role");
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
             .insert([
@@ -67,7 +72,7 @@ export const useAuth = () => {
                 name: user.email 
               }
             ])
-            .select()
+            .select('*')
             .single();
 
           if (createError) {
@@ -105,6 +110,7 @@ export const useAuth = () => {
 
   useEffect(() => {
     if (profile && !activeRole) {
+      console.log("Setting active role from profile:", profile.role);
       setActiveRole(profile.role);
     }
   }, [profile, activeRole]);
@@ -144,7 +150,7 @@ export const useAuth = () => {
             navigate('/auth');
           }
         } else if (event === 'SIGNED_IN') {
-          refetchProfile();
+          await refetchProfile();
         }
       }
     );
@@ -161,13 +167,12 @@ export const useAuth = () => {
     try {
       console.log(`Attempting to add ${role} role to user ${profile.id}`);
       
-      // Use the new utility function
       const success = await updateUserRole(profile.id, role);
       if (!success) {
         console.error(`Failed to add ${role} role using updateUserRole utility`);
         toast({
           title: "Error",
-          description: `Failed to add ${role} role. The role may not exist in the database.`,
+          description: `Failed to add ${role} role. Please try again.`,
           variant: "destructive"
         });
         return false;
@@ -181,9 +186,13 @@ export const useAuth = () => {
         description: `Added ${role} role to your account`,
       });
 
-      // Immediately switch to this role so it takes effect
+      // For global admin, immediately navigate to the dashboard
       if (role === 'globalAdmin') {
-        switchRole(role);
+        console.log("Successfully added globalAdmin role, navigating to global admin page");
+        setTimeout(() => {
+          setActiveRole('globalAdmin');
+          navigate('/global-admin');
+        }, 500);
       }
       
       return true;
@@ -198,7 +207,7 @@ export const useAuth = () => {
     }
   };
 
-  // Function to switch between roles
+  // Function to switch between roles with immediate navigation
   const switchRole = (role: UserRole) => {
     console.log(`Switching to role: ${role}`);
     setActiveRole(role);
@@ -216,31 +225,33 @@ export const useAuth = () => {
     }
   };
 
-  const hasPermission = (requiredRole: UserRole[]): boolean => {
-    if (!profile) return false;
-    
-    if (profile.role === 'globalAdmin') return true; // Global admin has all permissions
-    if (profile.role === 'admin') return true;
-    
-    if (requiredRole.includes('parent') && profile.role === 'coach') return true;
-    
-    return requiredRole.includes(profile.role);
-  };
-
   // Check if user has a specific role assigned
   const hasRole = (role: UserRole): boolean => {
     if (!profile) return false;
     
+    console.log(`Checking if user has role ${role}, user role is ${profile.role}`);
+    
     // Global Admin has access to all roles
-    if (profile.role === 'globalAdmin') return true;
+    if (profile.role === 'globalAdmin') {
+      console.log('User is globalAdmin, has access to all roles');
+      return true;
+    }
     
     // Admin has access to all roles except globalAdmin
-    if (profile.role === 'admin' && role !== 'globalAdmin') return true;
+    if (profile.role === 'admin' && role !== 'globalAdmin') {
+      console.log('User is admin, has access to all roles except globalAdmin');
+      return true;
+    }
     
     // Coaches can also access parent role
-    if (role === 'parent' && profile.role === 'coach') return true;
+    if (role === 'parent' && profile.role === 'coach') {
+      console.log('User is coach, has access to parent role');
+      return true;
+    }
     
-    return profile.role === role;
+    const hasSpecificRole = profile.role === role;
+    console.log(`User ${hasSpecificRole ? 'has' : 'does not have'} specific role ${role}`);
+    return hasSpecificRole;
   };
 
   return {
@@ -249,7 +260,6 @@ export const useAuth = () => {
     switchRole,
     addRole,
     isLoading: isInitializing || profileLoading,
-    hasPermission,
     hasRole,
   };
 };
