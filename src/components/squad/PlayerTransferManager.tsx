@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Search, Loader2, ArrowRight, ArrowLeft, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -45,7 +45,6 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
   const [selectedTransfer, setSelectedTransfer] = useState<any>(null);
   const [statusColumnExists, setStatusColumnExists] = useState(false);
   const [transfersTableExists, setTransfersTableExists] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     checkTables();
@@ -77,21 +76,15 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       const success = await setupTransferSystem();
       
       if (success) {
-        toast.success("Transfer System", {
-          description: "Transfer system tables have been set up successfully."
-        });
+        toast.success("Transfer system tables have been set up successfully.");
         await checkTables();
         await fetchPlayersData();
       } else {
-        toast.error("Setup Failed", {
-          description: "Could not set up transfer system tables. Please contact an administrator."
-        });
+        toast.error("Could not set up transfer system tables. Please contact an administrator.");
       }
     } catch (error) {
       console.error("Error setting up database:", error);
-      toast.error("Setup Error", {
-        description: "An error occurred while setting up transfer system tables."
-      });
+      toast.error("An error occurred while setting up transfer system tables.");
     } finally {
       setSettingUp(false);
     }
