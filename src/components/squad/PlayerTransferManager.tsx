@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Loader2, ArrowRight, UserPlus, ArrowLeft } from 'lucide-react';
+import { Search, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlayerTransferDialog } from '@/components/admin/PlayerTransferDialog';
