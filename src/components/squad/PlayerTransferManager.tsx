@@ -41,11 +41,34 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [selectedTransfer, setSelectedTransfer] = useState<any>(null);
+  const [statusColumnExists, setStatusColumnExists] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
+    checkStatusColumn();
     fetchPlayersData();
   }, [teamId]);
+
+  // Check if status column exists in players table
+  const checkStatusColumn = async () => {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_table_columns', { table_name: 'players' });
+      
+      if (error) {
+        console.error("Error checking table columns:", error);
+        return;
+      }
+      
+      const hasStatusColumn = data.some((column: any) => column.column_name === 'status');
+      console.log("Status column exists:", hasStatusColumn);
+      setStatusColumnExists(hasStatusColumn);
+      
+    } catch (error) {
+      console.error("Error checking status column:", error);
+      setStatusColumnExists(false);
+    }
+  };
 
   const fetchPlayersData = async () => {
     setLoading(true);
@@ -74,7 +97,10 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
         p_column_def: 'text DEFAULT \'active\''
       });
       
-      // Fetch current active players
+      // Re-check if status column was added
+      await checkStatusColumn();
+      
+      // Fetch current active players - adapt query based on status column existence
       let query = supabase
         .from('players')
         .select(`
@@ -84,9 +110,13 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
             suitability_score,
             position_definitions (abbreviation, full_name)
           )
-        `)
-        .eq('status', 'active');
+        `);
         
+      // Only filter by status if the column exists
+      if (statusColumnExists) {
+        query = query.eq('status', 'active');
+      }
+      
       if (teamId) {
         query = query.eq('team_id', teamId);
       }
@@ -96,7 +126,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       if (currentError) throw currentError;
       setCurrentPlayers(currentPlayersData || []);
       
-      // Fetch previous players (inactive status or with transfer history from this team)
+      // Fetch previous players - adapt query based on status column existence
       let previousQuery = supabase
         .from('players')
         .select(`
@@ -106,8 +136,14 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
             suitability_score,
             position_definitions (abbreviation, full_name)
           )
-        `)
-        .eq('status', 'inactive');
+        `);
+      
+      if (statusColumnExists) {
+        previousQuery = previousQuery.eq('status', 'inactive');
+      } else {
+        // If status doesn't exist yet, just fetch players without a team as "previous"
+        previousQuery = previousQuery.is('team_id', null);
+      }
         
       if (teamId) {
         // Also include players that were transferred from this team

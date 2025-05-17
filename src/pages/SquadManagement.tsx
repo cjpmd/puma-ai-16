@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from "@/types/player";
@@ -39,7 +39,21 @@ const SquadManagement = () => {
     queryFn: async () => {
       try {
         console.log("Fetching players data...");
-        const { data: playersData, error: playersError } = await supabase
+        
+        // First check if status column exists
+        const { data: columns, error: columnsError } = await supabase
+          .rpc('get_table_columns', { table_name: 'players' });
+        
+        if (columnsError) {
+          console.error("Error checking table columns:", columnsError);
+          throw columnsError;
+        }
+        
+        const hasStatusColumn = columns.some((column: any) => column.column_name === 'status');
+        console.log("Status column exists:", hasStatusColumn);
+        
+        // Fetch players - adapt query based on status column existence
+        let query = supabase
           .from("players")
           .select(`
             *,
@@ -51,9 +65,15 @@ const SquadManagement = () => {
                 full_name
               )
             )
-          `)
-          .eq('status', 'active');
+          `);
+          
+        // Only filter by status if the column exists
+        if (hasStatusColumn) {
+          query = query.eq('status', 'active');
+        }
 
+        const { data: playersData, error: playersError } = await query;
+        
         if (playersError) {
           console.error("Error fetching players:", playersError);
           throw playersError;
@@ -103,6 +123,8 @@ const SquadManagement = () => {
             })) || [],
           created_at: player.created_at,
           updated_at: player.updated_at,
+          // Add status if it exists
+          status: player.status,
         }));
       } catch (error) {
         console.error("Error in players query:", error);
