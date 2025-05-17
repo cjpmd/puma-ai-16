@@ -1,16 +1,22 @@
 
 -- Function to get column names from a specific table
-CREATE OR REPLACE FUNCTION get_table_columns(table_name text)
-RETURNS text[] AS $$
-DECLARE
-    column_names text[];
+CREATE OR REPLACE FUNCTION get_table_columns(p_table_name text)
+RETURNS TABLE(
+  column_name text,
+  data_type text,
+  is_nullable text,
+  column_default text
+) AS $$
 BEGIN
-    SELECT array_agg(column_name::text) INTO column_names
-    FROM information_schema.columns
-    WHERE table_schema = 'public' 
-    AND table_name = $1;
-    
-    RETURN column_names;
+  RETURN QUERY
+  SELECT 
+    columns.column_name::text,
+    columns.data_type::text,
+    columns.is_nullable::text,
+    columns.column_default::text
+  FROM information_schema.columns
+  WHERE columns.table_schema = 'public' 
+    AND columns.table_name = p_table_name;
 END;
 $$ LANGUAGE plpgsql;
 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +41,10 @@ const SquadManagement = () => {
         
         // First check if status column exists
         const { data: columns, error: columnsError } = await supabase
-          .rpc('get_table_columns', { table_name: 'players' });
+          .from('information_schema.columns')
+          .select('column_name')
+          .eq('table_schema', 'public')
+          .eq('table_name', 'players');
         
         if (columnsError) {
           console.error("Error checking table columns:", columnsError);
