@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import {
   Tabs,
@@ -45,38 +46,78 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
   const [selectedTransfer, setSelectedTransfer] = useState<any>(null);
   const [statusColumnExists, setStatusColumnExists] = useState(false);
   const [transfersTableExists, setTransfersTableExists] = useState(false);
+  const [databaseSetupChecked, setDatabaseSetupChecked] = useState(false);
 
   useEffect(() => {
-    checkTables();
+    checkTablesWithTimeout();
     fetchPlayersData();
   }, [teamId]);
+
+  // Check required database structure with a timeout
+  const checkTablesWithTimeout = async () => {
+    try {
+      // Set a timeout to prevent hanging if the checks fail
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => {
+          console.log("Database setup check timed out");
+          resolve(false);
+        }, 2000);
+      });
+      
+      // Run the actual checks
+      const checkPromise = checkTables();
+      
+      // Race between timeout and check
+      await Promise.race([timeoutPromise, checkPromise]);
+      
+      // Mark check as completed regardless of result
+      setDatabaseSetupChecked(true);
+    } catch (error) {
+      console.error("Error during database setup check:", error);
+      setDatabaseSetupChecked(true);
+    }
+  };
 
   // Check required database structure
   const checkTables = async () => {
     try {
-      // Check if status column exists
-      const hasStatusColumn = await columnExists('players', 'status');
-      console.log("Status column exists:", hasStatusColumn);
+      // Try-catch for each individual check to prevent complete failure
+      let hasStatusColumn = false;
+      try {
+        // Check if status column exists
+        hasStatusColumn = await columnExists('players', 'status');
+        console.log("Status column exists:", hasStatusColumn);
+      } catch (error) {
+        console.error("Error checking if column status exists in table players:", error);
+      }
       setStatusColumnExists(hasStatusColumn);
       
-      // Check if transfers table exists
-      const hasTransfersTable = await tableExists('player_transfers');
-      console.log("Player transfers table exists:", hasTransfersTable);
+      let hasTransfersTable = false;
+      try {
+        // Check if transfers table exists
+        hasTransfersTable = await tableExists('player_transfers');
+        console.log("Player transfers table exists:", hasTransfersTable);
+      } catch (error) {
+        console.error("Error checking if table player_transfers exists:", error);
+      }
       setTransfersTableExists(hasTransfersTable);
+      
+      return true;
     } catch (error) {
       console.error("Error checking database structure:", error);
-      setStatusColumnExists(false);
-      setTransfersTableExists(false);
+      return false;
     }
   };
 
   const setupDatabase = async () => {
     setSettingUp(true);
     try {
-      const success = await setupTransferSystem();
+      // First check if the setup function exists
+      const result = await setupTransferSystem();
       
-      if (success) {
+      if (result) {
         toast.success("Transfer system tables have been set up successfully.");
+        // Re-check table structure after setup
         await checkTables();
         await fetchPlayersData();
       } else {
@@ -93,6 +134,8 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
   const fetchPlayersData = async () => {
     setLoading(true);
     try {
+      console.log("Fetching players data with status column check:", statusColumnExists);
+      
       // Fetch current active players - adapt query based on status column existence
       let query = supabase
         .from('players')
@@ -117,6 +160,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       const { data: currentPlayersData, error: currentError } = await query;
       
       if (currentError) throw currentError;
+      console.log("Players data fetched:", currentPlayersData?.length || 0);
       setCurrentPlayers(currentPlayersData || []);
       
       // Fetch previous players - adapt query based on status column existence
@@ -145,55 +189,12 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       const { data: previousPlayersData, error: previousError } = await previousQuery;
       
       if (previousError) throw previousError;
+      console.log("Player stats data fetched:", previousPlayersData?.length || 0);
       setPreviousPlayers(previousPlayersData || []);
       
       // Only fetch transfers if the table exists
       if (transfersTableExists) {
-        // Try fetching pending transfers with simpler query (no joins)
-        try {
-          const { data: transfersData, error: transfersError } = await supabase
-            .from('player_transfers')
-            .select('*')
-            .eq('status', 'pending');
-            
-          if (transfersError) throw transfersError;
-          
-          // Then fetch related data separately for each transfer
-          const enhancedTransfers = await Promise.all((transfersData || []).map(async (transfer) => {
-            // Get player details
-            const { data: player } = await supabase
-              .from('players')
-              .select('*')
-              .eq('id', transfer.player_id)
-              .single();
-              
-            // Get from team
-            const { data: fromTeam } = transfer.from_team_id ? await supabase
-              .from('teams')
-              .select('*')
-              .eq('id', transfer.from_team_id)
-              .single() : { data: null };
-              
-            // Get to team
-            const { data: toTeam } = transfer.to_team_id ? await supabase
-              .from('teams')
-              .select('*')
-              .eq('id', transfer.to_team_id)
-              .single() : { data: null };
-              
-            return {
-              ...transfer,
-              player,
-              from_team: fromTeam,
-              to_team: toTeam
-            };
-          }));
-          
-          setPendingTransfers(enhancedTransfers);
-        } catch (error) {
-          console.error('Error fetching pending transfers:', error);
-          setPendingTransfers([]);
-        }
+        fetchPendingTransfers();
       } else {
         console.log("Transfers table doesn't exist, skipping transfer data fetch");
         setPendingTransfers([]);
@@ -204,6 +205,54 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       toast.error("Failed to load players data");
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const fetchPendingTransfers = async () => {
+    try {
+      // Try fetching pending transfers with simpler query (no joins)
+      const { data: transfersData, error: transfersError } = await supabase
+        .from('player_transfers')
+        .select('*')
+        .eq('status', 'pending');
+        
+      if (transfersError) throw transfersError;
+      
+      // Then fetch related data separately for each transfer
+      const enhancedTransfers = await Promise.all((transfersData || []).map(async (transfer) => {
+        // Get player details
+        const { data: player } = await supabase
+          .from('players')
+          .select('*')
+          .eq('id', transfer.player_id)
+          .single();
+          
+        // Get from team
+        const { data: fromTeam } = transfer.from_team_id ? await supabase
+          .from('teams')
+          .select('*')
+          .eq('id', transfer.from_team_id)
+          .single() : { data: null };
+          
+        // Get to team
+        const { data: toTeam } = transfer.to_team_id ? await supabase
+          .from('teams')
+          .select('*')
+          .eq('id', transfer.to_team_id)
+          .single() : { data: null };
+          
+        return {
+          ...transfer,
+          player,
+          from_team: fromTeam,
+          to_team: toTeam
+        };
+      }));
+      
+      setPendingTransfers(enhancedTransfers);
+    } catch (error) {
+      console.error('Error fetching pending transfers:', error);
+      setPendingTransfers([]);
     }
   };
 
@@ -267,6 +316,18 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
   };
 
   const renderTransferSystemMessage = () => {
+    if (!databaseSetupChecked) {
+      return (
+        <div className="bg-muted border rounded-md p-4 mb-4">
+          <h3 className="text-muted-foreground font-medium">Checking database configuration...</h3>
+          <div className="flex items-center gap-2 mt-2">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <p className="text-muted-foreground text-sm">Verifying transfer system setup</p>
+          </div>
+        </div>
+      );
+    }
+    
     if (!transfersTableExists) {
       return (
         <div className="bg-amber-50 border border-amber-300 rounded-md p-4 mb-4">
