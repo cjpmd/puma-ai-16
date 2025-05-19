@@ -21,6 +21,45 @@ export async function tableExists(tableName: string): Promise<boolean> {
 }
 
 /**
+ * Creates a column in a table if it doesn't exist
+ * @param tableName The name of the table
+ * @param columnName The name of the column to create
+ * @param columnType The SQL data type for the column
+ * @returns True if successful, false otherwise
+ */
+export async function createColumnIfNotExists(
+  tableName: string,
+  columnName: string,
+  columnType: string
+): Promise<boolean> {
+  try {
+    // First check if column exists
+    const exists = await columnExists(tableName, columnName);
+    
+    if (!exists) {
+      // If column doesn't exist, add it
+      const { error } = await supabase.rpc('add_column_if_not_exists', {
+        p_table_name: tableName,
+        p_column_name: columnName,
+        p_column_type: columnType
+      });
+      
+      if (error) {
+        console.error(`Error adding column ${columnName} to ${tableName}:`, error);
+        return false;
+      }
+      
+      console.log(`Added column ${columnName} to ${tableName}`);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`Unexpected error creating column ${columnName} in ${tableName}:`, error);
+    return false;
+  }
+}
+
+/**
  * Checks if a column exists in a table
  * @param tableName The name of the table
  * @param columnName The name of the column

@@ -1,13 +1,13 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { columnExists, createColumnIfNotExists } from "./columnUtils";
+import { columnExists, ensureColumnExists } from "./columnUtils";
 
 /**
  * Add linking_code column to players table
  */
 export const addLinkingCodeColumn = async (): Promise<boolean> => {
   try {
-    return await createColumnIfNotExists('players', 'linking_code', 'text');
+    return await ensureColumnExists('players', 'linking_code', 'text');
   } catch (error) {
     console.error("Error adding linking_code column:", error);
     return false;
