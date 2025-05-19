@@ -29,7 +29,7 @@ interface TeamUsersManagerProps {
   team: Team;
 }
 
-const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
+export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [newRole, setNewRole] = useState<AllowedUserRoles>("player");
