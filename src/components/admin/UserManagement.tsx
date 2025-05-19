@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Table, TableBody, TableCaption, TableCell, 
@@ -59,10 +58,6 @@ const UserManagement = () => {
         setError('Please provide both email and name');
         return;
       }
-
-      // Note: The auth.admin.listUsers API isn't available in client-side code
-      // We should use a server-side function for this in a production app
-      // For now, we'll skip the check and try to create the user directly
       
       let userId;
       
@@ -96,9 +91,9 @@ const UserManagement = () => {
         return;
       }
 
-      // Now create or update the profile
-      // Convert the 'user' role to 'admin' when storing in the DB to avoid type errors
-      const dbRole = newUserRole === 'user' ? 'admin' : newUserRole;
+      // Convert role to a string that the database accepts
+      // This is the key fix - ensuring we're using a string that the database accepts
+      const dbRole = newUserRole as string;
       
       const { error: profileError } = await supabase
         .from('profiles')

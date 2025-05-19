@@ -10,6 +10,26 @@ interface UseTeamSelectionsStateProps {
   teamId?: string;
 }
 
+// Define a more specific type for selections data
+interface TeamSelectionData {
+  id: string;
+  event_id: string;
+  event_type: string;
+  player_id: string;
+  position: string;
+  period_id: string;
+  period_number: number;
+  duration_minutes: number;
+  team_number: number;
+  is_substitute: boolean;
+  performance_category: string;
+  created_at: string;
+  updated_at: string;
+  position_key?: string;
+  team_id?: string;
+  formation_template?: string;
+}
+
 export const useTeamSelectionsState = ({
   onTeamSelectionsChange,
   fixtureId,
@@ -51,9 +71,10 @@ export const useTeamSelectionsState = ({
       if (data && data.length > 0) {
         const selectionsByPeriod: TeamSelectionsByPeriod = {};
 
-        data.forEach(selection => {
+        data.forEach((selection: TeamSelectionData) => {
           // Skip if teamId is specified and doesn't match
-          if (teamId && selection.team_id !== teamId) {
+          // Check both team_id and legacy team_number
+          if (teamId && selection.team_id && selection.team_id !== teamId) {
             return;
           }
 
@@ -65,7 +86,7 @@ export const useTeamSelectionsState = ({
             if (selection.formation_template) {
               setFormationTemplates(prev => ({
                 ...prev,
-                [periodId]: selection.formation_template
+                [periodId]: selection.formation_template || ''
               }));
             }
           }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -30,7 +29,7 @@ interface TeamUsersManagerProps {
   team?: Team;
 }
 
-// Define a more restrictive type for roles allowed in this component
+// Define a type for roles allowed in this component
 type TeamUserRole = 'admin' | 'manager' | 'coach' | 'player' | 'parent';
 
 export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
@@ -89,9 +88,13 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
       if (existingUsers && existingUsers.length > 0) {
         // User exists, update their role and team_id
         const user = existingUsers[0];
+        
+        // Convert role to a string that the database accepts
+        const dbRole = newRole as string;
+        
         const { error: updateError } = await supabase
           .from("profiles")
-          .update({ role: newRole, team_id: team.id })
+          .update({ role: dbRole, team_id: team.id })
           .eq("id", user.id);
 
         if (updateError) {

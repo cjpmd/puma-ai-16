@@ -16,6 +16,22 @@ import { MessageSquare, Loader2, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Define interfaces for types that don't exist in the schema
+interface WhatsAppSettings {
+  enabled: boolean;
+  business_phone_number: string;
+  id?: number;
+  updated_at?: string;
+}
+
+interface WhatsAppContact {
+  id: string;
+  name?: string;
+  phone_number: string;
+  last_interaction: string;
+  created_at?: string;
+}
+
 export const WhatsAppIntegration = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -24,7 +40,7 @@ export const WhatsAppIntegration = () => {
   const [testPhoneNumber, setTestPhoneNumber] = useState("");
   const [isTesting, setIsTesting] = useState(false);
   const [testSuccess, setTestSuccess] = useState(false);
-  const [whatsappContacts, setWhatsAppContacts] = useState<any[]>([]);
+  const [whatsappContacts, setWhatsAppContacts] = useState<WhatsAppContact[]>([]);
   const [showAllContacts, setShowAllContacts] = useState(false);
 
   useEffect(() => {
@@ -35,10 +51,28 @@ export const WhatsAppIntegration = () => {
   const loadSettings = async () => {
     setIsLoading(true);
     try {
+      // Use RPC function to ensure the table exists
+      await supabase.rpc('execute_sql', {
+        sql_string: `
+          CREATE TABLE IF NOT EXISTS whatsapp_settings (
+            id integer PRIMARY KEY,
+            enabled boolean DEFAULT false,
+            business_phone_number text,
+            updated_at timestamp with time zone DEFAULT now()
+          );
+          
+          -- Ensure at least one record exists
+          INSERT INTO whatsapp_settings (id, enabled, business_phone_number)
+          SELECT 1, false, ''
+          WHERE NOT EXISTS (SELECT 1 FROM whatsapp_settings WHERE id = 1);
+        `
+      });
+      
+      // Now query the settings
       const { data: settings, error } = await supabase
-        .from("whatsapp_settings")
-        .select("*")
-        .limit(1)
+        .from('whatsapp_settings')
+        .select('*')
+        .eq('id', 1)
         .single();
 
       if (!error && settings) {
@@ -54,20 +88,29 @@ export const WhatsAppIntegration = () => {
 
   const fetchContacts = async () => {
     try {
+      // Use RPC function to ensure the table exists
+      await supabase.rpc('execute_sql', {
+        sql_string: `
+          CREATE TABLE IF NOT EXISTS whatsapp_contacts (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            name text,
+            phone_number text NOT NULL,
+            last_interaction timestamp with time zone DEFAULT now(),
+            created_at timestamp with time zone DEFAULT now()
+          );
+        `
+      });
+      
+      // Now query the contacts
       const { data, error } = await supabase
-        .from("whatsapp_contacts")
-        .select("*")
-        .order("created_at", { ascending: false })
+        .from('whatsapp_contacts')
+        .select('*')
+        .order('created_at', { ascending: false })
         .limit(10);
 
       if (error) throw error;
       
-      // Type guard to ensure data is an array
-      if (Array.isArray(data)) {
-        setWhatsAppContacts(data);
-      } else {
-        setWhatsAppContacts([]);
-      }
+      setWhatsAppContacts(data || []);
     } catch (error) {
       console.error("Error fetching WhatsApp contacts:", error);
       setWhatsAppContacts([]);
@@ -80,10 +123,10 @@ export const WhatsAppIntegration = () => {
       const { error } = await supabase
         .from("whatsapp_settings")
         .upsert({
-          id: 1, // Assuming we're using a singleton pattern with id=1
+          id: 1, // Using a singleton pattern with id=1
           enabled: isEnabled,
           business_phone_number: phoneNumber,
-          updated_at: new Date(),
+          updated_at: new Date().toISOString(),
         });
 
       if (error) throw error;
@@ -129,8 +172,8 @@ export const WhatsAppIntegration = () => {
 
   // Display a limited set of contacts based on showAllContacts state
   const displayedContacts = showAllContacts
-    ? whatsAppContacts
-    : whatsAppContacts.slice(0, 5);
+    ? whatsappContacts
+    : whatsappContacts.slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -207,7 +250,7 @@ export const WhatsAppIntegration = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {whatsAppContacts && whatsAppContacts.length > 0 ? (
+          {whatsappContacts && whatsappContacts.length > 0 ? (
             <div className="space-y-4">
               <div className="grid grid-cols-3 font-medium text-sm">
                 <div>Name</div>
@@ -223,7 +266,7 @@ export const WhatsAppIntegration = () => {
                   </div>
                 </div>
               ))}
-              {whatsAppContacts.length > 5 && (
+              {whatsappContacts.length > 5 && (
                 <Button
                   variant="link"
                   onClick={() => setShowAllContacts(!showAllContacts)}
@@ -231,7 +274,7 @@ export const WhatsAppIntegration = () => {
                 >
                   {showAllContacts
                     ? "Show Less"
-                    : `Show All (${whatsAppContacts.length})`}
+                    : `Show All (${whatsappContacts.length})`}
                 </Button>
               )}
             </div>
