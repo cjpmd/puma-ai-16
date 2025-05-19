@@ -18,13 +18,19 @@ export const sendFixtureNotification = async (data: NotificationData) => {
   try {
     // If no groupId is provided in the data, fetch it from team settings
     if (!data.groupId) {
-      const { data: settings, error: settingsError } = await supabase
-        .from('team_settings')
-        .select('whatsapp_group_id')
-        .single();
-        
-      if (!settingsError && settings?.whatsapp_group_id) {
-        data.groupId = settings.whatsapp_group_id;
+      try {
+        const { data: settings, error: settingsError } = await supabase
+          .from('team_settings')
+          .select('*')
+          .single();
+          
+        // Check if settings exist and contain a whatsapp_group_id field
+        if (!settingsError && settings && 'whatsapp_group_id' in settings) {
+          data.groupId = settings.whatsapp_group_id;
+        }
+      } catch (err) {
+        console.error('Error fetching WhatsApp group ID:', err);
+        // Continue without a groupId
       }
     }
     

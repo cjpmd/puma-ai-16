@@ -8,22 +8,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { PerformanceCategory } from "@/types/player";
+import { PerformanceCategory, Player, transformDbPlayerToPlayer } from "@/types/player";
 
 interface TeamSelection {
   playerId: string;
   position: string;
   is_substitute: boolean;
   performanceCategory?: PerformanceCategory;
-}
-
-interface Player {
-  id: string;
-  name: string;
-  dateOfBirth?: string;
-  playerType?: string;
-  attributes?: any[];
-  [key: string]: any; // Allow other properties
 }
 
 interface TournamentTeamSelectionProps {
@@ -60,15 +51,7 @@ export const TournamentTeamSelection = ({
   });
 
   // Transform players data to match the expected Player interface
-  const players: Player[] = (playersData || []).map(p => ({
-    id: p.id,
-    name: p.name,
-    dateOfBirth: p.date_of_birth,
-    playerType: p.player_type,
-    // Add any other fields needed by components
-    age: p.age,
-    squadNumber: p.squad_number
-  }));
+  const players: Player[] = (playersData || []).map(p => transformDbPlayerToPlayer(p));
 
   useEffect(() => {
     if (isOpen) {

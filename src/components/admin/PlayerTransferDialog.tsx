@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -22,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowRight } from "lucide-react";
 import { tableExists } from '@/utils/database/columnUtils';
+import { setupTransferSystem } from '@/utils/database/transferSystem';
 
 interface PlayerTransferDialogProps {
   open: boolean;
@@ -172,29 +174,10 @@ export const PlayerTransferDialog = ({
       
       // If table doesn't exist, try to create it
       if (!transfersTableExists) {
-        try {
-          // Attempt to create the player_transfers table
-          const createTableSQL = `
-            CREATE TABLE IF NOT EXISTS public.player_transfers (
-              id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-              player_id uuid REFERENCES players(id) NOT NULL,
-              from_team_id uuid REFERENCES teams(id),
-              to_team_id uuid REFERENCES teams(id),
-              transfer_date timestamp with time zone DEFAULT now(),
-              status text DEFAULT 'pending',
-              reason text,
-              type text NOT NULL,
-              created_at timestamp with time zone DEFAULT now(),
-              updated_at timestamp with time zone DEFAULT now()
-            );
-          `;
-          
-          // Try to use the execute_sql RPC function if available
-          await supabase.rpc('execute_sql', { sql_string: createTableSQL });
-          
-          console.log('Successfully created player_transfers table');
-        } catch (createError) {
-          console.error('Failed to create player_transfers table:', createError);
+        // Use the setup function from transferSystem
+        const setupSuccess = await setupTransferSystem();
+        
+        if (!setupSuccess) {
           toast({
             title: "Error",
             description: "Failed to create transfers table. Please contact an administrator.",

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useTeamSelection } from "@/hooks/useTeamSelection";
 import { FormationSelector } from "@/components/FormationSelector";
@@ -8,23 +7,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { PerformanceCategory } from "@/types/player";
-import { tableExists } from '@/utils/database/columnUtils';
+import { PerformanceCategory, Player, transformDbPlayerToPlayer } from "@/types/player";
 
 interface TeamSelection {
   playerId: string;
   position: string;
   is_substitute: boolean;
   performanceCategory?: PerformanceCategory;
-}
-
-interface Player {
-  id: string;
-  name: string;
-  dateOfBirth?: string;
-  playerType?: string;
-  attributes?: any[];
-  [key: string]: any; // Allow other properties
 }
 
 interface FestivalTeamSelectionProps {
@@ -61,15 +50,7 @@ export const FestivalTeamSelection = ({
   });
 
   // Transform players data to match the expected Player interface
-  const players: Player[] = (playersData || []).map(p => ({
-    id: p.id,
-    name: p.name,
-    dateOfBirth: p.date_of_birth,
-    playerType: p.player_type,
-    // Add any other fields needed by components
-    age: p.age,
-    squadNumber: p.squad_number
-  }));
+  const players: Player[] = (playersData || []).map(p => transformDbPlayerToPlayer(p));
 
   useEffect(() => {
     if (isOpen) {
@@ -117,47 +98,15 @@ export const FestivalTeamSelection = ({
         }));
       });
       
-      // Check if table exists
-      const festivalTeamPlayersExists = await tableExists('festival_team_players');
-      
-      // If table doesn't exist, create it
-      if (!festivalTeamPlayersExists) {
-        try {
-          const { error } = await supabase.rpc('execute_sql', {
-            sql_string: `
-              CREATE TABLE IF NOT EXISTS public.festival_team_players (
-                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                festival_id UUID REFERENCES public.festivals(id),
-                team_id UUID REFERENCES public.festival_teams(id),
-                player_id UUID REFERENCES public.players(id),
-                position TEXT NOT NULL,
-                is_substitute BOOLEAN DEFAULT false,
-                performance_category TEXT DEFAULT 'MESSI',
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-              );
-            `
-          });
-          
-          if (error) {
-            console.error("Error creating festival_team_players table:", error);
-            throw error;
-          }
-        } catch (error) {
-          console.error("Error setting up database table:", error);
-          throw error;
-        }
-      }
-      
-      // Insert selections into database using the RPC function
+      // Insert selections into database using the festival_team_players table
       const insertPromises = Object.entries(formattedSelections).flatMap(([teamId, selections]) => 
         selections.map(selection => {
           const insertData = {
-            festival_id: festival.id,
-            team_id: teamId,
+            festival_team_id: teamId,
             player_id: selection.playerId,
             position: selection.position,
             is_substitute: selection.is_substitute,
-            performance_category: selection.performanceCategory || 'MESSI'
+            performance_category: selection.performanceCategory
           };
           
           return supabase

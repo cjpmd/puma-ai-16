@@ -1,263 +1,170 @@
-
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from 'react';
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useSession } from "@supabase/auth-helpers-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Loader2, Send, User } from "lucide-react";
 import { format } from "date-fns";
-import { Edit, Trash2, Loader2, Check } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface CoachingCommentsProps {
   playerId: string;
 }
 
-export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
-  const [comments, setComments] = useState<any[]>([]);
-  const [newComment, setNewComment] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const { toast } = useToast();
-  const session = useSession();
+interface Comment {
+  id: string;
+  player_id: string;
+  coach_id: string;
+  comment: string;
+  created_at: string;
+  updated_at: string;
+  coach?: {
+    name: string;
+    email: string;
+    avatar_url?: string;
+  };
+}
 
-  const fetchComments = async () => {
-    setIsLoading(true);
+export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  
+  // Fetch comments for this player
+  useEffect(() => {
+    const fetchComments = async () => {
+      if (!playerId) return;
+      
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('coaching_comments')
+          .select(`
+            *,
+            coach:coach_id (
+              name,
+              email,
+              avatar_url
+            )
+          `)
+          .eq('player_id', playerId)
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        setComments(data || []);
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchComments();
+  }, [playerId]);
+  
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !playerId) return;
+    
+    setIsSending(true);
     try {
-      const { data, error } = await supabase
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) {
+        console.error('No authenticated user found');
+        return;
+      }
+      
+      // Use the correct field names for the coaching_comments table
+      const { error } = await supabase
+        .from('coaching_comments')
+        .insert({
+          player_id: playerId,
+          coach_id: user.id,
+          comment: newComment // Make sure to use 'comment' as per the table schema
+        });
+        
+      if (error) throw error;
+      
+      // Refresh comments after adding
+      const { data, error: fetchError } = await supabase
         .from('coaching_comments')
         .select(`
           *,
-          profiles:coach_id (
-            name
+          coach:coach_id (
+            name,
+            email,
+            avatar_url
           )
         `)
         .eq('player_id', playerId)
         .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setComments(data || []);
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load coaching comments",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (playerId) {
-      fetchComments();
-    }
-  }, [playerId]);
-
-  const handleAddComment = async () => {
-    if (!newComment.trim() || !session?.user?.id) return;
-    
-    setIsSaving(true);
-    setSaveSuccess(false);
-    try {
-      // Get the profile id
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .single();
         
-      if (profileError) throw profileError;
-
-      // Check if the coaching_comments table has a 'content' field or 'comment' field
-      try {
-        const { error } = await supabase
-          .from('coaching_comments')
-          .insert({
-            player_id: playerId,
-            coach_id: profileData.id,
-            comment: newComment, // Use comment field if that's what exists in the table
-          });
-          
-        if (error) throw error;
-      } catch (commentError) {
-        // If the first attempt fails, try with 'content' field
-        const { error: contentError } = await supabase
-          .from('coaching_comments')
-          .insert({
-            player_id: playerId,
-            coach_id: profileData.id,
-            content: newComment, // Try content field instead
-          });
-          
-        if (contentError) throw contentError;
-      }
-
-      setSaveSuccess(true);
-      
-      // Show success feedback momentarily before resetting
-      setTimeout(() => {
-        setNewComment("");
-        setSaveSuccess(false);
-        fetchComments();
-      }, 1000);
-      
-      toast({
-        title: "Success",
-        description: "Comment added successfully",
-      });
+      if (fetchError) throw fetchError;
+      setComments(data || []);
+      setNewComment('');
     } catch (error) {
       console.error('Error adding comment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add comment",
-        variant: "destructive",
-      });
     } finally {
-      setIsSaving(false);
+      setIsSending(false);
     }
   };
-
-  const handleDeleteComment = async () => {
-    if (!deleteCommentId) return;
-    
-    setIsDeleting(true);
-    try {
-      const { error } = await supabase
-        .from('coaching_comments')
-        .delete()
-        .eq('id', deleteCommentId);
-
-      if (error) throw error;
-      
-      fetchComments();
-      setDeleteCommentId(null);
-      toast({
-        title: "Success",
-        description: "Comment deleted successfully",
-      });
-    } catch (error) {
-      console.error('Error deleting comment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete comment",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
+  
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle>Coach's Comments</CardTitle>
+        <CardTitle className="text-lg">Coach Comments</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {session?.user && (
-            <div className="space-y-2">
-              <Textarea
-                placeholder="Add a comment about this player..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="min-h-32"
-              />
-              <Button 
-                onClick={handleAddComment} 
-                disabled={isSaving || !newComment.trim()}
-                className={`w-full transition-all ${saveSuccess ? 'bg-green-500 hover:bg-green-600' : ''}`}
-              >
-                {isSaving ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Adding...
-                  </span>
-                ) : saveSuccess ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Check className="h-4 w-4" />
-                    Comment Added!
-                  </span>
-                ) : (
-                  "Add Comment"
-                )}
-              </Button>
-            </div>
-          )}
-          
+      <CardContent className="space-y-4">
+        <div className="flex items-start space-x-2">
+          <Textarea
+            placeholder="Add a coaching comment..."
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            className="flex-1 resize-none"
+            rows={3}
+          />
+          <Button 
+            onClick={handleAddComment} 
+            disabled={isSending || !newComment.trim()}
+            size="icon"
+          >
+            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          </Button>
+        </div>
+        
+        <div className="space-y-4 mt-4">
           {isLoading ? (
             <div className="flex justify-center py-4">
-              <div className="animate-pulse rounded-md bg-slate-200 h-24 w-full"></div>
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : comments.length > 0 ? (
-            <ScrollArea className="h-[300px] pr-4">
-              <div className="space-y-4">
-                {comments.map((comment) => (
-                  <div 
-                    key={comment.id} 
-                    className="p-4 border rounded-lg space-y-2"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium">{comment.profiles?.name || 'Anonymous Coach'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(comment.created_at), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeleteCommentId(comment.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    <p className="whitespace-pre-wrap">{comment.content || comment.comment}</p>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
+          ) : comments.length === 0 ? (
+            <p className="text-center text-muted-foreground py-4">No comments yet</p>
           ) : (
-            <p className="text-muted-foreground text-center py-6">No comments added yet.</p>
+            comments.map((comment) => (
+              <div key={comment.id} className="flex space-x-3 pb-3 border-b">
+                <Avatar className="h-8 w-8">
+                  {comment.coach?.avatar_url ? (
+                    <AvatarImage src={comment.coach.avatar_url} alt={comment.coach?.name || 'Coach'} />
+                  ) : (
+                    <AvatarFallback>
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">{comment.coach?.name || 'Coach'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(comment.created_at), 'PPp')}
+                    </p>
+                  </div>
+                  <p className="text-sm mt-1">{comment.comment}</p>
+                </div>
+              </div>
+            ))
           )}
         </div>
       </CardContent>
-
-      <AlertDialog open={!!deleteCommentId} onOpenChange={() => setDeleteCommentId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Comment</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this comment? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteComment}
-              disabled={isDeleting}
-              className={isDeleting ? "opacity-70" : ""}
-            >
-              {isDeleting ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Deleting...
-                </span>
-              ) : (
-                "Delete"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Card>
   );
 };

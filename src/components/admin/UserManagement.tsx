@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -28,7 +29,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { UserRole } from '@/components/auth/ProtectedRoute';
@@ -36,14 +36,14 @@ import { UserRole } from '@/components/auth/ProtectedRoute';
 interface User {
   id: string;
   email: string;
-  role: UserRole; // Use the imported UserRole type
+  role: UserRole;
   name: string;
   created_at: string;
-  last_sign_in_at: string;
-  team_id?: string;
-  team_name?: string;
-  club_id?: string;
-  club_name?: string;
+  last_sign_in_at?: string | null;
+  team_id?: string | null;
+  team_name?: string | null;
+  club_id?: string | null;
+  club_name?: string | null;
 }
 
 export function UserManagement() {
@@ -64,38 +64,31 @@ export function UserManagement() {
   const fetchUsers = async () => {
     setIsLoading(true)
     try {
+      // Get directly from profiles instead of using the complex join
       const { data, error } = await supabase
         .from("profiles")
-        .select(`
-          *,
-          teams (
-            team_name,
-            club_id,
-            clubs (
-              name
-            )
-          )
-        `)
-        .order('created_at', { ascending: false });
+        .select("*");
 
       if (error) {
         throw new Error(error.message)
       }
 
-      const usersWithTeams = data.map(profile => ({
+      // Transform the raw data into the User interface format
+      const usersData = data.map(profile => ({
         id: profile.id,
-        email: profile.email,
-        role: profile.role,
-        name: profile.name,
+        email: profile.email || '',
+        role: profile.role as UserRole,
+        name: profile.name || '',
         created_at: profile.created_at,
-        last_sign_in_at: profile.last_sign_in_at,
-        team_id: profile.teams?.id || null,
-        team_name: profile.teams?.team_name || null,
-        club_id: profile.teams?.clubs?.id || null,
-        club_name: profile.teams?.clubs?.name || null,
+        // Set defaults for missing fields
+        last_sign_in_at: null,
+        team_id: null,
+        team_name: null,
+        club_id: profile.club_id || null,
+        club_name: null,
       }));
 
-      setUsers(usersWithTeams as User[])
+      setUsers(usersData as User[])
     } catch (error: any) {
       toast({
         title: "Error",
@@ -110,8 +103,8 @@ export function UserManagement() {
   const filteredUsers = users.filter((user) => {
     const search = searchQuery.toLowerCase()
     return (
-      user.name.toLowerCase().includes(search) ||
-      user.email.toLowerCase().includes(search)
+      user.name?.toLowerCase().includes(search) ||
+      user.email?.toLowerCase().includes(search)
     )
   })
 
@@ -173,7 +166,7 @@ export function UserManagement() {
     { value: 'manager', label: 'Manager' },
     { value: 'coach', label: 'Coach' },
     { value: 'parent', label: 'Parent' },
-    { value: 'player', label: 'Player' }, // Changed from 'user' to 'player'
+    { value: 'player', label: 'Player' },
     { value: 'globalAdmin', label: 'Global Admin' }
   ];
 
@@ -224,7 +217,7 @@ export function UserManagement() {
                     <Badge variant="secondary">{user.role}</Badge>
                   </TableCell>
                   <TableCell>
-                    {format(new Date(user.created_at), 'PPP')}
+                    {user.created_at ? format(new Date(user.created_at), 'PPP') : 'Unknown'}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
@@ -271,9 +264,8 @@ export function UserManagement() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role-select">Role</Label>
               <Select
-                id="role"
                 value={role || undefined}
                 onValueChange={(value) => setRole(value as UserRole)}
               >

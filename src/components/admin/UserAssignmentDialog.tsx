@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building, Users } from "lucide-react";
-import { columnExists, createColumnIfNotExists } from '@/utils/database/columnUtils';
+import { columnExists } from '@/utils/database/columnUtils';
 
 interface UserAssignmentDialogProps {
   open: boolean;
@@ -209,20 +209,19 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
       console.log("Selected team:", selectedTeam);
       console.log("Is club only:", isClubOnly);
       
-      // Check if the profiles table has the club_id column, create if not exists
+      // Check if the profiles table has the club_id column
       const hasClubIdColumn = await columnExists('profiles', 'club_id');
       
       if (!hasClubIdColumn) {
         console.log("club_id column doesn't exist, attempting to add it...");
         
-        const columnCreated = await createColumnIfNotExists(
-          'profiles', 
-          'club_id', 
-          'uuid references clubs(id)'
-        );
+        // Use execute_sql RPC to add the column
+        const { error: alterTableError } = await supabase.rpc('execute_sql', {
+          sql_string: `ALTER TABLE profiles ADD COLUMN IF NOT EXISTS club_id UUID REFERENCES clubs(id);`
+        });
         
-        if (!columnCreated) {
-          throw new Error("Failed to add club_id column to profiles. Please contact support to update your database schema.");
+        if (alterTableError) {
+          throw new Error("Failed to add club_id column to profiles: " + alterTableError.message);
         }
         
         console.log("club_id column added successfully");
