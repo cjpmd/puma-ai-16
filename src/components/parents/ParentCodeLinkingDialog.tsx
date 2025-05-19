@@ -1,245 +1,183 @@
 
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { UserPlus, Key, Lock, Shield, Check, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-
-const linkCodeSchema = z.object({
-  linkingCode: z
-    .string()
-    .min(4, "Code should be at least 4 characters")
-    .max(36, "Code should not exceed 36 characters"),
-});
-
-interface Player {
-  id: string;
-  name: string;
-  squad_number: number;
-  team_id?: string;
-}
+import { Loader2 } from "lucide-react";
 
 export const ParentCodeLinkingDialog = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [linkingCode, setLinkingCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [linkedPlayer, setLinkedPlayer] = useState<Player | null>(null);
-  const { toast } = useToast();
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   
-  const form = useForm<z.infer<typeof linkCodeSchema>>({
-    resolver: zodResolver(linkCodeSchema),
-    defaultValues: {
-      linkingCode: "",
-    },
-  });
-
-  const linkPlayerWithCode = async (values: z.infer<typeof linkCodeSchema>) => {
-    if (!profile?.id) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!linkingCode.trim()) {
+      toast.error("Please enter a valid linking code");
+      return;
+    }
     
     setIsSubmitting(true);
+    
     try {
-      // Step 1: Find player with this linking code
-      const { data: playerData, error: playerError } = await supabase
-        .from('players')
-        .select(`
-          id,
-          name,
-          squad_number,
-          team_id
-        `)
-        .eq('linking_code', values.linkingCode)
-        .maybeSingle();
+      console.log("Linking parent with code:", linkingCode);
       
-      if (playerError || !playerData) {
-        throw new Error("Invalid linking code or player not found");
-      }
+      // First, look up the player with this linking code
+      const { data: players, error: playersError } = await supabase
+        .from("players")
+        .select("*")
+        .eq("linking_code", linkingCode.trim())
+        .limit(1);
       
-      // Step 2: Check if link already exists
-      const { data: existingLink, error: checkError } = await supabase
-        .from('player_parents')
-        .select('id')
-        .eq('player_id', playerData.id)
-        .eq('parent_id', profile.id)
-        .maybeSingle();
+      if (playersError) throw playersError;
       
-      if (checkError) throw checkError;
-      
-      if (existingLink) {
-        toast({
-          description: "You're already linked to this player",
-        });
-        setIsOpen(false);
-        setIsSubmitting(false);
+      if (!players || players.length === 0) {
+        toast.error("Invalid linking code. Please check the code and try again.");
         return;
       }
       
-      // Step 3: Create new link between parent and player
-      const { error } = await supabase
-        .from('player_parents')
-        .insert([
-          { 
-            player_id: playerData.id, 
-            parent_id: profile.id,
-            name: profile.email,
-            email: profile.email,
-            is_verified: true
-          }
-        ]);
+      const player = players[0];
+      console.log("Found player:", player);
       
-      if (error) throw error;
+      // Check if player_parents table exists
+      const { data: tableExists, error: tableError } = await supabase
+        .from('pg_tables')
+        .select('tablename')
+        .eq('schemaname', 'public')
+        .eq('tablename', 'player_parents');
+        
+      if (tableError || !tableExists) {
+        // Create player_parents table
+        console.log("player_parents table doesn't exist, attempting to create");
+        
+        const createTableSQL = `
+          CREATE TABLE IF NOT EXISTS public.player_parents (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+            player_id UUID REFERENCES public.players(id),
+            parent_id UUID REFERENCES auth.users(id),
+            parent_name TEXT,
+            email TEXT,
+            phone TEXT,
+            is_verified BOOLEAN DEFAULT FALSE
+          );
+        `;
+        
+        try {
+          await supabase.rpc('execute_sql', { sql_string: createTableSQL });
+          console.log("Successfully created player_parents table");
+        } catch (createError) {
+          console.error("Failed to create player_parents table:", createError);
+          toast.error("Failed to set up parent-child linking. Please contact an administrator.");
+          return;
+        }
+      }
       
-      // Set player data
-      setLinkedPlayer(playerData);
+      // Look for existing parent link
+      const { data: existingLinks, error: linkError } = await supabase
+        .from("player_parents")
+        .select("*")
+        .match({
+          player_id: player.id,
+          parent_id: profile?.id
+        })
+        .limit(1);
       
-      // Show success message
-      toast({
-        title: "Success",
-        description: `Successfully linked to ${playerData.name}`,
-      });
+      if (linkError) throw linkError;
       
-      // Wait for the success state to be visible for a moment
-      setTimeout(() => {
-        setIsSubmitting(false);
-      }, 1500);
-    } catch (error) {
-      console.error('Error linking player:', error);
+      if (existingLinks && existingLinks.length > 0) {
+        toast.error("You are already linked to this player");
+        return;
+      }
+      
+      // Create parent-child link
+      const { error: insertError } = await supabase
+        .from("player_parents")
+        .insert({
+          player_id: player.id,
+          parent_id: profile?.id,
+          parent_name: profile?.full_name || profile?.email,
+          email: profile?.email,
+          is_verified: true
+        });
+      
+      if (insertError) throw insertError;
+      
+      // Clear the linking code after use
+      const { error: updateError } = await supabase
+        .from("players")
+        .update({
+          linking_code: null
+        })
+        .eq("id", player.id);
+      
+      if (updateError) {
+        console.warn("Could not clear linking code after use:", updateError);
+      }
+      
+      // Success - close dialog and show toast
+      toast.success("Successfully linked to child's account!");
+      await refreshProfile();
+      setOpen(false);
+      setLinkingCode("");
+    } catch (error: any) {
+      console.error("Error linking parent:", error);
+      toast.error(error.message || "An error occurred while linking accounts");
+    } finally {
       setIsSubmitting(false);
-      toast({
-        variant: "destructive",
-        description: error instanceof Error ? error.message : "Failed to link to player",
-      });
     }
   };
-
-  const handleClose = () => {
-    if (linkedPlayer) {
-      // If we successfully linked, reload the dashboard
-      window.location.reload();
-    }
-    setIsOpen(false);
-    setLinkedPlayer(null);
-    form.reset();
-  };
-
+  
   return (
-    <>
-      <Button variant="outline" className="gap-2" onClick={() => setIsOpen(true)}>
-        <Key className="h-4 w-4" />
-        Enter Linking Code
-      </Button>
-      
-      <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Link to Your Child</DialogTitle>
-            <DialogDescription>
-              Enter the player linking code provided by your team administrator
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            {!linkedPlayer ? (
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(linkPlayerWithCode)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="linkingCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Player Linking Code</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="Enter code (e.g., A12BCD)"
-                            className="font-mono text-center text-lg tracking-wider"
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Your team administrator can provide you with this code
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="bg-muted/30 p-3 rounded-md">
-                    <div className="flex items-center mb-2 gap-2">
-                      <Lock className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm font-medium">Secure Linking Process</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      This process securely links your account to your child's profile, 
-                      giving you access to view their information and manage their subscriptions.
-                    </p>
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Verifying...
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        Link to Player
-                      </span>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            ) : (
-              <div className="space-y-4">
-                <div className="bg-green-50 p-4 border border-green-200 rounded-md flex flex-col items-center gap-2">
-                  <div className="bg-green-100 rounded-full p-2 mb-1">
-                    <Check className="h-5 w-5 text-green-600" />
-                  </div>
-                  <p className="font-medium text-green-800">Successfully Linked!</p>
-                  <p className="text-center text-sm text-green-700">
-                    You are now linked to {linkedPlayer.name}
-                  </p>
-                </div>
-                
-                <div className="bg-muted/30 p-3 rounded-md">
-                  <p className="text-sm">
-                    You can now view your child's information and manage their account from your parent dashboard.
-                  </p>
-                </div>
-                
-                <Button onClick={handleClose} className="w-full">
-                  Go to Parent Dashboard
-                </Button>
-              </div>
-            )}
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>Link Child Account</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Link Child Account</DialogTitle>
+          <DialogDescription>
+            Enter the linking code provided by your child's coach to connect your account.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="linkingCode">Child Linking Code</Label>
+              <Input
+                id="linkingCode"
+                value={linkingCode}
+                onChange={(e) => setLinkingCode(e.target.value)}
+                placeholder="Enter 6-digit code"
+                required
+              />
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
-    </>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Link Account
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -34,9 +34,6 @@ const PlayerDetailsPage = () => {
         const exists = await columnExists('players', 'profile_image');
         console.log(`Profile image column available: ${exists}`);
         setProfileImageAvailable(exists);
-        
-        // Note: We're no longer trying to add the column since it requires SQL execution privileges
-        // We'll just adapt the UI to work with or without the column
       } catch (error) {
         console.error('Error checking profile image column:', error);
         setProfileImageAvailable(false);
@@ -156,23 +153,29 @@ const PlayerDetailsPage = () => {
       const fetchParents = async () => {
         setIsLoading(true);
         try {
-          // Don't try to create the table, just check if it exists
-          const { data, error } = await supabase
-            .from("player_parents")
-            .select("*")
-            .eq("player_id", id);
+          // Check if player_parents table exists
+          const { data: tableExists, error: tableError } = await supabase
+            .from('pg_tables')
+            .select('tablename')
+            .eq('schemaname', 'public')
+            .eq('tablename', 'player_parents');
+            
+          if (tableError || !tableExists) {
+            console.log("player_parents table doesn't exist");
+            setParents([]);
+          } else {
+            // Get parents data
+            const { data, error } = await supabase
+              .from("player_parents")
+              .select("*")
+              .eq("player_id", id);
 
-          if (error) {
-            // If table doesn't exist, handle it silently
-            if (error.code === '42P01') { // Relation doesn't exist
-              console.warn("player_parents table doesn't exist");
-              setParents([]);
-            } else {
+            if (error) {
               console.error("Error fetching parents:", error);
               setParents([]);
+            } else {
+              setParents(data || []);
             }
-          } else {
-            setParents(data || []);
           }
         } catch (error) {
           console.error("Failed to fetch parents:", error);

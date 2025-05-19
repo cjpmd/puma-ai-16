@@ -1,80 +1,74 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Checks if a column exists in a given table
- * @param table The table name to check
- * @param column The column name to check
- * @returns Promise<boolean> whether the column exists
+ * Check if a column exists in a table
  */
-export const columnExists = async (table: string, column: string): Promise<boolean> => {
+export const columnExists = async (
+  tableName: string,
+  columnName: string
+): Promise<boolean> => {
   try {
-    // Try direct query approach first
-    const { data, error } = await supabase
-      .from('information_schema.columns')
-      .select('column_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', table)
-      .eq('column_name', column);
+    // First check if the table exists
+    const { data: tableExists, error: tableError } = await supabase
+      .from('pg_tables')
+      .select('tablename')
+      .eq('schemaname', 'public')
+      .eq('tablename', tableName)
+      .maybeSingle();
     
-    if (error) {
-      console.error(`Error checking if column ${column} exists in table ${table}:`, error);
-      
-      // If the direct query fails, try a test query on the table with the column
-      try {
-        const { data: testData, error: testError } = await supabase
-          .from(table)
-          .select(column)
-          .limit(1);
-        
-        return !testError; // If no error, column exists
-      } catch (testQueryError) {
-        console.error(`Test query failed for ${table}.${column}:`, testQueryError);
-        return false;
-      }
+    if (tableError || !tableExists) {
+      console.error(`Table '${tableName}' doesn't exist:`, tableError);
+      return false;
     }
     
-    return data && data.length > 0;
-  } catch (error) {
-    console.error(`Error checking if column ${column} exists in table ${table}:`, error);
-    return false;
+    // Then check if column exists using RPC if available
+    try {
+      const { data, error } = await supabase.rpc(
+        'check_column_exists',
+        { p_table: tableName, p_column: columnName }
+      );
+      
+      if (error) throw error;
+      return !!data;
+    } catch (rpcError) {
+      // Fallback to direct query if RPC fails
+      console.warn('RPC check_column_exists failed, using fallback:', rpcError);
+      
+      const { data, error } = await supabase.from('information_schema.columns')
+        .select('column_name')
+        .eq('table_schema', 'public')
+        .eq('table_name', tableName)
+        .eq('column_name', columnName)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return !!data;
+    }
+  } catch (err) {
+    console.error(`Error checking if column ${columnName} exists in ${tableName}:`, err);
+    // In case of error, return true to prevent blocking app functionality
+    return true;
   }
 };
 
 /**
- * Checks if a table exists in the database
- * @param table The table name to check
- * @returns Promise<boolean> whether the table exists
+ * Check if a table exists
  */
-export const tableExists = async (table: string): Promise<boolean> => {
+export const tableExists = async (tableName: string): Promise<boolean> => {
   try {
-    // Try direct query approach first
     const { data, error } = await supabase
-      .from('information_schema.tables')
-      .select('table_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', table);
+      .from('pg_tables')
+      .select('tablename')
+      .eq('schemaname', 'public')
+      .eq('tablename', tableName)
+      .maybeSingle();
     
-    if (error) {
-      console.error(`Error checking if table ${table} exists:`, error);
-      
-      // If the direct query fails, try a test query on the table
-      try {
-        const { data: testData, error: testError } = await supabase
-          .from(table)
-          .select('*')
-          .limit(1);
-        
-        return !testError || testError.code !== '42P01'; // If no error or error is not "table does not exist"
-      } catch (testQueryError: any) {
-        // Check if the error is specifically about the table not existing
-        return testQueryError.code !== '42P01';
-      }
-    }
-    
-    return data && data.length > 0;
-  } catch (error) {
-    console.error(`Error checking if table ${table} exists:`, error);
-    return false;
+    if (error) throw error;
+    return !!data;
+  } catch (err) {
+    console.error(`Error checking if table ${tableName} exists:`, err);
+    // In case of error, return true to prevent blocking app functionality
+    return true;
   }
 };

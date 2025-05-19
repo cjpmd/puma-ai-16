@@ -1,227 +1,131 @@
 
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Shield, Key, Lock, Check, Loader2, User } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-
-const linkCodeSchema = z.object({
-  linkingCode: z
-    .string()
-    .min(4, "Code should be at least 4 characters")
-    .max(36, "Code should not exceed 36 characters"),
-});
-
-interface Player {
-  id: string;
-  name: string;
-  squad_number: number;
-  team_id?: string;
-}
+import { Loader2 } from "lucide-react";
 
 export const PlayerCodeLinkingDialog = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [linkingCode, setLinkingCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [linkedPlayer, setLinkedPlayer] = useState<Player | null>(null);
-  const { toast } = useToast();
-  const { profile, hasRole, addRole } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   
-  const form = useForm<z.infer<typeof linkCodeSchema>>({
-    resolver: zodResolver(linkCodeSchema),
-    defaultValues: {
-      linkingCode: "",
-    },
-  });
-
-  const linkPlayerWithCode = async (values: z.infer<typeof linkCodeSchema>) => {
-    if (!profile?.id) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!linkingCode.trim()) {
+      toast.error("Please enter a valid linking code");
+      return;
+    }
     
     setIsSubmitting(true);
+    
     try {
-      // Step 1: Find player with this linking code
-      const { data: playerData, error: playerError } = await supabase
-        .from('players')
-        .select(`
-          id,
-          name,
-          squad_number,
-          team_id
-        `)
-        .eq('linking_code', values.linkingCode)
-        .maybeSingle();
+      console.log("Linking player with code:", linkingCode);
       
-      if (playerError || !playerData) {
-        throw new Error("Invalid linking code or player not found");
+      // First, look up the player with this linking code
+      const { data: players, error: playersError } = await supabase
+        .from("players")
+        .select("*")
+        .eq("linking_code", linkingCode.trim())
+        .limit(1);
+      
+      if (playersError) throw playersError;
+      
+      if (!players || players.length === 0) {
+        toast.error("Invalid linking code. Please check the code and try again.");
+        return;
       }
       
-      // Step 2: Link the player profile directly to user account
-      // Instead of using player_parents table, we'll add self_linked: true to the player record
+      const player = players[0];
+      console.log("Found player:", player);
+      
+      // Check if player already linked to another user
+      if (player.user_id && player.user_id !== profile?.id) {
+        toast.error("This player is already linked to another account");
+        return;
+      }
+      
+      // Check if player.self_linked exists and if true, prevent linking
+      if (player.self_linked) {
+        toast.error("This player account has already been linked");
+        return;
+      }
+      
+      // Update the player record to link to this user
       const { error: updateError } = await supabase
-        .from('players')
+        .from("players")
         .update({
+          user_id: profile?.id,
           self_linked: true,
-          user_id: profile.id
+          linking_code: null, // Clear the linking code after use
         })
-        .eq('id', playerData.id);
+        .eq("id", player.id);
       
       if (updateError) throw updateError;
       
-      // Step 3: Add player role if user doesn't have it
-      if (!hasRole('player')) {
-        await addRole('player');
-      }
-      
-      // Set player data
-      setLinkedPlayer(playerData);
-      
-      // Show success message
-      toast({
-        title: "Success",
-        description: `Successfully linked to your player profile: ${playerData.name}`,
-      });
-      
-      // Wait for the success state to be visible for a moment
-      setTimeout(() => {
-        setIsSubmitting(false);
-      }, 1500);
-    } catch (error) {
-      console.error('Error linking player:', error);
+      // Success - close dialog and show toast
+      toast.success("Successfully linked to player account!");
+      await refreshProfile();
+      setOpen(false);
+      setLinkingCode("");
+    } catch (error: any) {
+      console.error("Error linking player:", error);
+      toast.error(error.message || "An error occurred while linking player account");
+    } finally {
       setIsSubmitting(false);
-      toast({
-        variant: "destructive",
-        description: error instanceof Error ? error.message : "Failed to link to player profile",
-      });
     }
   };
-
-  const handleClose = () => {
-    if (linkedPlayer) {
-      // If we successfully linked, reload the dashboard
-      window.location.reload();
-    }
-    setIsOpen(false);
-    setLinkedPlayer(null);
-    form.reset();
-  };
-
+  
   return (
-    <>
-      <Button variant="outline" className="gap-2" onClick={() => setIsOpen(true)}>
-        <User className="h-4 w-4" />
-        Link Player Profile
-      </Button>
-      
-      <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Link to Your Player Profile</DialogTitle>
-            <DialogDescription>
-              Enter the player linking code provided by your team administrator
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            {!linkedPlayer ? (
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(linkPlayerWithCode)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="linkingCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Player Linking Code</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="Enter code (e.g., A12BCD)"
-                            className="font-mono text-center text-lg tracking-wider"
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Your team administrator can provide you with this code
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="bg-muted/30 p-3 rounded-md">
-                    <div className="flex items-center mb-2 gap-2">
-                      <Lock className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm font-medium">Secure Linking Process</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      This process securely links your account to your player profile, 
-                      giving you access to view your information and statistics.
-                    </p>
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Verifying...
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        Link to Player
-                      </span>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            ) : (
-              <div className="space-y-4">
-                <div className="bg-green-50 p-4 border border-green-200 rounded-md flex flex-col items-center gap-2">
-                  <div className="bg-green-100 rounded-full p-2 mb-1">
-                    <Check className="h-5 w-5 text-green-600" />
-                  </div>
-                  <p className="font-medium text-green-800">Successfully Linked!</p>
-                  <p className="text-center text-sm text-green-700">
-                    You are now linked to your player profile: {linkedPlayer.name}
-                  </p>
-                </div>
-                
-                <div className="bg-muted/30 p-3 rounded-md">
-                  <p className="text-sm">
-                    You can now view your player information and statistics from your player dashboard.
-                  </p>
-                </div>
-                
-                <Button onClick={handleClose} className="w-full">
-                  Go to Player Dashboard
-                </Button>
-              </div>
-            )}
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>Link Player Account</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Link Player Account</DialogTitle>
+          <DialogDescription>
+            Enter the player linking code provided by your coach to connect your account.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="linkingCode">Player Linking Code</Label>
+              <Input
+                id="linkingCode"
+                value={linkingCode}
+                onChange={(e) => setLinkingCode(e.target.value)}
+                placeholder="Enter 6-digit code"
+                required
+              />
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
-    </>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Link Account
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -3,126 +3,84 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Add linking_code column to players table
- * This is a standalone function exposed to UI components
  */
 export const addLinkingCodeColumn = async (): Promise<boolean> => {
   try {
-    console.log("Attempting to add linking_code column to players table...");
+    // Check if players table exists
+    const { data: tableExists, error: tableError } = await supabase
+      .from('pg_tables')
+      .select('tablename')
+      .eq('schemaname', 'public')
+      .eq('tablename', 'players')
+      .single();
     
-    // Try to verify if the column already exists
-    try {
-      const { data, error } = await supabase
-        .from('players')
-        .select('linking_code')
-        .limit(1);
-      
-      // If we don't get an error about the column, it likely exists
-      if (!error) {
-        console.log("linking_code column already exists");
-        return true;
-      } else if (!error.message?.includes('does not exist')) {
-        console.warn("Error checking linking_code:", error);
-      }
-    } catch (checkError) {
-      console.warn("Exception checking linking_code:", checkError);
+    if (tableError) {
+      console.error("Error checking players table:", tableError);
+      return false;
     }
     
-    // Try the RPC method, though we expect it to fail with 401
+    // First check if column already exists
+    const { data: columns, error: columnsError } = await supabase
+      .from('information_schema.columns')
+      .select('column_name')
+      .eq('table_schema', 'public')
+      .eq('table_name', 'players')
+      .eq('column_name', 'linking_code');
+    
+    if (columnsError) {
+      console.error("Error checking linking_code column:", columnsError);
+      return false;
+    }
+    
+    // If column already exists, return true
+    if (columns && columns.length > 0) {
+      console.log("Linking code column already exists");
+      return true;
+    }
+    
+    // Try to add column using RPC
+    const addColumnSQL = `
+      ALTER TABLE public.players
+      ADD COLUMN IF NOT EXISTS linking_code text;
+    `;
+    
     try {
-      await supabase.rpc('execute_sql', {
-        sql_string: `ALTER TABLE players ADD COLUMN IF NOT EXISTS linking_code TEXT DEFAULT gen_random_uuid()::text;`
-      });
-      console.log("Added linking_code column via RPC");
+      await supabase.rpc('execute_sql', { sql_string: addColumnSQL });
+      console.log("Successfully added linking_code column");
       return true;
     } catch (rpcError) {
-      console.warn("RPC error adding linking_code column:", rpcError);
-    }
-    
-    // As a last resort, try a direct update approach on one row
-    // This might fail, but it's worth trying
-    try {
-      // Get first player to test
-      const { data: playerData } = await supabase
-        .from('players')
-        .select('id')
-        .limit(1);
+      console.error("Failed to add linking_code column via RPC:", rpcError);
       
-      if (playerData && playerData.length > 0) {
-        // Try to update the player with a linking code field
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        const { error: updateError } = await supabase
-          .from('players')
-          .update({ linking_code: code })
-          .eq('id', playerData[0].id);
-        
-        if (!updateError) {
-          console.log("Successfully updated player with linking_code");
-          return true;
-        } else {
-          console.warn("Error adding linking_code via update:", updateError);
-        }
-      }
-    } catch (updateError) {
-      console.warn("Exception in update approach:", updateError);
-    }
-    
-    // If we get here, we couldn't add the column
-    console.warn("Could not add linking_code column - database permissions issue");
-    return false;
-  } catch (error) {
-    console.error("Error in addLinkingCodeColumn:", error);
-    return false;
-  }
-};
-
-/**
- * Create player_parents table if it doesn't exist
- */
-export const createPlayerParentsTable = async (): Promise<boolean> => {
-  try {
-    console.log("Checking player_parents table...");
-    
-    // Try to verify if the table already exists
-    try {
-      const { data, error } = await supabase
-        .from('player_parents')
-        .select('id')
-        .limit(1);
+      // Alternative approach - create a PostgreSQL function that adds the column
+      const createFunctionSQL = `
+      CREATE OR REPLACE FUNCTION add_linking_code_column()
+      RETURNS boolean
+      LANGUAGE plpgsql
+      SECURITY DEFINER
+      AS $$
+      BEGIN
+        ALTER TABLE public.players
+        ADD COLUMN IF NOT EXISTS linking_code text;
+        RETURN TRUE;
+      EXCEPTION
+        WHEN OTHERS THEN
+          RETURN FALSE;
+      END;
+      $$;
+      `;
       
-      // If we don't get an error about the table not existing, it likely exists
-      if (!error || !error.message?.includes('does not exist')) {
-        console.log("player_parents table already exists");
+      try {
+        // Create the function and then call it
+        await supabase.rpc('execute_sql', { sql_string: createFunctionSQL });
+        await supabase.rpc('add_linking_code_column');
         return true;
+      } catch (fnError) {
+        console.error("Failed to create helper function:", fnError);
+        return false;
       }
-    } catch (checkError) {
-      console.warn("Exception checking player_parents:", checkError);
     }
-    
-    // Try the RPC method, though we expect it to fail with 401
-    try {
-      await supabase.rpc('execute_sql', {
-        sql_string: `
-          CREATE TABLE IF NOT EXISTS public.player_parents (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
-            player_id UUID REFERENCES players(id),
-            parent_name TEXT,
-            email TEXT,
-            phone TEXT,
-            is_verified BOOLEAN DEFAULT FALSE
-          );`
-      });
-      console.log("Created player_parents table via RPC");
-      return true;
-    } catch (rpcError) {
-      console.warn("RPC error creating player_parents table:", rpcError);
-    }
-    
-    // If we get here, we couldn't create the table
-    console.warn("Could not create player_parents table - database permissions issue");
-    return false;
   } catch (error) {
-    console.error("Error in createPlayerParentsTable:", error);
+    console.error("Error adding linking_code column:", error);
     return false;
   }
 };

@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Routes,
@@ -19,6 +20,7 @@ import TeamSettings from "./pages/TeamSettings";
 import CalendarPage from "./components/calendar/CalendarPage";
 import GlobalAdminDashboard from "./pages/GlobalAdminDashboard";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import PlayerDetailsPage from "./pages/PlayerDetailsPage";
 
 export function App() {
   const [session, setSession] = useState(null);
@@ -129,7 +131,7 @@ export function App() {
             !session ? (
               <Navigate to="/auth" />
             ) : (
-              <div>player</div>
+              <PlayerDetailsPage />
             )
           }
         />
