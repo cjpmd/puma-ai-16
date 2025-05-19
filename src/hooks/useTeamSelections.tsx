@@ -176,3 +176,6 @@ export const useTeamSelections = (fixture: any | null) => {
     setIsSaving
   };
 };
+
+// Adding default export to maintain backward compatibility
+export default useTeamSelections;

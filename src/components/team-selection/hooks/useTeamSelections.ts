@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -9,7 +10,7 @@ interface TeamSelection {
   team_number: number;
 }
 
-const useTeamSelections = () => {
+export const useTeamSelections = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,4 +44,5 @@ const useTeamSelections = () => {
   };
 };
 
+// Adding default export to maintain backward compatibility
 export default useTeamSelections;
