@@ -32,13 +32,13 @@ export function PlayerSubscriptionManager({
     try {
       // Create a subscription record in the database
       const { data, error } = await supabase
-        .from("subscriptions")
+        .from("player_subscriptions") // Use player_subscriptions instead of subscriptions
         .insert([
           {
             player_id: playerId,
             team_id: teamId,
-            amount: parseFloat(amount),
-            interval: interval,
+            subscription_amount: parseFloat(amount),
+            subscription_type: interval,
             status: "active",
           },
         ])
