@@ -1,211 +1,152 @@
 
-import { useState } from 'react';
+import { useState } from "react";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Loader2, RefreshCw, Database, Users, Shield } from "lucide-react";
-import { initializeDatabase } from '@/utils/database/initializeDatabase';
-import { setupTransferSystem } from '@/utils/database/transferSystem';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ShieldCheck, Database, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { setupSecurityPolicies } from "@/utils/database/setupSecurityPolicies";
 
-export function AdminSettings() {
-  const [initializing, setInitializing] = useState(false);
-  const [settingUpTransfers, setSettingUpTransfers] = useState(false);
-
-  const handleInitializeDatabase = async () => {
-    setInitializing(true);
+export const AdminSettings = () => {
+  const [isFixingRls, setIsFixingRls] = useState(false);
+  
+  const handleFixSecurityIssues = async () => {
+    setIsFixingRls(true);
     try {
-      const result = await initializeDatabase();
+      const result = await setupSecurityPolicies();
       if (result) {
-        toast.success("Database initialized successfully", {
-          description: "Core database tables have been set up."
-        });
+        toast.success("Database security policies have been updated successfully.");
       } else {
-        toast.error("Database initialization failed", {
-          description: "Please check console for errors."
-        });
+        toast.error("Failed to update some database security policies. Check console for details.");
       }
     } catch (error) {
-      console.error("Error initializing database:", error);
-      toast.error("Database error", {
-        description: "An unexpected error occurred."
-      });
+      console.error("Error updating security policies:", error);
+      toast.error("An unexpected error occurred while updating security policies.");
     } finally {
-      setInitializing(false);
+      setIsFixingRls(false);
     }
   };
-
-  const handleSetupTransferSystem = async () => {
-    setSettingUpTransfers(true);
-    try {
-      const result = await setupTransferSystem();
-      if (result) {
-        toast.success("Transfer system set up successfully", {
-          description: "Player transfer tables and columns have been created."
-        });
-      } else {
-        toast.error("Transfer system setup failed", {
-          description: "Please check console for errors."
-        });
-      }
-    } catch (error) {
-      console.error("Error setting up transfer system:", error);
-      toast.error("Setup error", {
-        description: "An unexpected error occurred."
-      });
-    } finally {
-      setSettingUpTransfers(false);
-    }
-  };
-
+  
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Admin Settings</h2>
-        <p className="text-muted-foreground">
-          Manage your application settings and database.
-        </p>
-      </div>
+      <h1 className="text-3xl font-bold">Admin Settings</h1>
       
-      <Tabs defaultValue="database">
-        <TabsList>
+      <Tabs defaultValue="security">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="database">Database</TabsTrigger>
-          <TabsTrigger value="permissions">Permissions</TabsTrigger>
-          <TabsTrigger value="users">User Management</TabsTrigger>
+          <TabsTrigger value="system">System</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="database" className="space-y-4 mt-4">
+        <TabsContent value="security" className="space-y-4 pt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Database Initialization</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5" />
+                Database Security
+              </CardTitle>
               <CardDescription>
-                Set up core database tables and functions
+                Manage Row Level Security (RLS) and permissions for database tables
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="grid gap-2">
-                <div className="flex items-center justify-between">
-                  <span>Core Tables</span>
-                  <Badge>Required</Badge>
+            <CardContent>
+              <Alert variant="warning" className="mb-4">
+                <AlertTriangle className="h-5 w-5" />
+                <AlertTitle>Security Issues Detected</AlertTitle>
+                <AlertDescription>
+                  Some tables in your database do not have Row Level Security (RLS) enabled, 
+                  which could expose sensitive data. Click the button below to fix these issues.
+                </AlertDescription>
+              </Alert>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between rounded-md border p-3">
+                  <div className="flex flex-col">
+                    <span className="font-medium">public.club_plans</span>
+                    <span className="text-sm text-muted-foreground">
+                      Table is public, but RLS has not been enabled
+                    </span>
+                  </div>
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span>SQL Functions</span>
-                  <Badge>Required</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>User Roles</span>
-                  <Badge>Required</Badge>
+                
+                <div className="flex items-center justify-between rounded-md border p-3">
+                  <div className="flex flex-col">
+                    <span className="font-medium">public.team_plans</span>
+                    <span className="text-sm text-muted-foreground">
+                      Table is public, but RLS has not been enabled
+                    </span>
+                  </div>
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
                 </div>
               </div>
             </CardContent>
             <CardFooter>
               <Button 
-                onClick={handleInitializeDatabase}
-                disabled={initializing}
-                className="w-full"
+                onClick={handleFixSecurityIssues} 
+                disabled={isFixingRls}
               >
-                {initializing ? (
+                {isFixingRls ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Initializing...
+                    Fixing Security Issues...
                   </>
                 ) : (
-                  <>
-                    <Database className="mr-2 h-4 w-4" />
-                    Initialize Database
-                  </>
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Player Transfer System</CardTitle>
-              <CardDescription>
-                Set up player transfer tables and permissions
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="grid gap-2">
-                <div className="flex items-center justify-between">
-                  <span>Transfer Tables</span>
-                  <Badge>Required</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Player Status Column</span>
-                  <Badge>Required</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>RLS Policies</span>
-                  <Badge>Required</Badge>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                onClick={handleSetupTransferSystem}
-                disabled={settingUpTransfers}
-                className="w-full"
-              >
-                {settingUpTransfers ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Setting up...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Set Up Transfer System
-                  </>
+                  'Fix Security Issues'
                 )}
               </Button>
             </CardFooter>
           </Card>
         </TabsContent>
         
-        <TabsContent value="permissions" className="mt-4">
+        <TabsContent value="database" className="pt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Permission Settings</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                Database Management
+              </CardTitle>
               <CardDescription>
-                Manage role-based permissions
+                Manage database tables, columns, and maintenance tasks
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p>Permission management features will be available soon.</p>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Database management options will appear here.
+              </p>
             </CardContent>
-            <CardFooter>
-              <Button disabled className="w-full">
-                <Shield className="mr-2 h-4 w-4" />
-                Manage Permissions
-              </Button>
-            </CardFooter>
           </Card>
         </TabsContent>
         
-        <TabsContent value="users" className="mt-4">
+        <TabsContent value="system" className="pt-4">
           <Card>
             <CardHeader>
-              <CardTitle>User Management</CardTitle>
+              <CardTitle>System Settings</CardTitle>
               <CardDescription>
-                Manage user accounts and permissions
+                Configure system-wide settings and preferences
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p>User management features will be available soon.</p>
+            <CardContent>
+              <p className="text-muted-foreground">
+                System settings options will appear here.
+              </p>
             </CardContent>
-            <CardFooter>
-              <Button disabled className="w-full">
-                <Users className="mr-2 h-4 w-4" />
-                Manage Users
-              </Button>
-            </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
   );
-}
+};
