@@ -31,7 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { UserRole } from '@/components/auth/ProtectedRoute';
+import { UserRole } from '@/hooks/useAuth';
 
 interface User {
   id: string;

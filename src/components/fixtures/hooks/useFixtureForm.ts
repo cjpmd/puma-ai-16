@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -208,23 +207,38 @@ export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFi
           }
 
           if (teamPlayers && teamPlayers.length > 0) {
-            const attendanceData = teamPlayers.map(player => ({
-              event_id: fixtureId,
-              event_type: 'FIXTURE',
-              status: 'PENDING',
-              player_id: player.id
-            }));
+            const createAttendanceRecords = async (fixtureId: string, playerIds: string[]) => {
+              try {
+                for (const playerId of playerIds) {
+                  await supabase.from('event_attendance').insert({
+                    event_id: fixtureId,
+                    event_type: 'FIXTURE',
+                    player_id: playerId,
+                    status: 'PENDING'
+                  });
+                }
+                return true;
+              } catch (error) {
+                console.error('Error creating attendance records:', error);
+                return false;
+              }
+            };
 
-            const { error: attendanceError } = await supabase
-              .from('event_attendance')
-              .insert(attendanceData);
+            // Then use this function instead of the bulk insert
+            // Replace:
+            // const { error: attendanceError } = await supabase.from('event_attendance').insert(
+            //   players.map(player => ({
+            //     event_id: fixtureId,
+            //     event_type: 'FIXTURE',
+            //     status: 'PENDING',
+            //     player_id: player.id
+            //   }))
+            // );
 
-            if (attendanceError) {
-              console.error("Error creating attendance:", attendanceError);
-              // Continue despite attendance error
-            } else {
-              console.log("Attendance created for all team players");
-            }
+            // With:
+            await createAttendanceRecords(fixtureId, players.map(player => player.id));
+
+            console.log("Attendance created for all team players");
           }
         }
 

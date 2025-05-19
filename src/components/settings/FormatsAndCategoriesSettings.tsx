@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -95,13 +94,12 @@ export function FormatsAndCategoriesSettings() {
           
           // Create the table directly with SQL
           const { error: createError } = await supabase.rpc('create_table_if_not_exists', {
-            table_name: 'game_formats',
-            table_definition: `
-              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-              name TEXT NOT NULL UNIQUE,
-              is_default BOOLEAN DEFAULT false,
-              created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-              updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+            p_table_name: 'game_formats',
+            p_columns: `
+              id text PRIMARY KEY,
+              name text NOT NULL,
+              description text,
+              created_at timestamp with time zone DEFAULT now()
             `
           });
           
@@ -137,14 +135,12 @@ export function FormatsAndCategoriesSettings() {
           
           // Create the table directly with SQL
           const { error: createError } = await supabase.rpc('create_table_if_not_exists', {
-            table_name: 'performance_categories',
-            table_definition: `
-              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-              name TEXT NOT NULL UNIQUE,
-              description TEXT,
-              is_default BOOLEAN DEFAULT false,
-              created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-              updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+            p_table_name: 'performance_categories',
+            p_columns: `
+              id text PRIMARY KEY,
+              name text NOT NULL,
+              description text,
+              created_at timestamp with time zone DEFAULT now()
             `
           });
           

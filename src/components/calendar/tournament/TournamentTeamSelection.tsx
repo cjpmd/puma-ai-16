@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { PerformanceCategory, transformDbPlayerToPlayer } from "@/types/player";
+import { PerformanceCategory, Player, transformDbPlayerToPlayer } from "@/types/player";
 
 interface TeamSelection {
   playerId: string;
@@ -99,30 +99,26 @@ export const TournamentTeamSelection = ({
         }));
       });
       
-      // Check if tournament_team_players table exists before inserting
-      const createTable = async () => {
-        try {
-          // Create table if it doesn't exist
-          await supabase.rpc('create_table_if_not_exists', {
-            p_table_name: 'tournament_team_players',
-            p_columns: `
-              id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-              tournament_team_id uuid REFERENCES tournament_teams(id),
-              player_id uuid REFERENCES players(id),
-              position text NOT NULL,
-              is_substitute boolean DEFAULT false,
-              is_captain boolean DEFAULT false,
-              performance_category text DEFAULT 'MESSI',
-              created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
-              updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
-            `
-          });
-        } catch (error) {
-          console.error("Error creating tournament_team_players table:", error);
-        }
-      };
-      
-      await createTable();
+      // Create tournament_team_players table if it doesn't exist
+      try {
+        // Create table if it doesn't exist
+        await supabase.rpc('create_table_if_not_exists', {
+          p_table_name: 'tournament_team_players',
+          p_columns: `
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            tournament_team_id uuid REFERENCES tournament_teams(id),
+            player_id uuid REFERENCES players(id),
+            position text NOT NULL,
+            is_substitute boolean DEFAULT false,
+            is_captain boolean DEFAULT false,
+            performance_category text DEFAULT 'MESSI',
+            created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+            updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+          `
+        });
+      } catch (error) {
+        console.error("Error creating tournament_team_players table:", error);
+      }
       
       // Insert selections into database using the tournament_team_players table
       const insertPromises = Object.entries(formattedSelections).flatMap(([teamId, selections]) => 
@@ -175,7 +171,7 @@ export const TournamentTeamSelection = ({
                 {teamSelections[team.id] && (
                   <FormationView
                     positions={formatSelectionsForFormation(teamSelections[team.id])}
-                    players={players || []}
+                    players={players}
                     periodNumber={1}
                     duration={20}
                   />
@@ -198,7 +194,7 @@ export const TournamentTeamSelection = ({
                     handleSelectionChange(team.id, typedSelections);
                   }}
                   selectedPlayers={selectedPlayers}
-                  availablePlayers={players || []}
+                  availablePlayers={players}
                   formationTemplate={teamFormationTemplates[team.id] || "All"}
                   onTemplateChange={(template) => handleTemplateChange(team.id, template)}
                 />

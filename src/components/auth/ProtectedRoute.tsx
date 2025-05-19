@@ -1,10 +1,11 @@
+
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 
-// Define UserRole type here for better type safety across the app
-export type UserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin' | 'user';
+// Use the UserRole type imported from useAuth for consistency
+import { UserRole } from "@/hooks/useAuth";
 
 export interface ProtectedRouteProps {
   children: React.ReactNode;

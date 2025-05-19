@@ -26,8 +26,9 @@ export const sendFixtureNotification = async (data: NotificationData) => {
           
         // Safe check if settings exist and contain a whatsapp_group_id field
         if (!settingsError && settings) {
-          // Use optional chaining to avoid errors if the field doesn't exist
-          data.groupId = settings.whatsapp_group_id as string || '';
+          // Use optional chaining and type assertion to safely access whatsapp_group_id if it exists
+          const groupId = (settings as any).whatsapp_group_id || '';
+          data.groupId = groupId;
         }
       } catch (err) {
         console.error('Error fetching WhatsApp group ID:', err);
