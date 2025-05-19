@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -435,6 +434,179 @@ export const optimizeRlsPolicies = async (): Promise<boolean> => {
     return success;
   } catch (error) {
     console.error("Error optimizing RLS policies:", error);
+    return false;
+  }
+};
+
+/**
+ * Consolidates multiple permissive policies for the same role and operation
+ * This fixes the "Multiple Permissive Policies" performance warnings
+ */
+export const consolidatePermissivePolicies = async (): Promise<boolean> => {
+  try {
+    console.log("Consolidating multiple permissive policies...");
+    
+    // We'll track our progress to return success status
+    let success = true;
+    
+    // First, get a list of tables with multiple permissive policies for the same role and action
+    const { data: tablesWithMultiplePolicies, error: listError } = await supabase.rpc(
+      'execute_sql',
+      {
+        sql_string: `
+          WITH grouped_policies AS (
+            SELECT 
+              schemaname, 
+              tablename, 
+              cmd,
+              array_agg(DISTINCT roles[1]) AS roles,
+              count(*) AS policy_count
+            FROM 
+              pg_policies 
+            WHERE 
+              permissive = 't' AND
+              schemaname = 'public'
+            GROUP BY 
+              schemaname, tablename, roles[1], cmd
+            HAVING 
+              count(*) > 1
+          )
+          SELECT DISTINCT 
+            tablename
+          FROM 
+            grouped_policies
+          ORDER BY 
+            tablename;
+        `
+      }
+    );
+    
+    if (listError) {
+      console.error("Error fetching tables with multiple permissive policies:", listError);
+      return false;
+    }
+
+    if (!tablesWithMultiplePolicies || tablesWithMultiplePolicies.length === 0) {
+      console.log("No tables found with multiple permissive policies");
+      return true;
+    }
+    
+    console.log(`Found ${tablesWithMultiplePolicies.length} tables with multiple permissive policies`);
+    
+    // For each table, we'll consolidate policies for the authenticated role
+    for (const tableData of tablesWithMultiplePolicies) {
+      const tableName = tableData.tablename;
+      
+      // For each operation type (SELECT, INSERT, UPDATE, DELETE)
+      for (const operation of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) {
+        // Get existing policies for this table, role and operation
+        const { data: policies, error: policiesError } = await supabase.rpc(
+          'execute_sql',
+          {
+            sql_string: `
+              SELECT 
+                policyname,
+                qual,
+                with_check,
+                cmd
+              FROM 
+                pg_policies 
+              WHERE 
+                schemaname = 'public' AND
+                tablename = '${tableName}' AND
+                permissive = 't' AND
+                roles[1] = 'authenticated' AND
+                (cmd = '${operation.toLowerCase().charAt(0)}' OR cmd = '*')
+            `
+          }
+        );
+        
+        if (policiesError || !policies || policies.length <= 1) {
+          // Skip if error or no multiple policies for this operation
+          continue;
+        }
+        
+        console.log(`Found ${policies.length} policies for ${tableName} and operation ${operation}`);
+        
+        // Extract policy conditions
+        const usingConditions = [];
+        const withCheckConditions = [];
+        
+        for (const policy of policies) {
+          // Keep track of policy names to drop them later
+          if (policy.qual && !usingConditions.includes(policy.qual)) {
+            usingConditions.push(policy.qual);
+          }
+          
+          if (policy.with_check && !withCheckConditions.includes(policy.with_check)) {
+            withCheckConditions.push(policy.with_check);
+          }
+          
+          // Drop each existing policy
+          const { error: dropError } = await supabase.rpc(
+            'execute_sql',
+            {
+              sql_string: `
+                DROP POLICY IF EXISTS "${policy.policyname}" ON public.${tableName};
+              `
+            }
+          );
+          
+          if (dropError) {
+            console.error(`Error dropping policy ${policy.policyname} on ${tableName}:`, dropError);
+            success = false;
+          } else {
+            console.log(`Dropped policy ${policy.policyname} on ${tableName}`);
+          }
+        }
+        
+        // Create a new consolidated policy
+        // If we have multiple conditions, we join them with OR
+        const combinedUsing = usingConditions.length > 0 
+          ? usingConditions.length > 1 
+            ? `(${usingConditions.join(') OR (')})`
+            : usingConditions[0]
+          : 'true';
+          
+        const combinedWithCheck = withCheckConditions.length > 0
+          ? withCheckConditions.length > 1
+            ? `(${withCheckConditions.join(') OR (')})`
+            : withCheckConditions[0]
+          : 'true';
+        
+        // Replace auth.uid() with (SELECT auth.uid()) while we're at it
+        const optimizedUsing = combinedUsing.replace(/auth\.uid\(\)/g, '(SELECT auth.uid())');
+        const optimizedWithCheck = combinedWithCheck.replace(/auth\.uid\(\)/g, '(SELECT auth.uid())');
+        
+        const createSql = `
+          CREATE POLICY "consolidated_${tableName}_${operation.toLowerCase()}_policy" 
+          ON public.${tableName}
+          FOR ${operation}
+          TO authenticated
+          USING (${optimizedUsing})
+          ${operation === 'SELECT' ? '' : `WITH CHECK (${optimizedWithCheck})`};
+        `;
+        
+        const { error: createError } = await supabase.rpc(
+          'execute_sql',
+          {
+            sql_string: createSql
+          }
+        );
+        
+        if (createError) {
+          console.error(`Error creating consolidated policy for ${tableName} and operation ${operation}:`, createError);
+          success = false;
+        } else {
+          console.log(`Successfully created consolidated policy for ${tableName} and operation ${operation}`);
+        }
+      }
+    }
+    
+    console.log("Policy consolidation completed with status:", success);
+    return success;
+  } catch (error) {
+    console.error("Error consolidating permissive policies:", error);
     return false;
   }
 };
