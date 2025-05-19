@@ -1,10 +1,5 @@
 
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "./integrations/supabase/client";
 import { Auth } from "./pages/Auth";
@@ -21,11 +16,26 @@ import CalendarPage from "./components/calendar/CalendarPage";
 import GlobalAdminDashboard from "./pages/GlobalAdminDashboard";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import PlayerDetailsPage from "./pages/PlayerDetailsPage";
+import { ensureDatabaseSetup } from "./utils/database/ensureDatabaseSetup";
 
 export function App() {
   const [session, setSession] = useState(null);
+  const [dbInitialized, setDbInitialized] = useState(false);
 
   useEffect(() => {
+    // Initialize database setup
+    const initDb = async () => {
+      try {
+        const result = await ensureDatabaseSetup();
+        setDbInitialized(result);
+      } catch (error) {
+        console.error("Database initialization error:", error);
+        setDbInitialized(true); // Still allow the app to proceed
+      }
+    };
+
+    initDb();
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       console.log('Session loaded:', session ? 'Active' : 'None');

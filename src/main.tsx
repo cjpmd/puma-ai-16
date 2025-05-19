@@ -5,6 +5,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { App } from './App.tsx';
 import './index.css';
 import { TeamsContextProvider } from './contexts/TeamContext';
+import { AuthProvider } from './hooks/useAuth';
+import { Toaster } from 'sonner';
 
 // Configure the query client with better error handling and logging
 const queryClient = new QueryClient({
@@ -32,9 +34,12 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
-      <TeamsContextProvider>
-        <App />
-      </TeamsContextProvider>
+      <AuthProvider>
+        <TeamsContextProvider>
+          <App />
+          <Toaster position="top-right" />
+        </TeamsContextProvider>
+      </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>
 );

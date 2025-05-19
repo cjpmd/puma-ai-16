@@ -1,130 +1,129 @@
 
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
-import { updateUserRole } from '@/utils/database/updateUserRole';
+import { useState, useEffect, useContext, createContext } from "react";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { updateUserRole } from "@/utils/database/updateUserRole";
 
-export type UserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin';
+// Define UserRole type here for better type safety across the app
+export type UserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin' | 'user';
 
-interface UserProfile {
-  id: string;
-  role: UserRole;
-  email: string | null;
-  name?: string;
-  full_name?: string; // Add this field
+interface AuthContextType {
+  profile: any | null;
+  isLoading: boolean;
+  addRole: (role: UserRole) => Promise<boolean>;
+  hasRole: (role: UserRole) => boolean;
+  activeRole: UserRole | null;
+  switchRole: (role: UserRole) => void;
+  refreshProfile: () => Promise<void>;
 }
 
-export const useAuth = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isInitializing, setIsInitializing] = useState(true);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeRole, setActiveRole] = useState<UserRole | null>(null);
+  const supabaseClient = useSupabaseClient();
+  const navigate = useNavigate();
 
-  const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useQuery({
-    queryKey: ['profile'],
-    queryFn: async () => {
-      try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) {
-          if (userError.message.includes('refresh_token_not_found')) {
-            // Clear the session and redirect to auth
-            await supabase.auth.signOut();
-            navigate('/auth');
-            return null;
-          }
-          throw userError;
-        }
-        
-        if (!user) {
-          return null;
-        }
-
-        console.log("Fetching profile for user ID:", user.id);
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error('Error fetching profile:', error);
-          toast({
-            title: "Error",
-            description: "Failed to load user profile",
-            variant: "destructive"
-          });
-          return null;
-        }
-
-        console.log("Profile fetched:", data);
-        
-        // If no profile exists, create one with default role
-        if (!data) {
-          console.log("No profile found, creating one with default admin role");
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert([
-              { 
-                id: user.id, 
-                email: user.email, 
-                role: 'admin' as UserRole,
-                name: user.email,
-                full_name: user.email // Initialize full_name with email
-              }
-            ])
-            .select('*')
-            .single();
-
-          if (createError) {
-            console.error('Error creating profile:', createError);
-            toast({
-              title: "Error",
-              description: "Failed to create user profile",
-              variant: "destructive"
-            });
-            return null;
-          }
-
-          return newProfile as UserProfile;
-        }
-
-        return data as UserProfile;
-      } catch (err) {
-        console.error('Auth error:', err);
-        // If there's a refresh token error, sign out and redirect
-        if (err instanceof Error && err.message.includes('refresh_token_not_found')) {
-          await supabase.auth.signOut();
+  const fetchProfile = async () => {
+    setIsLoading(true);
+    try {
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      
+      if (userError) {
+        if (userError.message.includes('refresh_token_not_found')) {
+          // Clear the session and redirect to auth
+          await supabaseClient.auth.signOut();
           navigate('/auth');
+          return null;
         }
-        toast({
-          title: "Error",
-          description: "Authentication error occurred",
-          variant: "destructive"
-        });
+        throw userError;
+      }
+      
+      if (!user) {
+        setProfile(null);
+        setIsLoading(false);
         return null;
       }
-    },
-    retry: false,
-    enabled: !isInitializing
-  });
 
-  useEffect(() => {
-    if (profile && !activeRole) {
-      console.log("Setting active role from profile:", profile.role);
-      setActiveRole(profile.role);
+      console.log("Fetching profile for user ID:", user.id);
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        toast("Failed to load user profile", {
+          description: error.message,
+        });
+        setIsLoading(false);
+        return null;
+      }
+
+      console.log("Profile fetched:", data);
+      
+      // If no profile exists, create one with default role
+      if (!data) {
+        console.log("No profile found, creating one with default admin role");
+        const { data: newProfile, error: createError } = await supabaseClient
+          .from('profiles')
+          .insert([
+            { 
+              id: user.id, 
+              email: user.email, 
+              role: 'admin' as UserRole,
+              name: user.email,
+              full_name: user.email
+            }
+          ])
+          .select('*')
+          .single();
+
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          toast("Failed to create user profile", {
+            description: createError.message,
+          });
+          setIsLoading(false);
+          return null;
+        }
+
+        setProfile(newProfile);
+        setActiveRole(newProfile.role);
+        setIsLoading(false);
+        return newProfile;
+      }
+
+      setProfile(data);
+      setActiveRole(data.role);
+      setIsLoading(false);
+      return data;
+    } catch (err) {
+      console.error('Auth error:', err);
+      // If there's a refresh token error, sign out and redirect
+      if (err instanceof Error && err.message.includes('refresh_token_not_found')) {
+        await supabaseClient.auth.signOut();
+        navigate('/auth');
+      }
+      toast("Authentication error occurred", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+      setIsLoading(false);
+      return null;
     }
-  }, [profile, activeRole]);
+  };
 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
         if (error) {
           if (error.message.includes('refresh_token_not_found')) {
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
           }
           console.error('Session error:', error);
           navigate('/auth');
@@ -132,28 +131,31 @@ export const useAuth = () => {
         }
         
         if (!session) {
-          navigate('/auth');
+          setIsLoading(false);
+          return;
         }
+        
+        // If we have a session, fetch the user profile
+        await fetchProfile();
       } catch (error) {
         console.error('Session initialization error:', error);
-        navigate('/auth');
-      } finally {
-        setIsInitializing(false);
+        setIsLoading(false);
       }
     };
 
     initializeAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session);
         
         if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
           if (!session) {
-            navigate('/auth');
+            setProfile(null);
+            setActiveRole(null);
           }
         } else if (event === 'SIGNED_IN') {
-          await refetchProfile();
+          await fetchProfile();
         }
       }
     );
@@ -161,7 +163,7 @@ export const useAuth = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, refetchProfile]);
+  }, [navigate, supabaseClient]);
 
   // Function to add a role to the current user
   const addRole = async (role: UserRole): Promise<boolean> => {
@@ -173,21 +175,14 @@ export const useAuth = () => {
       const success = await updateUserRole(profile.id, role);
       if (!success) {
         console.error(`Failed to add ${role} role using updateUserRole utility`);
-        toast({
-          title: "Error",
-          description: `Failed to add ${role} role. Please try again.`,
-          variant: "destructive"
-        });
+        toast(`Failed to add ${role} role. Please try again.`);
         return false;
       }
       
       // Refresh profile data
-      await refetchProfile();
+      await fetchProfile();
       
-      toast({
-        title: "Success",
-        description: `Added ${role} role to your account`,
-      });
+      toast(`Added ${role} role to your account`);
 
       // For global admin, immediately navigate to the dashboard
       if (role === 'globalAdmin') {
@@ -201,11 +196,7 @@ export const useAuth = () => {
       return true;
     } catch (err) {
       console.error('Error adding role:', err);
-      toast({
-        title: "Error",
-        description: "Failed to update roles",
-        variant: "destructive"
-      });
+      toast("Failed to update roles");
       return false;
     }
   };
@@ -260,16 +251,26 @@ export const useAuth = () => {
   // Add refreshProfile function to expose the refetch function
   const refreshProfile = async () => {
     console.log("Refreshing user profile");
-    await refetchProfile();
+    await fetchProfile();
   };
 
-  return {
+  const value: AuthContextType = {
     profile,
     activeRole,
     switchRole,
     addRole,
-    isLoading: isInitializing || profileLoading,
+    isLoading,
     hasRole,
-    refreshProfile,  // Expose the refreshProfile function
+    refreshProfile,
   };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 };
