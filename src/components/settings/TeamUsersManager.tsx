@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -167,7 +168,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
           <div>
             <Label htmlFor="role">Role</Label>
             <Select value={newRole} onValueChange={(value) => setNewRole(value as UserRole)}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>
@@ -176,6 +177,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
                 <SelectItem value="coach">Coach</SelectItem>
                 <SelectItem value="player">Player</SelectItem>
                 <SelectItem value="parent">Parent</SelectItem>
+                <SelectItem value="user">User</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -1,12 +1,11 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Fixture } from "@/types/fixture";
 import { FormationFormat } from "@/components/formation/types";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FormationSelector } from "@/components/FormationSelector";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TeamSelectionManagerProps } from "./types";
 import { PerformanceCategory } from "@/types/player";

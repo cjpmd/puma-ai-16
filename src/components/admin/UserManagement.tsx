@@ -34,6 +34,7 @@ export const UserManagement = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [newEmail, setNewEmail] = useState("");
+  // Changed the default role to match what's allowed in UserRole type
   const [newRole, setNewRole] = useState<UserRole>("admin");
 
   useEffect(() => {
@@ -123,7 +124,7 @@ export const UserManagement = () => {
         return;
       }
 
-      // Create profile in the profiles table
+      // Create profile in the profiles table with correctly typed role
       const { error: profileError } = await supabase
         .from("profiles")
         .insert({

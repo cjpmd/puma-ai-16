@@ -14,7 +14,7 @@ export interface TeamSettings {
   created_at: string;
   updated_at: string;
   
-  // Add missing fields referenced in TeamInfoSettings.tsx
+  // Add these fields to fix the type errors
   team_colors?: string[];
   team_logo?: string;
   home_kit_icon?: string;
