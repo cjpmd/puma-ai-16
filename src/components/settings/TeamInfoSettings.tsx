@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -123,14 +122,14 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
       } else {
         // Create a full team settings object with all expected fields
         const fullTeamSettings: TeamSettings = {
-          id: data.id,
+          id: data.id || "",
           team_name: data.team_name || "",
           team_colors: data.team_colors || "",
           team_logo: data.team_logo || "",
-          home_kit_icon: ensurePatternFormat(data.home_kit_icon),
-          away_kit_icon: ensurePatternFormat(data.away_kit_icon),
-          training_kit_icon: ensurePatternFormat(data.training_kit_icon),
-          created_at: data.created_at,
+          home_kit_icon: ensurePatternFormat(data.home_kit_icon || ""),
+          away_kit_icon: ensurePatternFormat(data.away_kit_icon || ""),
+          training_kit_icon: ensurePatternFormat(data.training_kit_icon || ""),
+          created_at: data.created_at || "",
           parent_notification_enabled: data.parent_notification_enabled || false,
           hide_scores_from_parents: data.hide_scores_from_parents || false,
           attendance_colors: data.attendance_colors || null,
@@ -143,16 +142,14 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
         setTeamSettings(fullTeamSettings);
         
         // For each kit icon, ensure it has the pattern (backward compatibility)
-        const updatedFormData = {
+        setFormData({
           team_name: data.team_name || "",
           team_colors: data.team_colors || "",
           team_logo: data.team_logo || "",
-          home_kit_icon: ensurePatternFormat(data.home_kit_icon),
-          away_kit_icon: ensurePatternFormat(data.away_kit_icon),
-          training_kit_icon: ensurePatternFormat(data.training_kit_icon),
-        };
-        
-        setFormData(updatedFormData);
+          home_kit_icon: ensurePatternFormat(data.home_kit_icon || ""),
+          away_kit_icon: ensurePatternFormat(data.away_kit_icon || ""),
+          training_kit_icon: ensurePatternFormat(data.training_kit_icon || ""),
+        });
       }
     } catch (error) {
       console.error('Error in team settings setup:', error);

@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { format } from "date-fns";
-import { Form } from "@/components/ui/form";
+import { Form, FormField, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { TeamDetailsForm } from "./TeamDetailsForm";
@@ -11,6 +11,8 @@ import { useFixtureForm } from "./hooks/useFixtureForm";
 import { useTeamTimes } from "./hooks/useTeamTimes";
 import { Loader2 } from "lucide-react";
 import { Fixture } from "@/types/fixture";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface FixtureFormProps {
   onSubmit?: (data: FixtureFormData) => Promise<any>;

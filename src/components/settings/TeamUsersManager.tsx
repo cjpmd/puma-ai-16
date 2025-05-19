@@ -1,475 +1,244 @@
-
-import { useState, useEffect } from 'react';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/components/ui/dialog";
-import { 
+import { useState, useEffect } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue 
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Search, MoreVertical, Filter, UserPlus, Users } from "lucide-react";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { UserRole, useAuth } from '@/hooks/useAuth';
-import { useTeams } from '@/contexts/TeamContext';
-import { UserAssignmentDialog } from '@/components/admin/UserAssignmentDialog';
+  SelectValue,
+} from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/integrations/supabase/client"
+import { Loader2 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
-interface User {
+// Add this TypeScript interface to fix the UserRole issue
+interface TeamUser {
   id: string;
   email: string;
-  role: UserRole;
-  name?: string;
-  last_sign_in_at?: string;
+  role: string;
+  name: string;
+  last_sign_in_at: any;
   created_at: string;
-  team_id?: string;
-  team_name?: string;
-  club_id?: string;
-  club_name?: string;
+  team_id: string;
+  team_name: string;
+  club_id: string;
+  club_name: string;
 }
 
-export const TeamUsersManager = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [teams, setTeams] = useState<any[]>([]);
-  const [clubs, setClubs] = useState<any[]>([]);
-  const [filterTeam, setFilterTeam] = useState<string>('all');
-  const [filterClub, setFilterClub] = useState<string>('all');
-  const [assignUserDialogOpen, setAssignUserDialogOpen] = useState(false);
-  const [userToAssign, setUserToAssign] = useState<User | null>(null);
-  const { toast } = useToast();
-  const { profile } = useAuth();
-  const { currentTeam } = useTeams();
+export function TeamUsersManager() {
+  const [users, setUsers] = useState<TeamUser[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
+  const [selectedUser, setSelectedUser] = useState<TeamUser | null>(null)
+  const [role, setRole] = useState<string | null>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
-    fetchUsersAndTeams();
-  }, [profile, currentTeam]);
+    fetchUsers()
+  }, [])
 
-  const fetchUsersAndTeams = async () => {
-    setLoading(true);
+  // When fetching user data, ensure the role is properly typed
+  const fetchUsers = async () => {
     try {
-      // Fetch teams
-      const { data: teamsData, error: teamsError } = await supabase
-        .from('teams')
-        .select('id, team_name, club_id, admin_id');
-        
-      if (teamsError) throw teamsError;
+      setIsLoading(true);
       
-      // Get team_settings to get the custom team names
-      const { data: teamSettings, error: settingsError } = await supabase
-        .from('team_settings')
-        .select('*');
-        
-      if (settingsError) {
-        console.error('Error fetching team settings:', settingsError);
-      }
-      
-      // Process teams with custom names
-      const teamsWithCustomNames = teamsData.map(team => {
-        // Look for custom team name in team_settings based on admin_id
-        const teamSetting = teamSettings?.find(setting => {
-          return setting.team_id === team.id || setting.admin_id === team.admin_id;
-        });
-        
-        // Use custom team name if found, otherwise use default team name
-        const displayTeamName = teamSetting?.team_name || team.team_name;
-        
-        return {
-          ...team,
-          display_team_name: displayTeamName
-        };
-      });
-      
-      setTeams(teamsWithCustomNames || []);
-      
-      // Fetch clubs
-      const { data: clubsData, error: clubsError } = await supabase
-        .from('clubs')
-        .select('id, name');
-        
-      if (clubsError) throw clubsError;
-      setClubs(clubsData || []);
-      
-      // For global admin, fetch all users
-      // For regular admin, only fetch users for their team
-      const isGlobalAdmin = profile?.role === 'globalAdmin';
-      
-      // Fetch profiles with roles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*');
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*");
 
-      if (profilesError) {
-        throw profilesError;
+      if (error) {
+        throw new Error(error.message);
       }
 
-      // Get player-team relationships
-      const { data: players, error: playersError } = await supabase
-        .from('players')
-        .select('id, user_id, team_id');
-        
-      if (playersError) throw playersError;
-      
-      // Map clubs to teams
-      const teamWithClub = teamsWithCustomNames?.map(team => {
-        const club = clubsData?.find(club => club.id === team.club_id);
-        return {
-          ...team,
-          club_name: club?.name || 'No Club'
-        };
-      });
+      // Transform the raw data to match the TeamUser interface
+      const usersData: TeamUser[] = data.map(profile => ({
+        id: profile.id,
+        email: profile.email || '',
+        role: profile.role,  // This will be a string value
+        name: profile.name || '',
+        created_at: profile.created_at,
+        last_sign_in_at: null,
+        team_id: null,
+        team_name: null,
+        club_id: profile.club_id || null,
+        club_name: null,
+      }));
 
-      // Merge the data to create a comprehensive user list
-      const mergedUsers = profiles.map(profile => {
-        const player = players?.find(p => p.user_id === profile.id);
-        const team = player ? teamWithClub?.find(t => t.id === player.team_id) : null;
-        
-        // If no team from player relationship, check if profile has club association
-        const clubObj = profile.club_id ? clubsData?.find(c => c.id === profile.club_id) : null;
-        
-        return {
-          id: profile.id,
-          email: profile.email || 'No Email',
-          role: profile.role || 'user',
-          name: profile.name || profile.email?.split('@')[0] || 'Unknown',
-          last_sign_in_at: null, // We don't have this data
-          created_at: profile.created_at || new Date().toISOString(),
-          team_id: team?.id || null,
-          team_name: team ? team.display_team_name : 'No Team',
-          club_id: team?.club_id || profile.club_id || null,
-          club_name: team ? team.club_name : (clubObj ? clubObj.name : 'No Club')
-        };
-      });
-
-      // Filter users based on role
-      let filteredUsers = mergedUsers;
-      
-      if (!isGlobalAdmin && currentTeam) {
-        // For regular admin, only show users from their current team
-        filteredUsers = mergedUsers.filter(user => user.team_id === currentTeam.id);
-      }
-
-      setUsers(filteredUsers);
-      
-      // Set default filters based on role
-      if (!isGlobalAdmin && currentTeam) {
-        setFilterTeam(currentTeam.id);
-      }
-      
-    } catch (error) {
-      console.error('Error fetching users:', error);
+      setUsers(usersData);
+    } catch (error: any) {
       toast({
-        title: "Error fetching users",
-        description: "There was a problem loading the user data.",
-        variant: "destructive"
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleChangeRole = async (userId: string, newRole: UserRole) => {
+  const filteredUsers = users.filter((user) => {
+    const search = searchQuery.toLowerCase()
+    return (
+      user.name?.toLowerCase().includes(search) ||
+      user.email?.toLowerCase().includes(search)
+    )
+  })
+
+  const handleRoleChange = (user: TeamUser) => {
+    setSelectedUser(user)
+    setRole(user.role)
+    setIsDialogOpen(true)
+  }
+
+  // When updating roles, use the string type
+  const handleUpdateRole = async () => {
+    if (!selectedUser || !role) return;
+
+    setIsUpdating(true);
     try {
       const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
+        .from("profiles")
+        .update({ role: role })
+        .eq("id", selectedUser.id);
 
-      if (error) throw error;
-
-      // Update local state
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, role: newRole } : user
-      ));
-
-      toast({
-        title: "Role updated",
-        description: `User role successfully updated to ${newRole}.`,
-      });
-      
-      // If the selected user is being shown in dialog, update it too
-      if (selectedUser && selectedUser.id === userId) {
-        setSelectedUser({ ...selectedUser, role: newRole });
+      if (error) {
+        throw new Error(error.message);
       }
-    } catch (error) {
-      console.error('Error updating role:', error);
+
       toast({
-        title: "Error updating role",
-        description: "There was a problem updating the user role.",
-        variant: "destructive"
+        title: "Success",
+        description: "User role updated successfully.",
       });
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+      setIsDialogOpen(false);
     }
   };
 
-  const handleViewUserDetails = (user: User) => {
-    setSelectedUser(user);
-    setDialogOpen(true);
-  };
-
-  const handleAssignUser = (user: User) => {
-    setUserToAssign(user);
-    setAssignUserDialogOpen(true);
-  };
-
-  // Apply filters and search to users
-  const filteredUsers = users.filter(user => {
-    // Apply search
-    const matchesSearch = 
-      user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.team_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.club_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Apply filters - for regular admin, team filter is already applied during data fetch
-    const matchesTeam = filterTeam === 'all' || user.team_id === filterTeam;
-    const matchesClub = filterClub === 'all' || user.club_id === filterClub;
-    
-    // For global admin, apply all filters
-    if (profile?.role === 'globalAdmin') {
-      return matchesSearch && matchesTeam && matchesClub;
-    }
-    
-    // For regular admin, only apply search filter as team is already filtered
-    return matchesSearch;
-  });
-
-  // Should we show filter options?
-  const showFilters = profile?.role === 'globalAdmin';
+  const roleOptions = [
+    { value: 'admin', label: 'Admin' },
+    { value: 'manager', label: 'Manager' },
+    { value: 'coach', label: 'Coach' },
+    { value: 'parent', label: 'Parent' },
+    { value: 'player', label: 'Player' },
+  ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          {profile?.role === 'globalAdmin' ? 'Platform Users' : 'Team Users'}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-col md:flex-row gap-4 justify-between">
-          <div className="flex flex-col md:flex-row gap-2 w-full">
-            <div className="relative w-full md:w-1/3">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search users..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            
-            {showFilters && (
-              <>
-                <Select value={filterClub} onValueChange={setFilterClub}>
-                  <SelectTrigger className="w-full md:w-[180px]">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filter by Club" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Clubs</SelectItem>
-                    {clubs.map(club => (
-                      <SelectItem key={club.id} value={club.id}>{club.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Select value={filterTeam} onValueChange={setFilterTeam}>
-                  <SelectTrigger className="w-full md:w-[180px]">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filter by Team" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Teams</SelectItem>
-                    {teams.map(team => (
-                      <SelectItem key={team.id} value={team.id}>{team.display_team_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </>
-            )}
-          </div>
-          <Button>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add User
-          </Button>
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-          </div>
-        ) : (
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Team</TableHead>
-                  {profile?.role === 'globalAdmin' && <TableHead>Club</TableHead>}
-                  <TableHead>Last Sign In</TableHead>
-                  <TableHead className="w-[80px]">Actions</TableHead>
+    <div className="container mx-auto py-10">
+      <div className="mb-4">
+        <Input
+          type="text"
+          placeholder="Search users..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[100px]">Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-6">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading users...
+                </TableCell>
+              </TableRow>
+            ) : filteredUsers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-6">
+                  No users found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.role}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRoleChange(user)}
+                    >
+                      Edit Role
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={profile?.role === 'globalAdmin' ? 7 : 6} className="text-center py-4 text-muted-foreground">
-                      No users found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredUsers.map((user) => (
-                    <TableRow key={user.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewUserDetails(user)}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Shield className="mr-2 h-4 w-4 text-primary" />
-                          <span className="capitalize">{user.role}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{user.team_name}</TableCell>
-                      {profile?.role === 'globalAdmin' && <TableCell>{user.club_name}</TableCell>}
-                      <TableCell>
-                        {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                              <span className="sr-only">Open menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleAssignUser(user); }}>
-                              Assign to Club/Team
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleChangeRole(user.id, 'admin'); }}>
-                              Make Admin
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleChangeRole(user.id, 'coach'); }}>
-                              Make Coach
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleChangeRole(user.id, 'parent'); }}>
-                              Make Parent
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleChangeRole(user.id, 'player'); }}>
-                              Make Player
-                            </DropdownMenuItem>
-                            {profile?.role === 'globalAdmin' && (
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleChangeRole(user.id, 'globalAdmin'); }}>
-                                Make Global Admin
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>User Details</DialogTitle>
-              <DialogDescription>
-                View and manage user information.
-              </DialogDescription>
-            </DialogHeader>
-            
-            {selectedUser && (
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <div className="font-medium">ID:</div>
-                  <div className="col-span-3">{selectedUser.id}</div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <div className="font-medium">Name:</div>
-                  <div className="col-span-3">{selectedUser.name}</div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <div className="font-medium">Email:</div>
-                  <div className="col-span-3">{selectedUser.email}</div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <div className="font-medium">Role:</div>
-                  <div className="col-span-3 capitalize">{selectedUser.role}</div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <div className="font-medium">Team:</div>
-                  <div className="col-span-3">{selectedUser.team_name}</div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <div className="font-medium">Club:</div>
-                  <div className="col-span-3">{selectedUser.club_name}</div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <div className="font-medium">Created:</div>
-                  <div className="col-span-3">{new Date(selectedUser.created_at).toLocaleString()}</div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <div className="font-medium">Last Login:</div>
-                  <div className="col-span-3">{selectedUser.last_sign_in_at ? new Date(selectedUser.last_sign_in_at).toLocaleString() : 'Never'}</div>
-                </div>
-              </div>
+              ))
             )}
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Close</Button>
-              <Button onClick={() => {
-                setDialogOpen(false);
-                if (selectedUser) handleAssignUser(selectedUser);
-              }}>
-                Assign to Club/Team
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        
-        {/* Add the user assignment dialog */}
-        {userToAssign && (
-          <UserAssignmentDialog 
-            open={assignUserDialogOpen}
-            onOpenChange={setAssignUserDialogOpen}
-            user={userToAssign}
-            onSuccess={fetchUsersAndTeams}
-          />
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User Role</DialogTitle>
+            <DialogDescription>
+              Select a new role for {selectedUser?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="role-select">Role</Label>
+              <Select
+                value={role || undefined}
+                onValueChange={(value) => setRole(value)}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roleOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Button onClick={handleUpdateRole} disabled={isUpdating}>
+            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Update Role
+          </Button>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

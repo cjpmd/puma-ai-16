@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   Card,
   CardContent,
@@ -62,27 +62,59 @@ export function WhatsAppIntegration() {
     try {
       setIsLoading(true);
       
+      // Create whatsapp_settings table if it doesn't exist
+      await supabase.rpc('execute_sql', {
+        sql_string: `
+          CREATE TABLE IF NOT EXISTS whatsapp_settings (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            verification_token TEXT,
+            api_key TEXT,
+            phone_number_id TEXT,
+            access_token TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+          );
+          
+          -- Insert default record if none exists
+          INSERT INTO whatsapp_settings (id)
+          SELECT '00000000-0000-0000-0000-000000000001'
+          WHERE NOT EXISTS (SELECT 1 FROM whatsapp_settings LIMIT 1);
+        `
+      });
+      
+      // Create whatsapp_messages table if it doesn't exist
+      await supabase.rpc('execute_sql', {
+        sql_string: `
+          CREATE TABLE IF NOT EXISTS whatsapp_messages (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            message_id TEXT,
+            phone_number TEXT,
+            message TEXT,
+            raw_payload JSONB,
+            processed BOOLEAN DEFAULT false,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+          );
+        `
+      });
+      
       // Try to fetch settings directly
-      const { data: settings, error: settingsError } = await supabase
-        .from('whatsapp_settings')
-        .select('*')
-        .limit(1);
+      const { data: settings, error: settingsError } = await supabase.rpc('execute_sql', {
+        sql_string: `SELECT * FROM whatsapp_settings LIMIT 1;`
+      });
       
       if (settingsError) {
-        if (settingsError.code === '42P01') {
-          // Table doesn't exist, create it
-          await createWhatsAppTables();
-          await fetchWhatsAppSettings();
-        } else {
-          console.error('Error fetching WhatsApp settings:', settingsError);
-        }
+        console.error('Error fetching WhatsApp settings:', settingsError);
       } else if (settings && settings.length > 0) {
-        setWhatsappSettings(settings[0]);
-        setIntegrationEnabled(!!settings[0].verification_token);
-      } else {
-        // No settings found, create default
-        await createDefaultWhatsAppSettings();
-        await fetchWhatsAppSettings();
+        const setting = settings[0];
+        setWhatsappSettings({
+          id: setting.id || "",
+          verification_token: setting.verification_token || null,
+          api_key: setting.api_key || null,
+          phone_number_id: setting.phone_number_id || null,
+          access_token: setting.access_token || null
+        });
+        setIntegrationEnabled(!!setting.verification_token);
       }
       
       await fetchWhatsAppMessages();
@@ -223,10 +255,16 @@ export function WhatsAppIntegration() {
       const updatedSettings = { ...whatsappSettings, ...updates };
       setWhatsappSettings(updatedSettings);
       
-      const { error } = await supabase
-        .from('whatsapp_settings')
-        .update(updates)
-        .eq('id', whatsappSettings.id);
+      const updateSQL = `
+        UPDATE whatsapp_settings
+        SET ${Object.keys(updates).map(key => `${key} = '${updates[key as keyof WhatsAppSettings]}'`).join(', ')},
+            updated_at = now()
+        WHERE id = '${whatsappSettings.id}';
+      `;
+      
+      const { error } = await supabase.rpc('execute_sql', {
+        sql_string: updateSQL
+      });
       
       if (error) {
         console.error('Error updating WhatsApp settings:', error);

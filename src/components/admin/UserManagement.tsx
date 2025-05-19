@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -33,10 +32,12 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { UserRole } from '@/hooks/useAuth';
 
+type AllowedUserRoles = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin' | 'user';
+
 interface User {
   id: string;
   email: string;
-  role: UserRole;
+  role: AllowedUserRoles;
   name: string;
   created_at: string;
   last_sign_in_at?: string | null;
@@ -51,7 +52,7 @@ export function UserManagement() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [role, setRole] = useState<string | null>(null)
+  const [role, setRole] = useState<AllowedUserRoles | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [copySuccess, setCopySuccess] = useState(false)
@@ -77,7 +78,7 @@ export function UserManagement() {
       const usersData = data.map(profile => ({
         id: profile.id,
         email: profile.email || '',
-        role: profile.role as UserRole,
+        role: profile.role as AllowedUserRoles,
         name: profile.name || '',
         created_at: profile.created_at,
         // Set defaults for missing fields
@@ -108,7 +109,7 @@ export function UserManagement() {
     )
   })
 
-  const handleRoleChange = (userId: string, currentRole: UserRole) => {
+  const handleRoleChange = (userId: string, currentRole: AllowedUserRoles) => {
     // Find the complete user object
     const user = users.find(u => u.id === userId);
     if (user) {
@@ -273,7 +274,7 @@ export function UserManagement() {
               <Label htmlFor="role-select">Role</Label>
               <Select
                 value={role || undefined}
-                onValueChange={(value) => setRole(value as UserRole)}
+                onValueChange={(value) => setRole(value as AllowedUserRoles)}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select a role" />
