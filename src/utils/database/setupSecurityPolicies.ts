@@ -657,3 +657,112 @@ export const getPermissivePoliciesCount = async (): Promise<number> => {
     return 0;
   }
 };
+
+// Get count of unindexed foreign keys
+export const getUnindexedForeignKeysCount = async (): Promise<number> => {
+  try {
+    const { data, error } = await supabase.rpc('get_unindexed_foreign_keys_count');
+    
+    if (error) {
+      console.error("Error getting unindexed foreign keys count:", error);
+      return 0;
+    }
+    
+    return data || 0;
+  } catch (error) {
+    console.error("Exception getting unindexed foreign keys count:", error);
+    return 0;
+  }
+};
+
+// Get unindexed foreign keys info
+export const getUnindexedForeignKeysInfo = async (): Promise<Array<{
+  table_name: string;
+  fkey_name: string;
+  column_names: string[];
+}>> => {
+  try {
+    const { data, error } = await supabase.rpc('get_unindexed_foreign_keys_info');
+    
+    if (error) {
+      console.error("Error getting unindexed foreign keys info:", error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Exception getting unindexed foreign keys info:", error);
+    return [];
+  }
+};
+
+// Create indexes for unindexed foreign keys
+export const createIndexesForForeignKeys = async (): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc('create_indexes_for_unindexed_foreign_keys');
+    
+    if (error) {
+      console.error("Error creating indexes for foreign keys:", error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Exception creating indexes for foreign keys:", error);
+    return false;
+  }
+};
+
+// Fix duplicate indexes
+export const fixDuplicateIndexes = async (): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc('fix_duplicate_indexes');
+    
+    if (error) {
+      console.error("Error fixing duplicate indexes:", error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Exception fixing duplicate indexes:", error);
+    return false;
+  }
+};
+
+// Get duplicate indexes info
+export const getDuplicateIndexesInfo = async (): Promise<Array<{
+  table_name: string;
+  duplicate_indexes: string[];
+}>> => {
+  try {
+    const { data, error } = await supabase.rpc('get_duplicate_indexes_info');
+    
+    if (error) {
+      console.error("Error getting duplicate indexes info:", error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Exception getting duplicate indexes info:", error);
+    return [];
+  }
+};
+
+// Get count of duplicate indexes
+export const getDuplicateIndexesCount = async (): Promise<number> => {
+  try {
+    const { data, error } = await supabase.rpc('get_duplicate_indexes_count');
+    
+    if (error) {
+      console.error("Error getting duplicate indexes count:", error);
+      return 0;
+    }
+    
+    return data || 0;
+  } catch (error) {
+    console.error("Exception getting duplicate indexes count:", error);
+    return 0;
+  }
+};

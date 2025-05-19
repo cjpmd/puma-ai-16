@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { UserManagement } from "./UserManagement";
 import { SubscriptionManagement } from "./SubscriptionManagement";
 import { PlatformSettings } from "./PlatformSettings";
 import { FinancialReports } from "./FinancialReports";
-import { AlertTriangle, CheckCircle, Database, Lock, RefreshCw, Shield, User, Users, Workflow, Info } from "lucide-react";
+import { AlertTriangle, CheckCircle, Database, Lock, RefreshCw, Shield, User, Users, Workflow, Info, Index } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { 
   setupSecurityPolicies, 
@@ -21,7 +20,13 @@ import {
   getAuthConfigurationInfo,
   optimizeRlsPolicies,
   consolidatePermissivePolicies,
-  getPermissivePoliciesCount
+  getPermissivePoliciesCount,
+  getUnindexedForeignKeysCount,
+  getUnindexedForeignKeysInfo,
+  createIndexesForForeignKeys,
+  fixDuplicateIndexes,
+  getDuplicateIndexesCount,
+  getDuplicateIndexesInfo
 } from "@/utils/database/setupSecurityPolicies";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -33,19 +38,32 @@ export function AdminSettings() {
   const [isFixingViewAccess, setIsFixingViewAccess] = useState(false);
   const [isOptimizingRls, setIsOptimizingRls] = useState(false);
   const [isConsolidatingPolicies, setIsConsolidatingPolicies] = useState(false);
+  const [isCreatingIndexes, setIsCreatingIndexes] = useState(false);
+  const [isFixingDuplicateIndexes, setIsFixingDuplicateIndexes] = useState(false);
   const [permissivePolicyCount, setPermissivePolicyCount] = useState<number>(0);
+  const [unindexedForeignKeyCount, setUnindexedForeignKeyCount] = useState<number>(0);
+  const [duplicateIndexCount, setDuplicateIndexCount] = useState<number>(0);
 
   const securityDefinerViews = getSecurityDefinerViewsInfo();
   const authConfigIssues = getAuthConfigurationInfo();
 
-  // Fetch permissive policy count on component mount
+  // Fetch database issue counts on component mount
   useEffect(() => {
-    const fetchPermissivePolicyCount = async () => {
-      const count = await getPermissivePoliciesCount();
-      setPermissivePolicyCount(count);
+    const fetchDatabaseIssues = async () => {
+      // Fetch permissive policy count
+      const policyCount = await getPermissivePoliciesCount();
+      setPermissivePolicyCount(policyCount);
+      
+      // Fetch unindexed foreign key count
+      const keyCount = await getUnindexedForeignKeysCount();
+      setUnindexedForeignKeyCount(keyCount);
+      
+      // Fetch duplicate index count
+      const indexCount = await getDuplicateIndexesCount();
+      setDuplicateIndexCount(indexCount);
     };
     
-    fetchPermissivePolicyCount();
+    fetchDatabaseIssues();
   }, []);
 
   const handleEnableRls = async () => {
@@ -194,6 +212,72 @@ export function AdminSettings() {
       });
     } finally {
       setIsConsolidatingPolicies(false);
+    }
+  };
+
+  const handleCreateIndexes = async () => {
+    setIsCreatingIndexes(true);
+    try {
+      const success = await createIndexesForForeignKeys();
+      
+      if (success) {
+        toast({
+          title: "Indexes Created",
+          description: "Missing indexes for foreign keys have been successfully created",
+        });
+        
+        // Update count after creating indexes
+        const updatedCount = await getUnindexedForeignKeysCount();
+        setUnindexedForeignKeyCount(updatedCount);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Index Creation Error",
+          description: "There was an issue creating indexes, check console for details",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating indexes:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred while creating indexes",
+      });
+    } finally {
+      setIsCreatingIndexes(false);
+    }
+  };
+
+  const handleFixDuplicateIndexes = async () => {
+    setIsFixingDuplicateIndexes(true);
+    try {
+      const success = await fixDuplicateIndexes();
+      
+      if (success) {
+        toast({
+          title: "Duplicate Indexes Fixed",
+          description: "Duplicate indexes have been successfully removed",
+        });
+        
+        // Update count after fixing duplicate indexes
+        const updatedCount = await getDuplicateIndexesCount();
+        setDuplicateIndexCount(updatedCount);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Duplicate Index Fix Error",
+          description: "There was an issue fixing duplicate indexes, check console for details",
+        });
+      }
+    } catch (error) {
+      console.error("Error fixing duplicate indexes:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred while fixing duplicate indexes",
+      });
+    } finally {
+      setIsFixingDuplicateIndexes(false);
     }
   };
 
@@ -415,6 +499,129 @@ export function AdminSettings() {
                           team_selections, fixtures, players, coaching_comments, event_attendance,
                           and many others. The consolidation combines policies with OR conditions
                           for better performance.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+              
+              {/* Unindexed Foreign Keys */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold flex items-center gap-2 mb-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  Unindexed Foreign Keys
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="ml-2">
+                          {unindexedForeignKeyCount} issues
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs text-xs">
+                          There are {unindexedForeignKeyCount} foreign keys without covering indexes
+                          across various tables, which can impact query performance.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Several foreign keys in the database lack indexes, which can lead to performance issues.
+                  Creating indexes for these foreign keys will improve query performance, especially for join operations.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    onClick={handleCreateIndexes}
+                    disabled={isCreatingIndexes}
+                    className="gap-2"
+                  >
+                    {isCreatingIndexes ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Creating Indexes...
+                      </>
+                    ) : (
+                      <>
+                        <Database className="h-4 w-4" />
+                        Create Missing Indexes
+                      </>
+                    )}
+                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon">
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-sm">
+                        <p className="text-xs">
+                          This will create missing indexes for foreign key columns in tables like:
+                          attendance_notification_settings, club_subscriptions, coaching_comments,
+                          fixtures, player_objectives, and many others. These indexes will improve
+                          query performance when joining tables.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+              
+              {/* Duplicate Indexes */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold flex items-center gap-2 mb-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  Duplicate Indexes
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="ml-2">
+                          {duplicateIndexCount} issues
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs text-xs">
+                          There are {duplicateIndexCount} instances of duplicate indexes that should be removed for better performance.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Some tables have duplicate indexes that serve the same purpose. This wastes disk space and slows down write operations.
+                  Removing duplicate indexes will improve database performance without affecting query speed.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    onClick={handleFixDuplicateIndexes}
+                    disabled={isFixingDuplicateIndexes}
+                    className="gap-2"
+                  >
+                    {isFixingDuplicateIndexes ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Fixing Duplicate Indexes...
+                      </>
+                    ) : (
+                      <>
+                        <Database className="h-4 w-4" />
+                        Remove Duplicate Indexes
+                      </>
+                    )}
+                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon">
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-sm">
+                        <p className="text-xs">
+                          This will identify and remove duplicate indexes, keeping only one index per unique constraint.
+                          The operation is safe and won't impact query performance negatively.
                         </p>
                       </TooltipContent>
                     </Tooltip>
