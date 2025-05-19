@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -9,54 +10,17 @@ import { useAuth } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
 
 export const ParentChildLinkingDialog = () => {
   const [open, setOpen] = useState(false);
-  const [playerId, setPlayerId] = useState("");
+  const [linkingCode, setLinkingCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [linkedChildren, setLinkedChildren] = useState<any[]>([]);
   const { toast } = useToast();
   const auth = useAuth();
   const { profile, refreshProfile } = auth;
 
-  useEffect(() => {
-    if (open && profile) {
-      loadLinkedChildren();
-    }
-  }, [open, profile]);
-
-  const loadLinkedChildren = async () => {
-    if (!profile) return;
-    
-    try {
-      // Fetch linked children data
-      const { data, error } = await supabase
-        .from("parent_child_linking")
-        .select(`
-          player_id,
-          players:player_id (
-            id, 
-            name
-          )
-        `)
-        .eq("parent_id", profile.id);
-
-      if (error) {
-        throw error;
-      }
-
-      setLinkedChildren(data || []);
-    } catch (error: any) {
-      toast({
-        title: "Error loading linked children",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleLinkPlayer = async () => {
-    if (!playerId || !profile) {
+  const handleLinkWithCode = async () => {
+    if (!linkingCode || !profile) {
       toast({
         title: "Error",
-        description: "Please enter a valid player ID",
+        description: "Please enter a valid linking code",
         variant: "destructive",
       });
       return;
@@ -65,17 +29,17 @@ export const ParentChildLinkingDialog = () => {
     setIsSubmitting(true);
 
     try {
-      // Check if player exists
+      // Find the player with this linking code
       const { data: playerData, error: playerError } = await supabase
         .from("players")
         .select("id, name")
-        .eq("id", playerId)
+        .eq("linking_code", linkingCode)
         .single();
 
       if (playerError || !playerData) {
         toast({
-          title: "Error",
-          description: "Player not found with this ID",
+          title: "Invalid Code",
+          description: "No player found with this linking code",
           variant: "destructive",
         });
         setIsSubmitting(false);
@@ -87,7 +51,7 @@ export const ParentChildLinkingDialog = () => {
         .from("parent_child_linking")
         .insert({
           parent_id: profile.id,
-          player_id: playerId,
+          player_id: playerData.id,
         });
 
       if (error) {
@@ -95,7 +59,7 @@ export const ParentChildLinkingDialog = () => {
           toast({
             title: "Already linked",
             description: "This player is already linked to your account",
-            variant: "warning",
+            variant: "destructive", // Changed from "warning" to "destructive"
           });
         } else {
           toast({
@@ -114,15 +78,13 @@ export const ParentChildLinkingDialog = () => {
         await refreshProfile();
       }
 
-      // Reload linked children
-      await loadLinkedChildren();
-      
       toast({
         title: "Success",
         description: `Linked to player: ${playerData.name}`,
       });
       
-      setPlayerId("");
+      setLinkingCode("");
+      setOpen(false);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -137,48 +99,32 @@ export const ParentChildLinkingDialog = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Link to Player</Button>
+        <Button variant="outline">Link Player with Code</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Link to Player Account</DialogTitle>
+          <DialogTitle>Link with Player Code</DialogTitle>
           <DialogDescription>
-            Enter the player's ID to link them to your parent account
+            Enter the linking code provided by the coach or player to connect your parent account
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="playerId" className="col-span-4">
-              Player ID
+            <Label htmlFor="linkingCode" className="col-span-4">
+              Linking Code
             </Label>
             <Input
-              id="playerId"
-              value={playerId}
-              onChange={(e) => setPlayerId(e.target.value)}
-              placeholder="Enter player UUID"
+              id="linkingCode"
+              value={linkingCode}
+              onChange={(e) => setLinkingCode(e.target.value)}
+              placeholder="Enter code (e.g., ABC123)"
               className="col-span-4"
             />
           </div>
-
-          {linkedChildren.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-sm font-medium mb-2">Currently Linked Players:</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                {linkedChildren.map((link) => (
-                  <li key={link.player_id} className="text-sm">
-                    {link.players?.name || "Unknown Player"} 
-                    <span className="text-xs text-gray-400 ml-1">
-                      ({link.player_id})
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
         <DialogFooter>
-          <Button type="submit" onClick={handleLinkPlayer} disabled={isSubmitting}>
-            {isSubmitting ? "Linking..." : "Link Player"}
+          <Button type="submit" onClick={handleLinkWithCode} disabled={isSubmitting}>
+            {isSubmitting ? "Linking..." : "Link Account"}
           </Button>
         </DialogFooter>
       </DialogContent>

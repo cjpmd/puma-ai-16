@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -23,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Team } from "@/types/team";
 import { User } from "@/types/user";
-import { AllowedUserRoles } from "@/types/teamSettings";
+import { UserRole } from "@/hooks/useAuth.tsx";
 
 interface TeamUsersManagerProps {
   team: Team;
@@ -32,7 +33,7 @@ interface TeamUsersManagerProps {
 export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<AllowedUserRoles>("player");
+  const [newRole, setNewRole] = useState<UserRole>("player");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -49,10 +50,8 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
 
       if (error) {
         console.error("Error fetching team users:", error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch team users.",
-          variant: "destructive",
+        toast("Failed to fetch team users", {
+          description: "Could not load team users.",
         });
       } else {
         setTeamUsers(data || []);
@@ -73,10 +72,8 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
 
       if (userError) {
         console.error("Error checking existing user:", userError);
-        toast({
-          title: "Error",
+        toast("Error checking user", {
           description: "Failed to check existing user.",
-          variant: "destructive",
         });
         return;
       }
@@ -91,22 +88,18 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
 
         if (updateError) {
           console.error("Error updating user:", updateError);
-          toast({
-            title: "Error",
+          toast("Error updating user", {
             description: "Failed to update user.",
-            variant: "destructive",
           });
         } else {
-          toast({
-            title: "Success",
+          toast("Success", {
             description: "User added to team successfully.",
           });
           fetchTeamUsers(); // Refresh user list
         }
       } else {
         // User does not exist, show an error message
-        toast({
-          title: "Error",
+        toast("User not found", {
           description:
             "User with this email does not exist. Please invite them to create an account first.",
           variant: "destructive",
@@ -114,10 +107,8 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
       }
     } catch (error) {
       console.error("Error adding user to team:", error);
-      toast({
-        title: "Error",
+      toast("Error adding user", {
         description: "Failed to add user to team.",
-        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -134,14 +125,11 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
 
       if (error) {
         console.error("Error removing user:", error);
-        toast({
-          title: "Error",
+        toast("Error removing user", {
           description: "Failed to remove user from team.",
-          variant: "destructive",
         });
       } else {
-        toast({
-          title: "Success",
+        toast("User removed", {
           description: "User removed from team successfully.",
         });
         fetchTeamUsers(); // Refresh user list
@@ -171,7 +159,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
           </div>
           <div>
             <Label htmlFor="role">Role</Label>
-            <Select value={newRole} onValueChange={(value) => setNewRole(value as AllowedUserRoles)}>
+            <Select value={newRole} onValueChange={(value) => setNewRole(value as UserRole)}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>

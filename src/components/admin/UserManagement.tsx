@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -151,7 +152,7 @@ export const UserManagement = () => {
       setNewRole("admin");
 
       toast("User created successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Unexpected error creating user:", error);
       toast("An unexpected error occurred", {
         description: "Could not create user.",

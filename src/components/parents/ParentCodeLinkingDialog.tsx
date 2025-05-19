@@ -60,7 +60,7 @@ export const ParentCodeLinkingDialog = () => {
           toast({
             title: "Already linked",
             description: "This player is already linked to your account",
-            variant: "warning",
+            variant: "destructive", // Changed from "warning" to "destructive"
           });
         } else {
           toast({
