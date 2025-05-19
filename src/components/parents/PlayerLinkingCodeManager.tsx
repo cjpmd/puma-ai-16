@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +39,7 @@ export const PlayerLinkingCodeManager = ({ playerId }: PlayerLinkingCodeManagerP
     fetchLinkingCode();
   }, [playerId]);
 
-  // Generate a new linking code, fix the argument issue
+  // Generate a new linking code
   const generateCode = (length = 6): string => {
     const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let result = "";
@@ -52,7 +53,7 @@ export const PlayerLinkingCodeManager = ({ playerId }: PlayerLinkingCodeManagerP
   const handleGenerateCode = async () => {
     setIsGenerating(true);
     try {
-      const newCode = generateCode();
+      const newCode = generateCode(6);
       
       const { error } = await supabase
         .from("players")

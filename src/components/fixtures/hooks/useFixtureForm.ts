@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,10 +36,10 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
 
   // Fetch team categories for dropdown
   const { data: categories = [] } = useQuery({
-    queryKey: ["team-categories"],
+    queryKey: ["performance-categories"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("team_categories")
+        .from("performance_categories")
         .select("*")
         .order("name");
       
@@ -113,6 +114,7 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
       const fixtureData = {
         ...values,
         id: fixture?.id || generateUUID(),
+        team_name: "Broughty Pumas 2015s", // Add required team_name field
       };
 
       const { error } = fixture?.id
@@ -120,7 +122,9 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
             .from("fixtures")
             .update(fixtureData)
             .eq("id", fixture.id)
-        : await supabase.from("fixtures").insert([fixtureData]);
+        : await supabase
+            .from("fixtures")
+            .insert([fixtureData]);
 
       if (error) throw error;
 
@@ -154,14 +158,16 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
     try {
       // Delete related records first
       await supabase
-        .from("fixture_attendance")
+        .from("event_attendance")
         .delete()
-        .eq("fixture_id", fixture.id);
+        .eq("event_id", fixture.id)
+        .eq("event_type", "FIXTURE");
 
       await supabase
         .from("team_selections")
         .delete()
-        .eq("fixture_id", fixture.id);
+        .eq("event_id", fixture.id)
+        .eq("event_type", "FIXTURE");
 
       // Then delete the fixture
       const { error } = await supabase
