@@ -1,3 +1,4 @@
+
 import { Player } from "@/types/player";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,9 +109,9 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
   });
 
   // Filter attributes based on enabled settings
-  const filteredAttributes = player.attributes.filter(attr => 
+  const filteredAttributes = player.attributes?.filter(attr => 
     enabledAttributes?.includes(attr.name)
-  );
+  ) || [];
 
   const averageChange = calculateAverageChange(filteredAttributes, player.attributeHistory);
   const performance = getPerformanceStatus(averageChange);
@@ -146,6 +147,7 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
   return (
     <div className="space-y-4">
       <PlayerCardHeader
+        player={player}
         name={player.name}
         squadNumber={player.squadNumber}
         playerType={player.playerType}

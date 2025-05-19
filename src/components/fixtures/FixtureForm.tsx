@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +12,7 @@ import { fixtureFormSchema, FixtureFormData } from "./schemas/fixtureFormSchema"
 import { useFixtureForm } from "./hooks/useFixtureForm";
 import { useTeamTimes } from "./hooks/useTeamTimes";
 import { Loader2 } from "lucide-react";
+import { Fixture } from "@/types/fixture";
 
 interface FixtureFormProps {
   onSubmit: (data: FixtureFormData) => Promise<FixtureFormData>;
@@ -93,7 +93,7 @@ export const FixtureForm = ({
   });
 
   const fixtureFormState = useFixtureForm({ 
-    onSuccess: onSubmit, 
+    onSuccess: onSubmit as any, // Type cast to avoid incompatible function signatures
     fixture: editingFixture
   });
   
@@ -151,9 +151,14 @@ export const FixtureForm = ({
     return `Team ${teamIndex + 1} ${performanceCategory} Player of the Match`;
   };
 
+  // Handle form submission wrapping the fixture form state onSubmit
+  const handleFormSubmit = (data: FixtureFormData) => {
+    return fixtureFormState.onSubmit(data);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={fixtureFormState.handleSubmit(fixtureFormState.onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
         {showDateSelector && (
           <div className="space-y-2">
             <FormLabel>Date *</FormLabel>

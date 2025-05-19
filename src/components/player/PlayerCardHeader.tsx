@@ -7,7 +7,7 @@ import { Player } from "@/types/player";
 interface PlayerCardHeaderProps {
   player: Player;
   name: string;
-  squadNumber: number;
+  squadNumber: number | undefined;
   playerType: string;
   topPositions: [string, number][];
   onEdit?: () => void;
@@ -30,7 +30,7 @@ export const PlayerCardHeader = ({
           <div className="flex items-center gap-2">
             <div>
               <h2 className="text-2xl font-semibold tracking-tight">
-                {name} - #{squadNumber}
+                {name} {squadNumber ? `- #${squadNumber}` : ''}
               </h2>
               <div className="flex gap-2 mt-2">
                 <Badge variant="outline">{playerType}</Badge>

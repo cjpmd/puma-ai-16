@@ -107,10 +107,14 @@ export function UserManagement() {
     )
   })
 
-  const handleRoleChange = (userId: string, newRole: UserRole) => {
-    setSelectedUser({ id: userId, role: newRole })
-    setRole(newRole)
-    setIsDialogOpen(true)
+  const handleRoleChange = (userId: string, currentRole: UserRole) => {
+    // Find the complete user object
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      setSelectedUser(user);
+      setRole(currentRole);
+      setIsDialogOpen(true);
+    }
   }
 
   const handleUpdateRole = async () => {
@@ -160,6 +164,7 @@ export function UserManagement() {
     }
   }
 
+  // Updated to include 'player' role
   const roleOptions = [
     { value: 'admin', label: 'Admin' },
     { value: 'manager', label: 'Manager' },

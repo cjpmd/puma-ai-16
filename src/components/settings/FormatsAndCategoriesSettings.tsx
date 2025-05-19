@@ -10,7 +10,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import {
   Select,
@@ -35,6 +34,8 @@ interface GameFormat {
   id: string;
   name: string;
   is_default: boolean;
+  description?: string | null;
+  created_at?: string;
 }
 
 interface PerformanceCategory {
@@ -42,6 +43,7 @@ interface PerformanceCategory {
   name: string;
   description: string | null;
   is_default: boolean;
+  created_at?: string;
 }
 
 export function FormatsAndCategoriesSettings() {
@@ -96,9 +98,10 @@ export function FormatsAndCategoriesSettings() {
           const { error: createError } = await supabase.rpc('create_table_if_not_exists', {
             p_table_name: 'game_formats',
             p_columns: `
-              id text PRIMARY KEY,
+              id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
               name text NOT NULL,
               description text,
+              is_default boolean DEFAULT false,
               created_at timestamp with time zone DEFAULT now()
             `
           });
@@ -137,9 +140,10 @@ export function FormatsAndCategoriesSettings() {
           const { error: createError } = await supabase.rpc('create_table_if_not_exists', {
             p_table_name: 'performance_categories',
             p_columns: `
-              id text PRIMARY KEY,
+              id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
               name text NOT NULL,
               description text,
+              is_default boolean DEFAULT false,
               created_at timestamp with time zone DEFAULT now()
             `
           });
@@ -185,10 +189,10 @@ export function FormatsAndCategoriesSettings() {
       // Insert each format individually to avoid issues
       for (const format of defaultFormats) {
         console.log(`Inserting format: ${format.name}`);
-        const { error } = await supabase.from('game_formats').upsert(
-          { name: format.name, is_default: format.is_default },
-          { onConflict: 'name' }
-        );
+        const { error } = await supabase
+          .from('game_formats')
+          .upsert([format])
+          .select();
         
         if (error) {
           console.error(`Error inserting format ${format.name}:`, error);
@@ -211,14 +215,10 @@ export function FormatsAndCategoriesSettings() {
       // Insert each category individually to avoid issues
       for (const category of defaultCategories) {
         console.log(`Inserting category: ${category.name}`);
-        const { error } = await supabase.from('performance_categories').upsert(
-          { 
-            name: category.name, 
-            description: category.description,
-            is_default: category.is_default 
-          },
-          { onConflict: 'name' }
-        );
+        const { error } = await supabase
+          .from('performance_categories')
+          .upsert([category])
+          .select();
         
         if (error) {
           console.error(`Error inserting category ${category.name}:`, error);
@@ -243,10 +243,17 @@ export function FormatsAndCategoriesSettings() {
       }
       
       console.log("Fetched formats:", data);
-      setFormats(data || []);
+      
+      // Ensure all format objects have the is_default property
+      const formatsWithDefault = data?.map(format => ({
+        ...format,
+        is_default: format.is_default === true
+      })) || [];
+      
+      setFormats(formatsWithDefault);
       
       // Set default format selector
-      const defaultFmt = data?.find(f => f.is_default)?.name || "";
+      const defaultFmt = formatsWithDefault?.find(f => f.is_default)?.name || "";
       setDefaultFormat(defaultFmt);
     } catch (error) {
       console.error('Error fetching game formats:', error);
@@ -267,10 +274,17 @@ export function FormatsAndCategoriesSettings() {
       }
       
       console.log("Fetched categories:", data);
-      setCategories(data || []);
+      
+      // Ensure all categories have the is_default property
+      const categoriesWithDefault = data?.map(category => ({
+        ...category,
+        is_default: category.is_default === true
+      })) || [];
+      
+      setCategories(categoriesWithDefault);
       
       // Set default category selector
-      const defaultCat = data?.find(c => c.is_default)?.name || "";
+      const defaultCat = categoriesWithDefault?.find(c => c.is_default)?.name || "";
       setDefaultCategory(defaultCat);
     } catch (error) {
       console.error('Error fetching performance categories:', error);
@@ -288,15 +302,26 @@ export function FormatsAndCategoriesSettings() {
     }
     
     try {
+      const newFormatObj: GameFormat = {
+        id: crypto.randomUUID(),
+        name: newFormat,
+        is_default: formats.length === 0,
+      };
+
       const { data, error } = await supabase
         .from('game_formats')
-        .insert([{ name: newFormat, is_default: formats.length === 0 }])
-        .select()
-        .single();
+        .upsert([newFormatObj])
+        .select();
       
       if (error) throw error;
       
-      setFormats([...formats, data]);
+      // Add the new format to the state
+      if (data && data.length > 0) {
+        setFormats([...formats, data[0] as GameFormat]);
+      } else {
+        setFormats([...formats, newFormatObj]);
+      }
+      
       setNewFormat("");
       
       toast({
@@ -305,7 +330,7 @@ export function FormatsAndCategoriesSettings() {
       });
       
       if (formats.length === 0) {
-        setDefaultFormat(data.name);
+        setDefaultFormat(newFormat);
       }
     } catch (error) {
       console.error('Error adding game format:', error);
@@ -328,19 +353,27 @@ export function FormatsAndCategoriesSettings() {
     }
     
     try {
+      const newCategoryObj: PerformanceCategory = {
+        id: crypto.randomUUID(),
+        name: newCategory,
+        description: newCategoryDescription || null,
+        is_default: categories.length === 0
+      };
+
       const { data, error } = await supabase
         .from('performance_categories')
-        .insert([{ 
-          name: newCategory, 
-          description: newCategoryDescription || null,
-          is_default: categories.length === 0 
-        }])
-        .select()
-        .single();
+        .upsert([newCategoryObj])
+        .select();
       
       if (error) throw error;
       
-      setCategories([...categories, data]);
+      // Add the new category to the state
+      if (data && data.length > 0) {
+        setCategories([...categories, data[0] as PerformanceCategory]);
+      } else {
+        setCategories([...categories, newCategoryObj]);
+      }
+      
       setNewCategory("");
       setNewCategoryDescription("");
       
@@ -350,7 +383,7 @@ export function FormatsAndCategoriesSettings() {
       });
       
       if (categories.length === 0) {
-        setDefaultCategory(data.name);
+        setDefaultCategory(newCategory);
       }
     } catch (error) {
       console.error('Error adding performance category:', error);
@@ -430,7 +463,13 @@ export function FormatsAndCategoriesSettings() {
 
   const setFormatAsDefault = async (formatId: string) => {
     try {
-      // First, clear all defaults
+      // First, clear all defaults in our local state
+      const updatedFormats = formats.map(format => ({
+        ...format,
+        is_default: format.id === formatId
+      }));
+      
+      // Update in database - first clear all defaults
       await supabase
         .from('game_formats')
         .update({ is_default: false })
@@ -445,10 +484,6 @@ export function FormatsAndCategoriesSettings() {
       if (error) throw error;
       
       // Update local state
-      const updatedFormats = formats.map(format => ({
-        ...format,
-        is_default: format.id === formatId
-      }));
       setFormats(updatedFormats);
       
       const newDefaultName = formats.find(f => f.id === formatId)?.name || "";
@@ -470,7 +505,13 @@ export function FormatsAndCategoriesSettings() {
 
   const setCategoryAsDefault = async (categoryId: string) => {
     try {
-      // First, clear all defaults
+      // First, clear all defaults in our local state
+      const updatedCategories = categories.map(category => ({
+        ...category,
+        is_default: category.id === categoryId
+      }));
+      
+      // Update in database - first clear all defaults
       await supabase
         .from('performance_categories')
         .update({ is_default: false })
@@ -485,10 +526,6 @@ export function FormatsAndCategoriesSettings() {
       if (error) throw error;
       
       // Update local state
-      const updatedCategories = categories.map(category => ({
-        ...category,
-        is_default: category.id === categoryId
-      }));
       setCategories(updatedCategories);
       
       const newDefaultName = categories.find(c => c.id === categoryId)?.name || "";
