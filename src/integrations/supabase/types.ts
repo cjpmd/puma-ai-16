@@ -115,6 +115,137 @@ export type Database = {
         }
         Relationships: []
       }
+      club_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          max_players: number | null
+          max_teams: number | null
+          name: string
+          price_annual: number | null
+          price_monthly: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_players?: number | null
+          max_teams?: number | null
+          name: string
+          price_annual?: number | null
+          price_monthly?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_players?: number | null
+          max_teams?: number | null
+          name?: string
+          price_annual?: number | null
+          price_monthly?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      club_subscriptions: {
+        Row: {
+          club_id: string | null
+          created_at: string
+          end_date: string | null
+          id: string
+          start_date: string | null
+          status: string
+          subscription_amount: number | null
+          subscription_period: string | null
+          subscription_plan: string | null
+          updated_at: string
+        }
+        Insert: {
+          club_id?: string | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string
+          subscription_amount?: number | null
+          subscription_period?: string | null
+          subscription_plan?: string | null
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string
+          subscription_amount?: number | null
+          subscription_period?: string | null
+          subscription_plan?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_subscriptions_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clubs: {
+        Row: {
+          admin_id: string | null
+          contact_email: string | null
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          name: string
+          phone: string | null
+          serial_number: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          admin_id?: string | null
+          contact_email?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          phone?: string | null
+          serial_number?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          admin_id?: string | null
+          contact_email?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          phone?: string | null
+          serial_number?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       coach_badges: {
         Row: {
           badge_id: string | null
@@ -592,6 +723,27 @@ export type Database = {
         }
         Relationships: []
       }
+      fa_connection_settings: {
+        Row: {
+          enabled: boolean | null
+          id: string
+          provider: string | null
+          team_id: string | null
+        }
+        Insert: {
+          enabled?: boolean | null
+          id?: string
+          provider?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          enabled?: boolean | null
+          id?: string
+          provider?: string | null
+          team_id?: string | null
+        }
+        Relationships: []
+      }
       festival_team_players: {
         Row: {
           created_at: string | null
@@ -926,39 +1078,96 @@ export type Database = {
       }
       fixture_team_selections: {
         Row: {
+          captain_id: string | null
           created_at: string | null
+          duration: number | null
           fixture_id: string | null
           id: string
           is_captain: boolean | null
           performance_category: string | null
+          period_id: string | null
           player_id: string | null
           position: string | null
+          selections_data: Json | null
+          team_id: string | null
           team_number: number | null
           updated_at: string | null
         }
         Insert: {
+          captain_id?: string | null
           created_at?: string | null
+          duration?: number | null
           fixture_id?: string | null
           id?: string
           is_captain?: boolean | null
           performance_category?: string | null
+          period_id?: string | null
           player_id?: string | null
           position?: string | null
+          selections_data?: Json | null
+          team_id?: string | null
           team_number?: number | null
           updated_at?: string | null
         }
         Update: {
+          captain_id?: string | null
           created_at?: string | null
+          duration?: number | null
           fixture_id?: string | null
           id?: string
           is_captain?: boolean | null
           performance_category?: string | null
+          period_id?: string | null
           player_id?: string | null
           position?: string | null
+          selections_data?: Json | null
+          team_id?: string | null
           team_number?: number | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fixture_team_selections_captain_id_fkey"
+            columns: ["captain_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_team_selections_captain_id_fkey"
+            columns: ["captain_id"]
+            isOneToOne: false
+            referencedRelation: "player_attendance_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fixture_team_selections_captain_id_fkey"
+            columns: ["captain_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fixture_team_selections_captain_id_fkey"
+            columns: ["captain_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fixture_team_selections_captain_id_fkey"
+            columns: ["captain_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_team_selections_captain_id_fkey"
+            columns: ["captain_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
           {
             foreignKeyName: "fixture_team_selections_fixture_id_fkey"
             columns: ["fixture_id"]
@@ -1226,6 +1435,27 @@ export type Database = {
           },
         ]
       }
+      game_formats: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       ml_models: {
         Row: {
           accuracy: number
@@ -1267,6 +1497,7 @@ export type Database = {
           duration: number | null
           end_time: string | null
           id: string
+          parameters: Json | null
           player_id: string | null
           start_time: string
           updated_at: string | null
@@ -1279,6 +1510,7 @@ export type Database = {
           duration?: number | null
           end_time?: string | null
           id?: string
+          parameters?: Json | null
           player_id?: string | null
           start_time?: string
           updated_at?: string | null
@@ -1291,6 +1523,7 @@ export type Database = {
           duration?: number | null
           end_time?: string | null
           id?: string
+          parameters?: Json | null
           player_id?: string | null
           start_time?: string
           updated_at?: string | null
@@ -1478,6 +1711,73 @@ export type Database = {
           },
         ]
       }
+      parent_child_linking: {
+        Row: {
+          created_at: string
+          id: string
+          parent_id: string | null
+          player_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          player_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          player_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_child_linking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_child_linking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_attendance_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "parent_child_linking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "parent_child_linking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "parent_child_linking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_child_linking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
       pass_analysis: {
         Row: {
           created_at: string | null
@@ -1566,6 +1866,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      performance_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       player_attributes: {
         Row: {
@@ -1846,6 +2167,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          is_verified: boolean | null
           name: string
           phone: string | null
           player_id: string | null
@@ -1855,6 +2177,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_verified?: boolean | null
           name: string
           phone?: string | null
           player_id?: string | null
@@ -1864,6 +2187,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_verified?: boolean | null
           name?: string
           phone?: string | null
           player_id?: string | null
@@ -1909,6 +2233,79 @@ export type Database = {
             foreignKeyName: "player_parents_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: true
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
+      player_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string | null
+          player_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date: string
+          payment_method?: string | null
+          player_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          player_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_payments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_payments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_attendance_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_payments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_payments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_payments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_payments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "position_rankings"
             referencedColumns: ["player_id"]
           },
@@ -1986,6 +2383,85 @@ export type Database = {
           },
           {
             foreignKeyName: "player_physical_data_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
+      player_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          last_payment_date: string | null
+          next_payment_due: string | null
+          player_id: string | null
+          status: string
+          subscription_amount: number | null
+          subscription_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_payment_date?: string | null
+          next_payment_due?: string | null
+          player_id?: string | null
+          status?: string
+          subscription_amount?: number | null
+          subscription_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_payment_date?: string | null
+          next_payment_due?: string | null
+          player_id?: string | null
+          status?: string
+          subscription_amount?: number | null
+          subscription_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_subscriptions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_subscriptions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_attendance_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_subscriptions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_subscriptions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_subscriptions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_subscriptions_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "position_rankings"
@@ -2085,35 +2561,55 @@ export type Database = {
           created_at: string | null
           date_of_birth: string
           id: string
+          linking_code: string | null
           name: string
           player_type: string
+          self_linked: boolean | null
           squad_number: number
           team_category: string | null
+          team_id: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           age: number
           created_at?: string | null
           date_of_birth?: string
           id?: string
+          linking_code?: string | null
           name: string
           player_type?: string
+          self_linked?: boolean | null
           squad_number: number
           team_category?: string | null
+          team_id?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           age?: number
           created_at?: string | null
           date_of_birth?: string
           id?: string
+          linking_code?: string | null
           name?: string
           player_type?: string
+          self_linked?: boolean | null
           squad_number?: number
           team_category?: string | null
+          team_id?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       position_definitions: {
         Row: {
@@ -2560,6 +3056,45 @@ export type Database = {
           },
         ]
       }
+      team_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          max_players: number | null
+          name: string
+          price_annual: number | null
+          price_monthly: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_players?: number | null
+          name: string
+          price_annual?: number | null
+          price_monthly?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_players?: number | null
+          name?: string
+          price_annual?: number | null
+          price_monthly?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       team_selections: {
         Row: {
           created_at: string | null
@@ -2700,6 +3235,109 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      team_subscriptions: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          start_date: string | null
+          status: string
+          subscription_amount: number | null
+          subscription_period: string | null
+          subscription_plan: string | null
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string
+          subscription_amount?: number | null
+          subscription_period?: string | null
+          subscription_plan?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string
+          subscription_amount?: number | null
+          subscription_period?: string | null
+          subscription_plan?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_subscriptions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          admin_id: string | null
+          age_group: string | null
+          club_id: string | null
+          contact_email: string | null
+          created_at: string
+          id: string
+          joined_club_at: string | null
+          location: string | null
+          subscription_expiry: string | null
+          subscription_status: string | null
+          team_color: string | null
+          team_name: string
+          updated_at: string
+        }
+        Insert: {
+          admin_id?: string | null
+          age_group?: string | null
+          club_id?: string | null
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          joined_club_at?: string | null
+          location?: string | null
+          subscription_expiry?: string | null
+          subscription_status?: string | null
+          team_color?: string | null
+          team_name: string
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string | null
+          age_group?: string | null
+          club_id?: string | null
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          joined_club_at?: string | null
+          location?: string | null
+          subscription_expiry?: string | null
+          subscription_status?: string | null
+          team_color?: string | null
+          team_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tournament_team_players: {
         Row: {
@@ -2955,6 +3593,33 @@ export type Database = {
           id?: string
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean | null
+          role: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          role: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          role?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -3235,17 +3900,53 @@ export type Database = {
       }
     }
     Functions: {
-      calculate_position_suitability: {
+      add_column_if_not_exists: {
         Args: {
-          input_player_id: string
+          p_table_name: string
+          p_column_name: string
+          p_column_type: string
         }
+        Returns: boolean
+      }
+      add_missing_columns_to_fixture_team_selections: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      calculate_position_suitability: {
+        Args: { input_player_id: string }
         Returns: undefined
       }
       create_initial_admin: {
-        Args: {
-          admin_email: string
-        }
+        Args: { admin_email: string }
         Returns: undefined
+      }
+      create_table_if_not_exists: {
+        Args: { p_table_name: string; p_columns: string }
+        Returns: undefined
+      }
+      execute_sql: {
+        Args: { sql_string: string }
+        Returns: undefined
+      }
+      function_exists: {
+        Args: { function_name: string }
+        Returns: boolean
+      }
+      get_table_columns: {
+        Args: { table_name: string }
+        Returns: string[]
+      }
+      is_club_admin: {
+        Args: { club_id: string }
+        Returns: boolean
+      }
+      is_team_admin: {
+        Args: { team_id: string }
+        Returns: boolean
+      }
+      table_exists: {
+        Args: { table_name: string }
+        Returns: boolean
       }
       update_position_suitability: {
         Args: {
@@ -3264,7 +3965,7 @@ export type Database = {
         | "NOT_CONFIRMED"
         | "MAYBE"
       coach_role: "Manager" | "Coach" | "Helper"
-      user_role: "admin" | "manager" | "coach" | "parent"
+      user_role: "admin" | "manager" | "coach" | "parent" | "globalAdmin"
       video_processing_status: "pending" | "processing" | "completed" | "failed"
     }
     CompositeTypes: {
@@ -3273,27 +3974,29 @@ export type Database = {
   }
 }
 
-type PublicSchema = Database[Extract<keyof Database, "public">]
+type DefaultSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
-  PublicTableNameOrOptions extends
-    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-        Database[PublicTableNameOrOptions["schema"]]["Views"])
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
-        PublicSchema["Views"])
-    ? (PublicSchema["Tables"] &
-        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -3301,20 +4004,22 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -3322,20 +4027,22 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -3343,21 +4050,23 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  PublicEnumNameOrOptions extends
-    | keyof PublicSchema["Enums"]
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
     | { schema: keyof Database },
-  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = PublicEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
-    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof PublicSchema["CompositeTypes"]
+    | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof Database
@@ -3366,6 +4075,23 @@ export type CompositeTypes<
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
   ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
-    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      attendance_status: [
+        "PENDING",
+        "CONFIRMED",
+        "DECLINED",
+        "NOT_CONFIRMED",
+        "MAYBE",
+      ],
+      coach_role: ["Manager", "Coach", "Helper"],
+      user_role: ["admin", "manager", "coach", "parent", "globalAdmin"],
+      video_processing_status: ["pending", "processing", "completed", "failed"],
+    },
+  },
+} as const
