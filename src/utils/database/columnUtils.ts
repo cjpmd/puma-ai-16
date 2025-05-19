@@ -2,6 +2,25 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
+ * Checks if a table exists in the database
+ * @param tableName The name of the table to check
+ * @returns True if the table exists, false otherwise
+ */
+export async function tableExists(tableName: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.from(tableName)
+      .select('*')
+      .limit(1);
+    
+    // If there's no error, the table exists
+    return !error;
+  } catch (error) {
+    console.error(`Error checking if table ${tableName} exists:`, error);
+    return false;
+  }
+}
+
+/**
  * Checks if a column exists in a table
  * @param tableName The name of the table
  * @param columnName The name of the column
