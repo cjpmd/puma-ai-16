@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { tableExists, columnExists } from "./columnUtils";
 
 // Create parent-child linking
 export const createParentChildLink = async (
@@ -120,6 +121,66 @@ export const createPlayerParentsTable = async (): Promise<boolean> => {
     }
   } catch (error) {
     console.error('Exception in createPlayerParentsTable:', error);
+    return false;
+  }
+};
+
+/**
+ * Ensure parent-child linking columns and tables are set up properly
+ * This verifies the linking_code column exists in players table and creates it if needed
+ */
+export const ensureParentChildLinkingSetup = async (): Promise<boolean> => {
+  try {
+    // Step 1: Check if the parent_child_linking table exists
+    const parentChildTableExists = await tableExists('parent_child_linking');
+    
+    if (!parentChildTableExists) {
+      console.log("Creating parent_child_linking table...");
+      const { error: createTableError } = await supabase.rpc('execute_sql', {
+        sql_string: `
+          CREATE TABLE IF NOT EXISTS public.parent_child_linking (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            parent_id UUID REFERENCES auth.users(id),
+            player_id UUID REFERENCES public.players(id),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+          );
+        `
+      });
+      
+      if (createTableError) {
+        console.error("Error creating parent_child_linking table:", createTableError);
+        return false;
+      }
+    }
+    
+    // Step 2: Check if linking_code column exists in players table
+    const linkingCodeExists = await columnExists('players', 'linking_code');
+    
+    if (!linkingCodeExists) {
+      console.log("Adding linking_code column to players table...");
+      const { error: addColumnError } = await supabase.rpc('execute_sql', {
+        sql_string: `
+          ALTER TABLE public.players 
+          ADD COLUMN IF NOT EXISTS linking_code TEXT;
+        `
+      });
+      
+      if (addColumnError) {
+        console.error("Error adding linking_code column:", addColumnError);
+        return false;
+      }
+    }
+    
+    // Step 3: Ensure player_parents table exists
+    const playerParentsCreated = await createPlayerParentsTable();
+    if (!playerParentsCreated) {
+      console.warn("Failed to ensure player_parents table exists");
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error in ensureParentChildLinkingSetup:", error);
     return false;
   }
 };
