@@ -1,3 +1,4 @@
+
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Users, BarChart2, UserCircle, Calendar, LogOut, Cog, Home, Building, LogIn, Plus, SwitchCamera } from "lucide-react";
@@ -37,7 +38,8 @@ export const NavBar = () => {
   const [userClub, setUserClub] = useState<any>(null);
   const [teamLogo, setTeamLogo] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const { activeRole, switchRole, hasRole } = useAuth();
+  const auth = useAuth();
+  const { activeRole, switchRole, hasRole } = auth;
   
   useEffect(() => {
     // Try to get team logo from localStorage first for faster initial render
@@ -214,13 +216,15 @@ export const NavBar = () => {
 
   // Function to handle role switching
   const handleRoleSwitch = (role: UserRole) => {
-    switchRole(role);
-    
-    // Show toast notification about role switch
-    toast({
-      title: "Role Switched",
-      description: `You are now viewing as a ${role.charAt(0).toUpperCase() + role.slice(1)}`,
-    });
+    if (switchRole) {
+      switchRole(role);
+      
+      // Show toast notification about role switch
+      toast({
+        title: "Role Switched",
+        description: `You are now viewing as a ${role.charAt(0).toUpperCase() + role.slice(1)}`,
+      });
+    }
   };
 
   return (
@@ -334,10 +338,10 @@ export const NavBar = () => {
                   <DropdownMenuSubContent>
                     <DropdownMenuRadioGroup value={activeRole || undefined} onValueChange={(value) => handleRoleSwitch(value as UserRole)}>
                       <DropdownMenuRadioItem value="admin">Admin</DropdownMenuRadioItem>
-                      {hasRole('parent') && (
+                      {hasRole && hasRole('parent') && (
                         <DropdownMenuRadioItem value="parent">Parent</DropdownMenuRadioItem>
                       )}
-                      {hasRole('coach') && (
+                      {hasRole && hasRole('coach') && (
                         <DropdownMenuRadioItem value="coach">Coach</DropdownMenuRadioItem>
                       )}
                     </DropdownMenuRadioGroup>
@@ -349,7 +353,7 @@ export const NavBar = () => {
                   <span>Platform Dashboard</span>
                 </DropdownMenuItem>
                 
-                {hasRole('parent') && (
+                {hasRole && hasRole('parent') && (
                   <DropdownMenuItem onClick={() => navigate("/parent-dashboard")}>
                     <Users className="mr-2 h-4 w-4" />
                     <span>Parent Dashboard</span>

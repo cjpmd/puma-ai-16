@@ -13,7 +13,8 @@ export interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-  const { profile, isLoading, hasRole, activeRole } = useAuth();
+  const auth = useAuth();
+  const { profile, isLoading, hasRole, activeRole } = auth;
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -44,7 +45,7 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
 
   // Check if user has any of the required roles
   const hasRequiredRole = allowedRoles.some(role => {
-    const check = hasRole(role);
+    const check = hasRole && hasRole(role);
     console.log(`Checking if user has role ${role}: ${check ? 'yes' : 'no'}`);
     return check;
   });

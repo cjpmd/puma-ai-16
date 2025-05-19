@@ -8,14 +8,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
 export const RoleManager = () => {
-  const { profile, addRole, hasRole, switchRole } = useAuth();
+  const auth = useAuth();
+  const { profile, addRole, hasRole, switchRole } = auth;
   const { toast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
   const [isAddingGlobalAdmin, setIsAddingGlobalAdmin] = useState(false);
   const navigate = useNavigate();
 
   const handleAddRole = async (role: UserRole) => {
-    if (!profile) return;
+    if (!profile || !addRole) return;
     
     // Special handling for globalAdmin
     if (role === 'globalAdmin') {
@@ -36,8 +37,10 @@ export const RoleManager = () => {
         if (role === 'globalAdmin') {
           console.log("Successfully added globalAdmin role, navigating to /global-admin");
           setTimeout(() => {
-            switchRole('globalAdmin');
-            navigate('/global-admin');
+            if (switchRole) {
+              switchRole('globalAdmin');
+              navigate('/global-admin');
+            }
           }, 500);
         }
       } else {
@@ -57,8 +60,10 @@ export const RoleManager = () => {
 
   const goToGlobalAdmin = () => {
     console.log("Navigating to global admin dashboard");
-    switchRole('globalAdmin');
-    navigate('/global-admin');
+    if (switchRole) {
+      switchRole('globalAdmin');
+      navigate('/global-admin');
+    }
   };
   
   // Manual override for development - actually forces access to global admin
@@ -83,35 +88,35 @@ export const RoleManager = () => {
           <Button 
             variant="outline" 
             onClick={() => handleAddRole('coach')}
-            disabled={isAdding || hasRole('coach')}
+            disabled={isAdding || (hasRole && hasRole('coach'))}
           >
-            {hasRole('coach') ? 'Coach Role Added' : 'Add Coach Role'}
+            {hasRole && hasRole('coach') ? 'Coach Role Added' : 'Add Coach Role'}
           </Button>
           <Button 
             variant="outline" 
             onClick={() => handleAddRole('parent')}
-            disabled={isAdding || hasRole('parent')}
+            disabled={isAdding || (hasRole && hasRole('parent'))}
           >
-            {hasRole('parent') ? 'Parent Role Added' : 'Add Parent Role'}
+            {hasRole && hasRole('parent') ? 'Parent Role Added' : 'Add Parent Role'}
           </Button>
           <Button 
             variant="outline" 
             onClick={() => handleAddRole('player')}
-            disabled={isAdding || hasRole('player')}
+            disabled={isAdding || (hasRole && hasRole('player'))}
           >
-            {hasRole('player') ? 'Player Role Added' : 'Add Player Role'}
+            {hasRole && hasRole('player') ? 'Player Role Added' : 'Add Player Role'}
           </Button>
           <Button 
             variant="outline" 
             onClick={() => handleAddRole('admin')}
-            disabled={isAdding || hasRole('admin')}
+            disabled={isAdding || (hasRole && hasRole('admin'))}
           >
-            {hasRole('admin') ? 'Admin Role Added' : 'Add Admin Role'}
+            {hasRole && hasRole('admin') ? 'Admin Role Added' : 'Add Admin Role'}
           </Button>
           <Button 
-            variant={hasRole('globalAdmin') ? "outline" : "default"}
+            variant={(hasRole && hasRole('globalAdmin')) ? "outline" : "default"}
             className="col-span-1 md:col-span-2"
-            onClick={() => !hasRole('globalAdmin') && handleAddRole('globalAdmin')}
+            onClick={() => !(hasRole && hasRole('globalAdmin')) && handleAddRole('globalAdmin')}
             disabled={isAddingGlobalAdmin}
           >
             {isAddingGlobalAdmin ? (
@@ -119,7 +124,7 @@ export const RoleManager = () => {
                 <span className="mr-2">Adding Global Admin role...</span>
                 <span className="animate-spin">⏳</span>
               </div>
-            ) : hasRole('globalAdmin') ? (
+            ) : (hasRole && hasRole('globalAdmin')) ? (
               <div className="flex items-center justify-between w-full">
                 <span>Global Admin Role Added</span>
                 <Button 
@@ -139,7 +144,7 @@ export const RoleManager = () => {
           </Button>
         </div>
         
-        {hasRole('globalAdmin') && (
+        {hasRole && hasRole('globalAdmin') && (
           <Button 
             className="w-full"
             onClick={goToGlobalAdmin}

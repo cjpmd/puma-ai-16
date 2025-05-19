@@ -4,6 +4,7 @@ import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { updateUserRole } from "@/utils/database/updateUserRole";
+import { supabase } from "@/integrations/supabase/client"; // Import the preconfigured supabase client
 
 // Define UserRole type here for better type safety across the app
 export type UserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin' | 'user';
@@ -24,18 +25,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeRole, setActiveRole] = useState<UserRole | null>(null);
-  const supabaseClient = useSupabaseClient();
   const navigate = useNavigate();
 
   const fetchProfile = async () => {
     setIsLoading(true);
     try {
-      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError) {
         if (userError.message.includes('refresh_token_not_found')) {
           // Clear the session and redirect to auth
-          await supabaseClient.auth.signOut();
+          await supabase.auth.signOut();
           navigate('/auth');
           return null;
         }
@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       console.log("Fetching profile for user ID:", user.id);
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // If no profile exists, create one with default role
       if (!data) {
         console.log("No profile found, creating one with default admin role");
-        const { data: newProfile, error: createError } = await supabaseClient
+        const { data: newProfile, error: createError } = await supabase
           .from('profiles')
           .insert([
             { 
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Auth error:', err);
       // If there's a refresh token error, sign out and redirect
       if (err instanceof Error && err.message.includes('refresh_token_not_found')) {
-        await supabaseClient.auth.signOut();
+        await supabase.auth.signOut();
         navigate('/auth');
       }
       toast("Authentication error occurred", {
@@ -120,10 +120,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           if (error.message.includes('refresh_token_not_found')) {
-            await supabaseClient.auth.signOut();
+            await supabase.auth.signOut();
           }
           console.error('Session error:', error);
           navigate('/auth');
@@ -145,7 +145,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth();
 
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
+    // Use our imported supabase client to avoid the undefined issue
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session);
         
@@ -163,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, supabaseClient]);
+  }, [navigate]);
 
   // Function to add a role to the current user
   const addRole = async (role: UserRole): Promise<boolean> => {

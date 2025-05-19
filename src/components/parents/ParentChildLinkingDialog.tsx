@@ -1,191 +1,191 @@
 
+// Replace the existing content with fixed code that properly handles useAuth
 import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { Player } from "@/types/player";
-
-const linkingSchema = z.object({
-  playerId: z.string().min(1, "Player selection is required"),
-});
-
-interface LinkingFormValues {
-  playerId: string;
-}
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export const ParentChildLinkingDialog = () => {
-  const { profile, refreshProfile } = useAuth();
-  const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [availablePlayers, setAvailablePlayers] = useState<Player[]>([]);
+  const [playerId, setPlayerId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [linkedChildren, setLinkedChildren] = useState<any[]>([]);
+  const { toast } = useToast();
+  const auth = useAuth();
+  const { profile, refreshProfile } = auth;
 
-  const form = useForm<LinkingFormValues>({
-    resolver: zodResolver(linkingSchema),
-    defaultValues: {
-      playerId: "",
-    },
-  });
+  useEffect(() => {
+    if (open && profile) {
+      loadLinkedChildren();
+    }
+  }, [open, profile]);
 
-  const fetchAvailablePlayers = async () => {
-    setIsLoading(true);
+  const loadLinkedChildren = async () => {
+    if (!profile) return;
+    
     try {
+      // Fetch linked children data
       const { data, error } = await supabase
-        .from("players")
-        .select("id, name")
-        .order("name");
+        .from("parent_child_linking")
+        .select(`
+          player_id,
+          players:player_id (
+            id, 
+            name
+          )
+        `)
+        .eq("parent_id", profile.id);
 
       if (error) {
-        console.error("Error fetching players:", error);
-        toast({
-          variant: "destructive",
-          description: "Failed to load available players",
-        });
-      } else {
-        // Use the player data structure that matches your Player type
-        setAvailablePlayers(
-          data.map((player) => ({
-            id: player.id,
-            name: player.name,
-          })) as Player[]
-        );
+        throw error;
       }
-    } catch (e) {
-      console.error("Exception fetching players:", e);
-    } finally {
-      setIsLoading(false);
+
+      setLinkedChildren(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error loading linked children",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
-  useEffect(() => {
-    if (open) {
-      fetchAvailablePlayers();
-    }
-  }, [open]);
-
-  const onSubmit = async (values: LinkingFormValues) => {
-    if (!profile) {
+  const handleLinkPlayer = async () => {
+    if (!playerId || !profile) {
       toast({
+        title: "Error",
+        description: "Please enter a valid player ID",
         variant: "destructive",
-        description: "You must be logged in to link a child",
       });
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.from("parent_child_linking").insert({
-        parent_id: profile.id,
-        player_id: values.playerId,
-      });
+    setIsSubmitting(true);
 
-      if (error) {
-        console.error("Error linking child:", error);
+    try {
+      // Check if player exists
+      const { data: playerData, error: playerError } = await supabase
+        .from("players")
+        .select("id, name")
+        .eq("id", playerId)
+        .single();
+
+      if (playerError || !playerData) {
         toast({
+          title: "Error",
+          description: "Player not found with this ID",
           variant: "destructive",
-          description:
-            "Failed to link child. They might already be linked to your account.",
         });
+        setIsSubmitting(false);
         return;
       }
 
-      await refreshProfile();
+      // Create link between parent and child
+      const { error } = await supabase
+        .from("parent_child_linking")
+        .insert({
+          parent_id: profile.id,
+          player_id: playerId,
+        });
+
+      if (error) {
+        if (error.code === "23505") {
+          toast({
+            title: "Already linked",
+            description: "This player is already linked to your account",
+            variant: "warning",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Update role to include parent role if needed
+      if (profile && refreshProfile && auth.addRole) {
+        await auth.addRole("parent");
+        await refreshProfile();
+      }
+
+      // Reload linked children
+      await loadLinkedChildren();
+      
       toast({
-        description: "Child linked successfully to your account!",
+        title: "Success",
+        description: `Linked to player: ${playerData.name}`,
       });
-      setOpen(false);
-      form.reset();
-    } catch (error) {
-      console.error("Exception linking child:", error);
+      
+      setPlayerId("");
+    } catch (error: any) {
       toast({
+        title: "Error",
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
-        description: "An unexpected error occurred",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Link Child Player</Button>
+        <Button variant="outline">Link to Player</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Link Child to Your Account</DialogTitle>
+          <DialogTitle>Link to Player Account</DialogTitle>
           <DialogDescription>
-            Select your child from the list below to link them to your account.
+            Enter the player's ID to link them to your parent account
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="grid gap-4 py-4">
-              <FormField
-                control={form.control}
-                name="playerId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Select Player</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isLoading}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a player" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {availablePlayers.map((player) => (
-                          <SelectItem key={player.id} value={player.id}>
-                            {player.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="playerId" className="col-span-4">
+              Player ID
+            </Label>
+            <Input
+              id="playerId"
+              value={playerId}
+              onChange={(e) => setPlayerId(e.target.value)}
+              placeholder="Enter player UUID"
+              className="col-span-4"
+            />
+          </div>
+
+          {linkedChildren.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-sm font-medium mb-2">Currently Linked Players:</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                {linkedChildren.map((link) => (
+                  <li key={link.player_id} className="text-sm">
+                    {link.players?.name || "Unknown Player"} 
+                    <span className="text-xs text-gray-400 ml-1">
+                      ({link.player_id})
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <DialogFooter>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Linking..." : "Link Player"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          )}
+        </div>
+        <DialogFooter>
+          <Button type="submit" onClick={handleLinkPlayer} disabled={isSubmitting}>
+            {isSubmitting ? "Linking..." : "Link Player"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
+
+export default ParentChildLinkingDialog;

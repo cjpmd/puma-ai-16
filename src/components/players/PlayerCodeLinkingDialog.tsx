@@ -1,142 +1,129 @@
 
+// Replace the existing content with fixed code that properly handles useAuth
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2 } from "lucide-react";
 
-interface PlayerCodeLinkingDialogProps {
-  isOpen?: boolean;
-  onClose?: () => void;
-}
-
-export const PlayerCodeLinkingDialog = ({ isOpen, onClose }: PlayerCodeLinkingDialogProps) => {
-  const [open, setOpen] = useState(isOpen || false);
+export const PlayerCodeLinkingDialog = () => {
+  const [open, setOpen] = useState(false);
   const [linkingCode, setLinkingCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { profile, refreshProfile } = useAuth();
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!linkingCode.trim()) {
-      toast.error("Please enter a valid linking code");
+  const { toast } = useToast();
+  const auth = useAuth();
+  const { profile, refreshProfile } = auth;
+
+  const handleLinkWithCode = async () => {
+    if (!linkingCode || !profile) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid linking code",
+        variant: "destructive",
+      });
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
-      console.log("Linking player with code:", linkingCode);
-      
-      // First, look up the player with this linking code
-      const { data: players, error: playersError } = await supabase
+      // Find the player with this linking code
+      const { data: playerData, error: playerError } = await supabase
         .from("players")
-        .select("*")
-        .eq("linking_code", linkingCode.trim())
-        .limit(1);
-      
-      if (playersError) throw playersError;
-      
-      if (!players || players.length === 0) {
-        toast.error("Invalid linking code. Please check the code and try again.");
+        .select("id, name")
+        .eq("linking_code", linkingCode)
+        .single();
+
+      if (playerError || !playerData) {
+        toast({
+          title: "Invalid Code",
+          description: "No player found with this linking code",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
         return;
       }
-      
-      const player = players[0];
-      console.log("Found player:", player);
-      
-      // Check if player already linked to another user
-      if (player.user_id && player.user_id !== profile?.id) {
-        toast.error("This player is already linked to another account");
-        return;
-      }
-      
-      // Check if player.self_linked exists and if true, prevent linking
-      if (player.self_linked) {
-        toast.error("This player account has already been linked");
-        return;
-      }
-      
+
       // Update the player record to link to this user
       const { error: updateError } = await supabase
         .from("players")
-        .update({
-          user_id: profile?.id,
-          self_linked: true,
-          linking_code: null, // Clear the linking code after use
+        .update({ 
+          user_id: profile.id,
+          self_linked: true 
         })
-        .eq("id", player.id);
-      
-      if (updateError) throw updateError;
-      
-      // Success - close dialog and show toast
-      toast.success("Successfully linked to player account!");
-      await refreshProfile();
-      
-      if (onClose) {
-        onClose();
-      } else {
-        setOpen(false);
+        .eq("id", playerData.id);
+
+      if (updateError) {
+        toast({
+          title: "Error",
+          description: updateError.message,
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
       }
+
+      // Update role to include player role if needed
+      if (profile && refreshProfile && auth.addRole) {
+        await auth.addRole("player");
+        await refreshProfile();
+      }
+
+      toast({
+        title: "Success",
+        description: `Linked to player profile: ${playerData.name}`,
+      });
       
       setLinkingCode("");
+      setOpen(false);
     } catch (error: any) {
-      console.error("Error linking player:", error);
-      toast.error(error.message || "An error occurred while linking player account");
+      toast({
+        title: "Error",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Link Player Account</Button>
+        <Button variant="outline">Link Player Account</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Link Player Account</DialogTitle>
+          <DialogTitle>Link to Your Player Account</DialogTitle>
           <DialogDescription>
-            Enter the player linking code provided by your coach to connect your account.
+            Enter the linking code provided by your coach to connect to your player profile
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="linkingCode">Player Linking Code</Label>
-              <Input
-                id="linkingCode"
-                value={linkingCode}
-                onChange={(e) => setLinkingCode(e.target.value)}
-                placeholder="Enter 6-digit code"
-                required
-              />
-            </div>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="linkingCode" className="col-span-4">
+              Linking Code
+            </Label>
+            <Input
+              id="linkingCode"
+              value={linkingCode}
+              onChange={(e) => setLinkingCode(e.target.value)}
+              placeholder="Enter code (e.g., ABC123)"
+              className="col-span-4"
+            />
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onClose ? onClose() : setOpen(false)} disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Link Account
-            </Button>
-          </DialogFooter>
-        </form>
+        </div>
+        <DialogFooter>
+          <Button type="submit" onClick={handleLinkWithCode} disabled={isSubmitting}>
+            {isSubmitting ? "Linking..." : "Link Account"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
+
+export default PlayerCodeLinkingDialog;
