@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -307,4 +308,133 @@ export const getAuthConfigurationInfo = (): Array<{name: string, description: st
       remediation: "Enable this in the Supabase dashboard under Authentication > Policies > Password Strength"
     }
   ];
+};
+
+/**
+ * Optimizes RLS policies by replacing direct auth.uid() calls with (select auth.uid())
+ * This fixes the "Auth RLS Initialization Plan" performance warnings
+ */
+export const optimizeRlsPolicies = async (): Promise<boolean> => {
+  try {
+    console.log("Optimizing RLS policies to fix auth_rls_initplan warnings...");
+    
+    // We'll track our progress to return success status
+    let success = true;
+    
+    // First, get a list of policies that need optimization
+    const { data: policiesData, error: listError } = await supabase.rpc(
+      'execute_sql',
+      {
+        sql_string: `
+          SELECT 
+            schemaname,
+            tablename,
+            policyname,
+            cmd,
+            permissive,
+            roles,
+            qual,
+            with_check
+          FROM 
+            pg_policies
+          WHERE 
+            schemaname = 'public' AND
+            (qual::text LIKE '%auth.uid%' OR with_check::text LIKE '%auth.uid%') AND
+            (qual::text NOT LIKE '%(select%auth.uid%' AND qual::text NOT LIKE '%(SELECT%auth.uid%')
+        `
+      }
+    );
+    
+    if (listError) {
+      console.error("Error fetching policies that need optimization:", listError);
+      return false;
+    }
+
+    if (!policiesData || policiesData.length === 0) {
+      console.log("No policies found that need optimization");
+      return true;
+    }
+    
+    console.log(`Found ${policiesData.length} policies that need optimization`);
+    
+    // Process each policy
+    for (const policy of policiesData) {
+      try {
+        // First drop the existing policy
+        const { error: dropError } = await supabase.rpc(
+          'execute_sql',
+          {
+            sql_string: `
+              DROP POLICY IF EXISTS "${policy.policyname}" ON public.${policy.tablename};
+            `
+          }
+        );
+        
+        if (dropError) {
+          console.error(`Error dropping policy ${policy.policyname} on ${policy.tablename}:`, dropError);
+          success = false;
+          continue;
+        }
+        
+        // Replace auth.uid() with (SELECT auth.uid())
+        let optimizedQual = policy.qual;
+        let optimizedWithCheck = policy.with_check;
+        
+        if (optimizedQual) {
+          optimizedQual = optimizedQual.replace(/auth\.uid\(\)/g, '(SELECT auth.uid())');
+        }
+        
+        if (optimizedWithCheck) {
+          optimizedWithCheck = optimizedWithCheck.replace(/auth\.uid\(\)/g, '(SELECT auth.uid())');
+        }
+        
+        // Recreate the policy with optimized conditions
+        const cmdMap: Record<string, string> = {
+          'r': 'SELECT',
+          'a': 'INSERT',
+          'w': 'UPDATE',
+          'd': 'DELETE',
+          '*': 'ALL'
+        };
+        
+        const cmd = cmdMap[policy.cmd] || 'ALL';
+        const rolesStr = policy.roles.length > 0 ? `TO ${policy.roles.join(', ')}` : '';
+        const usingClause = optimizedQual ? `USING (${optimizedQual})` : '';
+        const withCheckClause = optimizedWithCheck ? `WITH CHECK (${optimizedWithCheck})` : '';
+        
+        const createSql = `
+          CREATE POLICY "${policy.policyname}" 
+          ON public.${policy.tablename}
+          FOR ${cmd}
+          ${rolesStr}
+          ${usingClause}
+          ${withCheckClause};
+        `;
+        
+        const { error: createError } = await supabase.rpc(
+          'execute_sql',
+          {
+            sql_string: createSql
+          }
+        );
+        
+        if (createError) {
+          console.error(`Error recreating optimized policy ${policy.policyname} on ${policy.tablename}:`, createError);
+          success = false;
+        } else {
+          console.log(`Successfully optimized policy ${policy.policyname} on ${policy.tablename}`);
+        }
+        
+      } catch (policyError) {
+        console.error(`Error processing policy ${policy.policyname}:`, policyError);
+        success = false;
+      }
+    }
+    
+    console.log("RLS policy optimization completed with status:", success);
+    return success;
+  } catch (error) {
+    console.error("Error optimizing RLS policies:", error);
+    return false;
+  }
 };

@@ -16,20 +16,22 @@ import {
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldCheck, Database, AlertTriangle, Loader2, Info, WrenchIcon, KeyIcon } from "lucide-react";
+import { ShieldCheck, Database, AlertTriangle, Loader2, Info, WrenchIcon, KeyIcon, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { 
   getSecurityDefinerViewsInfo, 
   setupSecurityPolicies,
   fixFunctionSearchPaths,
   fixMaterializedViewAccess,
-  getAuthConfigurationInfo
+  getAuthConfigurationInfo,
+  optimizeRlsPolicies
 } from "@/utils/database/setupSecurityPolicies";
 
 export const AdminSettings = () => {
   const [isFixingRls, setIsFixingRls] = useState(false);
   const [isFixingFunctions, setIsFixingFunctions] = useState(false);
   const [isFixingViews, setIsFixingViews] = useState(false);
+  const [isOptimizingRls, setIsOptimizingRls] = useState(false);
   const securityDefinerViews = getSecurityDefinerViewsInfo();
   const authConfigIssues = getAuthConfigurationInfo();
   
@@ -81,6 +83,23 @@ export const AdminSettings = () => {
       toast.error("An unexpected error occurred while fixing materialized view permissions.");
     } finally {
       setIsFixingViews(false);
+    }
+  };
+
+  const handleOptimizeRlsPolicies = async () => {
+    setIsOptimizingRls(true);
+    try {
+      const result = await optimizeRlsPolicies();
+      if (result) {
+        toast.success("RLS policies have been optimized successfully.");
+      } else {
+        toast.error("Failed to optimize some RLS policies. Check console for details.");
+      }
+    } catch (error) {
+      console.error("Error optimizing RLS policies:", error);
+      toast.error("An unexpected error occurred while optimizing RLS policies.");
+    } finally {
+      setIsOptimizingRls(false);
     }
   };
   
@@ -171,6 +190,66 @@ export const AdminSettings = () => {
                     </>
                   ) : (
                     'Fix RLS Security Issues'
+                  )}
+                </Button>
+              </div>
+
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-medium mb-3">RLS Policy Performance Issues</h3>
+                <Alert variant="warning" className="mb-4">
+                  <Zap className="h-5 w-5" />
+                  <AlertTitle>RLS Performance Warnings</AlertTitle>
+                  <AlertDescription>
+                    Many of your RLS policies use direct calls to <code className="text-xs bg-gray-100 p-1 rounded">auth.uid()</code> which 
+                    get re-evaluated for each row. This can cause performance issues with large datasets.
+                    Click the button below to optimize these policies by replacing with <code className="text-xs bg-gray-100 p-1 rounded">(SELECT auth.uid())</code>.
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="space-y-2 mb-6">
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <div className="flex flex-col">
+                      <span className="font-medium">public.clubs (club_admin_all)</span>
+                      <span className="text-sm text-muted-foreground">
+                        Policy re-evaluates auth.uid() for each row
+                      </span>
+                    </div>
+                    <Zap className="h-5 w-5 text-amber-500" />
+                  </div>
+                  
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <div className="flex flex-col">
+                      <span className="font-medium">public.teams (team_admin_all)</span>
+                      <span className="text-sm text-muted-foreground">
+                        Policy re-evaluates auth.uid() for each row
+                      </span>
+                    </div>
+                    <Zap className="h-5 w-5 text-amber-500" />
+                  </div>
+                  
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <div className="flex flex-col">
+                      <span className="font-medium">RLS policies (45+ more)</span>
+                      <span className="text-sm text-muted-foreground">
+                        Additional policies that need optimization
+                      </span>
+                    </div>
+                    <Zap className="h-5 w-5 text-amber-500" />
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={handleOptimizeRlsPolicies} 
+                  disabled={isOptimizingRls}
+                  variant="secondary"
+                >
+                  {isOptimizingRls ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Optimizing RLS Policies...
+                    </>
+                  ) : (
+                    'Optimize RLS Policies'
                   )}
                 </Button>
               </div>
@@ -375,4 +454,3 @@ export const AdminSettings = () => {
     </div>
   );
 };
-
