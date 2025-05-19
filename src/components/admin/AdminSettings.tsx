@@ -1,5 +1,5 @@
 
-import { UserManagement } from "@/components/admin/UserManagement";
+import UserManagement from "@/components/admin/UserManagement";
 
 export const AdminSettings = () => {
   return (

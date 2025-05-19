@@ -23,4 +23,4 @@ export interface TeamSettings {
 }
 
 // Update to use the imported UserRole type
-export type AllowedUserRoles = Exclude<UserRole, 'user'>;
+export type AllowedUserRoles = UserRole;
