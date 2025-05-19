@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth, UserRole } from "@/hooks/useAuth";
+import { useAuth, UserRole } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
 import { Shield, ExternalLink, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";

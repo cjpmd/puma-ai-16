@@ -1,11 +1,11 @@
 
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 
 // Use the UserRole type imported from useAuth for consistency
-import { UserRole } from "@/hooks/useAuth";
+import { UserRole } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
 
 export interface ProtectedRouteProps {
   children: React.ReactNode;

@@ -1,4 +1,3 @@
-
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Users, BarChart2, UserCircle, Calendar, LogOut, Cog, Home, Building, LogIn, Plus, SwitchCamera } from "lucide-react";
@@ -19,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
-import { useAuth, UserRole } from "@/hooks/useAuth";
+import { useAuth, UserRole } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
 
 interface MenuItem {
   to: string;

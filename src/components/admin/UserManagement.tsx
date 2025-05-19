@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserRole } from "@/hooks/useAuth";
+import { UserRole } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
 
 interface Profile {
   id: string;
