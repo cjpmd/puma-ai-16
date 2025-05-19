@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -30,7 +31,7 @@ interface Profile {
   name?: string;
 }
 
-const UserManagement = () => {
+export const UserManagement = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [newEmail, setNewEmail] = useState("");
@@ -264,4 +265,5 @@ const UserManagement = () => {
   );
 };
 
+// Add default export to maintain backward compatibility
 export default UserManagement;
