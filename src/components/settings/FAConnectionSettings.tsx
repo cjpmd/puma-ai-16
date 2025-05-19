@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
@@ -71,8 +70,8 @@ export function FAConnectionSettings() {
     try {
       // Try to create table using rpc
       const { error } = await supabase.rpc('create_table_if_not_exists', {
-        table_name: 'fa_connection_settings',
-        table_definition: `
+        p_table_name: 'fa_connection_settings',
+        p_columns: `
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
           enabled boolean DEFAULT false,
           team_id text,

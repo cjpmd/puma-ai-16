@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useTeamSelection } from "@/hooks/useTeamSelection";
 import { FormationSelector } from "@/components/FormationSelector";
@@ -7,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { PerformanceCategory, Player, transformDbPlayerToPlayer } from "@/types/player";
+import { PerformanceCategory, transformDbPlayerToPlayer } from "@/types/player";
 
 interface TeamSelection {
   playerId: string;
@@ -49,8 +50,8 @@ export const FestivalTeamSelection = ({
     },
   });
 
-  // Transform players data to match the expected Player interface
-  const players: Player[] = (playersData || []).map(p => transformDbPlayerToPlayer(p));
+  // Transform players data to match the expected Player interface properly
+  const players = (playersData || []).map(transformDbPlayerToPlayer);
 
   useEffect(() => {
     if (isOpen) {
@@ -97,6 +98,31 @@ export const FestivalTeamSelection = ({
           performanceCategory: value.performanceCategory || 'MESSI' as PerformanceCategory
         }));
       });
+      
+      // Check if festival_team_players table exists before inserting
+      const createTable = async () => {
+        try {
+          // Create table if it doesn't exist
+          await supabase.rpc('create_table_if_not_exists', {
+            p_table_name: 'festival_team_players',
+            p_columns: `
+              id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+              festival_team_id uuid REFERENCES festival_teams(id),
+              player_id uuid REFERENCES players(id),
+              position text NOT NULL,
+              is_substitute boolean DEFAULT false,
+              is_captain boolean DEFAULT false,
+              performance_category text DEFAULT 'MESSI',
+              created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+              updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+            `
+          });
+        } catch (error) {
+          console.error("Error creating festival_team_players table:", error);
+        }
+      };
+      
+      await createTable();
       
       // Insert selections into database using the festival_team_players table
       const insertPromises = Object.entries(formattedSelections).flatMap(([teamId, selections]) => 

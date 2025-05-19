@@ -88,7 +88,7 @@ export function UserManagement() {
         club_name: null,
       }));
 
-      setUsers(usersData as User[])
+      setUsers(usersData)
     } catch (error: any) {
       toast({
         title: "Error",
@@ -167,7 +167,8 @@ export function UserManagement() {
     { value: 'coach', label: 'Coach' },
     { value: 'parent', label: 'Parent' },
     { value: 'player', label: 'Player' },
-    { value: 'globalAdmin', label: 'Global Admin' }
+    { value: 'globalAdmin', label: 'Global Admin' },
+    { value: 'user', label: 'User' }
   ];
 
   return (

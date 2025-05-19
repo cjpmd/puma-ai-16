@@ -84,7 +84,7 @@ export const PlayerHeader = ({
           if (error) {
             console.error("Error fetching profile image:", error);
             
-            // If column doesn't exist, we'll get an error here
+            // Handle errors related to column not existing
             if (error.message.includes('does not exist')) {
               console.log("profile_image column doesn't exist, using default");
               setProfileImage(null);
@@ -92,9 +92,13 @@ export const PlayerHeader = ({
             return;
           }
           
-          if (data && data.profile_image) {
+          // Safely access the profile_image property
+          const fetchedImage = data && typeof data === 'object' ? 
+            'profile_image' in data ? data.profile_image as string : null : null;
+          
+          if (fetchedImage) {
             console.log("Got latest profile image from database");
-            setProfileImage(data.profile_image);
+            setProfileImage(fetchedImage);
             setImageError(false);
             return;
           }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -44,15 +45,31 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
             *,
             coach:coach_id (
               name,
-              email,
-              avatar_url
+              email
             )
           `)
           .eq('player_id', playerId)
           .order('created_at', { ascending: false });
           
         if (error) throw error;
-        setComments(data || []);
+        
+        // Process the data to ensure it fits the Comment interface
+        const processedComments: Comment[] = (data || []).map(item => ({
+          id: item.id,
+          player_id: item.player_id,
+          coach_id: item.coach_id,
+          comment: item.comment,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          coach: item.coach ? {
+            name: item.coach.name || 'Unknown Coach',
+            email: item.coach.email || '',
+            // Note that avatar_url is not available but we're setting it as undefined
+            avatar_url: undefined
+          } : undefined
+        }));
+        
+        setComments(processedComments);
       } catch (error) {
         console.error('Error fetching comments:', error);
       } finally {
@@ -80,7 +97,7 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
         .insert({
           player_id: playerId,
           coach_id: user.id,
-          comment: newComment // Make sure to use 'comment' as per the table schema
+          comment: newComment
         });
         
       if (error) throw error;
@@ -92,15 +109,30 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
           *,
           coach:coach_id (
             name,
-            email,
-            avatar_url
+            email
           )
         `)
         .eq('player_id', playerId)
         .order('created_at', { ascending: false });
         
       if (fetchError) throw fetchError;
-      setComments(data || []);
+      
+      // Process the data to ensure it fits the Comment interface
+      const processedComments: Comment[] = (data || []).map(item => ({
+        id: item.id,
+        player_id: item.player_id,
+        coach_id: item.coach_id,
+        comment: item.comment,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        coach: item.coach ? {
+          name: item.coach.name || 'Unknown Coach',
+          email: item.coach.email || '',
+          avatar_url: undefined
+        } : undefined
+      }));
+      
+      setComments(processedComments);
       setNewComment('');
     } catch (error) {
       console.error('Error adding comment:', error);

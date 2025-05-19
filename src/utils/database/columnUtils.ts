@@ -6,12 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function tableExists(tableName: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase
-      .from('information_schema.tables')
-      .select('table_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', tableName)
-      .single();
+    const { data, error } = await supabase.rpc('table_exists', { 
+      table_name: tableName 
+    });
     
     if (error) {
       console.error(`Error checking if table ${tableName} exists:`, error);
@@ -39,6 +36,11 @@ export async function columnExists(tableName: string, columnName: string): Promi
       .single();
     
     if (error) {
+      // Check if the error is just because the result is not found
+      if (error.code === 'PGRST116') {
+        return false;
+      }
+      
       console.error(`Error checking if column ${columnName} exists in table ${tableName}:`, error);
       return false;
     }
