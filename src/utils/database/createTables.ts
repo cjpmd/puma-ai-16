@@ -56,7 +56,24 @@ export const generateLinkingCode = async (playerId: string): Promise<string | nu
  */
 export const createPlayerParentsTable = async (): Promise<boolean> => {
   try {
-    // Execute SQL to check if table exists and create it if needed
+    // First check if the table already exists
+    const { data, error } = await supabase
+      .from('player_parents')
+      .select('id')
+      .limit(1);
+      
+    if (!error) {
+      // Table exists
+      return true;
+    }
+    
+    if (error.code !== "42P01") {
+      // Some other error occurred
+      console.error("Error checking player_parents table:", error);
+      return false;
+    }
+    
+    // Execute SQL to create table if needed
     const createTableSQL = `
       CREATE TABLE IF NOT EXISTS public.player_parents (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -70,14 +87,19 @@ export const createPlayerParentsTable = async (): Promise<boolean> => {
       );
     `;
     
-    const { error } = await supabase.rpc('execute_sql', { sql_string: createTableSQL });
-    
-    if (error) {
-      console.error("Error creating player_parents table:", error);
+    try {
+      const { error: sqlError } = await supabase.rpc('execute_sql', { sql_string: createTableSQL });
+      
+      if (sqlError) {
+        console.error("Error creating player_parents table:", sqlError);
+        return false;
+      }
+      
+      return true;
+    } catch (sqlError) {
+      console.error("Error executing SQL to create player_parents table:", sqlError);
       return false;
     }
-    
-    return true;
   } catch (error) {
     console.error("Error creating player_parents table:", error);
     return false;

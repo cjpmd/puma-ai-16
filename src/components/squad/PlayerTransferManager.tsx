@@ -68,7 +68,10 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       
       // Race between timeout and check
       const result = await Promise.race([timeoutPromise, checkPromise]);
+      
+      console.log("Transfer system check result:", result);
       setTransfersTableExists(result);
+      setStatusColumnExists(result);
       
       // Mark check as completed regardless of result
       setDatabaseSetupChecked(true);
@@ -103,7 +106,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
   const fetchPlayersData = async () => {
     setLoading(true);
     try {
-      console.log("Fetching players data with status column check:", statusColumnExists);
+      console.log("Fetching players data");
       
       // Fetch current active players - adapt query based on status column existence
       let query = supabase
@@ -116,8 +119,8 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
             position_definitions (abbreviation, full_name)
           )
         `);
-        
-      // Only filter by status if the column exists
+      
+      // Only filter by status if we've confirmed the column exists
       if (statusColumnExists) {
         query = query.eq('status', 'active');
       }
@@ -132,7 +135,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       console.log("Players data fetched:", currentPlayersData?.length || 0);
       setCurrentPlayers(currentPlayersData || []);
       
-      // Fetch previous players - adapt query based on status column existence
+      // Fetch players for "previous players" tab - use different criteria if status column doesn't exist
       let previousQuery = supabase
         .from('players')
         .select(`
@@ -150,7 +153,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
         // If status doesn't exist yet, just fetch players without a team as "previous"
         previousQuery = previousQuery.is('team_id', null);
       }
-        
+      
       if (teamId) {
         previousQuery = previousQuery.eq('team_id', teamId);
       }
@@ -158,7 +161,7 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
       const { data: previousPlayersData, error: previousError } = await previousQuery;
       
       if (previousError) throw previousError;
-      console.log("Player stats data fetched:", previousPlayersData?.length || 0);
+      console.log("Previous players data fetched:", previousPlayersData?.length || 0);
       setPreviousPlayers(previousPlayersData || []);
       
       // Only fetch transfers if the table exists
@@ -179,6 +182,13 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
   
   const fetchPendingTransfers = async () => {
     try {
+      // First check if the table exists
+      const exists = await tableExists('player_transfers');
+      if (!exists) {
+        console.log("player_transfers table doesn't exist yet");
+        return;
+      }
+      
       // Try fetching pending transfers with simpler query (no joins)
       const { data: transfersData, error: transfersError } = await supabase
         .from('player_transfers')

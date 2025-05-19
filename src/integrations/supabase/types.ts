@@ -2662,6 +2662,7 @@ export type Database = {
           player_type: string
           self_linked: boolean | null
           squad_number: number
+          status: string | null
           team_category: string | null
           team_id: string | null
           updated_at: string | null
@@ -2677,6 +2678,7 @@ export type Database = {
           player_type?: string
           self_linked?: boolean | null
           squad_number: number
+          status?: string | null
           team_category?: string | null
           team_id?: string | null
           updated_at?: string | null
@@ -2692,6 +2694,7 @@ export type Database = {
           player_type?: string
           self_linked?: boolean | null
           squad_number?: number
+          status?: string | null
           team_category?: string | null
           team_id?: string | null
           updated_at?: string | null

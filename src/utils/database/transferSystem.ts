@@ -43,6 +43,8 @@ export const setupTransferSystem = async (): Promise<boolean> => {
       return true;
     }
     
+    let success = true;
+    
     // Create player_transfers table if it doesn't exist
     const hasTransfersTable = await tableExists('player_transfers');
     if (!hasTransfersTable) {
@@ -66,12 +68,15 @@ export const setupTransferSystem = async (): Promise<boolean> => {
       
       try {
         const { error } = await supabase.rpc('execute_sql', { sql_string: createTableSQL });
-        if (error) throw error;
-        console.log("Successfully created player_transfers table");
+        if (error) {
+          console.error("Failed to create player_transfers table:", error);
+          success = false;
+        } else {
+          console.log("Successfully created player_transfers table");
+        }
       } catch (tableError) {
         console.error("Failed to create player_transfers table:", tableError);
-        toast.error("Failed to create transfer system tables");
-        return false;
+        success = false;
       }
     }
     
@@ -88,7 +93,7 @@ export const setupTransferSystem = async (): Promise<boolean> => {
       
       if (!statusAdded) {
         console.error("Failed to add status column to players table");
-        return false;
+        success = false;
       }
     }
     
@@ -105,13 +110,16 @@ export const setupTransferSystem = async (): Promise<boolean> => {
       
       if (!linkingCodeAdded) {
         console.error("Failed to add linking_code column to players table");
-        return false;
+        success = false;
       }
     }
     
-    // All setup completed successfully
-    console.log("Transfer system setup completed successfully");
-    return true;
+    // Return overall success
+    if (success) {
+      console.log("Transfer system setup completed successfully");
+    }
+    
+    return success;
   } catch (error) {
     console.error("Error setting up transfer system:", error);
     return false;

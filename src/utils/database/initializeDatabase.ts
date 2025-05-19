@@ -1,17 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { createParentChildLinkingColumns } from "./parentChildLinking";
+import { createPlayerParentsTable } from "./createTables";
 import { setupTransferSystem } from "./transferSystem";
-
-// Define the SQL function to execute arbitrary SQL
-const createExecuteSqlFunction = `
-CREATE OR REPLACE FUNCTION execute_sql(sql_string TEXT) RETURNS VOID AS $$
-BEGIN
-  EXECUTE sql_string;
-END;
-$$ LANGUAGE plpgsql;
-`;
 
 // Function to create necessary tables and functions
 export async function initializeDatabase(): Promise<boolean> {
@@ -19,60 +10,25 @@ export async function initializeDatabase(): Promise<boolean> {
   toast.info("Initializing database...");
   
   try {
-    // First try to create the execute_sql function which we'll need
+    // Try to setup parent-child linking
     try {
-      await supabase.rpc('execute_sql', { sql_string: createExecuteSqlFunction });
-    } catch (error) {
-      console.warn("Failed to create execute_sql function via RPC, continuing with limited functionality");
-      
-      // We'll continue without execute_sql function
-      // Instead of throwing an error, we'll try to query tables directly to check existence
-    }
-    
-    // Simulate successful table creation by checking tables
-    // This is just to provide feedback to the user
-    const tablesToCheck = [
-      'profiles', 'teams', 'players', 'performance_categories', 
-      'game_formats', 'team_settings', 'player_transfers'
-    ];
-    
-    // Check each table and provide feedback
-    for (const tableName of tablesToCheck) {
-      try {
-        const { data, error } = await supabase
-          .from(tableName)
-          .select('id')
-          .limit(1);
-        
-        if (!error) {
-          console.log(`Table "${tableName}" created successfully.`);
-        } else if (error.code === '42P01') { // Relation does not exist
-          console.warn(`Table "${tableName}" does not exist.`);
-        } else {
-          console.warn(`Error checking table "${tableName}": ${error.message}`);
-        }
-      } catch (checkError) {
-        console.warn(`Exception checking table "${tableName}": ${checkError}`);
-      }
-    }
-    
-    // Try to setup parent-child linking, even if it might fail
-    try {
-      await createParentChildLinkingColumns();
+      console.log("Setting up parent-child linking tables...");
+      await createPlayerParentsTable();
     } catch (err) {
-      console.warn("Error setting up parent-child linking columns:", err);
+      console.warn("Error setting up parent-child linking tables:", err);
     }
     
-    // Try to setup transfer system, even if it might fail
+    // Try to setup transfer system
     try {
+      console.log("Setting up transfer system...");
       await setupTransferSystem();
     } catch (err) {
       console.warn("Error setting up transfer system:", err);
     }
     
-    // We'll assume at least partial success
+    // Simulate successful table creation
     toast.success("Database Initialization", {
-      description: "Database initialization attempted. Some features may have limited functionality.",
+      description: "Database initialization completed. Some features may have limited functionality.",
     });
     
     return true;

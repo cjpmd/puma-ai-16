@@ -24,6 +24,29 @@ export const columnExists = async (
     
     if (error) {
       console.error(`Error checking if column ${columnName} exists in ${tableName}:`, error);
+      
+      // Fallback method using direct query to get column info
+      try {
+        const { error: selectError } = await supabase
+          .from(tableName)
+          .select(columnName)
+          .limit(1);
+        
+        // If there's no error, column exists
+        if (!selectError) {
+          return true;
+        }
+        
+        // Check if error is about column not existing
+        if (selectError.message?.includes(`column "${columnName}" does not exist`)) {
+          return false;
+        }
+        
+        console.error(`Error in fallback check for column ${columnName}:`, selectError);
+      } catch (fallbackError) {
+        console.error(`Exception in fallback check:`, fallbackError);
+      }
+      
       return false;
     }
     
@@ -53,6 +76,26 @@ export const tableExists = async (tableName: string): Promise<boolean> => {
     
     if (error) {
       console.error(`Error checking if table ${tableName} exists:`, error);
+      
+      // Fallback method using direct query
+      try {
+        const { error: selectError } = await supabase
+          .from(tableName)
+          .select('*', { count: 'exact', head: true });
+        
+        // If there's no error, table exists
+        if (!selectError) {
+          return true;
+        }
+        
+        // Check if error is about table not existing
+        if (selectError.message?.includes(`relation "${tableName}" does not exist`)) {
+          return false;
+        }
+      } catch (fallbackError) {
+        console.error(`Exception in fallback check:`, fallbackError);
+      }
+      
       return false;
     }
     
@@ -89,7 +132,10 @@ export const createColumnIfNotExists = async (
     try {
       const { error } = await supabase.rpc('execute_sql', { sql_string: alterTableSQL });
       
-      if (error) throw error;
+      if (error) {
+        console.error(`Error executing SQL for adding column ${columnName} to ${tableName}:`, error);
+        return false;
+      }
       
       console.log(`Successfully added ${columnName} to ${tableName}`);
       return true;
