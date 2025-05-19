@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,7 +52,8 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
 
   useEffect(() => {
     if (open) {
-      setImagePreview(player.profileImage);
+      // Use the profileImage property if it exists, otherwise null
+      setImagePreview(player.profileImage || null);
       setSaveAttempted(false);
       setImageError(null);
       
@@ -77,9 +79,9 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
 
   const form = useForm({
     defaultValues: {
-      squadNumber: player.squadNumber,
+      squadNumber: player.squadNumber || player.squad_number,
       playerType: player.playerType,
-      dateOfBirth: player.dateOfBirth,
+      dateOfBirth: player.dateOfBirth || player.date_of_birth,
     },
   });
 

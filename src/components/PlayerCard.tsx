@@ -23,7 +23,7 @@ const calculateAverageChange = (attributes: any[], attributeHistory: any) => {
   let count = 0;
 
   attributes.forEach((attr) => {
-    const history = attributeHistory[attr.name];
+    const history = attributeHistory?.[attr.name];
     if (history && history.length > 1) {
       const currentValue = attr.value;
       const previousValue = history[history.length - 2].value;
@@ -149,7 +149,7 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
       <PlayerCardHeader
         player={player}
         name={player.name}
-        squadNumber={player.squadNumber}
+        squadNumber={player.squadNumber || player.squad_number}
         playerType={player.playerType}
         topPositions={showAttributes ? topPositions : []}
         onEdit={onClick}

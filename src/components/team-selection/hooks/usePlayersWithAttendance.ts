@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Player, PlayerType } from '@/types/player';
+import { Player, PlayerType, transformDbPlayerToPlayer } from '@/types/player';
 
 // Extend Player interface to include attendance status
 export interface PlayerWithAttendance extends Omit<Player, 'status'> {
@@ -79,8 +79,11 @@ export const usePlayersWithAttendance = (eventId: string | undefined, eventType 
       // Combine players with their attendance status
       const playersWithAttendance: PlayerWithAttendance[] = playersData.map(player => {
         const attendance = attendanceData.find(a => a.player_id === player.id);
+        // Transform the player data from DB format to frontend format
+        const transformedPlayer = transformDbPlayerToPlayer(player);
+        
         return {
-          ...player,
+          ...transformedPlayer,
           attendanceStatus: attendance?.status || 'PENDING',
           isAttending: attendance?.status === 'ATTENDING'
         };

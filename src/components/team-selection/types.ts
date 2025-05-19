@@ -1,12 +1,44 @@
 
-import { Fixture } from "@/types/fixture";
 import { FormationFormat } from "@/components/formation/types";
+import { Fixture } from "@/types/fixture";
+import { PerformanceCategory } from "@/types/player";
 
 export interface TeamSelectionManagerProps {
   fixture?: Fixture;
   onSuccess?: () => void;
-  // Add these properties to support FestivalDialogContent usage
-  teams?: Array<{ id: string; name: string; category: string }>;
+  teams?: { id: string; name: string; category: string; }[];
   format?: FormationFormat;
-  onTeamSelectionsChange?: (selections: Record<string, any[]>) => void;
+  onTeamSelectionsChange?: (selections: any) => void;
+}
+
+export interface TeamCaptains {
+  [teamId: string]: string;
+}
+
+export interface TeamSelection {
+  playerId: string;
+  position: string;
+  performanceCategory?: PerformanceCategory;
+  isSubstitution?: boolean;
+}
+
+export interface TeamSelectionsByPeriod {
+  [periodId: string]: {
+    [positionKey: string]: TeamSelection;
+  };
+}
+
+export interface FormationTemplates {
+  [key: string]: {
+    name: string;
+    positions: string[];
+  };
+}
+
+export interface TeamSelectionPeriod {
+  id: string;
+  period_number: number;
+  duration_minutes: number;
+  team_id?: string;
+  formation_template?: string;
 }
