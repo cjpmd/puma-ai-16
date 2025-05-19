@@ -56,19 +56,7 @@ export const generateLinkingCode = async (playerId: string): Promise<string | nu
  */
 export const createPlayerParentsTable = async (): Promise<boolean> => {
   try {
-    // Check if table exists
-    const { data: tableExists } = await supabase
-      .from('pg_tables')
-      .select('tablename')
-      .eq('schemaname', 'public')
-      .eq('tablename', 'player_parents')
-      .maybeSingle();
-      
-    if (tableExists) {
-      return true;
-    }
-    
-    // Create player_parents table
+    // Execute SQL to check if table exists and create it if needed
     const createTableSQL = `
       CREATE TABLE IF NOT EXISTS public.player_parents (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

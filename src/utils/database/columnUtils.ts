@@ -9,38 +9,27 @@ export const columnExists = async (
   columnName: string
 ): Promise<boolean> => {
   try {
-    // First check if the table exists
-    const { data: tableExists, error: tableError } = await supabase
-      .from('pg_tables')
-      .select('tablename')
-      .eq('schemaname', 'public')
-      .eq('tablename', tableName)
-      .maybeSingle();
-    
-    if (tableError || !tableExists) {
-      console.error(`Table '${tableName}' doesn't exist:`, tableError);
-      return false;
-    }
-    
-    // Direct query to information_schema to check column existence
-    const { data, error } = await supabase
-      .from('information_schema.columns')
-      .select('column_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', tableName)
-      .eq('column_name', columnName)
-      .maybeSingle();
+    // Execute SQL function to check if column exists
+    const { data, error } = await supabase.rpc('execute_sql', {
+      sql_string: `
+        SELECT EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+          AND table_name = '${tableName}'
+          AND column_name = '${columnName}'
+        ) as column_exists;
+      `
+    });
     
     if (error) {
       console.error(`Error checking if column ${columnName} exists in ${tableName}:`, error);
-      // In case of error, return false so the application will try to create it
       return false;
     }
     
-    return !!data;
+    return data && data.length > 0 && data[0].column_exists === true;
   } catch (err) {
     console.error(`Error checking if column ${columnName} exists in ${tableName}:`, err);
-    // In case of error, return false to prevent blocking app functionality
     return false;
   }
 };
@@ -50,18 +39,26 @@ export const columnExists = async (
  */
 export const tableExists = async (tableName: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
-      .from('pg_tables')
-      .select('tablename')
-      .eq('schemaname', 'public')
-      .eq('tablename', tableName)
-      .maybeSingle();
+    // Execute SQL function to check if table exists
+    const { data, error } = await supabase.rpc('execute_sql', {
+      sql_string: `
+        SELECT EXISTS (
+          SELECT 1 
+          FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = '${tableName}'
+        ) as table_exists;
+      `
+    });
     
-    if (error) throw error;
-    return !!data;
+    if (error) {
+      console.error(`Error checking if table ${tableName} exists:`, error);
+      return false;
+    }
+    
+    return data && data.length > 0 && data[0].table_exists === true;
   } catch (err) {
     console.error(`Error checking if table ${tableName} exists:`, err);
-    // In case of error, return false to prevent blocking app functionality
     return false;
   }
 };

@@ -2555,6 +2555,102 @@ export type Database = {
           },
         ]
       }
+      player_transfers: {
+        Row: {
+          created_at: string | null
+          from_team_id: string | null
+          id: string
+          player_id: string
+          reason: string | null
+          status: string | null
+          to_team_id: string | null
+          transfer_date: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          from_team_id?: string | null
+          id?: string
+          player_id: string
+          reason?: string | null
+          status?: string | null
+          to_team_id?: string | null
+          transfer_date?: string | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          from_team_id?: string | null
+          id?: string
+          player_id?: string
+          reason?: string | null
+          status?: string | null
+          to_team_id?: string | null
+          transfer_date?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_transfers_from_team_id_fkey"
+            columns: ["from_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_transfers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "available_players_by_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_transfers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_attendance_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_transfers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_fixture_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_transfers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_stats"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_transfers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_transfers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "position_rankings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_transfers_to_team_id_fkey"
+            columns: ["to_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           age: number
@@ -2717,6 +2813,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          club_id: string | null
           created_at: string | null
           email: string | null
           id: string
@@ -2726,6 +2823,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          club_id?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -2735,6 +2833,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          club_id?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -2743,7 +2842,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_definitions: {
         Row: {
@@ -3205,36 +3312,50 @@ export type Database = {
       }
       team_settings: {
         Row: {
+          admin_id: string | null
           attendance_colors: Json | null
           created_at: string | null
           format: string | null
           hide_scores_from_parents: boolean | null
           id: string
           parent_notification_enabled: boolean | null
+          team_id: string | null
           team_name: string | null
           updated_at: string | null
         }
         Insert: {
+          admin_id?: string | null
           attendance_colors?: Json | null
           created_at?: string | null
           format?: string | null
           hide_scores_from_parents?: boolean | null
           id?: string
           parent_notification_enabled?: boolean | null
+          team_id?: string | null
           team_name?: string | null
           updated_at?: string | null
         }
         Update: {
+          admin_id?: string | null
           attendance_colors?: Json | null
           created_at?: string | null
           format?: string | null
           hide_scores_from_parents?: boolean | null
           id?: string
           parent_notification_enabled?: boolean | null
+          team_id?: string | null
           team_name?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "team_settings_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_subscriptions: {
         Row: {
@@ -3296,6 +3417,7 @@ export type Database = {
           subscription_expiry: string | null
           subscription_status: string | null
           team_color: string | null
+          team_logo: string | null
           team_name: string
           updated_at: string
         }
@@ -3311,6 +3433,7 @@ export type Database = {
           subscription_expiry?: string | null
           subscription_status?: string | null
           team_color?: string | null
+          team_logo?: string | null
           team_name: string
           updated_at?: string
         }
@@ -3326,6 +3449,7 @@ export type Database = {
           subscription_expiry?: string | null
           subscription_status?: string | null
           team_color?: string | null
+          team_logo?: string | null
           team_name?: string
           updated_at?: string
         }
