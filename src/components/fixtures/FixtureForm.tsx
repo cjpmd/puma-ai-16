@@ -1,8 +1,6 @@
 import React, { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { Form, FormLabel } from "@/components/ui/form";
+import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { TeamDetailsForm } from "./TeamDetailsForm";
@@ -15,7 +13,7 @@ import { Loader2 } from "lucide-react";
 import { Fixture } from "@/types/fixture";
 
 interface FixtureFormProps {
-  onSubmit: (data: FixtureFormData) => Promise<FixtureFormData>;
+  onSubmit?: (data: FixtureFormData) => Promise<any>;
   selectedDate?: Date;
   editingFixture?: any;
   players?: any[];
@@ -24,7 +22,7 @@ interface FixtureFormProps {
 }
 
 export const FixtureForm = ({ 
-  onSubmit, 
+  onSubmit: externalOnSubmit, 
   selectedDate, 
   editingFixture,
   players,
@@ -93,26 +91,26 @@ export const FixtureForm = ({
   });
 
   const fixtureFormState = useFixtureForm({ 
-    onSuccess: onSubmit as any, // Type cast to avoid incompatible function signatures
-    fixture: editingFixture
+    fixture: editingFixture,
+    onSuccess: externalOnSubmit
   });
   
-  const watchNumberOfTeams = parseInt(form.watch("number_of_teams") || "1");
-  const watchOpponent = form.watch("opponent");
-  const watchIsHome = form.watch("is_home");
-  const watchMotmPlayerIds = form.watch("motm_player_ids");
+  const watchNumberOfTeams = parseInt(fixtureFormState.form.watch("number_of_teams") || "1");
+  const watchOpponent = fixtureFormState.form.watch("opponent");
+  const watchIsHome = fixtureFormState.form.watch("is_home");
+  const watchMotmPlayerIds = fixtureFormState.form.watch("motm_player_ids");
   
   const isSubmitting = fixtureFormState.isSubmitting || externalIsSubmitting;
 
   useEffect(() => {
-    console.log("Current form values:", form.getValues());
+    console.log("Current form values:", fixtureFormState.form.getValues());
     console.log("MOTM player IDs:", watchMotmPlayerIds);
-  }, [form, watchNumberOfTeams, watchMotmPlayerIds]);
+  }, [fixtureFormState.form, watchNumberOfTeams, watchMotmPlayerIds]);
 
-  useTeamTimes(form, editingFixture, watchNumberOfTeams);
+  useTeamTimes(fixtureFormState.form, editingFixture, watchNumberOfTeams);
 
   useEffect(() => {
-    const currentMotmIds = [...(form.getValues().motm_player_ids || [])];
+    const currentMotmIds = [...(fixtureFormState.form.getValues().motm_player_ids || [])];
     
     if (currentMotmIds.length !== watchNumberOfTeams) {
       const newMotmIds = Array(watchNumberOfTeams).fill("");
@@ -122,23 +120,23 @@ export const FixtureForm = ({
       }
       
       console.log("Resizing MOTM player IDs array after team count change:", newMotmIds);
-      form.setValue('motm_player_ids', newMotmIds, { shouldDirty: true });
+      fixtureFormState.form.setValue('motm_player_ids', newMotmIds, { shouldDirty: true });
     }
-  }, [watchNumberOfTeams, form]);
+  }, [watchNumberOfTeams, fixtureFormState.form]);
 
   useEffect(() => {
     if (editingFixture) {
       const motmIds = getInitialMotmPlayerIds();
       console.log("Resetting MOTM player IDs from fixture_team_scores:", motmIds);
-      form.setValue('motm_player_ids', motmIds, { shouldDirty: false });
+      fixtureFormState.form.setValue('motm_player_ids', motmIds, { shouldDirty: false });
     }
-  }, [editingFixture, form]);
+  }, [editingFixture, fixtureFormState.form]);
 
   const getScoreLabel = (isHomeScore: boolean, teamIndex: number) => {
     const homeTeam = watchIsHome ? "Broughty Pumas 2015s" : watchOpponent;
     const awayTeam = watchIsHome ? watchOpponent : "Broughty Pumas 2015s";
     const teamLabel = isHomeScore ? homeTeam : awayTeam;
-    const performanceCategory = form.watch(`team_times.${teamIndex}.performance_category`) || "MESSI";
+    const performanceCategory = fixtureFormState.form.watch(`team_times.${teamIndex}.performance_category`) || "MESSI";
 
     if (teamLabel === "Broughty Pumas 2015s") {
       return `Team ${teamIndex + 1} ${performanceCategory} Score`;
@@ -147,18 +145,18 @@ export const FixtureForm = ({
   };
 
   const getMotmLabel = (teamIndex: number) => {
-    const performanceCategory = form.watch(`team_times.${teamIndex}.performance_category`) || "MESSI";
+    const performanceCategory = fixtureFormState.form.watch(`team_times.${teamIndex}.performance_category`) || "MESSI";
     return `Team ${teamIndex + 1} ${performanceCategory} Player of the Match`;
   };
 
-  // Handle form submission wrapping the fixture form state onSubmit
+  // Handle form submission using the fixture form state's onSubmit
   const handleFormSubmit = (data: FixtureFormData) => {
     return fixtureFormState.onSubmit(data);
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+    <Form {...fixtureFormState.form}>
+      <form onSubmit={fixtureFormState.form.handleSubmit(handleFormSubmit)} className="space-y-4">
         {showDateSelector && (
           <div className="space-y-2">
             <FormLabel>Date *</FormLabel>
@@ -173,14 +171,14 @@ export const FixtureForm = ({
           </div>
         )}
 
-        <TeamDetailsForm form={form} />
-        <FixtureDetailsForm form={form} />
+        <TeamDetailsForm form={fixtureFormState.form} />
+        <FixtureDetailsForm form={fixtureFormState.form} />
 
         {Array.from({ length: watchNumberOfTeams }).map((_, index) => (
           <TeamCard
             key={index}
             index={index}
-            form={form}
+            form={fixtureFormState.form}
             players={players || fixtureFormState.players}
             getScoreLabel={getScoreLabel}
             getMotmLabel={getMotmLabel}

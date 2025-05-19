@@ -33,7 +33,6 @@ import {
 interface GameFormat {
   id: string;
   name: string;
-  is_default: boolean;
   description?: string | null;
   created_at?: string;
 }
@@ -42,7 +41,6 @@ interface PerformanceCategory {
   id: string;
   name: string;
   description: string | null;
-  is_default: boolean;
   created_at?: string;
 }
 
@@ -179,11 +177,11 @@ export function FormatsAndCategoriesSettings() {
     try {
       console.log('Inserting default game formats...');
       const defaultFormats = [
-        { name: '4-a-side', is_default: false },
-        { name: '5-a-side', is_default: false },
-        { name: '7-a-side', is_default: true },
-        { name: '9-a-side', is_default: false },
-        { name: '11-a-side', is_default: false }
+        { name: '4-a-side', id: '4-a-side', description: '4 players per team' },
+        { name: '5-a-side', id: '5-a-side', description: '5 players per team' },
+        { name: '7-a-side', id: '7-a-side', description: '7 players per team' },
+        { name: '9-a-side', id: '9-a-side', description: '9 players per team' },
+        { name: '11-a-side', id: '11-a-side', description: '11 players per team' }
       ];
       
       // Insert each format individually to avoid issues
@@ -207,9 +205,9 @@ export function FormatsAndCategoriesSettings() {
     try {
       console.log('Inserting default performance categories...');
       const defaultCategories = [
-        { name: 'MESSI', description: 'Top performance category', is_default: true },
-        { name: 'RONALDO', description: 'Middle performance category', is_default: false },
-        { name: 'JAGS', description: 'Developing performance category', is_default: false }
+        { name: 'MESSI', id: 'messi', description: 'Top performance category' },
+        { name: 'RONALDO', id: 'ronaldo', description: 'Middle performance category' },
+        { name: 'JAGS', id: 'jags', description: 'Developing performance category' }
       ];
       
       // Insert each category individually to avoid issues
@@ -243,17 +241,10 @@ export function FormatsAndCategoriesSettings() {
       }
       
       console.log("Fetched formats:", data);
-      
-      // Ensure all format objects have the is_default property
-      const formatsWithDefault = data?.map(format => ({
-        ...format,
-        is_default: format.is_default === true
-      })) || [];
-      
-      setFormats(formatsWithDefault);
+      setFormats(data || []);
       
       // Set default format selector
-      const defaultFmt = formatsWithDefault?.find(f => f.is_default)?.name || "";
+      const defaultFmt = data?.find(f => f.id === '7-a-side')?.name || "";
       setDefaultFormat(defaultFmt);
     } catch (error) {
       console.error('Error fetching game formats:', error);
@@ -274,17 +265,10 @@ export function FormatsAndCategoriesSettings() {
       }
       
       console.log("Fetched categories:", data);
-      
-      // Ensure all categories have the is_default property
-      const categoriesWithDefault = data?.map(category => ({
-        ...category,
-        is_default: category.is_default === true
-      })) || [];
-      
-      setCategories(categoriesWithDefault);
+      setCategories(data || []);
       
       // Set default category selector
-      const defaultCat = categoriesWithDefault?.find(c => c.is_default)?.name || "";
+      const defaultCat = data?.find(c => c.id === 'messi')?.name || "";
       setDefaultCategory(defaultCat);
     } catch (error) {
       console.error('Error fetching performance categories:', error);
@@ -302,10 +286,11 @@ export function FormatsAndCategoriesSettings() {
     }
     
     try {
+      const id = newFormat.toLowerCase().replace(/\s+/g, '-');
       const newFormatObj: GameFormat = {
-        id: crypto.randomUUID(),
+        id,
         name: newFormat,
-        is_default: formats.length === 0,
+        description: `${newFormat} format`,
       };
 
       const { data, error } = await supabase
@@ -353,11 +338,11 @@ export function FormatsAndCategoriesSettings() {
     }
     
     try {
+      const id = newCategory.toLowerCase().replace(/\s+/g, '-');
       const newCategoryObj: PerformanceCategory = {
-        id: crypto.randomUUID(),
+        id,
         name: newCategory,
         description: newCategoryDescription || null,
-        is_default: categories.length === 0
       };
 
       const { data, error } = await supabase
@@ -407,13 +392,6 @@ export function FormatsAndCategoriesSettings() {
       const updatedFormats = formats.filter(format => format.id !== formatId);
       setFormats(updatedFormats);
       
-      // If we deleted the default format, set a new default
-      const deletedDefault = formats.find(f => f.id === formatId)?.is_default;
-      if (deletedDefault && updatedFormats.length > 0) {
-        await setFormatAsDefault(updatedFormats[0].id);
-        setDefaultFormat(updatedFormats[0].name);
-      }
-      
       toast({
         title: "Success",
         description: `Game format "${formatName}" deleted successfully`,
@@ -440,13 +418,6 @@ export function FormatsAndCategoriesSettings() {
       const updatedCategories = categories.filter(category => category.id !== categoryId);
       setCategories(updatedCategories);
       
-      // If we deleted the default category, set a new default
-      const deletedDefault = categories.find(c => c.id === categoryId)?.is_default;
-      if (deletedDefault && updatedCategories.length > 0) {
-        await setCategoryAsDefault(updatedCategories[0].id);
-        setDefaultCategory(updatedCategories[0].name);
-      }
-      
       toast({
         title: "Success",
         description: `Performance category "${categoryName}" deleted successfully`,
@@ -461,104 +432,23 @@ export function FormatsAndCategoriesSettings() {
     }
   };
 
-  const setFormatAsDefault = async (formatId: string) => {
-    try {
-      // First, clear all defaults in our local state
-      const updatedFormats = formats.map(format => ({
-        ...format,
-        is_default: format.id === formatId
-      }));
-      
-      // Update in database - first clear all defaults
-      await supabase
-        .from('game_formats')
-        .update({ is_default: false })
-        .neq('id', formatId);
-      
-      // Then set the new default
-      const { error } = await supabase
-        .from('game_formats')
-        .update({ is_default: true })
-        .eq('id', formatId);
-      
-      if (error) throw error;
-      
-      // Update local state
-      setFormats(updatedFormats);
-      
-      const newDefaultName = formats.find(f => f.id === formatId)?.name || "";
-      setDefaultFormat(newDefaultName);
-      
-      toast({
-        title: "Success",
-        description: "Default game format updated successfully",
-      });
-    } catch (error) {
-      console.error('Error setting default format:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update default format",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const setCategoryAsDefault = async (categoryId: string) => {
-    try {
-      // First, clear all defaults in our local state
-      const updatedCategories = categories.map(category => ({
-        ...category,
-        is_default: category.id === categoryId
-      }));
-      
-      // Update in database - first clear all defaults
-      await supabase
-        .from('performance_categories')
-        .update({ is_default: false })
-        .neq('id', categoryId);
-      
-      // Then set the new default
-      const { error } = await supabase
-        .from('performance_categories')
-        .update({ is_default: true })
-        .eq('id', categoryId);
-      
-      if (error) throw error;
-      
-      // Update local state
-      setCategories(updatedCategories);
-      
-      const newDefaultName = categories.find(c => c.id === categoryId)?.name || "";
-      setDefaultCategory(newDefaultName);
-      
-      toast({
-        title: "Success",
-        description: "Default performance category updated successfully",
-      });
-    } catch (error) {
-      console.error('Error setting default category:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update default category",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleDefaultFormatChange = (formatName: string) => {
     const formatId = formats.find(f => f.name === formatName)?.id;
     if (formatId) {
-      setFormatAsDefault(formatId);
+      // Just update UI state, don't need to set default in DB currently
+      setDefaultFormat(formatName);
     }
   };
 
   const handleDefaultCategoryChange = (categoryName: string) => {
     const categoryId = categories.find(c => c.name === categoryName)?.id;
     if (categoryId) {
-      setCategoryAsDefault(categoryId);
+      // Just update UI state, don't need to set default in DB currently
+      setDefaultCategory(categoryName);
     }
   };
 
+  
   return (
     <div className="space-y-6 mb-6">
       <Card>
@@ -622,7 +512,7 @@ export function FormatsAndCategoriesSettings() {
                     <div key={format.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span>{format.name}</span>
-                        {format.is_default && (
+                        {format.name === defaultFormat && (
                           <span className="bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5">
                             Default
                           </span>
@@ -630,7 +520,11 @@ export function FormatsAndCategoriesSettings() {
                       </div>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" disabled={isLoading || format.is_default}>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            disabled={isLoading || format.name === defaultFormat}
+                          >
                             <Trash className="h-4 w-4 text-destructive" />
                           </Button>
                         </AlertDialogTrigger>
@@ -731,7 +625,7 @@ export function FormatsAndCategoriesSettings() {
                       <div className="flex flex-col">
                         <div className="flex items-center gap-2">
                           <span>{category.name}</span>
-                          {category.is_default && (
+                          {category.name === defaultCategory && (
                             <span className="bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5">
                               Default
                             </span>
@@ -743,7 +637,11 @@ export function FormatsAndCategoriesSettings() {
                       </div>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" disabled={isLoading || category.is_default}>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            disabled={isLoading || category.name === defaultCategory}
+                          >
                             <Trash className="h-4 w-4 text-destructive" />
                           </Button>
                         </AlertDialogTrigger>

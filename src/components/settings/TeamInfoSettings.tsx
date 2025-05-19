@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +24,13 @@ interface TeamSettings {
   away_kit_icon: string | null;
   training_kit_icon: string | null;
   created_at: string;
+  parent_notification_enabled?: boolean;
+  hide_scores_from_parents?: boolean;
+  attendance_colors?: any;
+  team_id?: string;
+  admin_id?: string;
+  format?: string;
+  updated_at?: string;
 }
 
 interface TeamInfoSettingsProps {
@@ -65,7 +73,7 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
       
       // Ensure table exists with kit icon fields
       await supabase.rpc('execute_sql', {
-        sql: `
+        sql_string: `
         CREATE TABLE IF NOT EXISTS team_settings (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           team_name TEXT,
@@ -113,10 +121,29 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
       if (error) {
         console.error('Error fetching team settings:', error);
       } else {
-        setTeamSettings(data);
+        // Create a full team settings object with all expected fields
+        const fullTeamSettings: TeamSettings = {
+          id: data.id,
+          team_name: data.team_name || "",
+          team_colors: data.team_colors || "",
+          team_logo: data.team_logo || "",
+          home_kit_icon: ensurePatternFormat(data.home_kit_icon),
+          away_kit_icon: ensurePatternFormat(data.away_kit_icon),
+          training_kit_icon: ensurePatternFormat(data.training_kit_icon),
+          created_at: data.created_at,
+          parent_notification_enabled: data.parent_notification_enabled || false,
+          hide_scores_from_parents: data.hide_scores_from_parents || false,
+          attendance_colors: data.attendance_colors || null,
+          team_id: data.team_id || null,
+          admin_id: data.admin_id || null,
+          format: data.format || null,
+          updated_at: data.updated_at || null
+        };
         
-        // For each kit icon, ensure it has the pattern part (backward compatibility)
-        const updatedData = {
+        setTeamSettings(fullTeamSettings);
+        
+        // For each kit icon, ensure it has the pattern (backward compatibility)
+        const updatedFormData = {
           team_name: data.team_name || "",
           team_colors: data.team_colors || "",
           team_logo: data.team_logo || "",
@@ -125,7 +152,7 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
           training_kit_icon: ensurePatternFormat(data.training_kit_icon),
         };
         
-        setFormData(updatedData);
+        setFormData(updatedFormData);
       }
     } catch (error) {
       console.error('Error in team settings setup:', error);
@@ -210,15 +237,18 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
       });
       
       // Update local state with new values
-      setTeamSettings({
-        ...teamSettings,
-        team_name: formData.team_name,
-        team_colors: formData.team_colors,
-        team_logo: formData.team_logo,
-        home_kit_icon: formData.home_kit_icon,
-        away_kit_icon: formData.away_kit_icon,
-        training_kit_icon: formData.training_kit_icon,
-      });
+      if (teamSettings) {
+        const updatedSettings: TeamSettings = {
+          ...teamSettings,
+          team_name: formData.team_name,
+          team_colors: formData.team_colors,
+          team_logo: formData.team_logo,
+          home_kit_icon: formData.home_kit_icon,
+          away_kit_icon: formData.away_kit_icon,
+          training_kit_icon: formData.training_kit_icon,
+        };
+        setTeamSettings(updatedSettings);
+      }
       
       // Notify parent that team info was updated
       if (onTeamInfoUpdated) {

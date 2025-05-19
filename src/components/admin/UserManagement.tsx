@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -50,7 +51,7 @@ export function UserManagement() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [role, setRole] = useState<UserRole | null>(null)
+  const [role, setRole] = useState<string | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [copySuccess, setCopySuccess] = useState(false)

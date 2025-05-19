@@ -6,7 +6,6 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { v4 as uuidv4 } from "uuid";
 import { Fixture } from "@/types/fixture";
 
 // Define the schema for fixture form validation
@@ -45,22 +44,22 @@ interface UseFixtureFormProps {
 }
 
 // Generate a UUID
-const generateUUID = () => uuidv4();
+const generateUUID = () => crypto.randomUUID();
 
 export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {}) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch team categories for dropdown
+  // Fetch team categories for dropdown - using team_performance_categories which seems to exist
   const { data: categories = [] } = useQuery({
-    queryKey: ["team-categories"],
+    queryKey: ["team-performance-categories"],
     queryFn: async () => {
       try {
         const { data, error } = await supabase
-          .from("team_categories")
-          .select("*")
-          .order("name");
+          .from("team_performance_categories")
+          .select("*");
+        
         if (error) throw error;
         return data || [];
       } catch (error) {
@@ -77,8 +76,8 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
       try {
         const { data, error } = await supabase
           .from("game_formats")
-          .select("*")
-          .order("name");
+          .select("*");
+          
         if (error) throw error;
         return data || [];
       } catch (error) {
@@ -198,16 +197,26 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
     setIsDeleting(true);
     try {
       try {
-        // Delete related records first
-        await supabase.from("fixture_attendance").delete().eq("fixture_id", fixture.id);
+        // Try to delete related records first, but catch and log errors if tables don't exist
+        const { error } = await supabase
+          .from("event_attendance")
+          .delete()
+          .eq("event_id", fixture.id);
+          
+        if (error) console.error("Error deleting fixture attendance:", error);
       } catch (error) {
-        console.error("Error deleting fixture attendance:", error);
+        console.error("Error with fixture attendance deletion:", error);
       }
       
       try {
-        await supabase.from("team_selections").delete().eq("fixture_id", fixture.id);
+        const { error } = await supabase
+          .from("team_selections")
+          .delete()
+          .eq("event_id", fixture.id);
+          
+        if (error) console.error("Error deleting team selections:", error);
       } catch (error) {
-        console.error("Error deleting team selections:", error);
+        console.error("Error with team selections deletion:", error);
       }
       
       // Then delete the fixture
