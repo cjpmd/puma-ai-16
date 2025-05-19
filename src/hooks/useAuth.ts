@@ -5,7 +5,7 @@ import {
   useSupabaseClient,
   Session,
 } from "@supabase/auth-helpers-react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 
 // Extend the default Session interface to include user role
 interface CustomSession extends Session {
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [activeRole, setActiveRole] = useState<UserRole | null>(null);
   const supabaseClient = useSupabaseClient();
   const session = useSession() as CustomSession | null;
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const fetchProfile = async () => {
     setIsLoading(true);
