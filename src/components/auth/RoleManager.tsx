@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, UserRole } from "@/hooks/useAuth";
 import { Shield, ExternalLink, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -14,7 +14,7 @@ export const RoleManager = () => {
   const [isAddingGlobalAdmin, setIsAddingGlobalAdmin] = useState(false);
   const navigate = useNavigate();
 
-  const handleAddRole = async (role: 'admin' | 'coach' | 'parent' | 'player' | 'globalAdmin') => {
+  const handleAddRole = async (role: UserRole) => {
     if (!profile) return;
     
     // Special handling for globalAdmin
@@ -162,3 +162,5 @@ export const RoleManager = () => {
     </Card>
   );
 };
+
+export default RoleManager;

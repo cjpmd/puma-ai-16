@@ -264,7 +264,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshProfile,
   };
 
-  // Fix: Return proper JSX instead of an object
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
@@ -275,3 +274,6 @@ export const useAuth = () => {
   }
   return context;
 };
+
+// Export the context for potential direct access
+export { AuthContext };

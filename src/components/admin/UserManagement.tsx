@@ -27,13 +27,14 @@ interface Profile {
   id: string;
   email: string;
   role: UserRole;
+  name?: string;
 }
 
 const UserManagement = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<UserRole>("user");
+  const [newRole, setNewRole] = useState<AllowedUserRoles>("user");
 
   useEffect(() => {
     fetchProfiles();
@@ -125,7 +126,12 @@ const UserManagement = () => {
       // Create profile in the profiles table
       const { error: profileError } = await supabase
         .from("profiles")
-        .insert([{ id: userId, email: newEmail, role: newRole }]);
+        .insert([{ 
+          id: userId, 
+          email: newEmail, 
+          role: newRole,
+          name: newEmail // Add the name field with email as default
+        }]);
 
       if (profileError) {
         console.error("Error creating profile:", profileError);
@@ -174,7 +180,7 @@ const UserManagement = () => {
           </div>
           <div>
             <Label htmlFor="role">Role</Label>
-            <Select onValueChange={(value) => setNewRole(value as UserRole)}>
+            <Select onValueChange={(value) => setNewRole(value as AllowedUserRoles)}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>

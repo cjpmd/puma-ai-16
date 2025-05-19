@@ -1,5 +1,6 @@
 
 import { Json } from "@/integrations/supabase/types";
+import { UserRole } from "@/hooks/useAuth";
 
 export interface TeamSettings {
   id: string;
@@ -21,4 +22,5 @@ export interface TeamSettings {
   training_kit_icon?: string;
 }
 
-export type AllowedUserRoles = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin';
+// Update to use the imported UserRole type
+export type AllowedUserRoles = Exclude<UserRole, 'user'>;
