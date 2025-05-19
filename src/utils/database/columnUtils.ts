@@ -22,33 +22,26 @@ export const columnExists = async (
       return false;
     }
     
-    // Then check if column exists using RPC if available
-    try {
-      const { data, error } = await supabase.rpc(
-        'check_column_exists',
-        { p_table: tableName, p_column: columnName }
-      );
-      
-      if (error) throw error;
-      return !!data;
-    } catch (rpcError) {
-      // Fallback to direct query if RPC fails
-      console.warn('RPC check_column_exists failed, using fallback:', rpcError);
-      
-      const { data, error } = await supabase.from('information_schema.columns')
-        .select('column_name')
-        .eq('table_schema', 'public')
-        .eq('table_name', tableName)
-        .eq('column_name', columnName)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return !!data;
+    // Direct query to information_schema to check column existence
+    const { data, error } = await supabase
+      .from('information_schema.columns')
+      .select('column_name')
+      .eq('table_schema', 'public')
+      .eq('table_name', tableName)
+      .eq('column_name', columnName)
+      .maybeSingle();
+    
+    if (error) {
+      console.error(`Error checking if column ${columnName} exists in ${tableName}:`, error);
+      // In case of error, return false so the application will try to create it
+      return false;
     }
+    
+    return !!data;
   } catch (err) {
     console.error(`Error checking if column ${columnName} exists in ${tableName}:`, err);
-    // In case of error, return true to prevent blocking app functionality
-    return true;
+    // In case of error, return false to prevent blocking app functionality
+    return false;
   }
 };
 
@@ -68,7 +61,47 @@ export const tableExists = async (tableName: string): Promise<boolean> => {
     return !!data;
   } catch (err) {
     console.error(`Error checking if table ${tableName} exists:`, err);
-    // In case of error, return true to prevent blocking app functionality
-    return true;
+    // In case of error, return false to prevent blocking app functionality
+    return false;
+  }
+};
+
+/**
+ * Function to create a column if it doesn't exist
+ */
+export const createColumnIfNotExists = async (
+  tableName: string,
+  columnName: string,
+  columnDefinition: string
+): Promise<boolean> => {
+  try {
+    // First check if column already exists
+    const columnExistsResult = await columnExists(tableName, columnName);
+    
+    if (columnExistsResult) {
+      console.log(`Column ${columnName} already exists in ${tableName}`);
+      return true;
+    }
+    
+    // Add the column with the specified definition
+    const alterTableSQL = `
+      ALTER TABLE public.${tableName}
+      ADD COLUMN IF NOT EXISTS ${columnName} ${columnDefinition};
+    `;
+    
+    try {
+      const { error } = await supabase.rpc('execute_sql', { sql_string: alterTableSQL });
+      
+      if (error) throw error;
+      
+      console.log(`Successfully added ${columnName} to ${tableName}`);
+      return true;
+    } catch (sqlError) {
+      console.error(`Error adding column ${columnName} to ${tableName}:`, sqlError);
+      return false;
+    }
+  } catch (err) {
+    console.error(`Error in createColumnIfNotExists:`, err);
+    return false;
   }
 };

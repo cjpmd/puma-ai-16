@@ -1,86 +1,97 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { columnExists, createColumnIfNotExists } from "./columnUtils";
 
 /**
  * Add linking_code column to players table
  */
 export const addLinkingCodeColumn = async (): Promise<boolean> => {
   try {
-    // Check if players table exists
-    const { data: tableExists, error: tableError } = await supabase
+    return await createColumnIfNotExists('players', 'linking_code', 'text');
+  } catch (error) {
+    console.error("Error adding linking_code column:", error);
+    return false;
+  }
+};
+
+/**
+ * Generate a linking code for a player
+ */
+export const generateLinkingCode = async (playerId: string): Promise<string | null> => {
+  try {
+    // Ensure the linking_code column exists
+    const hasLinkingCodeColumn = await columnExists('players', 'linking_code');
+    
+    if (!hasLinkingCodeColumn) {
+      const added = await addLinkingCodeColumn();
+      if (!added) {
+        console.error("Failed to add linking_code column");
+        return null;
+      }
+    }
+    
+    // Generate a random 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Save the code to the player record
+    const { error } = await supabase
+      .from('players')
+      .update({ linking_code: code })
+      .eq('id', playerId);
+      
+    if (error) {
+      console.error("Error saving linking code:", error);
+      return null;
+    }
+    
+    return code;
+  } catch (error) {
+    console.error("Error generating linking code:", error);
+    return null;
+  }
+};
+
+/**
+ * Create player_parents table if it doesn't exist
+ */
+export const createPlayerParentsTable = async (): Promise<boolean> => {
+  try {
+    // Check if table exists
+    const { data: tableExists } = await supabase
       .from('pg_tables')
       .select('tablename')
       .eq('schemaname', 'public')
-      .eq('tablename', 'players')
-      .single();
-    
-    if (tableError) {
-      console.error("Error checking players table:", tableError);
-      return false;
-    }
-    
-    // First check if column already exists
-    const { data: columns, error: columnsError } = await supabase
-      .from('information_schema.columns')
-      .select('column_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'players')
-      .eq('column_name', 'linking_code');
-    
-    if (columnsError) {
-      console.error("Error checking linking_code column:", columnsError);
-      return false;
-    }
-    
-    // If column already exists, return true
-    if (columns && columns.length > 0) {
-      console.log("Linking code column already exists");
+      .eq('tablename', 'player_parents')
+      .maybeSingle();
+      
+    if (tableExists) {
       return true;
     }
     
-    // Try to add column using RPC
-    const addColumnSQL = `
-      ALTER TABLE public.players
-      ADD COLUMN IF NOT EXISTS linking_code text;
+    // Create player_parents table
+    const createTableSQL = `
+      CREATE TABLE IF NOT EXISTS public.player_parents (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+        player_id UUID REFERENCES public.players(id),
+        parent_id UUID REFERENCES auth.users(id),
+        parent_name TEXT,
+        email TEXT,
+        phone TEXT,
+        is_verified BOOLEAN DEFAULT FALSE
+      );
     `;
     
-    try {
-      await supabase.rpc('execute_sql', { sql_string: addColumnSQL });
-      console.log("Successfully added linking_code column");
-      return true;
-    } catch (rpcError) {
-      console.error("Failed to add linking_code column via RPC:", rpcError);
-      
-      // Alternative approach - create a PostgreSQL function that adds the column
-      const createFunctionSQL = `
-      CREATE OR REPLACE FUNCTION add_linking_code_column()
-      RETURNS boolean
-      LANGUAGE plpgsql
-      SECURITY DEFINER
-      AS $$
-      BEGIN
-        ALTER TABLE public.players
-        ADD COLUMN IF NOT EXISTS linking_code text;
-        RETURN TRUE;
-      EXCEPTION
-        WHEN OTHERS THEN
-          RETURN FALSE;
-      END;
-      $$;
-      `;
-      
-      try {
-        // Create the function and then call it
-        await supabase.rpc('execute_sql', { sql_string: createFunctionSQL });
-        await supabase.rpc('add_linking_code_column');
-        return true;
-      } catch (fnError) {
-        console.error("Failed to create helper function:", fnError);
-        return false;
-      }
+    const { error } = await supabase.rpc('execute_sql', { sql_string: createTableSQL });
+    
+    if (error) {
+      console.error("Error creating player_parents table:", error);
+      return false;
     }
+    
+    return true;
   } catch (error) {
-    console.error("Error adding linking_code column:", error);
+    console.error("Error creating player_parents table:", error);
     return false;
   }
 };

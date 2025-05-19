@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { columnExists, tableExists, createColumnIfNotExists } from "./columnUtils";
 
 /**
  * Verify if the transfer system tables and columns exist
@@ -8,18 +9,21 @@ import { toast } from "sonner";
 export const verifyTransferSystem = async (): Promise<boolean> => {
   try {
     // Check if the player_transfers table exists
-    const { data, error } = await supabase
-      .from('pg_tables')
-      .select('tablename')
-      .eq('schemaname', 'public')
-      .eq('tablename', 'player_transfers')
-      .single();
+    const hasTransfersTable = await tableExists('player_transfers');
     
-    if (error || !data) {
-      return false;
-    }
+    // Check if players table has status column
+    const hasStatusColumn = await columnExists('players', 'status');
     
-    return true;
+    // Check if players table has linking_code column
+    const hasLinkingCodeColumn = await columnExists('players', 'linking_code');
+    
+    console.log({
+      hasTransfersTable,
+      hasStatusColumn,
+      hasLinkingCodeColumn
+    });
+    
+    return hasTransfersTable && hasStatusColumn && hasLinkingCodeColumn;
   } catch (error) {
     console.error("Error verifying transfer system:", error);
     return false;
@@ -31,40 +35,83 @@ export const verifyTransferSystem = async (): Promise<boolean> => {
  */
 export const setupTransferSystem = async (): Promise<boolean> => {
   try {
-    // Check if the player_transfers table exists
-    const tableExists = await verifyTransferSystem();
+    // Check if the system is already set up
+    const isSetUp = await verifyTransferSystem();
     
-    if (tableExists) {
+    if (isSetUp) {
       console.log("Transfer system is already set up");
       return true;
     }
     
-    // Create the player_transfers table
-    const createTableSQL = `
-      CREATE TABLE IF NOT EXISTS public.player_transfers (
-        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-        player_id uuid REFERENCES players(id) NOT NULL,
-        from_team_id uuid REFERENCES teams(id),
-        to_team_id uuid REFERENCES teams(id),
-        transfer_date timestamp with time zone DEFAULT now(),
-        status text DEFAULT 'pending',
-        reason text,
-        type text NOT NULL,
-        created_at timestamp with time zone DEFAULT now(),
-        updated_at timestamp with time zone DEFAULT now()
-      );
-    `;
-    
-    // Try to use execute_sql RPC function if available
-    try {
-      await supabase.rpc('execute_sql', { sql_string: createTableSQL });
-      console.log("Successfully created player_transfers table");
-      return true;
-    } catch (rpcError) {
-      console.error("Failed to create player_transfers table via RPC:", rpcError);
-      // Graceful fallback for UI
-      return false;
+    // Create player_transfers table if it doesn't exist
+    const hasTransfersTable = await tableExists('player_transfers');
+    if (!hasTransfersTable) {
+      console.log("Creating player_transfers table");
+      
+      // Create the player_transfers table
+      const createTableSQL = `
+        CREATE TABLE IF NOT EXISTS public.player_transfers (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          player_id uuid REFERENCES players(id) NOT NULL,
+          from_team_id uuid REFERENCES teams(id),
+          to_team_id uuid REFERENCES teams(id),
+          transfer_date timestamp with time zone DEFAULT now(),
+          status text DEFAULT 'pending',
+          reason text,
+          type text NOT NULL,
+          created_at timestamp with time zone DEFAULT now(),
+          updated_at timestamp with time zone DEFAULT now()
+        );
+      `;
+      
+      try {
+        const { error } = await supabase.rpc('execute_sql', { sql_string: createTableSQL });
+        if (error) throw error;
+        console.log("Successfully created player_transfers table");
+      } catch (tableError) {
+        console.error("Failed to create player_transfers table:", tableError);
+        toast.error("Failed to create transfer system tables");
+        return false;
+      }
     }
+    
+    // Add status column to players if it doesn't exist
+    const hasStatusColumn = await columnExists('players', 'status');
+    if (!hasStatusColumn) {
+      console.log("Adding status column to players table");
+      
+      const statusAdded = await createColumnIfNotExists(
+        'players', 
+        'status', 
+        'text DEFAULT \'active\''
+      );
+      
+      if (!statusAdded) {
+        console.error("Failed to add status column to players table");
+        return false;
+      }
+    }
+    
+    // Add linking_code column to players if it doesn't exist
+    const hasLinkingCodeColumn = await columnExists('players', 'linking_code');
+    if (!hasLinkingCodeColumn) {
+      console.log("Adding linking_code column to players table");
+      
+      const linkingCodeAdded = await createColumnIfNotExists(
+        'players', 
+        'linking_code', 
+        'text'
+      );
+      
+      if (!linkingCodeAdded) {
+        console.error("Failed to add linking_code column to players table");
+        return false;
+      }
+    }
+    
+    // All setup completed successfully
+    console.log("Transfer system setup completed successfully");
+    return true;
   } catch (error) {
     console.error("Error setting up transfer system:", error);
     return false;
@@ -72,44 +119,40 @@ export const setupTransferSystem = async (): Promise<boolean> => {
 };
 
 /**
- * Add status column to players table if it doesn't exist
+ * Generate a linking code for a player
  */
-export const addStatusColumnToPlayers = async (): Promise<boolean> => {
+export const generatePlayerLinkingCode = async (playerId: string): Promise<string | null> => {
   try {
-    // First check if column already exists
-    const { data: columns, error: columnsError } = await supabase
-      .from('information_schema.columns')
-      .select('column_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'players')
-      .eq('column_name', 'status');
+    // First, verify that the linking_code column exists
+    const hasLinkingCodeColumn = await columnExists('players', 'linking_code');
     
-    if (columnsError) throw columnsError;
-    
-    // If column already exists, return true
-    if (columns && columns.length > 0) {
-      console.log("Status column already exists in players table");
-      return true;
+    if (!hasLinkingCodeColumn) {
+      console.log("linking_code column doesn't exist, adding it now");
+      const created = await createColumnIfNotExists('players', 'linking_code', 'text');
+      if (!created) {
+        console.error("Failed to create linking_code column");
+        return null;
+      }
     }
     
-    // Try to add column using RPC
-    const addColumnSQL = `
-      ALTER TABLE public.players
-      ADD COLUMN IF NOT EXISTS status text DEFAULT 'active';
-    `;
+    // Generate a random 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
     
-    try {
-      await supabase.rpc('execute_sql', { sql_string: addColumnSQL });
-      console.log("Successfully added status column to players table");
-      return true;
-    } catch (rpcError) {
-      console.error("Failed to add status column via RPC:", rpcError);
-      // Graceful fallback for UI
-      return false;
+    // Save the code to the player record
+    const { error } = await supabase
+      .from('players')
+      .update({ linking_code: code })
+      .eq('id', playerId);
+      
+    if (error) {
+      console.error("Error saving linking code:", error);
+      return null;
     }
+    
+    return code;
   } catch (error) {
-    console.error("Error adding status column to players table:", error);
-    return false;
+    console.error("Error generating linking code:", error);
+    return null;
   }
 };
 

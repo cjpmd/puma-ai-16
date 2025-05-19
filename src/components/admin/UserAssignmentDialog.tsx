@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -21,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building, Users } from "lucide-react";
+import { columnExists, createColumnIfNotExists } from '@/utils/database/columnUtils';
 
 interface UserAssignmentDialogProps {
   open: boolean;
@@ -148,15 +148,24 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
           console.error('Error fetching player data:', playerError);
         }
         
-        // Get the user's profile for club_id
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('club_id')
-          .eq('id', user.id)
-          .maybeSingle();
-          
-        if (profileError) {
-          console.error('Error fetching profile data:', profileError);
+        // Check if club_id column exists before trying to use it
+        const hasClubIdColumn = await columnExists('profiles', 'club_id');
+        
+        if (hasClubIdColumn) {
+          // Get the user's profile for club_id
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('club_id')
+            .eq('id', user.id)
+            .maybeSingle();
+            
+          if (profileError) {
+            console.error('Error fetching profile data:', profileError);
+          } else if (profileData && profileData.club_id) {
+            console.log("User has club assignment:", profileData.club_id);
+            setSelectedClub(profileData.club_id);
+            setIsClubOnly(true);
+          }
         }
         
         if (playerData && playerData.team_id) {
@@ -170,10 +179,6 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
             console.log("Setting selected club from team:", team.club_id);
             setSelectedClub(team.club_id);
           }
-        } else if (profileData && profileData.club_id) {
-          console.log("User has club assignment:", profileData.club_id);
-          setSelectedClub(profileData.club_id);
-          setIsClubOnly(true);
         }
       }
       
@@ -203,30 +208,19 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
       console.log("Selected team:", selectedTeam);
       console.log("Is club only:", isClubOnly);
       
-      // First, check if the profiles table has the club_id column
-      const { data: columns, error: columnsError } = await supabase
-        .rpc('get_table_columns', { table_name: 'profiles' });
-      
-      if (columnsError) {
-        console.error("Error checking table columns:", columnsError);
-        throw columnsError;
-      }
-      
-      // If club_id doesn't exist in profiles table, we need to add it first
-      const hasClubIdColumn = columns.some((column: any) => column.column_name === 'club_id');
+      // Check if the profiles table has the club_id column, create if not exists
+      const hasClubIdColumn = await columnExists('profiles', 'club_id');
       
       if (!hasClubIdColumn) {
         console.log("club_id column doesn't exist, attempting to add it...");
-        // Try to execute the SQL function to add the column
-        const { error: addColumnError } = await supabase
-          .rpc('add_column_if_not_exists', { 
-            p_table_name: 'profiles', 
-            p_column_name: 'club_id', 
-            p_column_def: 'uuid references clubs(id)' 
-          });
-          
-        if (addColumnError) {
-          console.error("Error adding club_id column:", addColumnError);
+        
+        const columnCreated = await createColumnIfNotExists(
+          'profiles', 
+          'club_id', 
+          'uuid references clubs(id)'
+        );
+        
+        if (!columnCreated) {
           throw new Error("Failed to add club_id column to profiles. Please contact support to update your database schema.");
         }
         

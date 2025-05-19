@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import {
   Tabs,
@@ -57,18 +56,19 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
   const checkTablesWithTimeout = async () => {
     try {
       // Set a timeout to prevent hanging if the checks fail
-      const timeoutPromise = new Promise((resolve) => {
+      const timeoutPromise = new Promise<boolean>((resolve) => {
         setTimeout(() => {
           console.log("Database setup check timed out");
           resolve(false);
-        }, 2000);
+        }, 5000); // Extended timeout to 5 seconds
       });
       
       // Run the actual checks
-      const checkPromise = checkTables();
+      const checkPromise = verifyTransferSystem();
       
       // Race between timeout and check
-      await Promise.race([timeoutPromise, checkPromise]);
+      const result = await Promise.race([timeoutPromise, checkPromise]);
+      setTransfersTableExists(result);
       
       // Mark check as completed regardless of result
       setDatabaseSetupChecked(true);
@@ -78,47 +78,16 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
     }
   };
 
-  // Check required database structure
-  const checkTables = async () => {
-    try {
-      // Try-catch for each individual check to prevent complete failure
-      let hasStatusColumn = false;
-      try {
-        // Check if status column exists
-        hasStatusColumn = await columnExists('players', 'status');
-        console.log("Status column exists:", hasStatusColumn);
-      } catch (error) {
-        console.error("Error checking if column status exists in table players:", error);
-      }
-      setStatusColumnExists(hasStatusColumn);
-      
-      let hasTransfersTable = false;
-      try {
-        // Check if transfers table exists
-        hasTransfersTable = await tableExists('player_transfers');
-        console.log("Player transfers table exists:", hasTransfersTable);
-      } catch (error) {
-        console.error("Error checking if table player_transfers exists:", error);
-      }
-      setTransfersTableExists(hasTransfersTable);
-      
-      return true;
-    } catch (error) {
-      console.error("Error checking database structure:", error);
-      return false;
-    }
-  };
-
   const setupDatabase = async () => {
     setSettingUp(true);
     try {
-      // First check if the setup function exists
+      // Use the improved setup function
       const result = await setupTransferSystem();
       
       if (result) {
         toast.success("Transfer system tables have been set up successfully.");
-        // Re-check table structure after setup
-        await checkTables();
+        // Re-check system and reload data
+        setTransfersTableExists(true);
         await fetchPlayersData();
       } else {
         toast.error("Could not set up transfer system tables. Please contact an administrator.");

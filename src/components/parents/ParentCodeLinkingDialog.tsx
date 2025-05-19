@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Dialog,
@@ -16,6 +15,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
+import { createPlayerParentsTable } from "@/utils/database/createTables";
 
 export const ParentCodeLinkingDialog = () => {
   const [open, setOpen] = useState(false);
@@ -53,38 +53,11 @@ export const ParentCodeLinkingDialog = () => {
       const player = players[0];
       console.log("Found player:", player);
       
-      // Check if player_parents table exists
-      const { data: tableExists, error: tableError } = await supabase
-        .from('pg_tables')
-        .select('tablename')
-        .eq('schemaname', 'public')
-        .eq('tablename', 'player_parents');
-        
-      if (tableError || !tableExists) {
-        // Create player_parents table
-        console.log("player_parents table doesn't exist, attempting to create");
-        
-        const createTableSQL = `
-          CREATE TABLE IF NOT EXISTS public.player_parents (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-            player_id UUID REFERENCES public.players(id),
-            parent_id UUID REFERENCES auth.users(id),
-            parent_name TEXT,
-            email TEXT,
-            phone TEXT,
-            is_verified BOOLEAN DEFAULT FALSE
-          );
-        `;
-        
-        try {
-          await supabase.rpc('execute_sql', { sql_string: createTableSQL });
-          console.log("Successfully created player_parents table");
-        } catch (createError) {
-          console.error("Failed to create player_parents table:", createError);
-          toast.error("Failed to set up parent-child linking. Please contact an administrator.");
-          return;
-        }
+      // Ensure player_parents table exists
+      const tableCreated = await createPlayerParentsTable();
+      if (!tableCreated) {
+        toast.error("Failed to set up parent-child linking. Please contact an administrator.");
+        return;
       }
       
       // Look for existing parent link
