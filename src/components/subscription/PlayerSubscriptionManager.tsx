@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 interface PlayerSubscriptionManagerProps {
@@ -24,7 +25,6 @@ export function PlayerSubscriptionManager({
   const [isLoading, setIsLoading] = useState(false);
   const [amount, setAmount] = useState("10");
   const [interval, setInterval] = useState<"monthly">("monthly");
-  const supabase = createClientComponentClient();
   const navigate = useNavigate();
 
   const handleSubscribe = async () => {
