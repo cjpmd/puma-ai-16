@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -89,8 +90,8 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         // User exists, update their role and team_id
         const user = existingUsers[0];
         
-        // Convert role to a string that the database accepts
-        const dbRole = newRole as string;
+        // Convert TeamUserRole to UserRole for database update
+        const dbRole = newRole as UserRole;
         
         const { error: updateError } = await supabase
           .from("profiles")
@@ -130,7 +131,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ team_id: null, role: "coach" })
+        .update({ team_id: null, role: "coach" as UserRole })
         .eq("id", userId);
 
       if (error) {

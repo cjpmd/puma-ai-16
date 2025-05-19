@@ -19,7 +19,7 @@ export interface AuthContextType {
   activeRole: UserRole | null;
   switchRole: (role: UserRole) => void;
   hasRole: (role: UserRole | UserRole[]) => boolean;
-  addRole: (role: UserRole) => Promise<void>;
+  addRole: (role: UserRole) => Promise<boolean>; // Changed return type to boolean
   refreshProfile: () => Promise<void>;
 }
 
@@ -38,7 +38,7 @@ const AuthContext = createContext<AuthContextType>({
   activeRole: null,
   switchRole: () => {},
   hasRole: () => false,
-  addRole: async () => {},
+  addRole: async () => false, // Changed return type to boolean
   refreshProfile: async () => {},
 });
 
@@ -155,7 +155,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return profile.role === role;
   };
 
-  const addRole = async (role: UserRole) => {
+  const addRole = async (role: UserRole): Promise<boolean> => {
     setIsLoading(true);
     try {
       const { error } = await supabase
@@ -165,12 +165,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (error) {
         console.error("Error updating role:", error.message);
+        return false;
       } else {
         setProfile(prevProfile => ({ ...prevProfile, role }));
         setActiveRole(role);
+        return true;
       }
     } catch (error: any) {
       console.error("Error adding role:", error.message);
+      return false;
     } finally {
       setIsLoading(false);
     }

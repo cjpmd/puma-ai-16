@@ -91,17 +91,14 @@ const UserManagement = () => {
         return;
       }
 
-      // Convert role to a string that the database accepts
-      // This is the key fix - ensuring we're using a string that the database accepts
-      const dbRole = newUserRole as string;
-      
+      // Explicitly type cast the role to ensure it's compatible with the database schema
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
           id: userId,
           email: newUserEmail,
           name: newUserName,
-          role: dbRole,
+          role: newUserRole as UserRole,
           user_id: userId
         });
 

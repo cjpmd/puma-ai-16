@@ -15,7 +15,7 @@ export interface TeamSettings {
   updated_at: string;
   
   // Add these fields to fix the type errors
-  team_colors?: string[];
+  team_colors?: string | string[];
   team_logo?: string;
   home_kit_icon?: string;
   away_kit_icon?: string;

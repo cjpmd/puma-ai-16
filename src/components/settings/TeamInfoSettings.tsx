@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -118,19 +117,19 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
         const fullTeamSettings: TeamSettings = {
           id: data.id || "",
           team_name: data.team_name || "",
-          team_colors: data.team_colors ? [data.team_colors] : [], // Convert to array for type compatibility
+          team_id: data.team_id || "",
+          admin_id: data.admin_id || "",
+          format: data.format || "",
+          parent_notification_enabled: data.parent_notification_enabled || false,
+          hide_scores_from_parents: data.hide_scores_from_parents || false,
+          attendance_colors: data.attendance_colors || null,
+          updated_at: data.updated_at || "",
+          created_at: data.created_at || "",
+          team_colors: data.team_colors || "",
           team_logo: data.team_logo || "",
           home_kit_icon: ensurePatternFormat(data.home_kit_icon || ""),
           away_kit_icon: ensurePatternFormat(data.away_kit_icon || ""),
           training_kit_icon: ensurePatternFormat(data.training_kit_icon || ""),
-          created_at: data.created_at || "",
-          parent_notification_enabled: data.parent_notification_enabled || false,
-          hide_scores_from_parents: data.hide_scores_from_parents || false,
-          attendance_colors: data.attendance_colors || null,
-          team_id: data.team_id || "",
-          admin_id: data.admin_id || "",
-          format: data.format || "",
-          updated_at: data.updated_at || ""
         };
         
         setTeamSettings(fullTeamSettings);
@@ -232,7 +231,7 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
         const updatedSettings: TeamSettings = {
           ...teamSettings,
           team_name: formData.team_name,
-          team_colors: [formData.team_colors], // Convert to array for type compatibility
+          team_colors: formData.team_colors,
           team_logo: formData.team_logo,
           home_kit_icon: formData.home_kit_icon,
           away_kit_icon: formData.away_kit_icon,

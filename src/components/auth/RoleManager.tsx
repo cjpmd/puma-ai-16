@@ -27,7 +27,7 @@ export const RoleManager = () => {
     
     try {
       const success = await addRole(role);
-      if (success) {
+      if (success) { // Now checking boolean return type
         toast({
           title: "Success",
           description: `Added ${role} role to your account`,
