@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -89,6 +90,16 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
           IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
                        WHERE table_name = 'team_settings' AND column_name = 'training_kit_icon') THEN
             ALTER TABLE team_settings ADD COLUMN training_kit_icon TEXT;
+          END IF;
+
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name = 'team_settings' AND column_name = 'team_logo') THEN
+            ALTER TABLE team_settings ADD COLUMN team_logo TEXT;
+          END IF;
+
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name = 'team_settings' AND column_name = 'team_colors') THEN
+            ALTER TABLE team_settings ADD COLUMN team_colors TEXT;
           END IF;
         END $$;
         `

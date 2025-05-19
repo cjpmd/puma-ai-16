@@ -30,10 +30,13 @@ interface TeamUsersManagerProps {
   team?: Team;
 }
 
+// Define a more restrictive type for roles allowed in this component
+type TeamUserRole = 'admin' | 'manager' | 'coach' | 'player' | 'parent';
+
 export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<UserRole>("coach");
+  const [newRole, setNewRole] = useState<TeamUserRole>("coach");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -167,7 +170,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
           </div>
           <div>
             <Label htmlFor="role">Role</Label>
-            <Select value={newRole} onValueChange={(value) => setNewRole(value as UserRole)}>
+            <Select value={newRole} onValueChange={(value) => setNewRole(value as TeamUserRole)}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
@@ -177,7 +180,6 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
                 <SelectItem value="coach">Coach</SelectItem>
                 <SelectItem value="player">Player</SelectItem>
                 <SelectItem value="parent">Parent</SelectItem>
-                <SelectItem value="user">User</SelectItem>
               </SelectContent>
             </Select>
           </div>

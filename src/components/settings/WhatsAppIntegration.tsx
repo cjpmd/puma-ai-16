@@ -1,10 +1,9 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Card,
   CardContent,
@@ -13,174 +12,236 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { WhatsAppSettings } from "@/types/whatsAppSettings";
-import { ensureColumnExists, tableExists } from "@/utils/database/columnUtils";
+import { MessageSquare, Loader2, Check } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-export function WhatsAppIntegration() {
-  const [settings, setSettings] = useState<WhatsAppSettings>({
-    enabled: false,
-    whatsapp_business_id: "",
-    whatsapp_phone_id: ""
-  });
-  
+export const WhatsAppIntegration = () => {
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isEnabled, setIsEnabled] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [testPhoneNumber, setTestPhoneNumber] = useState("");
+  const [isTesting, setIsTesting] = useState(false);
+  const [testSuccess, setTestSuccess] = useState(false);
+  const [whatsappContacts, setWhatsAppContacts] = useState<any[]>([]);
+  const [showAllContacts, setShowAllContacts] = useState(false);
 
   useEffect(() => {
-    setupWhatsappTable();
-    fetchSettings();
+    loadSettings();
+    fetchContacts();
   }, []);
 
-  const setupWhatsappTable = async () => {
+  const loadSettings = async () => {
+    setIsLoading(true);
     try {
-      // Check if the table exists
-      const exists = await tableExists("whatsapp_settings");
-      
-      if (!exists) {
-        // Create the table if it doesn't exist
-        await supabase.rpc('execute_sql', {
-          sql_string: `
-          CREATE TABLE IF NOT EXISTS whatsapp_settings (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            enabled BOOLEAN DEFAULT false,
-            whatsapp_business_id TEXT,
-            whatsapp_phone_id TEXT,
-            team_id TEXT,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-          );
-          `
-        });
-        
-        // Insert a default record
-        await supabase.rpc('execute_sql', {
-          sql_string: `
-          INSERT INTO whatsapp_settings (enabled)
-          SELECT false
-          WHERE NOT EXISTS (SELECT 1 FROM whatsapp_settings LIMIT 1);
-          `
-        });
-      }
-    } catch (error) {
-      console.error("Error setting up WhatsApp settings table:", error);
-    }
-  };
+      const { data: settings, error } = await supabase
+        .from("whatsapp_settings")
+        .select("*")
+        .limit(1)
+        .single();
 
-  const fetchSettings = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase.rpc('execute_sql', {
-        sql_string: `SELECT * FROM whatsapp_settings LIMIT 1;`
-      });
-      
-      if (error) {
-        console.error("Error fetching WhatsApp settings:", error);
-        return;
-      }
-      
-      if (data && data.length > 0) {
-        // Extract the actual settings from the response
-        const settingsData = data[0]?.rows?.[0] || {
-          enabled: false,
-          whatsapp_business_id: "",
-          whatsapp_phone_id: ""
-        };
-        
-        setSettings({
-          id: settingsData.id || undefined,
-          enabled: settingsData.enabled || false,
-          whatsapp_business_id: settingsData.whatsapp_business_id || "",
-          whatsapp_phone_id: settingsData.whatsapp_phone_id || "",
-          team_id: settingsData.team_id || undefined
-        });
+      if (!error && settings) {
+        setIsEnabled(settings.enabled || false);
+        setPhoneNumber(settings.business_phone_number || "");
       }
     } catch (error) {
-      console.error("Error processing WhatsApp settings:", error);
+      console.error("Error loading WhatsApp settings:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSaveSettings = async () => {
+  const fetchContacts = async () => {
     try {
-      setIsSaving(true);
+      const { data, error } = await supabase
+        .from("whatsapp_contacts")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
       
-      const { error } = await supabase.rpc('execute_sql', {
-        sql_string: `
-        INSERT INTO whatsapp_settings (enabled, whatsapp_business_id, whatsapp_phone_id)
-        VALUES (${settings.enabled}, '${settings.whatsapp_business_id || ""}', '${settings.whatsapp_phone_id || ""}')
-        ON CONFLICT (id)
-        DO UPDATE SET 
-          enabled = ${settings.enabled},
-          whatsapp_business_id = '${settings.whatsapp_business_id || ""}',
-          whatsapp_phone_id = '${settings.whatsapp_phone_id || ""}',
-          updated_at = now();
-        `
-      });
-      
-      if (error) {
-        console.error("Error saving WhatsApp settings:", error);
-        toast("Failed to save WhatsApp integration settings");
-        return;
+      // Type guard to ensure data is an array
+      if (Array.isArray(data)) {
+        setWhatsAppContacts(data);
+      } else {
+        setWhatsAppContacts([]);
       }
-      
-      toast("WhatsApp integration settings saved successfully");
+    } catch (error) {
+      console.error("Error fetching WhatsApp contacts:", error);
+      setWhatsAppContacts([]);
+    }
+  };
+
+  const saveSettings = async () => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("whatsapp_settings")
+        .upsert({
+          id: 1, // Assuming we're using a singleton pattern with id=1
+          enabled: isEnabled,
+          business_phone_number: phoneNumber,
+          updated_at: new Date(),
+        });
+
+      if (error) throw error;
+      toast.success("Settings saved successfully");
     } catch (error) {
       console.error("Error saving WhatsApp settings:", error);
-      toast("An error occurred while saving WhatsApp settings");
+      toast.error("Failed to save settings");
     } finally {
       setIsSaving(false);
     }
   };
 
+  const sendTestMessage = async () => {
+    setIsTesting(true);
+    setTestSuccess(false);
+    try {
+      if (!testPhoneNumber) {
+        toast.error("Please enter a test phone number");
+        return;
+      }
+
+      // Call the function to send a test message
+      const { data, error } = await supabase.functions.invoke(
+        "send-whatsapp-test",
+        {
+          body: {
+            phoneNumber: testPhoneNumber,
+          },
+        }
+      );
+
+      if (error) throw error;
+
+      toast.success("Test message sent successfully");
+      setTestSuccess(true);
+    } catch (error) {
+      console.error("Error sending test message:", error);
+      toast.error("Failed to send test message");
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  // Display a limited set of contacts based on showAllContacts state
+  const displayedContacts = showAllContacts
+    ? whatsAppContacts
+    : whatsAppContacts.slice(0, 5);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>WhatsApp Integration</CardTitle>
-        <CardDescription>
-          Connect your WhatsApp Business account to send notifications
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center space-x-2">
-          <Switch 
-            id="whatsapp-enabled" 
-            checked={settings.enabled}
-            onCheckedChange={(checked) => setSettings({...settings, enabled: checked})}
-            disabled={isLoading || isSaving}
-          />
-          <Label htmlFor="whatsapp-enabled">Enable WhatsApp Integration</Label>
-        </div>
-        
-        <div className="grid gap-4">
-          <div>
-            <Label htmlFor="whatsapp-business-id">WhatsApp Business Account ID</Label>
-            <Input
-              id="whatsapp-business-id"
-              value={settings.whatsapp_business_id || ""}
-              onChange={(e) => setSettings({...settings, whatsapp_business_id: e.target.value})}
-              placeholder="Enter your WhatsApp Business Account ID"
-              disabled={isLoading || isSaving || !settings.enabled}
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            WhatsApp Integration
+          </CardTitle>
+          <CardDescription>
+            Connect your WhatsApp Business account to send notifications to
+            parents and players.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={isEnabled}
+              onCheckedChange={setIsEnabled}
+              id="whatsapp-enabled"
             />
+            <Label htmlFor="whatsapp-enabled">Enable WhatsApp Notifications</Label>
           </div>
-          <div>
-            <Label htmlFor="whatsapp-phone-id">WhatsApp Phone Number ID</Label>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone-number">Business Phone Number</Label>
             <Input
-              id="whatsapp-phone-id"
-              value={settings.whatsapp_phone_id || ""}
-              onChange={(e) => setSettings({...settings, whatsapp_phone_id: e.target.value})}
-              placeholder="Enter your WhatsApp Phone Number ID"
-              disabled={isLoading || isSaving || !settings.enabled}
+              id="phone-number"
+              placeholder="+44712345678"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Enter your WhatsApp Business phone number with country code
+            </p>
           </div>
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button onClick={handleSaveSettings} disabled={isLoading || isSaving}>
-          {isSaving ? "Saving..." : "Save Settings"}
-        </Button>
-      </CardFooter>
-    </Card>
+
+          <div className="border-t pt-4 mt-4">
+            <h4 className="text-sm font-medium mb-2">Test Connection</h4>
+            <div className="flex space-x-2">
+              <Input
+                placeholder="Test phone number"
+                value={testPhoneNumber}
+                onChange={(e) => setTestPhoneNumber(e.target.value)}
+              />
+              <Button
+                onClick={sendTestMessage}
+                disabled={isTesting}
+                className="flex items-center"
+              >
+                {isTesting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : testSuccess ? (
+                  <Check className="h-4 w-4 mr-2" />
+                ) : null}
+                Send Test
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={saveSettings} disabled={isSaving || isLoading}>
+            {isSaving ? "Saving..." : "Save Settings"}
+          </Button>
+        </CardFooter>
+      </Card>
+
+      {/* Recent WhatsApp Contacts */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent WhatsApp Contacts</CardTitle>
+          <CardDescription>
+            Contacts that have interacted with your WhatsApp Business account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {whatsAppContacts && whatsAppContacts.length > 0 ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 font-medium text-sm">
+                <div>Name</div>
+                <div>Phone</div>
+                <div>Last Interaction</div>
+              </div>
+              {displayedContacts.map((contact) => (
+                <div key={contact.id} className="grid grid-cols-3 text-sm">
+                  <div>{contact.name || "Unknown"}</div>
+                  <div>{contact.phone_number}</div>
+                  <div>
+                    {new Date(contact.last_interaction).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+              {whatsAppContacts.length > 5 && (
+                <Button
+                  variant="link"
+                  onClick={() => setShowAllContacts(!showAllContacts)}
+                  className="px-0"
+                >
+                  {showAllContacts
+                    ? "Show Less"
+                    : `Show All (${whatsAppContacts.length})`}
+                </Button>
+              )}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-sm">
+              No WhatsApp contacts found
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
-}
+};

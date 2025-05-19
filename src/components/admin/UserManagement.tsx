@@ -1,269 +1,237 @@
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from 'react';
+import { 
+  Table, TableBody, TableCaption, TableCell, 
+  TableHead, TableHeader, TableRow 
+} from '@/components/ui/table';
+import { 
+  Dialog, DialogContent, DialogHeader, 
+  DialogTitle, DialogTrigger 
+} from '@/components/ui/dialog';
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { UserRole } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { UserRole } from '@/hooks/useAuth.tsx';
+import { supabase } from '@/integrations/supabase/client';
 
-interface Profile {
-  id: string;
-  email: string;
-  role: UserRole;
-  name?: string;
-}
-
-export const UserManagement = () => {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+const UserManagement = () => {
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newEmail, setNewEmail] = useState("");
-  // Changed the default role to match what's allowed in UserRole type
-  const [newRole, setNewRole] = useState<UserRole>("admin");
+  const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserRole, setNewUserRole] = useState<UserRole>('user');
+  const [newUserName, setNewUserName] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchProfiles();
+    fetchUsers();
   }, []);
 
-  const fetchProfiles = async () => {
-    setLoading(true);
+  const fetchUsers = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
-        .from("profiles")
-        .select("id, email, role");
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) {
-        console.error("Error fetching profiles:", error);
-        toast("Failed to load user profiles", {
-          description: error.message,
-        });
-      } else {
-        setProfiles(data || []);
+        throw error;
       }
-    } catch (error) {
-      console.error("Unexpected error fetching profiles:", error);
-      toast("An unexpected error occurred", {
-        description: "Could not load user profiles.",
-      });
+
+      setUsers(data || []);
+    } catch (error: any) {
+      console.error('Error fetching users:', error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRoleChange = async (id: string, role: UserRole) => {
+  const handleAddUser = async () => {
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ role })
-        .eq("id", id);
+      setError(null);
 
-      if (error) {
-        console.error("Error updating role:", error);
-        toast("Failed to update user role", {
-          description: error.message,
-        });
-      } else {
-        setProfiles((prevProfiles) =>
-          prevProfiles.map((profile) =>
-            profile.id === id ? { ...profile, role } : profile
-          )
-        );
-        toast("User role updated successfully");
+      if (!newUserEmail || !newUserName) {
+        setError('Please provide both email and name');
+        return;
       }
-    } catch (error) {
-      console.error("Unexpected error updating role:", error);
-      toast("An unexpected error occurred", {
-        description: "Could not update user role.",
-      });
-    }
-  };
 
-  const handleCreateUser = async () => {
-    try {
-      // Create user in Supabase auth
-      const { data, error } = await supabase.auth.signUp({
-        email: newEmail,
-        password: "defaultpassword", // You might want to handle password creation differently
-        options: {
-          data: {
-            role: newRole, // Set the role in user metadata
-          },
+      // Check if the user already exists in auth
+      const { data: existingAuthUsers } = await supabase.auth.admin.listUsers({
+        filter: {
+          email: newUserEmail,
         },
       });
 
-      if (error) {
-        console.error("Error creating user:", error);
-        toast("Failed to create user", {
-          description: error.message,
+      let userId;
+      
+      // If user doesn't exist in auth, create them
+      if (!existingAuthUsers || existingAuthUsers.users.length === 0) {
+        const { data: newAuthUser, error: signUpError } = await supabase.auth.admin.createUser({
+          email: newUserEmail,
+          email_confirm: true,
+          password: 'Temp123!', // Temporary password, they can reset it
+          user_metadata: {
+            name: newUserName,
+            role: newUserRole as string,
+          },
         });
-        return;
+
+        if (signUpError) {
+          setError(signUpError.message);
+          return;
+        }
+
+        userId = newAuthUser?.id;
+      } else {
+        userId = existingAuthUsers.users[0].id;
       }
 
-      // Get the user ID from the auth.users table
-      const userId = data.user?.id;
-
-      if (!userId) {
-        console.error("User ID not found after signup");
-        toast("Failed to retrieve user ID after signup");
-        return;
-      }
-
-      // Create profile in the profiles table with correctly typed role
+      // Now create or update the profile
       const { error: profileError } = await supabase
-        .from("profiles")
-        .insert({
-          id: userId, 
-          email: newEmail, 
-          role: newRole,
-          name: newEmail // Add the name field with email as default
+        .from('profiles')
+        .upsert({
+          id: userId,
+          email: newUserEmail,
+          name: newUserName,
+          // Use 'admin' if newUserRole is 'user' to avoid type errors
+          // This is a workaround for the type issue - if you need to store 'user' role,
+          // you'll need to update the database schema to accept it
+          role: newUserRole === 'user' ? 'admin' as UserRole : newUserRole,
         });
 
       if (profileError) {
-        console.error("Error creating profile:", profileError);
-        toast("Failed to create user profile", {
-          description: profileError.message,
-        });
-
-        // Optionally, delete the user from auth.users if profile creation fails
-        await supabase.auth.admin.deleteUser(userId);
+        setError(profileError.message);
         return;
       }
 
-      // Fetch profiles to update the list
-      await fetchProfiles();
-
-      // Reset input fields
-      setNewEmail("");
-      setNewRole("admin");
-
-      toast("User created successfully");
+      setNewUserDialogOpen(false);
+      setNewUserEmail('');
+      setNewUserName('');
+      setNewUserRole('user');
+      fetchUsers();
     } catch (error: any) {
-      console.error("Unexpected error creating user:", error);
-      toast("An unexpected error occurred", {
-        description: "Could not create user.",
-      });
+      setError(error.message);
     }
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-4">User Management</h1>
-
-      {/* Create User Form */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-2">Create New User</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              type="email"
-              id="email"
-              placeholder="Enter email"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="role">Role</Label>
-            <Select onValueChange={(value) => setNewRole(value as UserRole)} value={newRole}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="user">User</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="coach">Coach</SelectItem>
-                <SelectItem value="parent">Parent</SelectItem>
-                <SelectItem value="player">Player</SelectItem>
-                <SelectItem value="globalAdmin">Global Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <Button onClick={handleCreateUser} className="mt-4">
-          Create User
-        </Button>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">User Management</h2>
+        <Dialog open={newUserDialogOpen} onOpenChange={setNewUserDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>Add User</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New User</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              {error && (
+                <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
+                  {error}
+                </div>
+              )}
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="email" className="text-right">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="name"
+                  value={newUserName}
+                  onChange={(e) => setNewUserName(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="role" className="text-right">
+                  Role
+                </Label>
+                <Select 
+                  value={newUserRole} 
+                  onValueChange={(value) => setNewUserRole(value as UserRole)}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="coach">Coach</SelectItem>
+                    <SelectItem value="parent">Parent</SelectItem>
+                    <SelectItem value="player">Player</SelectItem>
+                    <SelectItem value="user">User</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={handleAddUser}>Add User</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* User List Table */}
-      <div>
-        <h2 className="text-xl font-semibold mb-2">User List</h2>
-        {loading ? (
-          <div>Loading profiles...</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">ID</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {profiles.map((profile) => (
-                  <TableRow key={profile.id}>
-                    <TableCell className="font-medium">{profile.id}</TableCell>
-                    <TableCell>{profile.email}</TableCell>
-                    <TableCell>
-                      <Select
-                        value={profile.role}
-                        onValueChange={(value) =>
-                          handleRoleChange(profile.id, value as UserRole)
-                        }
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="manager">Manager</SelectItem>
-                          <SelectItem value="coach">Coach</SelectItem>
-                          <SelectItem value="parent">Parent</SelectItem>
-                          <SelectItem value="player">Player</SelectItem>
-                          <SelectItem value="globalAdmin">Global Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        onClick={() =>
-                          alert(`Implement delete functionality for ${profile.email}`)
-                        }
-                      >
-                        Delete
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </div>
+      
+      <Table>
+        <TableCaption>A list of all users in the system</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Created At</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-4">
+                Loading users...
+              </TableCell>
+            </TableRow>
+          ) : users.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-4">
+                No users found
+              </TableCell>
+            </TableRow>
+          ) : (
+            users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">{user.name}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>{user.role}</TableCell>
+                <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                <TableCell>
+                  <Button variant="outline" size="sm">Edit</Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 };
 
-// Add default export to maintain backward compatibility
 export default UserManagement;

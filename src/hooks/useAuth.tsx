@@ -32,6 +32,14 @@ interface AuthContextType {
   signUp: (email: string, password: string, userData?: Partial<AuthProfile>) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<AuthProfile>) => Promise<void>;
+  
+  // Add missing properties
+  activeRole: UserRole | null;
+  switchRole: (role: UserRole) => void;
+  hasRole: (role: UserRole) => boolean;
+  addRole: (role: UserRole) => Promise<boolean>;
+  refreshProfile: () => Promise<void>;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeRole, setActiveRole] = useState<UserRole | null>(null);
 
   useEffect(() => {
     // Set up auth state change listener
@@ -75,6 +84,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Set active role whenever profile changes
+  useEffect(() => {
+    if (profile) {
+      setActiveRole(profile.role);
+    } else {
+      setActiveRole(null);
+    }
+  }, [profile]);
+
   async function fetchProfile(userId: string) {
     try {
       const { data, error } = await supabase
@@ -90,11 +108,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data) {
         setProfile(data as AuthProfile);
+        setActiveRole(data.role);
       }
     } catch (error) {
       console.error('Unexpected error fetching profile:', error);
     }
   }
+
+  const refreshProfile = async () => {
+    if (!user) return;
+    await fetchProfile(user.id);
+  };
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -185,6 +209,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const hasRole = (role: UserRole): boolean => {
+    // If checking for the user's primary role
+    if (profile?.role === role) return true;
+    
+    // For future: implement check against user_roles table for additional roles
+    return false;
+  };
+
+  const switchRole = (role: UserRole): void => {
+    if (hasRole(role)) {
+      setActiveRole(role);
+    }
+  };
+
+  const addRole = async (role: UserRole): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      // For primary role, just update the profile
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role })
+        .eq('id', user.id);
+      
+      if (error) {
+        console.error('Error adding role:', error);
+        return false;
+      }
+      
+      // Update local state
+      setProfile(prev => prev ? { ...prev, role } : null);
+      setActiveRole(role);
+      
+      return true;
+    } catch (error) {
+      console.error('Unexpected error adding role:', error);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -195,7 +259,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signIn,
         signUp,
         signOut,
-        updateProfile
+        updateProfile,
+        activeRole,
+        switchRole,
+        hasRole,
+        addRole,
+        refreshProfile,
+        isLoading: loading
       }}
     >
       {children}

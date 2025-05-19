@@ -1,91 +1,98 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Player } from "@/types/player";
-import { columnExists } from "@/utils/database/columnUtils";
 
-interface PlayerWithAttendance extends Omit<Player, 'status'> {
-  attendanceStatus: string;
-  attending: boolean;
-  dateOfBirth: string;
-  playerType: string;
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Player, PlayerType } from '@/types/player';
+
+// Extend Player interface to include attendance status
+export interface PlayerWithAttendance extends Omit<Player, 'status'> {
+  attendanceStatus?: string;
+  isAttending?: boolean;
+  playerType: PlayerType;
 }
 
-export const usePlayersWithAttendance = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [playersWithStatus, setPlayersWithStatus] = useState<PlayerWithAttendance[]>([]);
-  const [hasStatusColumn, setHasStatusColumn] = useState<boolean | null>(null);
-
-  // First check if status column exists
-  useEffect(() => {
-    const checkStatusColumn = async () => {
-      try {
-        const hasColumn = await columnExists('players', 'status');
-        console.log("Status column exists:", hasColumn);
-        setHasStatusColumn(hasColumn);
-      } catch (err) {
-        console.error("Error checking for status column:", err);
-        setHasStatusColumn(false);
-      }
-    };
-    
-    checkStatusColumn();
-  }, []);
-
-  const { data: players, isLoading: playersLoading, error: playersError } = useQuery({
-    queryKey: ["all-players", hasStatusColumn],
-    queryFn: async () => {
-      try {
-        console.log("Fetching all players with status column check:", hasStatusColumn);
-        
-        // Now fetch players with the appropriate query
-        let query = supabase.from("players").select("*").order("name");
-        
-        // Add status filter if the column exists
-        if (hasStatusColumn) {
-          query = query.eq('status', 'active');
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) throw error;
-        return data || [];
-      } catch (err) {
-        console.error("Error fetching players:", err);
-        throw err;
-      }
-    },
-    enabled: hasStatusColumn !== null, // Only run query once we know if status column exists
-  });
+export const usePlayersWithAttendance = (eventId: string | undefined, eventType = 'FIXTURE') => {
+  const [players, setPlayers] = useState<PlayerWithAttendance[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (playersLoading) {
-      setIsLoading(true);
-      return;
+    if (eventId) {
+      fetchPlayersWithAttendance(eventId, eventType);
+    } else {
+      setLoading(false);
     }
+  }, [eventId, eventType]);
 
-    if (playersError) {
-      setError(playersError instanceof Error ? playersError : new Error(String(playersError)));
-      setIsLoading(false);
-      return;
-    }
+  const fetchPlayersWithAttendance = async (id: string, type: string) => {
+    try {
+      setLoading(true);
 
-    if (players) {
-      // Here you could fetch attendance information from your API
-      // For now, we'll just enhance the players with a mock attendance status
-      const playersWithAttendance = players.map(player => ({
-        ...player,
-        dateOfBirth: player.date_of_birth,
-        playerType: player.player_type,
-        attendanceStatus: 'unknown',
-        attending: false
-      }));
+      // First get the event to determine the team category
+      let teamCategory;
       
-      setPlayersWithStatus(playersWithAttendance);
-      setIsLoading(false);
-    }
-  }, [players, playersLoading, playersError]);
+      if (type === 'FIXTURE') {
+        const { data: eventData, error: eventError } = await supabase
+          .from('fixtures')
+          .select('team_name')
+          .eq('id', id)
+          .single();
 
-  return { playersWithStatus, isLoading, error };
+        if (eventError) throw eventError;
+        teamCategory = eventData.team_name;
+      } else if (type === 'FESTIVAL') {
+        const { data: eventData, error: eventError } = await supabase
+          .from('festivals')
+          .select('team_name')
+          .eq('id', id)
+          .single();
+
+        if (eventError) throw eventError;
+        teamCategory = eventData.team_name;
+      } else if (type === 'TOURNAMENT') {
+        const { data: eventData, error: eventError } = await supabase
+          .from('tournaments')
+          .select('team_name')
+          .eq('id', id)
+          .single();
+
+        if (eventError) throw eventError;
+        teamCategory = eventData.team_name;
+      }
+
+      // Get all players in this team category
+      const { data: playersData, error: playersError } = await supabase
+        .from('players')
+        .select('*')
+        .eq('team_category', teamCategory)
+        .order('name', { ascending: true });
+
+      if (playersError) throw playersError;
+
+      // Get attendance status for this event
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from('event_attendance')
+        .select('*')
+        .eq('event_id', id)
+        .eq('event_type', type);
+
+      if (attendanceError) throw attendanceError;
+
+      // Combine players with their attendance status
+      const playersWithAttendance: PlayerWithAttendance[] = playersData.map(player => {
+        const attendance = attendanceData.find(a => a.player_id === player.id);
+        return {
+          ...player,
+          attendanceStatus: attendance?.status || 'PENDING',
+          isAttending: attendance?.status === 'ATTENDING'
+        };
+      });
+
+      setPlayers(playersWithAttendance);
+    } catch (error) {
+      console.error('Error fetching players with attendance:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { players, loading };
 };
