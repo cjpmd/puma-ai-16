@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -22,6 +21,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowRight } from "lucide-react";
+import { tableExists } from '@/utils/database/columnUtils';
 
 interface PlayerTransferDialogProps {
   open: boolean;
@@ -167,31 +167,11 @@ export const PlayerTransferDialog = ({
     
     setSaving(true);
     try {
-      // Try to check if player_transfers table exists using the execute_sql function
-      let tableExists = false;
-      
-      try {
-        const { data, error } = await supabase.rpc('execute_sql', {
-          sql_string: `
-            SELECT EXISTS (
-              SELECT FROM information_schema.tables 
-              WHERE table_schema = 'public' 
-              AND table_name = 'player_transfers'
-            ) as table_exists;
-          `
-        });
-        
-        if (data && data[0]?.table_exists) {
-          tableExists = true;
-        }
-      } catch (checkError) {
-        console.error('Error checking if table exists:', checkError);
-        // Fallback: assume table doesn't exist
-        tableExists = false;
-      }
+      // Try to check if player_transfers table exists using our utility function
+      const transfersTableExists = await tableExists('player_transfers');
       
       // If table doesn't exist, try to create it
-      if (!tableExists) {
+      if (!transfersTableExists) {
         try {
           // Attempt to create the player_transfers table
           const createTableSQL = `
@@ -213,7 +193,6 @@ export const PlayerTransferDialog = ({
           await supabase.rpc('execute_sql', { sql_string: createTableSQL });
           
           console.log('Successfully created player_transfers table');
-          tableExists = true;
         } catch (createError) {
           console.error('Failed to create player_transfers table:', createError);
           toast({

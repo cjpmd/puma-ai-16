@@ -1,49 +1,14 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { tableExists, columnExists } from "./columnUtils";
 
 export const setupTransferSystem = async (): Promise<boolean> => {
   try {
     // First, check if the player_transfers table exists
-    let tableExists = false;
-    
-    try {
-      // Using execute_sql to run a check
-      const { data, error } = await supabase.rpc('execute_sql', {
-        sql_string: `
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_name = 'player_transfers'
-          ) as table_exists;
-        `
-      });
-      
-      if (!error && data && data[0]?.table_exists) {
-        console.log("player_transfers table already exists");
-        tableExists = true;
-      }
-    } catch (checkError) {
-      console.error("Error checking if player_transfers table exists:", checkError);
-      
-      // Fallback method - try querying the table directly
-      try {
-        const { error } = await supabase
-          .from('player_transfers')
-          .select('id')
-          .limit(1);
-          
-        // If no error, table exists
-        if (!error) {
-          tableExists = true;
-          console.log("Verified player_transfers table exists via direct query");
-        }
-      } catch (fallbackError) {
-        console.error("Error in fallback check for player_transfers:", fallbackError);
-      }
-    }
+    let transfersTableExists = await tableExists('player_transfers');
     
     // Create the table if it doesn't exist
-    if (!tableExists) {
+    if (!transfersTableExists) {
       try {
         console.log("Attempting to create player_transfers table");
         
@@ -90,16 +55,20 @@ export const setupTransferSystem = async (): Promise<boolean> => {
 // Add status field to players table if it doesn't exist
 export const addPlayerStatusColumn = async (): Promise<boolean> => {
   try {
-    const { error } = await supabase.rpc('execute_sql', {
-      sql_string: `
-        ALTER TABLE public.players
-        ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
-      `
-    });
+    const statusExists = await columnExists('players', 'status');
     
-    if (error) {
-      console.error("Error adding status column to players:", error);
-      return false;
+    if (!statusExists) {
+      const { error } = await supabase.rpc('execute_sql', {
+        sql_string: `
+          ALTER TABLE public.players
+          ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+        `
+      });
+      
+      if (error) {
+        console.error("Error adding status column to players:", error);
+        return false;
+      }
     }
     
     return true;
@@ -183,5 +152,70 @@ export const getPendingTransfers = async (teamId: string) => {
   } catch (error) {
     console.error("Exception in getPendingTransfers:", error);
     return [];
+  }
+};
+
+// Add the missing approveTransfer function
+export const approveTransfer = async (transferId: string): Promise<boolean> => {
+  try {
+    // First get the transfer details
+    const { data: transfer, error: getError } = await supabase
+      .from('player_transfers')
+      .select('*')
+      .eq('id', transferId)
+      .single();
+    
+    if (getError || !transfer) {
+      console.error("Error getting transfer details:", getError);
+      return false;
+    }
+    
+    // Start a transaction by using supabase functions
+    // 1. Update transfer status
+    const { error: updateTransferError } = await supabase
+      .from('player_transfers')
+      .update({ 
+        status: 'completed',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', transferId);
+    
+    if (updateTransferError) {
+      console.error("Error updating transfer status:", updateTransferError);
+      return false;
+    }
+    
+    // 2. Update player's team_id
+    const { error: updatePlayerError } = await supabase
+      .from('players')
+      .update({ 
+        team_id: transfer.to_team_id,
+        status: 'active',  
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', transfer.player_id);
+    
+    if (updatePlayerError) {
+      console.error("Error updating player team:", updatePlayerError);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Exception in approveTransfer:", error);
+    return false;
+  }
+};
+
+// Verify transfer system setup
+export const verifyTransferSystem = async (): Promise<boolean> => {
+  try {
+    const transfersExist = await tableExists('player_transfers');
+    const statusExists = await columnExists('players', 'status');
+    
+    return transfersExist && statusExists;
+  } catch (error) {
+    console.error("Error verifying transfer system:", error);
+    return false;
   }
 };

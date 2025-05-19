@@ -9,12 +9,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { PerformanceCategory } from "@/types/player";
+import { tableExists } from '@/utils/database/columnUtils';
 
 interface TeamSelection {
   playerId: string;
   position: string;
   is_substitute: boolean;
   performanceCategory?: PerformanceCategory;
+}
+
+interface Player {
+  id: string;
+  name: string;
+  dateOfBirth?: string;
+  playerType?: string;
+  attributes?: any[];
+  [key: string]: any; // Allow other properties
 }
 
 interface FestivalTeamSelectionProps {
@@ -39,7 +49,7 @@ export const FestivalTeamSelection = ({
   const [isSaving, setIsSaving] = useState(false);
   const [teamFormationTemplates, setTeamFormationTemplates] = useState<Record<string, string>>({});
 
-  const { data: players } = useQuery({
+  const { data: playersData } = useQuery({
     queryKey: ["all-players"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -49,6 +59,17 @@ export const FestivalTeamSelection = ({
       return data;
     },
   });
+
+  // Transform players data to match the expected Player interface
+  const players: Player[] = (playersData || []).map(p => ({
+    id: p.id,
+    name: p.name,
+    dateOfBirth: p.date_of_birth,
+    playerType: p.player_type,
+    // Add any other fields needed by components
+    age: p.age,
+    squadNumber: p.squad_number
+  }));
 
   useEffect(() => {
     if (isOpen) {
@@ -97,31 +118,14 @@ export const FestivalTeamSelection = ({
       });
       
       // Check if table exists
-      let tableExists = false;
-      try {
-        const { data, error } = await supabase.rpc('execute_sql', {
-          sql_string: `
-            SELECT EXISTS (
-              SELECT FROM information_schema.tables 
-              WHERE table_schema = 'public' 
-              AND table_name = 'festival_team_selections'
-            ) as table_exists;
-          `
-        });
-        
-        if (!error && data && data[0]?.table_exists) {
-          tableExists = true;
-        }
-      } catch (error) {
-        console.error("Error checking if table exists:", error);
-      }
+      const festivalTeamPlayersExists = await tableExists('festival_team_players');
       
       // If table doesn't exist, create it
-      if (!tableExists) {
+      if (!festivalTeamPlayersExists) {
         try {
           const { error } = await supabase.rpc('execute_sql', {
             sql_string: `
-              CREATE TABLE IF NOT EXISTS public.festival_team_selections (
+              CREATE TABLE IF NOT EXISTS public.festival_team_players (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 festival_id UUID REFERENCES public.festivals(id),
                 team_id UUID REFERENCES public.festival_teams(id),
@@ -135,7 +139,7 @@ export const FestivalTeamSelection = ({
           });
           
           if (error) {
-            console.error("Error creating festival_team_selections table:", error);
+            console.error("Error creating festival_team_players table:", error);
             throw error;
           }
         } catch (error) {

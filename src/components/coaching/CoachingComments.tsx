@@ -75,17 +75,29 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
         
       if (profileError) throw profileError;
 
-      const { error } = await supabase
-        .from('coaching_comments')
-        .insert([
-          {
+      // Check if the coaching_comments table has a 'content' field or 'comment' field
+      try {
+        const { error } = await supabase
+          .from('coaching_comments')
+          .insert({
             player_id: playerId,
             coach_id: profileData.id,
-            content: newComment,
-          }
-        ]);
-
-      if (error) throw error;
+            comment: newComment, // Use comment field if that's what exists in the table
+          });
+          
+        if (error) throw error;
+      } catch (commentError) {
+        // If the first attempt fails, try with 'content' field
+        const { error: contentError } = await supabase
+          .from('coaching_comments')
+          .insert({
+            player_id: playerId,
+            coach_id: profileData.id,
+            content: newComment, // Try content field instead
+          });
+          
+        if (contentError) throw contentError;
+      }
 
       setSaveSuccess(true);
       
@@ -208,7 +220,7 @@ export const CoachingComments = ({ playerId }: CoachingCommentsProps) => {
                         </Button>
                       </div>
                     </div>
-                    <p className="whitespace-pre-wrap">{comment.content}</p>
+                    <p className="whitespace-pre-wrap">{comment.content || comment.comment}</p>
                   </div>
                 ))}
               </div>

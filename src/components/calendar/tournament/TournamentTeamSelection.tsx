@@ -17,6 +17,15 @@ interface TeamSelection {
   performanceCategory?: PerformanceCategory;
 }
 
+interface Player {
+  id: string;
+  name: string;
+  dateOfBirth?: string;
+  playerType?: string;
+  attributes?: any[];
+  [key: string]: any; // Allow other properties
+}
+
 interface TournamentTeamSelectionProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -39,7 +48,7 @@ export const TournamentTeamSelection = ({
   const [isSaving, setIsSaving] = useState(false);
   const [teamFormationTemplates, setTeamFormationTemplates] = useState<Record<string, string>>({});
 
-  const { data: players } = useQuery({
+  const { data: playersData } = useQuery({
     queryKey: ["all-players"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -49,6 +58,17 @@ export const TournamentTeamSelection = ({
       return data;
     },
   });
+
+  // Transform players data to match the expected Player interface
+  const players: Player[] = (playersData || []).map(p => ({
+    id: p.id,
+    name: p.name,
+    dateOfBirth: p.date_of_birth,
+    playerType: p.player_type,
+    // Add any other fields needed by components
+    age: p.age,
+    squadNumber: p.squad_number
+  }));
 
   useEffect(() => {
     if (isOpen) {
