@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { UserManagement } from "./UserManagement";
 import { SubscriptionManagement } from "./SubscriptionManagement";
 import { PlatformSettings } from "./PlatformSettings";
 import { FinancialReports } from "./FinancialReports";
-import { AlertTriangle, CheckCircle, Database, Lock, RefreshCw, Shield, User, Users, Workflow, Info, Index } from "lucide-react";
+import { AlertTriangle, CheckCircle, Database, Lock, RefreshCw, Shield, User, Users, Workflow, Info } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { 
   setupSecurityPolicies, 
