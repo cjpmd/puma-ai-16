@@ -145,8 +145,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth();
 
-    // Use our imported supabase client to avoid the undefined issue
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    // Use our imported supabase client directly
+    const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session);
         
@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => {
-      subscription.unsubscribe();
+      authListener?.subscription.unsubscribe();
     };
   }, [navigate]);
 

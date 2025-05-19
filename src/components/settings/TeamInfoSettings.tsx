@@ -107,7 +107,7 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
         const fullTeamSettings: TeamSettings = {
           id: data.id || "",
           team_name: data.team_name || "",
-          team_colors: data.team_colors || "",
+          team_colors: data.team_colors ? [data.team_colors] : [], // Convert to array for type compatibility
           team_logo: data.team_logo || "",
           home_kit_icon: ensurePatternFormat(data.home_kit_icon || ""),
           away_kit_icon: ensurePatternFormat(data.away_kit_icon || ""),
@@ -116,10 +116,10 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
           parent_notification_enabled: data.parent_notification_enabled || false,
           hide_scores_from_parents: data.hide_scores_from_parents || false,
           attendance_colors: data.attendance_colors || null,
-          team_id: data.team_id || null,
-          admin_id: data.admin_id || null,
-          format: data.format || null,
-          updated_at: data.updated_at || null
+          team_id: data.team_id || "",
+          admin_id: data.admin_id || "",
+          format: data.format || "",
+          updated_at: data.updated_at || ""
         };
         
         setTeamSettings(fullTeamSettings);
@@ -221,7 +221,7 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
         const updatedSettings: TeamSettings = {
           ...teamSettings,
           team_name: formData.team_name,
-          team_colors: formData.team_colors,
+          team_colors: [formData.team_colors], // Convert to array for type compatibility
           team_logo: formData.team_logo,
           home_kit_icon: formData.home_kit_icon,
           away_kit_icon: formData.away_kit_icon,

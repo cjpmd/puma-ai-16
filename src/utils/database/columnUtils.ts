@@ -2,87 +2,62 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Check if a table exists in the database
- */
-export async function tableExists(tableName: string): Promise<boolean> {
-  try {
-    const { data, error } = await supabase.rpc('table_exists', { 
-      table_name: tableName 
-    });
-    
-    if (error) {
-      console.error(`Error checking if table ${tableName} exists:`, error);
-      return false;
-    }
-    
-    return !!data;
-  } catch (error) {
-    console.error(`Exception checking if table ${tableName} exists:`, error);
-    return false;
-  }
-}
-
-/**
- * Check if a column exists in a table
+ * Checks if a column exists in a table
+ * @param tableName The name of the table
+ * @param columnName The name of the column
+ * @returns True if the column exists, false otherwise
  */
 export async function columnExists(tableName: string, columnName: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase
-      .from('information_schema.columns')
-      .select('column_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', tableName)
-      .eq('column_name', columnName)
-      .single();
+    const { data, error } = await supabase.rpc('get_table_columns', { table_name: tableName });
     
     if (error) {
-      // Check if the error is just because the result is not found
-      if (error.code === 'PGRST116') {
-        return false;
-      }
-      
       console.error(`Error checking if column ${columnName} exists in table ${tableName}:`, error);
       return false;
     }
     
-    return !!data;
+    return data ? data.includes(columnName) : false;
   } catch (error) {
-    console.error(`Exception checking if column ${columnName} exists in table ${tableName}:`, error);
+    console.error(`Unexpected error checking column ${columnName} in ${tableName}:`, error);
     return false;
   }
 }
 
 /**
- * Create a column if it doesn't already exist
+ * Adds a column to a table if it doesn't exist
+ * @param tableName The name of the table
+ * @param columnName The name of the column
+ * @param columnType The SQL type of the column
+ * @returns True if the column was added or already exists, false on error
  */
-export async function createColumnIfNotExists(
+export async function ensureColumnExists(
   tableName: string, 
   columnName: string, 
   columnType: string
 ): Promise<boolean> {
   try {
-    // First check if the column already exists
-    const columnAlreadyExists = await columnExists(tableName, columnName);
+    // First check if column exists
+    const exists = await columnExists(tableName, columnName);
     
-    if (columnAlreadyExists) {
-      console.log(`Column ${columnName} already exists in table ${tableName}`);
-      return true;
+    if (!exists) {
+      // If column doesn't exist, add it
+      const { error } = await supabase.rpc('add_column_if_not_exists', {
+        p_table_name: tableName,
+        p_column_name: columnName,
+        p_column_type: columnType
+      });
+      
+      if (error) {
+        console.error(`Error adding column ${columnName} to ${tableName}:`, error);
+        return false;
+      }
+      
+      console.log(`Added column ${columnName} to ${tableName}`);
     }
     
-    // Create the column if it doesn't exist
-    const { error } = await supabase.rpc('execute_sql', {
-      sql_string: `ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${columnName} ${columnType};`
-    });
-    
-    if (error) {
-      console.error(`Error adding column ${columnName} to table ${tableName}:`, error);
-      return false;
-    }
-    
-    console.log(`Successfully added column ${columnName} to table ${tableName}`);
     return true;
   } catch (error) {
-    console.error(`Exception in createColumnIfNotExists:`, error);
+    console.error(`Unexpected error ensuring column ${columnName} exists in ${tableName}:`, error);
     return false;
   }
 }

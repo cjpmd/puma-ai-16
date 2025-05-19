@@ -8,8 +8,11 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { ensureColumnExists } from "@/utils/database/columnUtils";
 
+// Define the WhatsAppSettings interface
 interface WhatsAppSettings {
+  id?: string;
   enabled: boolean;
   whatsapp_business_id?: string;
   whatsapp_phone_id?: string;
@@ -31,47 +34,52 @@ export const WhatsAppIntegration = () => {
     try {
       setLoading(true);
       
-      // First check if the whatsapp_settings table exists
-      const { data: whatsappTable, error: tableError } = await supabase
-        .from('whatsapp_settings')
-        .select('*')
-        .limit(1);
+      // First ensure the whatsapp_settings table exists
+      await supabase.rpc('execute_sql', {
+        sql_string: `
+          CREATE TABLE IF NOT EXISTS whatsapp_settings (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            enabled BOOLEAN DEFAULT false,
+            whatsapp_business_id TEXT,
+            whatsapp_phone_id TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+          );
+          
+          -- Insert default record if none exists
+          INSERT INTO whatsapp_settings (id, enabled)
+          SELECT '00000000-0000-0000-0000-000000000001', false
+          WHERE NOT EXISTS (SELECT 1 FROM whatsapp_settings LIMIT 1);
+        `
+      });
       
-      if (tableError) {
-        console.error("Error checking whatsapp table:", tableError);
-        // Table might not exist, let's initialize with defaults
+      // Now fetch the settings
+      const { data, error } = await supabase.rpc('execute_sql', {
+        sql_string: 'SELECT * FROM whatsapp_settings LIMIT 1'
+      });
+      
+      if (error) {
+        console.error("Error fetching WhatsApp settings:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load WhatsApp settings",
+          variant: "destructive"
+        });
+      } else if (data && data.length > 0) {
+        const settingsData = data[0];
+        setSettings({
+          id: settingsData.id,
+          enabled: settingsData.enabled || false,
+          whatsapp_business_id: settingsData.whatsapp_business_id || '',
+          whatsapp_phone_id: settingsData.whatsapp_phone_id || '',
+        });
+      } else {
+        // Initialize with default settings
         setSettings({
           enabled: false,
           whatsapp_business_id: '',
           whatsapp_phone_id: '',
         });
-        setLoading(false);
-        return;
-      }
-      
-      // If we get here, the table exists, so fetch settings
-      const { data, error } = await supabase
-        .from('whatsapp_settings')
-        .select('*')
-        .single();
-        
-      if (error) {
-        // If no records, initialize with defaults
-        if (error.code === 'PGRST116') {
-          setSettings({
-            enabled: false,
-            whatsapp_business_id: '',
-            whatsapp_phone_id: '',
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to load WhatsApp settings: " + error.message,
-            variant: "destructive"
-          });
-        }
-      } else {
-        setSettings(data);
       }
     } catch (error) {
       console.error("Error loading WhatsApp settings:", error);
@@ -86,14 +94,16 @@ export const WhatsAppIntegration = () => {
     try {
       setSaving(true);
       
-      const { error } = await supabase
-        .from('whatsapp_settings')
-        .upsert({
-          id: settings?.id || 'default',
-          enabled: settings?.enabled || false,
-          whatsapp_business_id: settings?.whatsapp_business_id || '',
-          whatsapp_phone_id: settings?.whatsapp_phone_id || ''
-        });
+      const { error } = await supabase.rpc('execute_sql', {
+        sql_string: `
+          UPDATE whatsapp_settings
+          SET enabled = ${settings.enabled},
+              whatsapp_business_id = '${settings.whatsapp_business_id || ''}',
+              whatsapp_phone_id = '${settings.whatsapp_phone_id || ''}',
+              updated_at = now()
+          WHERE id = '${settings.id || '00000000-0000-0000-0000-000000000001'}';
+        `
+      });
         
       if (error) throw error;
       

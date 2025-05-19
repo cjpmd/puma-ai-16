@@ -27,20 +27,24 @@ import { User } from "@/types/user";
 import { UserRole } from "@/hooks/useAuth.tsx";
 
 interface TeamUsersManagerProps {
-  team: Team;
+  team?: Team;
 }
 
 export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<UserRole>("player");
+  const [newRole, setNewRole] = useState<UserRole>("coach");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchTeamUsers();
+    if (team) {
+      fetchTeamUsers();
+    }
   }, [team]);
 
   const fetchTeamUsers = async () => {
+    if (!team) return;
+    
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -62,6 +66,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   };
 
   const handleAddUser = async () => {
+    if (!team) return;
     setLoading(true);
     try {
       // Check if the user with the given email exists
@@ -102,7 +107,6 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         toast("User not found", {
           description:
             "User with this email does not exist. Please invite them to create an account first.",
-          variant: "destructive",
         });
       }
     } catch (error) {
@@ -120,7 +124,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ team_id: null, role: "player" })
+        .update({ team_id: null, role: "coach" })
         .eq("id", userId);
 
       if (error) {
@@ -138,6 +142,10 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
       setLoading(false);
     }
   };
+
+  if (!team) {
+    return <div>No team selected</div>;
+  }
 
   return (
     <div>
