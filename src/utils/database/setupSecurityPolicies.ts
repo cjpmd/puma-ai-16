@@ -12,60 +12,51 @@ export const setupSecurityPolicies = async (): Promise<boolean> => {
     // We'll track our progress to return success status
     let success = true;
     
-    // Enable RLS on club_plans
-    const { error: clubPlansRlsError } = await supabase.rpc(
-      'execute_sql', 
-      { sql_string: 'ALTER TABLE public.club_plans ENABLE ROW LEVEL SECURITY;' }
-    );
+    // Tables that need RLS enabled
+    const tablesNeedingRLS = [
+      'club_plans',
+      'team_plans',
+      'user_roles',
+      'parent_child_linking',
+      'fa_connection_settings',
+      'game_formats',
+      'performance_categories'
+    ];
     
-    if (clubPlansRlsError) {
-      console.error("Error enabling RLS on club_plans:", clubPlansRlsError);
-      success = false;
+    // Enable RLS on each table
+    for (const table of tablesNeedingRLS) {
+      const { error: rlsError } = await supabase.rpc(
+        'execute_sql', 
+        { sql_string: `ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY;` }
+      );
+      
+      if (rlsError) {
+        console.error(`Error enabling RLS on ${table}:`, rlsError);
+        success = false;
+      } else {
+        console.log(`Successfully enabled RLS on ${table}`);
+      }
     }
     
-    // Enable RLS on team_plans
-    const { error: teamPlansRlsError } = await supabase.rpc(
-      'execute_sql', 
-      { sql_string: 'ALTER TABLE public.team_plans ENABLE ROW LEVEL SECURITY;' }
-    );
-    
-    if (teamPlansRlsError) {
-      console.error("Error enabling RLS on team_plans:", teamPlansRlsError);
-      success = false;
-    }
-    
-    // Create policies for club_plans (read-only for authenticated users)
-    const { error: clubPlansPolicyError } = await supabase.rpc(
-      'execute_sql', 
-      { sql_string: `
-        CREATE POLICY IF NOT EXISTS "club_plans_read_policy" 
-        ON public.club_plans
-        FOR SELECT 
-        TO authenticated
-        USING (true);
-      `}
-    );
-    
-    if (clubPlansPolicyError) {
-      console.error("Error creating policy for club_plans:", clubPlansPolicyError);
-      success = false;
-    }
-    
-    // Create policies for team_plans (read-only for authenticated users)
-    const { error: teamPlansPolicyError } = await supabase.rpc(
-      'execute_sql', 
-      { sql_string: `
-        CREATE POLICY IF NOT EXISTS "team_plans_read_policy" 
-        ON public.team_plans
-        FOR SELECT 
-        TO authenticated
-        USING (true);
-      `}
-    );
-    
-    if (teamPlansPolicyError) {
-      console.error("Error creating policy for team_plans:", teamPlansPolicyError);
-      success = false;
+    // Create read policies for tables (authenticated users can read)
+    for (const table of tablesNeedingRLS) {
+      const { error: policyError } = await supabase.rpc(
+        'execute_sql', 
+        { sql_string: `
+          CREATE POLICY IF NOT EXISTS "${table}_read_policy" 
+          ON public.${table}
+          FOR SELECT 
+          TO authenticated
+          USING (true);
+        `}
+      );
+      
+      if (policyError) {
+        console.error(`Error creating policy for ${table}:`, policyError);
+        success = false;
+      } else {
+        console.log(`Successfully created read policy for ${table}`);
+      }
     }
     
     console.log("Security policies setup completed with status:", success);
@@ -85,7 +76,17 @@ export const setupSecurityPoliciesViaEdgeFunction = async (): Promise<boolean> =
     // Call an edge function that would execute these SQL statements
     // This is a fallback if the RPC method isn't available
     const { data, error } = await supabase.functions.invoke('setup-security-policies', {
-      body: { tables: ['club_plans', 'team_plans'] }
+      body: { 
+        tables: [
+          'club_plans', 
+          'team_plans', 
+          'user_roles',
+          'parent_child_linking',
+          'fa_connection_settings',
+          'game_formats',
+          'performance_categories'
+        ] 
+      }
     });
     
     if (error) {
@@ -99,3 +100,42 @@ export const setupSecurityPoliciesViaEdgeFunction = async (): Promise<boolean> =
     return false;
   }
 };
+
+/**
+ * Information about SECURITY DEFINER views
+ * This is for reference - fixing these requires SQL schema changes
+ * that should be done via migrations
+ */
+export const getSecurityDefinerViewsInfo = (): Array<{name: string, description: string}> => {
+  return [
+    {
+      name: "attribute_history",
+      description: "View that shows history of player attribute changes"
+    },
+    {
+      name: "available_players_by_category",
+      description: "View that filters players by performance category"
+    },
+    {
+      name: "player_attendance_stats",
+      description: "View that shows player attendance statistics"
+    },
+    {
+      name: "player_fixture_stats",
+      description: "View that shows player statistics for fixtures"
+    },
+    {
+      name: "player_stats",
+      description: "View that shows combined player statistics"
+    },
+    {
+      name: "team_performance_categories",
+      description: "View that shows performance categories for teams"
+    },
+    {
+      name: "valid_attendance_status",
+      description: "View that validates attendance status values"
+    }
+  ];
+};
+

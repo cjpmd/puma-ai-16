@@ -16,12 +16,13 @@ import {
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldCheck, Database, AlertTriangle, Loader2 } from "lucide-react";
+import { ShieldCheck, Database, AlertTriangle, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
-import { setupSecurityPolicies } from "@/utils/database/setupSecurityPolicies";
+import { getSecurityDefinerViewsInfo, setupSecurityPolicies } from "@/utils/database/setupSecurityPolicies";
 
 export const AdminSettings = () => {
   const [isFixingRls, setIsFixingRls] = useState(false);
+  const securityDefinerViews = getSecurityDefinerViewsInfo();
   
   const handleFixSecurityIssues = async () => {
     setIsFixingRls(true);
@@ -72,7 +73,7 @@ export const AdminSettings = () => {
                 </AlertDescription>
               </Alert>
               
-              <div className="space-y-2">
+              <div className="space-y-2 mb-6">
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <div className="flex flex-col">
                     <span className="font-medium">public.club_plans</span>
@@ -92,6 +93,54 @@ export const AdminSettings = () => {
                   </div>
                   <AlertTriangle className="h-5 w-5 text-amber-500" />
                 </div>
+                
+                <div className="flex items-center justify-between rounded-md border p-3">
+                  <div className="flex flex-col">
+                    <span className="font-medium">public.user_roles</span>
+                    <span className="text-sm text-muted-foreground">
+                      Table is public, but RLS has not been enabled
+                    </span>
+                  </div>
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                </div>
+                
+                <div className="flex items-center justify-between rounded-md border p-3">
+                  <div className="flex flex-col">
+                    <span className="font-medium">public.parent_child_linking (+ 3 more)</span>
+                    <span className="text-sm text-muted-foreground">
+                      Additional tables without RLS enabled
+                    </span>
+                  </div>
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                </div>
+              </div>
+              
+              <Alert variant="default" className="mb-4 bg-blue-50 border-blue-200">
+                <Info className="h-5 w-5 text-blue-500" />
+                <AlertTitle>Security Definer Views</AlertTitle>
+                <AlertDescription>
+                  <p className="mb-2">
+                    Your database has several views defined with the SECURITY DEFINER property, which bypasses RLS policies.
+                    These views need to be manually recreated without SECURITY DEFINER to enforce proper security.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    This typically requires database schema changes via SQL migrations. Check documentation for details.
+                  </p>
+                </AlertDescription>
+              </Alert>
+              
+              <div className="space-y-2 mt-2">
+                {securityDefinerViews.map((view, index) => (
+                  <div key={index} className="flex items-center justify-between rounded-md border p-3">
+                    <div className="flex flex-col">
+                      <span className="font-medium">public.{view.name}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {view.description}
+                      </span>
+                    </div>
+                    <Info className="h-5 w-5 text-blue-500" />
+                  </div>
+                ))}
               </div>
             </CardContent>
             <CardFooter>
@@ -105,7 +154,7 @@ export const AdminSettings = () => {
                     Fixing Security Issues...
                   </>
                 ) : (
-                  'Fix Security Issues'
+                  'Fix RLS Security Issues'
                 )}
               </Button>
             </CardFooter>
