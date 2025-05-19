@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -55,12 +56,17 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
   const { data: categories = [] } = useQuery({
     queryKey: ["team-categories"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("team_categories")
-        .select("*")
-        .order("name");
-      if (error) throw error;
-      return data || [];
+      try {
+        const { data, error } = await supabase
+          .from("team_categories")
+          .select("*")
+          .order("name");
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching team categories:", error);
+        return [];
+      }
     }
   });
 
@@ -68,17 +74,22 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
   const { data: formats = [] } = useQuery({
     queryKey: ["game-formats"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("game_formats")
-        .select("*")
-        .order("name");
-      if (error) throw error;
-      return data || [];
+      try {
+        const { data, error } = await supabase
+          .from("game_formats")
+          .select("*")
+          .order("name");
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching game formats:", error);
+        return [];
+      }
     }
   });
 
   // Initialize form with fixture data if provided
-  const form = useForm({
+  const form = useForm<FixtureFormData>({
     resolver: zodResolver(fixtureFormSchema),
     defaultValues: fixture ? {
       opponent: fixture.opponent || "",
@@ -134,7 +145,8 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
         number_of_teams: parseInt(values.number_of_teams || "1"),
         id: fixture?.id || generateUUID(),
         team_name: values.team_name || "Broughty Pumas 2015s",
-        date: values.date // Ensure date is required
+        date: values.date, // Ensure date is required
+        opponent: values.opponent // Ensure opponent is required
       };
 
       let result;
@@ -185,16 +197,28 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
     if (!fixture?.id) return;
     setIsDeleting(true);
     try {
-      // Delete related records first
-      await supabase.from("fixture_attendance").delete().eq("fixture_id", fixture.id);
-      await supabase.from("team_selections").delete().eq("fixture_id", fixture.id);
+      try {
+        // Delete related records first
+        await supabase.from("fixture_attendance").delete().eq("fixture_id", fixture.id);
+      } catch (error) {
+        console.error("Error deleting fixture attendance:", error);
+      }
+      
+      try {
+        await supabase.from("team_selections").delete().eq("fixture_id", fixture.id);
+      } catch (error) {
+        console.error("Error deleting team selections:", error);
+      }
+      
       // Then delete the fixture
       const { error } = await supabase.from("fixtures").delete().eq("id", fixture.id);
       if (error) throw error;
+      
       toast({
         title: "Fixture deleted",
         description: "The fixture has been deleted successfully."
       });
+      
       if (onSuccess) {
         onSuccess({
           ...fixture,
@@ -217,9 +241,14 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
   const { data: players = [] } = useQuery({
     queryKey: ["players-for-fixture"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("players").select("*").order("name");
-      if (error) throw error;
-      return data || [];
+      try {
+        const { data, error } = await supabase.from("players").select("*").order("name");
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching players:", error);
+        return [];
+      }
     }
   });
 
