@@ -24,7 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlayerTransferDialog } from '@/components/admin/PlayerTransferDialog';
 import { TransferApprovalDialog } from '@/components/admin/TransferApprovalDialog';
 import { columnExists, tableExists } from '@/utils/database/columnUtils';
-import { verifyTransferSystem, setupTransferSystem } from '@/utils/database/transferSystem';
+import { setupTransferSystem } from '@/utils/database/transferSystem';
 
 interface PlayerTransferManagerProps {
   teamId?: string;
@@ -63,11 +63,19 @@ export const PlayerTransferManager = ({ teamId, isAdmin = false }: PlayerTransfe
         }, 5000); // Extended timeout to 5 seconds
       });
       
-      // Run the actual checks
-      const checkPromise = verifyTransferSystem();
+      // Check if player_transfers table exists
+      const checkPromise = async () => {
+        const transfersTableExists = await tableExists('player_transfers');
+        if (transfersTableExists) {
+          const statusExists = await columnExists('player_transfers', 'status');
+          const typeExists = await columnExists('player_transfers', 'type');
+          return transfersTableExists && statusExists && typeExists;
+        }
+        return false;
+      };
       
       // Race between timeout and check
-      const result = await Promise.race([timeoutPromise, checkPromise]);
+      const result = await Promise.race([timeoutPromise, checkPromise()]);
       
       console.log("Transfer system check result:", result);
       setTransfersTableExists(result);

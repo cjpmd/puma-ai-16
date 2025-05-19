@@ -4,7 +4,7 @@ import { ensureParentChildLinkingSetup } from "./parentChildLinking";
 import { toast } from "sonner";
 import { initializeDatabase } from "./initializeDatabase";
 import { tableExists } from "./columnUtils";
-import { verifyTransferSystem } from "./transferSystem";
+import { setupTransferSystem } from "./transferSystem";
 
 /**
  * Ensure all required database tables and columns exist
@@ -84,7 +84,8 @@ export async function ensureDatabaseSetup() {
     
     // Verify transfer system is properly set up
     try {
-      const transferSystemSetup = await verifyTransferSystem();
+      // Use setupTransferSystem instead of verifyTransferSystem since we've redefined it
+      const transferSystemSetup = await setupTransferSystem();
       if (!transferSystemSetup) {
         console.warn("Failed to verify transfer system setup");
       }

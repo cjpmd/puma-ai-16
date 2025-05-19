@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -28,10 +29,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-// Update the type to include 'player' role
+// Define the allowed user roles
 type AllowedUserRoles = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin' | 'user';
 
-// Use the updated type in the interface
+// Interface for TeamUser with proper typing
 interface TeamUser {
   id: string;
   email: string;
@@ -73,10 +74,10 @@ export function TeamUsersManager() {
       }
 
       // Transform the raw data to match the TeamUser interface
-      const usersData: TeamUser[] = data.map(profile => ({
+      const usersData = data.map(profile => ({
         id: profile.id,
         email: profile.email || '',
-        role: profile.role as AllowedUserRoles,  // Cast the role to the allowed roles type
+        role: (profile.role || 'user') as AllowedUserRoles,  // Cast the role to the allowed roles type
         name: profile.name || '',
         created_at: profile.created_at,
         last_sign_in_at: null,
@@ -112,7 +113,7 @@ export function TeamUsersManager() {
     setIsDialogOpen(true)
   }
 
-  // When updating roles, use the string type
+  // When updating roles, use the AllowedUserRoles type
   const handleUpdateRole = async () => {
     if (!selectedUser || !role) return;
 

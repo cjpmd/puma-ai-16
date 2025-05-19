@@ -3,6 +3,56 @@ import { supabase } from "@/integrations/supabase/client";
 import { createColumnIfNotExists } from "./columnUtils";
 import { executeSql } from "./executeSql";
 
+/**
+ * Verify that transfer system tables and columns are properly set up
+ * Returns true if everything is set up correctly, false otherwise
+ */
+export const verifyTransferSystem = async (): Promise<boolean> => {
+  try {
+    // Check if the table exists first
+    const { data: tableExists, error: tableCheckError } = await supabase.rpc('table_exists', { 
+      table_name: 'player_transfers' 
+    });
+    
+    if (tableCheckError) {
+      console.error('Error checking player_transfers table:', tableCheckError);
+      return false;
+    }
+    
+    if (!tableExists) {
+      console.log('player_transfers table does not exist yet');
+      return false;
+    }
+    
+    // Check if required columns exist
+    const { data: columns, error: columnsError } = await supabase.rpc('get_table_columns', {
+      table_name: 'player_transfers'
+    });
+    
+    if (columnsError) {
+      console.error('Error checking player_transfers columns:', columnsError);
+      return false;
+    }
+    
+    // Convert columns to lowercase for consistent comparison
+    const columnSet = new Set((columns || []).map(col => col.toLowerCase()));
+    
+    // Check required columns
+    const requiredColumns = ['id', 'player_id', 'from_team_id', 'to_team_id', 'status', 'type', 'reason'];
+    const missingColumns = requiredColumns.filter(col => !columnSet.has(col.toLowerCase()));
+    
+    if (missingColumns.length > 0) {
+      console.log('Missing columns in player_transfers:', missingColumns.join(', '));
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error verifying transfer system:', error);
+    return false;
+  }
+};
+
 export const setupTransferSystem = async (): Promise<boolean> => {
   try {
     // Check if the table exists first
