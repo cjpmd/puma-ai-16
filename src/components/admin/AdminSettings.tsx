@@ -1,16 +1,17 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge"; // Added for showing counts
 import { ClubManagement } from "./ClubManagement";
 import { TeamManagement } from "./TeamManagement";
 import { UserManagement } from "./UserManagement";
 import { SubscriptionManagement } from "./SubscriptionManagement";
 import { PlatformSettings } from "./PlatformSettings";
 import { FinancialReports } from "./FinancialReports";
-import { AlertTriangle, CheckCircle, Database, Lock, RefreshCw, Shield, User, Users, Workflow } from "lucide-react";
+import { AlertTriangle, CheckCircle, Database, Lock, RefreshCw, Shield, User, Users, Workflow, Info } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { 
   setupSecurityPolicies, 
@@ -19,9 +20,11 @@ import {
   fixMaterializedViewAccess,
   getAuthConfigurationInfo,
   optimizeRlsPolicies,
-  consolidatePermissivePolicies
+  consolidatePermissivePolicies,
+  getPermissivePoliciesCount
 } from "@/utils/database/setupSecurityPolicies";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function AdminSettings() {
   const { toast } = useToast();
@@ -30,9 +33,20 @@ export function AdminSettings() {
   const [isFixingViewAccess, setIsFixingViewAccess] = useState(false);
   const [isOptimizingRls, setIsOptimizingRls] = useState(false);
   const [isConsolidatingPolicies, setIsConsolidatingPolicies] = useState(false);
+  const [permissivePolicyCount, setPermissivePolicyCount] = useState<number>(0);
 
   const securityDefinerViews = getSecurityDefinerViewsInfo();
   const authConfigIssues = getAuthConfigurationInfo();
+
+  // Fetch permissive policy count on component mount
+  useEffect(() => {
+    const fetchPermissivePolicyCount = async () => {
+      const count = await getPermissivePoliciesCount();
+      setPermissivePolicyCount(count);
+    };
+    
+    fetchPermissivePolicyCount();
+  }, []);
 
   const handleEnableRls = async () => {
     setIsEnablingRls(true);
@@ -160,6 +174,10 @@ export function AdminSettings() {
           title: "Policies Consolidated",
           description: "Multiple permissive policies have been successfully consolidated",
         });
+        
+        // Update count after consolidation
+        const updatedCount = await getPermissivePoliciesCount();
+        setPermissivePolicyCount(updatedCount);
       } else {
         toast({
           variant: "destructive",
@@ -346,28 +364,62 @@ export function AdminSettings() {
                 <h3 className="font-semibold flex items-center gap-2 mb-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
                   Multiple Permissive Policies
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="ml-2">
+                          {permissivePolicyCount} issues
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs text-xs">
+                          There are {permissivePolicyCount} instances of multiple permissive policies
+                          across various tables that should be consolidated for better performance.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </h3>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Some tables have multiple permissive policies for the same role and operation, which affects performance.
-                  These should be consolidated into single policies.
+                  Many tables have multiple permissive policies for the same role and operation, which affects performance.
+                  These should be consolidated into single policies. Affects tables such as team_selections, fixtures, players, and more.
                 </p>
-                <Button 
-                  onClick={handleConsolidatePolicies}
-                  disabled={isConsolidatingPolicies}
-                  className="gap-2"
-                >
-                  {isConsolidatingPolicies ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      Consolidating Policies...
-                    </>
-                  ) : (
-                    <>
-                      <Workflow className="h-4 w-4" />
-                      Consolidate Permissive Policies
-                    </>
-                  )}
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    onClick={handleConsolidatePolicies}
+                    disabled={isConsolidatingPolicies}
+                    className="gap-2"
+                  >
+                    {isConsolidatingPolicies ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Consolidating Policies...
+                      </>
+                    ) : (
+                      <>
+                        <Workflow className="h-4 w-4" />
+                        Consolidate Permissive Policies
+                      </>
+                    )}
+                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon">
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-sm">
+                        <p className="text-xs">
+                          This will consolidate multiple permissive policies affecting tables like:
+                          team_selections, fixtures, players, coaching_comments, event_attendance,
+                          and many others. The consolidation combines policies with OR conditions
+                          for better performance.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -610,3 +610,50 @@ export const consolidatePermissivePolicies = async (): Promise<boolean> => {
     return false;
   }
 };
+
+/**
+ * Get a count of tables with multiple permissive policies
+ * This helps display a count in the UI
+ */
+export const getPermissivePoliciesCount = async (): Promise<number> => {
+  try {
+    const { data, error } = await supabase.rpc(
+      'execute_sql',
+      {
+        sql_string: `
+          WITH grouped_policies AS (
+            SELECT 
+              schemaname, 
+              tablename, 
+              cmd,
+              roles[1] as role,
+              count(*) AS policy_count
+            FROM 
+              pg_policies 
+            WHERE 
+              permissive = 't' AND
+              schemaname = 'public'
+            GROUP BY 
+              schemaname, tablename, roles[1], cmd
+            HAVING 
+              count(*) > 1
+          )
+          SELECT 
+            COUNT(*) as count
+          FROM 
+            grouped_policies;
+        `
+      }
+    );
+    
+    if (error) {
+      console.error("Error fetching multiple permissive policy count:", error);
+      return 0;
+    }
+
+    return data && data[0]?.count ? parseInt(data[0].count) : 0;
+  } catch (error) {
+    console.error("Error getting permissive policy count:", error);
+    return 0;
+  }
+};
