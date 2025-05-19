@@ -96,25 +96,31 @@ export const TournamentTeamSelection = ({
         }));
       });
       
-      // Call API to save selections
-      const { error } = await supabase
-        .from('tournament_team_selections')
-        .upsert(
-          Object.entries(formattedSelections).flatMap(([teamId, selections]) => 
-            selections.map(selection => ({
-              tournament_id: tournament.id,
-              team_id: teamId,
-              player_id: selection.playerId,
-              position: selection.position,
-              is_substitute: selection.is_substitute,
-              performance_category: selection.performanceCategory
-            }))
-          )
-        );
+      // Insert selections into database using the tournament_team_players table
+      const insertPromises = Object.entries(formattedSelections).flatMap(([teamId, selections]) => 
+        selections.map(selection => {
+          const insertData = {
+            tournament_team_id: teamId,
+            player_id: selection.playerId,
+            position: selection.position,
+            is_substitute: selection.is_substitute,
+            performance_category: selection.performanceCategory
+          };
+          
+          return supabase
+            .from('tournament_team_players')
+            .upsert(insertData);
+        })
+      );
       
-      if (error) throw error;
+      const results = await Promise.all(insertPromises);
+      const errors = results.filter(r => r.error).map(r => r.error);
       
-      // Call onSuccess callback
+      if (errors.length > 0) {
+        console.error("Errors saving selections:", errors);
+        throw new Error("Some selections could not be saved");
+      }
+      
       onSuccess();
       
     } catch (error) {

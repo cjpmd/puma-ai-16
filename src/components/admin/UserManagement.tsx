@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -33,11 +34,11 @@ import {
 import { Loader2, MoreVertical, Search, UserPlus, Shield, Building, Users } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { UserRole } from '@/hooks/useAuth';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { UserAssignmentDialog } from './UserAssignmentDialog';
+import { UserRole } from '@/components/auth/ProtectedRoute';
 
 interface User {
   id: string;
@@ -165,7 +166,22 @@ export const UserManagement = () => {
 
       // Since we can't access admin.listUsers, we'll use the profiles table as our source of users
       // This means we'll miss some Supabase auth metadata, but it's better than no data
-      const mergedUsers: User[] = profiles.map(profile => {
+      const typedProfiles = profiles.map(profile => {
+        // Ensure the role is one of our valid UserRole types
+        let typedRole: UserRole;
+        switch (profile.role) {
+          case 'admin':
+          case 'manager':
+          case 'coach':
+          case 'parent':
+          case 'player':
+          case 'globalAdmin':
+            typedRole = profile.role as UserRole;
+            break;
+          default:
+            typedRole = 'parent' as UserRole; // Default role if invalid
+        }
+
         const player = players?.find(p => p.user_id === profile.id);
         const team = player ? teamsWithCustomNames?.find(t => t.id === player.team_id) : null;
         
@@ -175,7 +191,7 @@ export const UserManagement = () => {
         return {
           id: profile.id,
           email: profile.email || 'No Email',
-          role: profile.role || 'user',
+          role: typedRole,
           name: profile.name || profile.email?.split('@')[0] || 'Unknown',
           last_sign_in_at: null, // We don't have this from profiles table
           created_at: profile.created_at || new Date().toISOString(),
@@ -183,11 +199,11 @@ export const UserManagement = () => {
           team_name: team ? team.display_team_name : 'No Team',
           club_id: clubId,
           club_name: club?.name || 'No Club'
-        };
+        } as User;
       });
       
-      console.log('Merged users:', mergedUsers.length);
-      setUsers(mergedUsers);
+      console.log('Merged users:', typedProfiles.length);
+      setUsers(typedProfiles);
 
       // Organize users by club and team
       const organizedClubs: Club[] = [];
@@ -233,7 +249,7 @@ export const UserManagement = () => {
       });
       
       // Assign users to their teams
-      mergedUsers.forEach(user => {
+      typedProfiles.forEach(user => {
         let clubIndex: number;
         
         if (user.club_id) {

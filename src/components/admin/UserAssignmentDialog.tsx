@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -304,16 +305,25 @@ export const UserAssignmentDialog = ({ open, onOpenChange, user, onSuccess }: Us
             throw playerUpdateError;
           }
         } else {
-          // Create new player record
+          // Create new player record with required fields
           console.log("Creating new player record");
+          
+          // We need to provide values for all the required fields in the players table
+          const playerData = {
+            user_id: user.id,
+            team_id: selectedTeam,
+            name: user.name || user.email,
+            status: 'active',
+            // Required fields that were missing in the previous code
+            squad_number: 0, // Default value
+            age: 0, // Default value
+            date_of_birth: new Date().toISOString().split('T')[0], // Default to today
+            player_type: 'OUTFIELD' // Default value
+          };
+          
           const { error: playerCreateError } = await supabase
             .from('players')
-            .insert({
-              user_id: user.id,
-              team_id: selectedTeam,
-              name: user.name || user.email,
-              status: 'active'
-            });
+            .insert(playerData);
             
           if (playerCreateError) {
             console.error("Error creating player:", playerCreateError);

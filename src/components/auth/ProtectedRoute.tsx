@@ -1,8 +1,11 @@
 
 import { Navigate } from "react-router-dom";
-import { useAuth, UserRole } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
+
+// Define UserRole type here for better type safety across the app
+export type UserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin';
 
 export interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -29,7 +32,7 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   // Check for globalAdmin access path
-  if (allowedRoles.includes('globalAdmin' as UserRole)) {
+  if (allowedRoles.includes('globalAdmin')) {
     console.log('Route requires globalAdmin role, checking if user can access');
     
     // Check for global admin access directly in the profile or active role
@@ -49,7 +52,7 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
   if (!hasRequiredRole) {
     console.log(`User has role ${profile.role} but needs one of ${allowedRoles.join(', ')}, denying access`);
     // Provide a clearer message for globalAdmin route attempts
-    if (allowedRoles.includes('globalAdmin' as UserRole)) {
+    if (allowedRoles.includes('globalAdmin')) {
       return (
         <div className="flex flex-col items-center justify-center h-screen">
           <Alert variant="warning" className="w-full max-w-lg">

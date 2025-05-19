@@ -96,25 +96,80 @@ export const FestivalTeamSelection = ({
         }));
       });
       
-      // Call API to save selections
-      const { error } = await supabase
-        .from('festival_team_selections')
-        .upsert(
-          Object.entries(formattedSelections).flatMap(([teamId, selections]) => 
-            selections.map(selection => ({
-              festival_id: festival.id,
-              team_id: teamId,
-              player_id: selection.playerId,
-              position: selection.position,
-              is_substitute: selection.is_substitute,
-              performance_category: selection.performanceCategory
-            }))
-          )
-        );
+      // Check if table exists
+      let tableExists = false;
+      try {
+        const { data, error } = await supabase.rpc('execute_sql', {
+          sql_string: `
+            SELECT EXISTS (
+              SELECT FROM information_schema.tables 
+              WHERE table_schema = 'public' 
+              AND table_name = 'festival_team_selections'
+            ) as table_exists;
+          `
+        });
+        
+        if (!error && data && data[0]?.table_exists) {
+          tableExists = true;
+        }
+      } catch (error) {
+        console.error("Error checking if table exists:", error);
+      }
       
-      if (error) throw error;
+      // If table doesn't exist, create it
+      if (!tableExists) {
+        try {
+          const { error } = await supabase.rpc('execute_sql', {
+            sql_string: `
+              CREATE TABLE IF NOT EXISTS public.festival_team_selections (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                festival_id UUID REFERENCES public.festivals(id),
+                team_id UUID REFERENCES public.festival_teams(id),
+                player_id UUID REFERENCES public.players(id),
+                position TEXT NOT NULL,
+                is_substitute BOOLEAN DEFAULT false,
+                performance_category TEXT DEFAULT 'MESSI',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+              );
+            `
+          });
+          
+          if (error) {
+            console.error("Error creating festival_team_selections table:", error);
+            throw error;
+          }
+        } catch (error) {
+          console.error("Error setting up database table:", error);
+          throw error;
+        }
+      }
       
-      // Call onSuccess callback
+      // Insert selections into database using the RPC function
+      const insertPromises = Object.entries(formattedSelections).flatMap(([teamId, selections]) => 
+        selections.map(selection => {
+          const insertData = {
+            festival_id: festival.id,
+            team_id: teamId,
+            player_id: selection.playerId,
+            position: selection.position,
+            is_substitute: selection.is_substitute,
+            performance_category: selection.performanceCategory || 'MESSI'
+          };
+          
+          return supabase
+            .from('festival_team_players')
+            .upsert(insertData);
+        })
+      );
+      
+      const results = await Promise.all(insertPromises);
+      const errors = results.filter(r => r.error).map(r => r.error);
+      
+      if (errors.length > 0) {
+        console.error("Errors saving selections:", errors);
+        throw new Error("Some selections could not be saved");
+      }
+      
       onSuccess();
       
     } catch (error) {

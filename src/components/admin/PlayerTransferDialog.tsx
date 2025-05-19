@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -166,14 +167,28 @@ export const PlayerTransferDialog = ({
     
     setSaving(true);
     try {
-      // Check if player_transfers table exists
-      const { data: tablesData, error: tablesError } = await supabase
-        .from('pg_tables')
-        .select('tablename')
-        .eq('schemaname', 'public')
-        .eq('tablename', 'player_transfers');
+      // Try to check if player_transfers table exists using the execute_sql function
+      let tableExists = false;
       
-      let tableExists = tablesData && tablesData.length > 0;
+      try {
+        const { data, error } = await supabase.rpc('execute_sql', {
+          sql_string: `
+            SELECT EXISTS (
+              SELECT FROM information_schema.tables 
+              WHERE table_schema = 'public' 
+              AND table_name = 'player_transfers'
+            ) as table_exists;
+          `
+        });
+        
+        if (data && data[0]?.table_exists) {
+          tableExists = true;
+        }
+      } catch (checkError) {
+        console.error('Error checking if table exists:', checkError);
+        // Fallback: assume table doesn't exist
+        tableExists = false;
+      }
       
       // If table doesn't exist, try to create it
       if (!tableExists) {
