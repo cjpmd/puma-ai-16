@@ -766,3 +766,54 @@ export const getDuplicateIndexesCount = async (): Promise<number> => {
     return 0;
   }
 };
+
+// Get the count of unused indexes in the database
+export const getUnusedIndexesCount = async (): Promise<number> => {
+  try {
+    const { data, error } = await supabase.rpc('get_unused_indexes_count');
+    
+    if (error) {
+      console.error('Error getting unused indexes count:', error);
+      return 0;
+    }
+    
+    return data || 0;
+  } catch (error) {
+    console.error('Error in getUnusedIndexesCount:', error);
+    return 0;
+  }
+};
+
+// Get information about unused indexes
+export const getUnusedIndexesInfo = async () => {
+  try {
+    const { data, error } = await supabase.rpc('get_unused_indexes_info');
+    
+    if (error) {
+      console.error('Error getting unused indexes info:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in getUnusedIndexesInfo:', error);
+    return [];
+  }
+};
+
+// Remove unused indexes to improve performance
+export const removeUnusedIndexes = async (): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc('remove_unused_indexes');
+    
+    if (error) {
+      console.error('Error removing unused indexes:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in removeUnusedIndexes:', error);
+    return false;
+  }
+};

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -27,7 +26,10 @@ import {
   createIndexesForForeignKeys,
   fixDuplicateIndexes,
   getDuplicateIndexesCount,
-  getDuplicateIndexesInfo
+  getDuplicateIndexesInfo,
+  getUnusedIndexesCount,
+  getUnusedIndexesInfo,
+  removeUnusedIndexes
 } from "@/utils/database/setupSecurityPolicies";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -41,9 +43,11 @@ export function AdminSettings() {
   const [isConsolidatingPolicies, setIsConsolidatingPolicies] = useState(false);
   const [isCreatingIndexes, setIsCreatingIndexes] = useState(false);
   const [isFixingDuplicateIndexes, setIsFixingDuplicateIndexes] = useState(false);
+  const [isRemovingUnusedIndexes, setIsRemovingUnusedIndexes] = useState(false);
   const [permissivePolicyCount, setPermissivePolicyCount] = useState<number>(0);
   const [unindexedForeignKeyCount, setUnindexedForeignKeyCount] = useState<number>(0);
   const [duplicateIndexCount, setDuplicateIndexCount] = useState<number>(0);
+  const [unusedIndexCount, setUnusedIndexCount] = useState<number>(0);
 
   const securityDefinerViews = getSecurityDefinerViewsInfo();
   const authConfigIssues = getAuthConfigurationInfo();
@@ -62,6 +66,10 @@ export function AdminSettings() {
       // Fetch duplicate index count
       const indexCount = await getDuplicateIndexesCount();
       setDuplicateIndexCount(indexCount);
+      
+      // Fetch unused index count
+      const unusedCount = await getUnusedIndexesCount();
+      setUnusedIndexCount(unusedCount);
     };
     
     fetchDatabaseIssues();
@@ -279,6 +287,39 @@ export function AdminSettings() {
       });
     } finally {
       setIsFixingDuplicateIndexes(false);
+    }
+  };
+
+  const handleRemoveUnusedIndexes = async () => {
+    setIsRemovingUnusedIndexes(true);
+    try {
+      const success = await removeUnusedIndexes();
+      
+      if (success) {
+        toast({
+          title: "Unused Indexes Removed",
+          description: "Unused indexes have been successfully removed",
+        });
+        
+        // Update count after removing unused indexes
+        const updatedCount = await getUnusedIndexesCount();
+        setUnusedIndexCount(updatedCount);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Unused Index Removal Error",
+          description: "There was an issue removing unused indexes, check console for details",
+        });
+      }
+    } catch (error) {
+      console.error("Error removing unused indexes:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred while removing unused indexes",
+      });
+    } finally {
+      setIsRemovingUnusedIndexes(false);
     }
   };
 
@@ -623,6 +664,67 @@ export function AdminSettings() {
                         <p className="text-xs">
                           This will identify and remove duplicate indexes, keeping only one index per unique constraint.
                           The operation is safe and won't impact query performance negatively.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+              
+              {/* NEW SECTION: Unused Indexes */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold flex items-center gap-2 mb-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  Unused Indexes
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="ml-2">
+                          {unusedIndexCount} issues
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs text-xs">
+                          There are {unusedIndexCount} unused indexes that could be safely removed to improve write performance and reduce disk space usage.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Some indexes in the database are unused, which consumes disk space and slows down write operations without providing query benefits.
+                  Removing these unused indexes can improve overall database performance.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    onClick={handleRemoveUnusedIndexes}
+                    disabled={isRemovingUnusedIndexes}
+                    className="gap-2"
+                  >
+                    {isRemovingUnusedIndexes ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Removing Unused Indexes...
+                      </>
+                    ) : (
+                      <>
+                        <Database className="h-4 w-4" />
+                        Remove Unused Indexes
+                      </>
+                    )}
+                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon">
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-sm">
+                        <p className="text-xs">
+                          This will safely remove indexes that have not been used since statistics were last reset.
+                          These include indexes on tables such as deep_tracking_results, event_attendance, event_periods,
+                          and others. Removing these indexes will reduce database size and improve write performance.
                         </p>
                       </TooltipContent>
                     </Tooltip>
