@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
@@ -106,14 +105,19 @@ export function WhatsAppIntegration() {
       if (settingsError) {
         console.error('Error fetching WhatsApp settings:', settingsError);
       } else if (settings && settings.length > 0) {
+        // Parse the first row from the result
         const setting = settings[0];
-        setWhatsappSettings({
+        
+        // Create a properly typed WhatsAppSettings object
+        const settingsData: WhatsAppSettings = {
           id: setting.id || "",
           verification_token: setting.verification_token || null,
           api_key: setting.api_key || null,
           phone_number_id: setting.phone_number_id || null,
           access_token: setting.access_token || null
-        });
+        };
+        
+        setWhatsappSettings(settingsData);
         setIntegrationEnabled(!!setting.verification_token);
       }
       
@@ -125,122 +129,30 @@ export function WhatsAppIntegration() {
     }
   };
 
-  const createWhatsAppTables = async () => {
-    try {
-      // Create whatsapp_settings table
-      const { error: settingsError } = await supabase.rpc('create_table_if_not_exists', {
-        table_name: 'whatsapp_settings',
-        table_definition: `
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          verification_token TEXT,
-          api_key TEXT,
-          phone_number_id TEXT,
-          access_token TEXT,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-        `
-      });
-      
-      if (settingsError) {
-        console.error('Error creating whatsapp_settings table:', settingsError);
-        // Try direct approach
-        await supabase.from('whatsapp_settings').insert([{
-          id: '00000000-0000-0000-0000-000000000001',
-          verification_token: null,
-          api_key: null,
-          phone_number_id: null,
-          access_token: null
-        }]);
-      }
-      
-      // Create whatsapp_messages table
-      const { error: messagesError } = await supabase.rpc('create_table_if_not_exists', {
-        table_name: 'whatsapp_messages',
-        table_definition: `
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          message_id TEXT,
-          phone_number TEXT,
-          message TEXT,
-          raw_payload JSONB,
-          processed BOOLEAN DEFAULT false,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-        `
-      });
-      
-      if (messagesError) {
-        console.error('Error creating whatsapp_messages table:', messagesError);
-      }
-    } catch (error) {
-      console.error('Error creating WhatsApp tables:', error);
-    }
-  };
-
-  const createDefaultWhatsAppSettings = async () => {
-    try {
-      const { error } = await supabase
-        .from('whatsapp_settings')
-        .insert([
-          {
-            id: '00000000-0000-0000-0000-000000000001',
-            verification_token: null,
-            api_key: null,
-            phone_number_id: null,
-            access_token: null
-          }
-        ]);
-      
-      if (error) {
-        console.error('Error creating default WhatsApp settings:', error);
-      }
-    } catch (error) {
-      console.error('Error creating default WhatsApp settings:', error);
-    }
-  };
-
-  const fetchWhatsAppSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('whatsapp_settings')
-        .select('*')
-        .limit(1)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching WhatsApp settings:', error);
-      } else {
-        setWhatsappSettings(data);
-        setIntegrationEnabled(!!data.verification_token);
-      }
-    } catch (error) {
-      console.error('Error fetching WhatsApp settings:', error);
-    }
-  };
-
   const fetchWhatsAppMessages = async () => {
     try {
-      // Check if table exists first
-      const { error: checkError } = await supabase
-        .from('whatsapp_messages')
-        .select('count(*)')
-        .limit(1);
-      
-      if (checkError && checkError.code === '42P01') {
-        // Table doesn't exist, create it
-        await createWhatsAppTables();
-        return; // No messages to fetch yet
-      }
-      
-      const { data, error } = await supabase
-        .from('whatsapp_messages')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
+      // Query the messages table directly with SQL to avoid type issues
+      const { data, error } = await supabase.rpc('execute_sql', {
+        sql_string: `
+          SELECT * FROM whatsapp_messages
+          ORDER BY created_at DESC
+          LIMIT 10;
+        `
+      });
       
       if (error) {
         console.error('Error fetching WhatsApp messages:', error);
-      } else {
-        setWhatsappMessages(data || []);
+      } else if (data && Array.isArray(data)) {
+        // Transform the results into the WhatsAppMessage type
+        const messages: WhatsAppMessage[] = data.map(row => ({
+          id: row.id || '',
+          phone_number: row.phone_number || '',
+          message: row.message || '',
+          created_at: row.created_at || '',
+          processed: row.processed || false
+        }));
+        
+        setWhatsappMessages(messages);
       }
     } catch (error) {
       console.error('Error fetching WhatsApp messages:', error);
@@ -255,9 +167,18 @@ export function WhatsAppIntegration() {
       const updatedSettings = { ...whatsappSettings, ...updates };
       setWhatsappSettings(updatedSettings);
       
+      // Prepare SQL update statement with proper escaping
+      const updateFields = Object.entries(updates)
+        .map(([key, value]) => {
+          // Properly handle null values and string escaping
+          const sqlValue = value === null ? 'NULL' : `'${String(value).replace(/'/g, "''")}'`;
+          return `${key} = ${sqlValue}`;
+        })
+        .join(', ');
+      
       const updateSQL = `
         UPDATE whatsapp_settings
-        SET ${Object.keys(updates).map(key => `${key} = '${updates[key as keyof WhatsAppSettings]}'`).join(', ')},
+        SET ${updateFields},
             updated_at = now()
         WHERE id = '${whatsappSettings.id}';
       `;
@@ -350,7 +271,7 @@ export function WhatsAppIntegration() {
           />
         </div>
         
-        {integrationEnabled && (
+        {integrationEnabled && whatsappSettings && (
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="grid gap-2">
@@ -359,7 +280,7 @@ export function WhatsAppIntegration() {
                 </label>
                 <Input
                   id="verification-token"
-                  value={whatsappSettings?.verification_token || ''}
+                  value={whatsappSettings.verification_token || ''}
                   onChange={(e) => updateWhatsAppSettings({ verification_token: e.target.value })}
                   placeholder="Verification token for webhook"
                 />
@@ -371,7 +292,7 @@ export function WhatsAppIntegration() {
                 </label>
                 <Input
                   id="phone-number-id"
-                  value={whatsappSettings?.phone_number_id || ''}
+                  value={whatsappSettings.phone_number_id || ''}
                   onChange={(e) => updateWhatsAppSettings({ phone_number_id: e.target.value })}
                   placeholder="Your WhatsApp phone number ID"
                 />
@@ -384,7 +305,7 @@ export function WhatsAppIntegration() {
                 <Input
                   id="access-token"
                   type="password"
-                  value={whatsappSettings?.access_token || ''}
+                  value={whatsappSettings.access_token || ''}
                   onChange={(e) => updateWhatsAppSettings({ access_token: e.target.value })}
                   placeholder="Your WhatsApp API access token"
                 />

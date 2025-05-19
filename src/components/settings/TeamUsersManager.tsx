@@ -28,18 +28,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-// Add this TypeScript interface to fix the UserRole issue
+// Update the type to include 'player' role
+type AllowedUserRoles = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin' | 'user';
+
+// Use the updated type in the interface
 interface TeamUser {
   id: string;
   email: string;
-  role: string;
+  role: AllowedUserRoles;
   name: string;
   last_sign_in_at: any;
   created_at: string;
-  team_id: string;
-  team_name: string;
-  club_id: string;
-  club_name: string;
+  team_id: string | null;
+  team_name: string | null;
+  club_id: string | null;
+  club_name: string | null;
 }
 
 export function TeamUsersManager() {
@@ -47,7 +50,7 @@ export function TeamUsersManager() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<TeamUser | null>(null)
-  const [role, setRole] = useState<string | null>(null)
+  const [role, setRole] = useState<AllowedUserRoles | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const { toast } = useToast()
@@ -73,7 +76,7 @@ export function TeamUsersManager() {
       const usersData: TeamUser[] = data.map(profile => ({
         id: profile.id,
         email: profile.email || '',
-        role: profile.role,  // This will be a string value
+        role: profile.role as AllowedUserRoles,  // Cast the role to the allowed roles type
         name: profile.name || '',
         created_at: profile.created_at,
         last_sign_in_at: null,
@@ -147,6 +150,8 @@ export function TeamUsersManager() {
     { value: 'coach', label: 'Coach' },
     { value: 'parent', label: 'Parent' },
     { value: 'player', label: 'Player' },
+    { value: 'globalAdmin', label: 'Global Admin' },
+    { value: 'user', label: 'User' }
   ];
 
   return (
@@ -218,7 +223,7 @@ export function TeamUsersManager() {
               <Label htmlFor="role-select">Role</Label>
               <Select
                 value={role || undefined}
-                onValueChange={(value) => setRole(value)}
+                onValueChange={(value) => setRole(value as AllowedUserRoles)}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select a role" />

@@ -6,7 +6,6 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Fixture } from "@/types/fixture";
 
 // Define the schema for fixture form validation
 const fixtureFormSchema = z.object({
@@ -197,7 +196,7 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
     setIsDeleting(true);
     try {
       try {
-        // Try to delete related records first, but catch and log errors if tables don't exist
+        // Try to delete related records first, but use event_attendance instead of fixture_attendance
         const { error } = await supabase
           .from("event_attendance")
           .delete()
