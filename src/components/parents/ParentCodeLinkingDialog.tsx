@@ -110,7 +110,7 @@ export const ParentCodeLinkingDialog = () => {
         .insert({
           player_id: player.id,
           parent_id: profile?.id,
-          parent_name: profile?.full_name || profile?.email,
+          parent_name: profile?.name || profile?.email,
           email: profile?.email,
           is_verified: true
         });

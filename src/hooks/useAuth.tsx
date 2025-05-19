@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +11,8 @@ interface UserProfile {
   id: string;
   role: UserRole;
   email: string | null;
+  name?: string;
+  full_name?: string; // Add this field
 }
 
 export const useAuth = () => {
@@ -69,7 +70,8 @@ export const useAuth = () => {
                 id: user.id, 
                 email: user.email, 
                 role: 'admin' as UserRole,
-                name: user.email 
+                name: user.email,
+                full_name: user.email // Initialize full_name with email
               }
             ])
             .select('*')
@@ -254,6 +256,12 @@ export const useAuth = () => {
     return hasSpecificRole;
   };
 
+  // Add refreshProfile function to expose the refetch function
+  const refreshProfile = async () => {
+    console.log("Refreshing user profile");
+    await refetchProfile();
+  };
+
   return {
     profile,
     activeRole,
@@ -261,5 +269,6 @@ export const useAuth = () => {
     addRole,
     isLoading: isInitializing || profileLoading,
     hasRole,
+    refreshProfile,  // Expose the refreshProfile function
   };
 };
