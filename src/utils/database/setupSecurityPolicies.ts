@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -139,3 +138,173 @@ export const getSecurityDefinerViewsInfo = (): Array<{name: string, description:
   ];
 };
 
+/**
+ * Fixes the "Function Search Path Mutable" security warnings by setting
+ * explicit search paths for database functions
+ */
+export const fixFunctionSearchPaths = async (): Promise<boolean> => {
+  try {
+    console.log("Fixing function search paths for database functions...");
+    
+    let success = true;
+    
+    // List of functions with mutable search paths that need fixing
+    const functionsToFix = [
+      'set_team_category',
+      'set_updated_at',
+      'table_exists',
+      'trigger_calculate_position_suitability',
+      'update_attribute_display_order',
+      'add_missing_columns_to_fixture_team_selections',
+      'create_event_attendance',
+      'create_initial_admin',
+      'create_table_if_not_exists',
+      'execute_sql',
+      'function_exists',
+      'get_table_columns',
+      'handle_new_user',
+      'calculate_position_suitability',
+      'log_player_category_change',
+      'set_default_team_category',
+      'update_position_suitability',
+      'add_column_if_not_exists',
+      'is_club_admin',
+      'is_team_admin'
+    ];
+    
+    // Process each function to add search_path
+    for (const funcName of functionsToFix) {
+      // Get the function definition
+      const { data: funcData, error: funcError } = await supabase.rpc(
+        'execute_sql', 
+        { 
+          sql_string: `
+            SELECT pg_get_functiondef(oid) AS definition
+            FROM pg_proc
+            WHERE proname = '${funcName}'
+            AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public');
+          `
+        }
+      );
+      
+      if (funcError) {
+        console.error(`Error getting function definition for ${funcName}:`, funcError);
+        success = false;
+        continue;
+      }
+      
+      // No definition found
+      if (!funcData || funcData.length === 0) {
+        console.warn(`Function ${funcName} not found in database`);
+        continue;
+      }
+      
+      // Get the original definition
+      const definition = funcData[0]?.definition;
+      if (!definition) {
+        console.warn(`No definition found for function ${funcName}`);
+        continue;
+      }
+      
+      // Check if the definition already has a search_path
+      if (definition.toLowerCase().includes('search_path')) {
+        console.log(`Function ${funcName} already has a search_path defined, skipping`);
+        continue;
+      }
+      
+      // Extract the parts we need
+      const matches = definition.match(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(.*?)\s+RETURNS\s+(.*?)\s+AS\s+(\$\w+\$.*?\$\w+\$)(.*?)LANGUAGE\s+(\w+)/s);
+      
+      if (!matches || matches.length < 6) {
+        console.error(`Could not parse function definition for ${funcName}`);
+        success = false;
+        continue;
+      }
+      
+      const [, funcSignature, returnType, body, options, language] = matches;
+      
+      // Create the new function definition with explicit search_path
+      const newDefinition = `
+        CREATE OR REPLACE FUNCTION ${funcSignature} RETURNS ${returnType} AS ${body}
+        SET search_path = 'public'
+        LANGUAGE ${language}${options};
+      `;
+      
+      // Apply the update
+      const { error: updateError } = await supabase.rpc(
+        'execute_sql', 
+        { sql_string: newDefinition }
+      );
+      
+      if (updateError) {
+        console.error(`Error updating function ${funcName}:`, updateError);
+        success = false;
+      } else {
+        console.log(`Successfully fixed search_path for function ${funcName}`);
+      }
+    }
+    
+    console.log("Function search path fixes completed with status:", success);
+    return success;
+  } catch (error) {
+    console.error("Error fixing function search paths:", error);
+    return false;
+  }
+};
+
+/**
+ * Fixes materialized view access issues by setting appropriate permissions
+ */
+export const fixMaterializedViewAccess = async (): Promise<boolean> => {
+  try {
+    console.log("Fixing materialized view access permissions...");
+    
+    // List of materialized views that need their permissions adjusted
+    const viewsToFix = ['position_rankings'];
+    let success = true;
+    
+    for (const view of viewsToFix) {
+      // Revoke access from anon and authenticated roles
+      const { error: revokeError } = await supabase.rpc(
+        'execute_sql',
+        {
+          sql_string: `
+            REVOKE SELECT ON public.${view} FROM anon;
+            REVOKE SELECT ON public.${view} FROM authenticated;
+          `
+        }
+      );
+      
+      if (revokeError) {
+        console.error(`Error revoking permissions for materialized view ${view}:`, revokeError);
+        success = false;
+      } else {
+        console.log(`Successfully restricted access to materialized view ${view}`);
+      }
+    }
+    
+    return success;
+  } catch (error) {
+    console.error("Error fixing materialized view access:", error);
+    return false;
+  }
+};
+
+/**
+ * Fixes auth configuration issues
+ * Note: Some auth settings may require using the Supabase dashboard directly
+ */
+export const getAuthConfigurationInfo = (): Array<{name: string, description: string, remediation: string}> => {
+  return [
+    {
+      name: "auth_otp_long_expiry",
+      description: "OTP expiry exceeds recommended threshold (should be less than 1 hour)",
+      remediation: "Update this in the Supabase dashboard under Authentication > Providers > Email"
+    },
+    {
+      name: "auth_leaked_password_protection",
+      description: "Leaked password protection is disabled, increasing security risk",
+      remediation: "Enable this in the Supabase dashboard under Authentication > Policies > Password Strength"
+    }
+  ];
+};
