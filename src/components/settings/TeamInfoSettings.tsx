@@ -13,24 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { KitIconSelector } from "./KitIconSelector";
-
-interface TeamSettings {
-  id: string;
-  team_name: string | null;
-  team_logo: string | null;
-  team_colors: string | null;
-  home_kit_icon: string | null;
-  away_kit_icon: string | null;
-  training_kit_icon: string | null;
-  created_at: string;
-  parent_notification_enabled?: boolean;
-  hide_scores_from_parents?: boolean;
-  attendance_colors?: any;
-  team_id?: string;
-  admin_id?: string;
-  format?: string;
-  updated_at?: string;
-}
+import { TeamSettings } from "@/types/teamSettings";
 
 interface TeamInfoSettingsProps {
   onTeamInfoUpdated?: () => void;

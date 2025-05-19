@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,8 +5,10 @@ import { Player } from "@/types/player";
 import { columnExists } from "@/utils/database/columnUtils";
 
 interface PlayerWithAttendance extends Omit<Player, 'status'> {
-  attendanceStatus?: "available" | "unavailable" | "maybe";
-  attending?: boolean;
+  attendanceStatus: string;
+  attending: boolean;
+  dateOfBirth: string;
+  playerType: string;
 }
 
 export const usePlayersWithAttendance = () => {
@@ -73,13 +74,15 @@ export const usePlayersWithAttendance = () => {
     if (players) {
       // Here you could fetch attendance information from your API
       // For now, we'll just enhance the players with a mock attendance status
-      const enhancedPlayers = players.map(player => ({
+      const playersWithAttendance = players.map(player => ({
         ...player,
-        attendanceStatus: "available", // Using attendanceStatus instead of status
-        attending: true
+        dateOfBirth: player.date_of_birth,
+        playerType: player.player_type,
+        attendanceStatus: 'unknown',
+        attending: false
       }));
       
-      setPlayersWithStatus(enhancedPlayers);
+      setPlayersWithStatus(playersWithAttendance);
       setIsLoading(false);
     }
   }, [players, playersLoading, playersError]);

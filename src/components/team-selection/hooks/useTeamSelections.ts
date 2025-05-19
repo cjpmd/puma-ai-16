@@ -1,163 +1,46 @@
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
-import { useCallback, useState } from "react";
-import { PerformanceCategory } from "@/types/player";
-import { toast } from "sonner";
-import { useTeamSelectionsState } from "./useTeamSelectionsState";
-import { usePeriodManagement } from "./usePeriodManagement";
-import { useDragAndDrop } from "./useDragAndDrop";
-import { useSquadManagement } from "./useSquadManagement";
-import { supabase } from "@/integrations/supabase/client";
+interface TeamSelection {
+  event_id: string;
+  event_type: string;
+  player_id: string;
+  position: string;
+  team_number: number;
+}
 
-export type PeriodData = {
-  id: number;
-  name: string;
-  duration: number;
-  selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>;
-};
+const useTeamSelections = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-export const useTeamSelections = (onTeamSelectionsChange?: (selections: any) => void, fixtureId?: string) => {
-  // Use the extracted hooks
-  const {
-    teamSelections,
-    periodSelections,
-    selectedPlayers,
-    performanceCategories,
-    teamFormationTemplates,
-    periodDurations,
-    teamCaptains,
-    isLoading,
-    dataLoaded, // Add this prop from useTeamSelectionsState
-    handleTeamSelectionChange,
-    handlePeriodSelectionChange,
-    handlePeriodDurationChange,
-    handlePerformanceCategoryChange,
-    handleTemplateChange,
-    handleCaptainChange
-  } = useTeamSelectionsState({ onTeamSelectionsChange, fixtureId });
-  
-  const {
-    periods,
-    addPeriod,
-    editPeriod,
-    deletePeriod,
-    initializeDefaultPeriods
-  } = usePeriodManagement();
-  
-  const { dragEnabled, toggleDragEnabled } = useDragAndDrop(true);
-  
-  // Initialize squad management hook with empty initial squad
-  const [squadSelections, setSquadSelections] = useState<Record<string, string[]>>({});
-  
-  const handleSquadSelectionChange = useCallback((teamId: string, playerIds: string[]) => {
-    setSquadSelections(prev => ({
-      ...prev,
-      [teamId]: playerIds
-    }));
-  }, []);
+  const saveTeamSelections = async (selections: TeamSelection[]) => {
+    setLoading(true);
+    setError(null);
 
-  const saveSelections = useCallback(async () => {
     try {
-      if (!fixtureId) {
-        toast.error("No fixture ID provided, cannot save selections");
-        return false;
-      }
-
-      // Format data for saving
-      const selectionsToSave = Object.entries(teamSelections).map(([teamId, selections]) => {
-        const teamPeriods = periods[teamId] || [];
-        
-        // Format player selections
-        const playerSelections = Object.entries(selections).map(([slotId, selection]) => ({
-          player_id: selection.playerId,
-          position: selection.position,
-          is_substitute: selection.position.startsWith('sub-'),
-          period_number: 0 // Default period (overall formation)
-        }));
-        
-        // Add period-specific selections
-        if (periodSelections[teamId]) {
-          Object.entries(periodSelections[teamId]).forEach(([periodIdStr, periodSelection]) => {
-            const periodId = parseInt(periodIdStr);
-            const period = teamPeriods.find(p => p.id === periodId);
-            
-            if (period) {
-              Object.values(periodSelection).forEach(selection => {
-                // Create a base selection object
-                const selectionData: {
-                  player_id: string;
-                  position: string;
-                  is_substitute: boolean;
-                  period_number: number;
-                  duration?: number;
-                } = {
-                  player_id: selection.playerId,
-                  position: selection.position,
-                  is_substitute: selection.position.startsWith('sub-'),
-                  period_number: periodId
-                };
-
-                // Add duration if available
-                if (periodDurations[teamId]?.[periodId] || period.duration) {
-                  selectionData.duration = periodDurations[teamId]?.[periodId] || period.duration;
-                }
-
-                playerSelections.push(selectionData);
-              });
-            }
-          });
-        }
-        
-        return {
-          team_id: teamId,
-          fixture_id: fixtureId,
-          formation_template: teamFormationTemplates[teamId] || 'All',
-          performance_category: performanceCategories[teamId] || 'MESSI',
-          captain_id: teamCaptains[teamId] || null,
-          player_selections: playerSelections
-        };
-      });
-
-      // Save to database
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('team_selections')
-        .upsert(selectionsToSave, { onConflict: 'team_id,fixture_id' });
+        .insert(selections);
 
-      if (error) throw error;
-
-      toast.success("Team selections saved successfully");
-      return true;
-    } catch (error) {
-      console.error("Error saving team selections:", error);
-      toast.error("Failed to save team selections");
-      return false;
+      if (error) {
+        console.error('Error saving team selections:', error);
+        setError(error.message);
+      } else {
+        console.log('Team selections saved successfully:', data);
+      }
+    } catch (err) {
+      console.error('Unexpected error saving team selections:', err);
+      setError('An unexpected error occurred.');
+    } finally {
+      setLoading(false);
     }
-  }, [teamSelections, periodSelections, periods, periodDurations, teamFormationTemplates, performanceCategories, teamCaptains, fixtureId]);
+  };
 
   return {
-    teamSelections,
-    selectedPlayers,
-    performanceCategories,
-    teamFormationTemplates,
-    periodSelections,
-    squadSelections,
-    periods,
-    periodDurations,
-    teamCaptains,
-    dragEnabled,
-    isLoading,
-    dataLoaded, // Add this to the return object
-    handleTeamSelectionChange,
-    handlePeriodSelectionChange,
-    handlePeriodDurationChange,
-    handlePerformanceCategoryChange,
-    handleTemplateChange,
-    handleCaptainChange,
-    handleSquadSelectionChange,
-    toggleDragEnabled,
-    saveSelections,
-    addPeriod,
-    editPeriod,
-    deletePeriod,
-    initializeDefaultPeriods
+    loading,
+    error,
+    saveTeamSelections,
   };
 };
+
+export default useTeamSelections;

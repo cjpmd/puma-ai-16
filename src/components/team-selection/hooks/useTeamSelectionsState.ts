@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { PerformanceCategory } from "@/types/player";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,7 +62,7 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
           const loadedPeriodDurations: Record<string, Record<number, number>> = {};
 
           selectionsData.forEach(selection => {
-            const teamId = selection.team_id;
+            const teamId = selection?.team_id;
             
             // Initialize team selections if needed
             if (!loadedTeamSelections[teamId]) {
@@ -71,29 +70,29 @@ export const useTeamSelectionsState = ({ onTeamSelectionsChange, fixtureId }: Us
             }
             
             // Process team formations
-            if (selection.formation_template) {
+            if (selection?.formation_template) {
               loadedTeamFormationTemplates[teamId] = selection.formation_template;
               console.log(`Loaded template for team ${teamId}:`, selection.formation_template);
             }
             
             // Process performance categories
-            if (selection.performance_category) {
+            if (selection?.performance_category) {
               loadedPerformanceCategories[teamId] = selection.performance_category as PerformanceCategory;
               console.log(`Loaded performance category for team ${teamId}:`, selection.performance_category);
             }
             
             // Process captains
-            if (selection.captain_id) {
+            if (selection?.captain_id) {
               loadedTeamCaptains[teamId] = selection.captain_id;
               console.log(`Loaded captain for team ${teamId}:`, selection.captain_id);
             }
             
             // Process player selections
-            if (selection.player_selections && selection.player_selections.length > 0) {
-              console.log(`Processing ${selection.player_selections.length} player selections for team ${teamId}`);
+            if (selection?.player_selections && selection?.player_selections.length > 0) {
+              console.log(`Processing ${selection?.player_selections.length} player selections for team ${teamId}`);
               
               // Process each player selection
-              selection.player_selections.forEach((playerSelection: any) => {
+              selection?.player_selections.forEach((playerSelection: any) => {
                 const { player_id, position, period_number = 0, is_substitute, duration } = playerSelection;
                 
                 if (player_id && position) {

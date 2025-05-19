@@ -104,8 +104,8 @@ export function WhatsAppIntegration() {
       
       if (settingsError) {
         console.error('Error fetching WhatsApp settings:', settingsError);
-      } else if (settings && settings.length > 0) {
-        // Parse the first row from the result
+      } else if (Array.isArray(settings) && settings.length > 0) {
+        // Access properties safely
         const setting = settings[0];
         
         // Create a properly typed WhatsAppSettings object
@@ -142,7 +142,7 @@ export function WhatsAppIntegration() {
       
       if (error) {
         console.error('Error fetching WhatsApp messages:', error);
-      } else if (data && Array.isArray(data)) {
+      } else if (Array.isArray(data) && data.length > 0) {
         // Transform the results into the WhatsAppMessage type
         const messages: WhatsAppMessage[] = data.map(row => ({
           id: row.id || '',
