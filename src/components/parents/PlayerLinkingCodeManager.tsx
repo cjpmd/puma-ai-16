@@ -9,9 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerLinkingCodeManagerProps {
   playerId: string;
+  playerName?: string;
 }
 
-export const PlayerLinkingCodeManager = ({ playerId }: PlayerLinkingCodeManagerProps) => {
+export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinkingCodeManagerProps) => {
   const [linkingCode, setLinkingCode] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -94,7 +95,7 @@ export const PlayerLinkingCodeManager = ({ playerId }: PlayerLinkingCodeManagerP
   return (
     <div className="space-y-4">
       <div className="flex flex-col space-y-2">
-        <Label>Player Linking Code</Label>
+        <Label>Player Linking Code {playerName ? `for ${playerName}` : ''}</Label>
         <div className="flex gap-2">
           <Input
             value={linkingCode || ""}

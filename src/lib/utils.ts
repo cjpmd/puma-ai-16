@@ -1,34 +1,26 @@
 
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+ 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs))
 }
 
-export function formatDate(input: string | number | Date): string {
-  const date = new Date(input);
-  return date.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-export function absoluteUrl(path: string) {
-  return `${process.env.NEXT_PUBLIC_APP_URL || ""}${path}`;
-}
-
+/**
+ * Gets initials from a name (first letter of first and last name)
+ * @param name Full name to extract initials from
+ * @returns String with 1-2 characters representing initials
+ */
 export function getInitials(name: string): string {
   if (!name) return '';
   
-  const nameParts = name.split(' ');
+  const nameParts = name.trim().split(' ');
+  
   if (nameParts.length === 1) {
     return nameParts[0].charAt(0).toUpperCase();
+  } else {
+    const firstName = nameParts[0];
+    const lastName = nameParts[nameParts.length - 1];
+    return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
   }
-  
-  return (
-    nameParts[0].charAt(0).toUpperCase() + 
-    nameParts[nameParts.length - 1].charAt(0).toUpperCase()
-  );
 }

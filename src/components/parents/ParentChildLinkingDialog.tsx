@@ -1,255 +1,191 @@
 
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Users, UserPlus, Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
+  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Form,
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { z } from "zod";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "@/hooks/useAuth";
+import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Player } from "@/types/player";
 
-const linkPlayerSchema = z.object({
-  playerName: z.string().min(1, "Player name is required"),
+const linkingSchema = z.object({
+  playerId: z.string().min(1, "Player selection is required"),
 });
 
-interface Player {
-  id: string;
-  first_name: string;
-  last_name: string;
-  team?: {
-    team_name: string;
-  };
+interface LinkingFormValues {
+  playerId: string;
 }
 
 export const ParentChildLinkingDialog = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<Player[]>([]);
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [isLinking, setIsLinking] = useState(false);
+  const { profile, refreshProfile } = useAuth();
   const { toast } = useToast();
-  const { profile } = useAuth();
-  
-  const form = useForm<z.infer<typeof linkPlayerSchema>>({
-    resolver: zodResolver(linkPlayerSchema),
+  const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [availablePlayers, setAvailablePlayers] = useState<Player[]>([]);
+
+  const form = useForm<LinkingFormValues>({
+    resolver: zodResolver(linkingSchema),
     defaultValues: {
-      playerName: "",
+      playerId: "",
     },
   });
 
-  const searchPlayers = async () => {
-    if (!searchTerm.trim()) return;
-    
-    setIsSearching(true);
+  const fetchAvailablePlayers = async () => {
+    setIsLoading(true);
     try {
-      // Search for players by name
       const { data, error } = await supabase
-        .from('players')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          teams (
-            team_name
-          )
-        `)
-        .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`)
-        .limit(10);
-      
-      if (error) throw error;
-      
-      setSearchResults(data || []);
-      
-      if (data?.length === 0) {
+        .from("players")
+        .select("id, name")
+        .order("name");
+
+      if (error) {
+        console.error("Error fetching players:", error);
         toast({
-          description: "No players found matching your search",
+          variant: "destructive",
+          description: "Failed to load available players",
         });
+      } else {
+        // Use the player data structure that matches your Player type
+        setAvailablePlayers(
+          data.map((player) => ({
+            id: player.id,
+            name: player.name,
+          })) as Player[]
+        );
       }
-    } catch (error) {
-      console.error('Error searching players:', error);
-      toast({
-        variant: "destructive",
-        description: "Failed to search for players",
-      });
+    } catch (e) {
+      console.error("Exception fetching players:", e);
     } finally {
-      setIsSearching(false);
+      setIsLoading(false);
     }
   };
 
-  const linkPlayerToParent = async () => {
-    if (!selectedPlayer || !profile?.id) return;
-    
-    setIsLinking(true);
-    try {
-      // First check if link already exists
-      const { data: existingLink, error: checkError } = await supabase
-        .from('player_parents')
-        .select('id')
-        .eq('player_id', selectedPlayer.id)
-        .eq('parent_id', profile.id)
-        .maybeSingle();
-      
-      if (checkError) throw checkError;
-      
-      if (existingLink) {
-        toast({
-          description: "You're already linked to this player",
-        });
-        setIsOpen(false);
-        return;
-      }
-      
-      // Create new link between parent and player
-      const { error } = await supabase
-        .from('player_parents')
-        .insert([
-          { 
-            player_id: selectedPlayer.id, 
-            parent_id: profile.id,
-            name: profile.email,
-            email: profile.email
-          }
-        ]);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: `Successfully linked to ${selectedPlayer.first_name} ${selectedPlayer.last_name}`,
-      });
-      
-      setIsOpen(false);
-      setSelectedPlayer(null);
-      setSearchTerm("");
-    } catch (error) {
-      console.error('Error linking player:', error);
+  useEffect(() => {
+    if (open) {
+      fetchAvailablePlayers();
+    }
+  }, [open]);
+
+  const onSubmit = async (values: LinkingFormValues) => {
+    if (!profile) {
       toast({
         variant: "destructive",
-        description: "Failed to link player to your account",
+        description: "You must be logged in to link a child",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.from("parent_child_linking").insert({
+        parent_id: profile.id,
+        player_id: values.playerId,
+      });
+
+      if (error) {
+        console.error("Error linking child:", error);
+        toast({
+          variant: "destructive",
+          description:
+            "Failed to link child. They might already be linked to your account.",
+        });
+        return;
+      }
+
+      await refreshProfile();
+      toast({
+        description: "Child linked successfully to your account!",
+      });
+      setOpen(false);
+      form.reset();
+    } catch (error) {
+      console.error("Exception linking child:", error);
+      toast({
+        variant: "destructive",
+        description: "An unexpected error occurred",
       });
     } finally {
-      setIsLinking(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <>
-      <Button variant="outline" className="gap-2" onClick={() => setIsOpen(true)}>
-        <UserPlus className="h-4 w-4" />
-        Link to Player
-      </Button>
-      
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Link to Player</DialogTitle>
-            <DialogDescription>
-              Search for a player to link to your parent account
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            {!selectedPlayer ? (
-              <>
-                <div className="flex items-center space-x-2 mb-4">
-                  <Input
-                    placeholder="Search player name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button 
-                    variant="outline" 
-                    onClick={searchPlayers}
-                    disabled={isSearching || !searchTerm.trim()}
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                {isSearching ? (
-                  <div className="text-center py-4">Searching...</div>
-                ) : searchResults.length > 0 ? (
-                  <div className="space-y-2">
-                    {searchResults.map((player) => (
-                      <div 
-                        key={player.id} 
-                        className="flex justify-between items-center p-3 border rounded-md hover:bg-muted cursor-pointer"
-                        onClick={() => setSelectedPlayer(player)}
-                      >
-                        <div>
-                          <div className="font-medium">{player.first_name} {player.last_name}</div>
-                          {player.team && <div className="text-sm text-muted-foreground">{player.team.team_name}</div>}
-                        </div>
-                        <Button variant="ghost" size="sm">Select</Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <div className="space-y-4">
-                <div className="p-4 border rounded-md">
-                  <div className="font-medium">Selected Player:</div>
-                  <div className="flex items-center justify-between mt-2">
-                    <div>
-                      <div>{selectedPlayer.first_name} {selectedPlayer.last_name}</div>
-                      {selectedPlayer.team && <div className="text-sm text-muted-foreground">{selectedPlayer.team.team_name}</div>}
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setSelectedPlayer(null)}
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline">Link Child Player</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Link Child to Your Account</DialogTitle>
+          <DialogDescription>
+            Select your child from the list below to link them to your account.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <div className="grid gap-4 py-4">
+              <FormField
+                control={form.control}
+                name="playerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Select Player</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isLoading}
                     >
-                      Change
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="text-sm text-muted-foreground">
-                  <p>
-                    Linking to this player will give you parent access to view their information and manage their subscriptions.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsOpen(false)}>
-              Cancel
-            </Button>
-            {selectedPlayer && (
-              <Button 
-                onClick={linkPlayerToParent} 
-                disabled={isLinking}
-              >
-                <Users className="mr-2 h-4 w-4" />
-                {isLinking ? 'Linking...' : 'Link to Player'}
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a player" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {availablePlayers.map((player) => (
+                          <SelectItem key={player.id} value={player.id}>
+                            {player.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Linking..." : "Link Player"}
               </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 };

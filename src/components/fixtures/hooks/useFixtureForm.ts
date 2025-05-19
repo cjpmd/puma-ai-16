@@ -115,18 +115,24 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
         ...values,
         id: fixture?.id || generateUUID(),
         team_name: "Broughty Pumas 2015s", // Add required team_name field
+        date: values.date || new Date().toISOString().split("T")[0],
+        opponent: values.opponent || "Unknown Team"
       };
 
-      const { error } = fixture?.id
-        ? await supabase
-            .from("fixtures")
-            .update(fixtureData)
-            .eq("id", fixture.id)
-        : await supabase
-            .from("fixtures")
-            .insert([fixtureData]);
-
-      if (error) throw error;
+      if (fixture?.id) {
+        const { error } = await supabase
+          .from("fixtures")
+          .update(fixtureData)
+          .eq("id", fixture.id);
+          
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("fixtures")
+          .insert([fixtureData]);
+          
+        if (error) throw error;
+      }
 
       toast({
         title: fixture?.id ? "Fixture updated" : "Fixture created",
@@ -227,5 +233,6 @@ export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {})
     formats,
     players,
     playerMap,
+    handleSubmit: form.handleSubmit
   };
 };

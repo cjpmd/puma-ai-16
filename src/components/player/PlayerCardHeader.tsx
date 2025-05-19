@@ -1,8 +1,11 @@
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download, Pencil } from "lucide-react";
+import { Player } from "@/types/player";
 
 interface PlayerCardHeaderProps {
+  player: Player;
   name: string;
   squadNumber: number;
   playerType: string;
@@ -12,6 +15,7 @@ interface PlayerCardHeaderProps {
 }
 
 export const PlayerCardHeader = ({
+  player,
   name,
   squadNumber,
   playerType,

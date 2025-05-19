@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -91,18 +92,17 @@ export const FixtureForm = ({
     },
   });
 
-  const { handleSubmit, isSubmitting: localIsSubmitting } = useFixtureForm({ 
-    onSubmit, 
-    editingFixture, 
-    selectedDate 
+  const fixtureFormState = useFixtureForm({ 
+    onSuccess: onSubmit, 
+    fixture: editingFixture
   });
-
+  
   const watchNumberOfTeams = parseInt(form.watch("number_of_teams") || "1");
   const watchOpponent = form.watch("opponent");
   const watchIsHome = form.watch("is_home");
   const watchMotmPlayerIds = form.watch("motm_player_ids");
   
-  const isSubmitting = localIsSubmitting || externalIsSubmitting;
+  const isSubmitting = fixtureFormState.isSubmitting || externalIsSubmitting;
 
   useEffect(() => {
     console.log("Current form values:", form.getValues());
@@ -153,7 +153,7 @@ export const FixtureForm = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+      <form onSubmit={fixtureFormState.handleSubmit(fixtureFormState.onSubmit)} className="space-y-4">
         {showDateSelector && (
           <div className="space-y-2">
             <FormLabel>Date *</FormLabel>
@@ -176,7 +176,7 @@ export const FixtureForm = ({
             key={index}
             index={index}
             form={form}
-            players={players}
+            players={players || fixtureFormState.players}
             getScoreLabel={getScoreLabel}
             getMotmLabel={getMotmLabel}
           />

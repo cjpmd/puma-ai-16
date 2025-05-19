@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Dialog,
@@ -16,8 +17,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
+interface PlayerCodeLinkingDialogProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
 export const PlayerCodeLinkingDialog = ({ isOpen, onClose }: PlayerCodeLinkingDialogProps) => {
-  const [open, setOpen] = useState(isOpen);
+  const [open, setOpen] = useState(isOpen || false);
   const [linkingCode, setLinkingCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { profile, refreshProfile } = useAuth();
@@ -79,7 +85,13 @@ export const PlayerCodeLinkingDialog = ({ isOpen, onClose }: PlayerCodeLinkingDi
       // Success - close dialog and show toast
       toast.success("Successfully linked to player account!");
       await refreshProfile();
-      setOpen(false);
+      
+      if (onClose) {
+        onClose();
+      } else {
+        setOpen(false);
+      }
+      
       setLinkingCode("");
     } catch (error: any) {
       console.error("Error linking player:", error);
@@ -115,7 +127,7 @@ export const PlayerCodeLinkingDialog = ({ isOpen, onClose }: PlayerCodeLinkingDi
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={() => onClose ? onClose() : setOpen(false)} disabled={isSubmitting}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
