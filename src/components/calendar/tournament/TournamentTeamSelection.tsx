@@ -50,8 +50,16 @@ export const TournamentTeamSelection = ({
     },
   });
 
-  // Transform players data to match the expected Player interface
-  const players = (playersData || []).map(transformDbPlayerToPlayer);
+  // Transform players data to match the expected Player interface properly
+  // Make sure the squad_number is properly set
+  const players = (playersData || []).map(player => {
+    const transformedPlayer = transformDbPlayerToPlayer(player);
+    // Ensure squad_number has a value to satisfy the type requirement
+    if (transformedPlayer.squad_number === undefined) {
+      transformedPlayer.squad_number = transformedPlayer.squadNumber || 0;
+    }
+    return transformedPlayer;
+  });
 
   useEffect(() => {
     if (isOpen) {

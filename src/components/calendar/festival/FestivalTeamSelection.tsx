@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useTeamSelection } from "@/hooks/useTeamSelection";
 import { FormationSelector } from "@/components/FormationSelector";
@@ -51,8 +50,15 @@ export const FestivalTeamSelection = ({
   });
 
   // Transform players data to match the expected Player interface properly
-  // Use proper type assertion to ensure compatibility
-  const players = (playersData || []).map(transformDbPlayerToPlayer);
+  // Make sure to include a safe fallback for squad_number
+  const players = (playersData || []).map(player => {
+    const transformedPlayer = transformDbPlayerToPlayer(player);
+    // Ensure squad_number has a value to satisfy the type requirement
+    if (transformedPlayer.squad_number === undefined) {
+      transformedPlayer.squad_number = transformedPlayer.squadNumber || 0;
+    }
+    return transformedPlayer;
+  });
 
   useEffect(() => {
     if (isOpen) {

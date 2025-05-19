@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlayerHeader } from "@/components/player/PlayerHeader";
+import { PlayerCardHeader } from "@/components/player/PlayerCardHeader";
 import { PlayerAttributes } from "@/components/player/PlayerAttributes";
 import { GameMetricsSection } from "@/components/player/GameMetricsSection";
 import { AttributeTrends } from "@/components/analytics/AttributeTrends";
@@ -120,11 +120,14 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
 
   return (
     <div className="space-y-6">
-      <PlayerHeader 
+      <PlayerCardHeader 
         player={player} 
-        topPositions={positionsData} 
-        showAttributeVisuals={showAttributeVisuals}
-        onPlayerUpdated={handleLocalUpdate}
+        name={player.name}
+        squadNumber={player.squadNumber || 0}
+        playerType={player.playerType}
+        topPositions={(positionsData || []).map((pos: any) => [pos.role_definitions.abbreviation, pos.suitability_score] as [string, number]).slice(0, 3)}
+        onEdit={() => {}}
+        onDownloadReport={() => {}}
       />
 
       <Tabs defaultValue="attributes" className="w-full">

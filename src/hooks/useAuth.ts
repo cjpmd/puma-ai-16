@@ -33,6 +33,7 @@ interface AuthContextType {
   hasRole: (role: UserRole) => boolean;
   activeRole: UserRole | null;
   switchRole: (role: UserRole) => void;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,36 +46,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const session = useSession() as CustomSession | null;
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      setIsLoading(true);
-      if (session?.user) {
-        try {
-          const { data, error } = await supabaseClient
-            .from("profiles")
-            .select("*")
-            .eq("id", session.user.id)
-            .single();
+  const fetchProfile = async () => {
+    setIsLoading(true);
+    if (session?.user) {
+      try {
+        const { data, error } = await supabaseClient
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .single();
 
-          if (error) {
-            console.error("Error fetching profile:", error);
-          } else {
-            setProfile(data);
-            setActiveRole(data?.role || null);
-          }
-        } catch (error) {
-          console.error("Unexpected error fetching profile:", error);
-        } finally {
-          setIsLoading(false);
+        if (error) {
+          console.error("Error fetching profile:", error);
+        } else {
+          setProfile(data);
+          setActiveRole(data?.role || null);
         }
-      } else {
-        setProfile(null);
+      } catch (error) {
+        console.error("Unexpected error fetching profile:", error);
+      } finally {
         setIsLoading(false);
       }
-    };
+    } else {
+      setProfile(null);
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchProfile();
   }, [session, supabaseClient]);
+
+  const refreshProfile = async (): Promise<void> => {
+    await fetchProfile();
+  };
 
   const addRole = async (role: UserRole): Promise<boolean> => {
     if (!session?.user) return false;
@@ -118,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     hasRole,
     activeRole,
     switchRole,
+    refreshProfile,
   };
 
   // Fix: Convert JSX to proper TypeScript

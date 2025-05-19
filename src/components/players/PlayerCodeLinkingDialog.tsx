@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Dialog,
@@ -17,8 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
-export const PlayerCodeLinkingDialog = () => {
-  const [open, setOpen] = useState(false);
+export const PlayerCodeLinkingDialog = ({ isOpen, onClose }: PlayerCodeLinkingDialogProps) => {
+  const [open, setOpen] = useState(isOpen);
   const [linkingCode, setLinkingCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { profile, refreshProfile } = useAuth();

@@ -1,307 +1,225 @@
-import { useState } from "react";
-import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { FixtureFormData } from "../schemas/fixtureFormSchema";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { Fixture } from "@/types/fixture";
+import { generateUUID } from "@/utils/uuid";
+
+// Define the schema for fixture form validation
+const fixtureFormSchema = z.object({
+  opponent: z.string().min(1, "Opponent name is required"),
+  date: z.string().min(1, "Date is required"),
+  time: z.string().optional(),
+  location: z.string().optional(),
+  category: z.string().min(1, "Category is required"),
+  format: z.string().min(1, "Format is required"),
+  is_home: z.boolean().default(true),
+  notes: z.string().optional(),
+  team_id: z.string().optional(),
+});
+
+export type FixtureFormValues = z.infer<typeof fixtureFormSchema>;
 
 interface UseFixtureFormProps {
-  onSubmit?: (data: FixtureFormData) => Promise<FixtureFormData>;
-  editingFixture?: any;
-  selectedDate?: Date;
+  fixture?: Fixture;
+  onSuccess?: (fixture: Fixture) => void;
 }
 
-export const useFixtureForm = ({ onSubmit, editingFixture, selectedDate }: UseFixtureFormProps) => {
+export const useFixtureForm = ({ fixture, onSuccess }: UseFixtureFormProps = {}) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const queryClient = useQueryClient();
-  const [preventDuplicateSubmission, setPreventDuplicateSubmission] = useState(false);
-  const [submissionId, setSubmissionId] = useState<string>("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleSubmit = async (data: FixtureFormData): Promise<FixtureFormData> => {
-    // Prevent duplicate submissions
-    if (preventDuplicateSubmission) {
-      console.log("Preventing duplicate submission in useFixtureForm");
-      return data;
+  // Fetch team categories for dropdown
+  const { data: categories = [] } = useQuery({
+    queryKey: ["team-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("team_categories")
+        .select("*")
+        .order("name");
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch game formats for dropdown
+  const { data: formats = [] } = useQuery({
+    queryKey: ["game-formats"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("game_formats")
+        .select("*")
+        .order("name");
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Initialize form with fixture data if provided
+  const form = useForm<FixtureFormValues>({
+    resolver: zodResolver(fixtureFormSchema),
+    defaultValues: fixture
+      ? {
+          opponent: fixture.opponent || "",
+          date: fixture.date || "",
+          time: fixture.time || "",
+          location: fixture.location || "",
+          category: fixture.category || "",
+          format: fixture.format || "",
+          is_home: fixture.is_home !== undefined ? fixture.is_home : true,
+          notes: fixture.notes || "",
+          team_id: fixture.team_id || "",
+        }
+      : {
+          opponent: "",
+          date: new Date().toISOString().split("T")[0],
+          time: "",
+          location: "",
+          category: "",
+          format: "",
+          is_home: true,
+          notes: "",
+          team_id: "",
+        },
+  });
+
+  // Reset form when fixture changes
+  useEffect(() => {
+    if (fixture) {
+      form.reset({
+        opponent: fixture.opponent || "",
+        date: fixture.date || "",
+        time: fixture.time || "",
+        location: fixture.location || "",
+        category: fixture.category || "",
+        format: fixture.format || "",
+        is_home: fixture.is_home !== undefined ? fixture.is_home : true,
+        notes: fixture.notes || "",
+        team_id: fixture.team_id || "",
+      });
     }
-    
-    setPreventDuplicateSubmission(true);
+  }, [fixture, form]);
+
+  // Handle form submission
+  const onSubmit = async (values: FixtureFormValues) => {
     setIsSubmitting(true);
-    
     try {
-      // Determine the correct date to use
-      const dateToUse = selectedDate 
-        ? format(selectedDate, "yyyy-MM-dd") 
-        : data.date 
-          ? data.date 
-          : format(new Date(), "yyyy-MM-dd");
-
-      console.log("Using date for fixture:", dateToUse);
-      console.log("Form data with MOTM player IDs:", data.motm_player_ids);
-
-      // Only include fields that exist in the fixtures table
       const fixtureData = {
-        opponent: data.opponent,
-        location: data.location,
-        team_name: data.team_name,
-        format: data.format,
-        number_of_teams: parseInt(data.number_of_teams || "1"),
-        is_home: data.is_home,
-        date: dateToUse,
-        motm_player_id: data.motm_player_ids?.[0] || null, // Store the first team's MOTM in the main table
-        team_1_score: data.team_1_score || null,
-        opponent_1_score: data.opponent_1_score || null,
-        team_2_score: data.team_2_score || null,
-        opponent_2_score: data.opponent_2_score || null,
-        // Include meeting time from team_times if available
-        meeting_time: data.team_times?.[0]?.meeting_time || null,
-        start_time: data.team_times?.[0]?.start_time || null,
-        end_time: data.team_times?.[0]?.end_time || null
+        ...values,
+        id: fixture?.id || generateUUID(),
       };
 
-      console.log("Saving fixture with data:", fixtureData);
+      const { error } = fixture?.id
+        ? await supabase
+            .from("fixtures")
+            .update(fixtureData)
+            .eq("id", fixture.id)
+        : await supabase.from("fixtures").insert([fixtureData]);
 
-      let fixtureResult;
-      
-      if (editingFixture?.id) {
-        fixtureResult = await supabase
-          .from('fixtures')
-          .update(fixtureData)
-          .eq('id', editingFixture.id)
-          .select('*, fixture_team_times(*), fixture_team_scores(*)')
-          .maybeSingle();
-      } else {
-        // Add a check to prevent creating duplicate fixtures
-        if (submissionId) {
-          console.log("Duplicate submission detected, using existing submission ID:", submissionId);
-          // Try to get the fixture with this submission ID
-          const { data: existingFixture } = await supabase
-            .from('fixtures')
-            .select('*, fixture_team_times(*), fixture_team_scores(*)')
-            .eq('id', submissionId)
-            .maybeSingle();
-            
-          if (existingFixture) {
-            console.log("Found existing fixture, not creating duplicate:", existingFixture);
-            fixtureResult = { data: existingFixture, error: null };
-          }
-        }
-        
-        // If we don't have a valid result yet, create the fixture
-        if (!fixtureResult || !fixtureResult.data) {
-          fixtureResult = await supabase
-            .from('fixtures')
-            .insert(fixtureData)
-            .select('*, fixture_team_times(*), fixture_team_scores(*)')
-            .maybeSingle();
-            
-          if (fixtureResult.data?.id) {
-            setSubmissionId(fixtureResult.data.id);
-          }
-        }
+      if (error) throw error;
+
+      toast({
+        title: fixture?.id ? "Fixture updated" : "Fixture created",
+        description: fixture?.id
+          ? "Your fixture has been updated successfully."
+          : "Your fixture has been created successfully.",
+      });
+
+      if (onSuccess) {
+        onSuccess(fixtureData as Fixture);
       }
-
-      if (fixtureResult.error) {
-        console.error("Error saving fixture:", fixtureResult.error);
-        throw fixtureResult.error;
-      }
-
-      console.log("Fixture saved successfully:", fixtureResult.data);
-      
-      const fixtureId = fixtureResult.data.id;
-
-      if (fixtureId) {
-        // Insert or update team times with performance categories
-        if (data.team_times && data.team_times.length > 0) {
-          const teamTimesData = data.team_times.map((teamTime, index) => ({
-            fixture_id: fixtureId,
-            team_number: index + 1,
-            meeting_time: teamTime.meeting_time || null,
-            start_time: teamTime.start_time || null,
-            end_time: teamTime.end_time || null,
-            performance_category: teamTime.performance_category || "MESSI"
-          }));
-
-          console.log("Saving team times with performance categories:", teamTimesData);
-
-          // Delete existing team times first
-          if (editingFixture?.id) {
-            const { error: deleteError } = await supabase
-              .from('fixture_team_times')
-              .delete()
-              .eq('fixture_id', fixtureId);
-              
-            if (deleteError) {
-              console.error("Error deleting existing team times:", deleteError);
-              // Continue with insert despite error
-            }
-          }
-
-          const { data: teamTimesResult, error: teamTimesError } = await supabase
-            .from('fixture_team_times')
-            .upsert(teamTimesData)
-            .select();
-
-          if (teamTimesError) {
-            console.error("Error saving team times:", teamTimesError);
-            throw teamTimesError;
-          }
-
-          console.log("Team times saved:", teamTimesResult);
-        }
-
-        // Insert or update team scores WITHOUT MOTM player IDs
-        const teamScoresData = Array.from({ length: parseInt(data.number_of_teams || "1") }).map((_, index) => {
-          const teamScore = data[`team_${index + 1}_score`] || 0;
-          const opponentScore = data[`opponent_${index + 1}_score`] || 0;
-          
-          return {
-            fixture_id: fixtureId,
-            team_number: index + 1,
-            score: teamScore,
-            opponent_score: opponentScore,
-            // Do not include motm_player_id if it doesn't exist in the table
-          };
-        });
-
-        console.log("Saving team scores:", teamScoresData);
-
-        // Delete existing scores first if editing
-        if (editingFixture?.id) {
-          const { error: deleteScoresError } = await supabase
-            .from('fixture_team_scores')
-            .delete()
-            .eq('fixture_id', fixtureId);
-            
-          if (deleteScoresError) {
-            console.error("Error deleting existing team scores:", deleteScoresError);
-            // Continue with insert despite error
-          }
-        }
-
-        if (teamScoresData.length > 0) {
-          const { data: scoresResult, error: scoresError } = await supabase
-            .from('fixture_team_scores')
-            .upsert(teamScoresData)
-            .select();
-
-          if (scoresError) {
-            console.error("Error saving team scores:", scoresError);
-            throw scoresError;
-          }
-
-          console.log("Team scores saved:", scoresResult);
-        }
-
-        // Create default event attendance entries for all players in the team
-        if (!editingFixture?.id) {
-          // First get all players in the team category
-          const { data: teamPlayers, error: playersError } = await supabase
-            .from('players')
-            .select('id')
-            .eq('team_category', data.team_name);
-
-          if (playersError) {
-            console.error("Error fetching team players:", playersError);
-            throw playersError;
-          }
-
-          if (teamPlayers && teamPlayers.length > 0) {
-            const createAttendanceRecords = async (fixtureId: string, playerIds: string[]) => {
-              try {
-                for (const playerId of playerIds) {
-                  await supabase.from('event_attendance').insert({
-                    event_id: fixtureId,
-                    event_type: 'FIXTURE',
-                    player_id: playerId,
-                    status: 'PENDING'
-                  });
-                }
-                return true;
-              } catch (error) {
-                console.error('Error creating attendance records:', error);
-                return false;
-              }
-            };
-
-            // Then use this function instead of the bulk insert
-            // Replace:
-            // const { error: attendanceError } = await supabase.from('event_attendance').insert(
-            //   players.map(player => ({
-            //     event_id: fixtureId,
-            //     event_type: 'FIXTURE',
-            //     status: 'PENDING',
-            //     player_id: player.id
-            //   }))
-            // );
-
-            // With:
-            await createAttendanceRecords(fixtureId, players.map(player => player.id));
-
-            console.log("Attendance created for all team players");
-          }
-        }
-
-        // Invalidate queries to trigger UI updates - ensure these run even if there were non-fatal errors
-        await queryClient.invalidateQueries({ queryKey: ["fixtures"] });
-        
-        if (dateToUse) {
-          await queryClient.invalidateQueries({ queryKey: ["fixtures", dateToUse] });
-        }
-
-        // Include the team times and MOTM player IDs in the returned fixture
-        const savedFixture = {
-          ...fixtureResult.data,
-          ...data,
-          id: fixtureId,
-          team_times: data.team_times,
-          motm_player_ids: data.motm_player_ids
-        };
-
-        console.log("Final fixture data with MOTM player IDs:", savedFixture);
-        
-        if (onSubmit) {
-          // Call the onSubmit callback with the saved fixture data
-          try {
-            const result = await onSubmit(savedFixture);
-            // Return the result from onSubmit if it returns something
-            if (result) {
-              return result;
-            }
-          } catch (error) {
-            console.error("Error in onSubmit callback:", error);
-            // Continue and return the savedFixture even if onSubmit fails
-          }
-        }
-        
-        toast({
-          title: "Success",
-          description: editingFixture ? "Fixture updated successfully" : "Fixture created successfully",
-        });
-        
-        return savedFixture;
-      }
-      
-      // Return the original data if we couldn't save the fixture
-      return data;
     } catch (error) {
       console.error("Error saving fixture:", error);
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Failed to save fixture: " + (error.message || "Unknown error"),
+        description: "There was an error saving the fixture.",
+        variant: "destructive",
       });
-      // Return the original data on error
-      return data;
     } finally {
       setIsSubmitting(false);
-      // We intentionally don't reset preventDuplicateSubmission here to prevent multiple submissions
-      // It will be reset when the component is unmounted or the dialog is closed
     }
   };
 
+  // Handle fixture deletion
+  const deleteFixture = async () => {
+    if (!fixture?.id) return;
+
+    setIsDeleting(true);
+    try {
+      // Delete related records first
+      await supabase
+        .from("fixture_attendance")
+        .delete()
+        .eq("fixture_id", fixture.id);
+
+      await supabase
+        .from("team_selections")
+        .delete()
+        .eq("fixture_id", fixture.id);
+
+      // Then delete the fixture
+      const { error } = await supabase
+        .from("fixtures")
+        .delete()
+        .eq("id", fixture.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Fixture deleted",
+        description: "The fixture has been deleted successfully.",
+      });
+
+      if (onSuccess) {
+        onSuccess({ ...fixture, deleted: true } as Fixture);
+      }
+    } catch (error) {
+      console.error("Error deleting fixture:", error);
+      toast({
+        title: "Error",
+        description: "There was an error deleting the fixture.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Make sure players is properly defined before being used
+  const { data: players = [] } = useQuery({
+    queryKey: ["players-for-fixture"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("*")
+        .order("name");
+        
+      if (error) throw error;
+      return data || [];
+    }
+  });
+  
+  // Now players is properly defined and can be used
+  const playerMap = players.reduce((acc, player) => {
+    acc[player.id] = player;
+    return acc;
+  }, {});
+
   return {
-    handleSubmit,
-    isSubmitting
+    form,
+    onSubmit,
+    isSubmitting,
+    isDeleting,
+    deleteFixture,
+    categories,
+    formats,
+    players,
+    playerMap,
   };
 };

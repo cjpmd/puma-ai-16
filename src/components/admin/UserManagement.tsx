@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -108,9 +107,9 @@ export function UserManagement() {
     )
   })
 
-  const handleRoleChange = (user: User) => {
-    setSelectedUser(user)
-    setRole(user.role)
+  const handleRoleChange = (userId: string, newRole: UserRole) => {
+    setSelectedUser({ id: userId, role: newRole })
+    setRole(newRole)
     setIsDialogOpen(true)
   }
 
@@ -224,7 +223,7 @@ export function UserManagement() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleRoleChange(user)}
+                      onClick={() => handleRoleChange(user.id, user.role)}
                     >
                       Edit Role
                     </Button>

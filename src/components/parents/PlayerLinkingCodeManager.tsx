@@ -1,268 +1,128 @@
-
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { generateChildLinkingCode } from "@/utils/database/parentChildLinking";
-import { Copy, Check, RefreshCw, Loader2, AlertCircle, Wrench } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { addLinkingCodeColumn } from "@/utils/database/createTables";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Copy, Loader2, RefreshCw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerLinkingCodeManagerProps {
   playerId: string;
-  playerName: string;
 }
 
-export const PlayerLinkingCodeManager = ({ playerId, playerName }: PlayerLinkingCodeManagerProps) => {
-  const [linkingCode, setLinkingCode] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+export const PlayerLinkingCodeManager = ({ playerId }: PlayerLinkingCodeManagerProps) => {
+  const [linkingCode, setLinkingCode] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isFixing, setIsFixing] = useState(false);
-  const [codeCopied, setCodeCopied] = useState(false);
-  const [dbError, setDbError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Fetch the current linking code when component mounts
-  const fetchLinkingCode = async () => {
-    setIsLoading(true);
-    setDbError(null);
-    
-    try {
-      console.log("Fetching linking code for player:", playerId);
-      
-      // Try direct query first
-      const { data, error } = await supabase
-        .from("players")
-        .select("linking_code")
-        .eq("id", playerId)
-        .single();
-      
-      if (error) {
-        console.error("Error fetching linking code:", error);
-        if (error.message?.includes("column") && error.message?.includes("does not exist")) {
-          setDbError("The linking_code column doesn't exist yet. Please use the 'Fix Database' button below.");
-        } else {
-          setDbError("Failed to fetch linking code. Database issue detected.");
+  // Load any existing linking code
+  useEffect(() => {
+    const fetchLinkingCode = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("players")
+          .select("linking_code")
+          .eq("id", playerId)
+          .single();
+
+        if (error) throw error;
+        
+        if (data && data.linking_code) {
+          setLinkingCode(data.linking_code);
         }
-      } else if (data && data.linking_code) {
-        console.log("Found linking code:", data.linking_code);
-        setLinkingCode(data.linking_code);
-      } else {
-        console.log("No linking code found for player. Will need to generate one.");
+      } catch (error) {
+        console.error("Error fetching linking code:", error);
       }
-    } catch (error) {
-      console.error("Exception fetching linking code:", error);
-      setDbError("An unexpected error occurred while fetching the linking code.");
-    } finally {
-      setIsLoading(false);
+    };
+
+    fetchLinkingCode();
+  }, [playerId]);
+
+  // Generate a new linking code, fix the argument issue
+  const generateCode = (length = 6): string => {
+    const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let result = "";
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
     }
+    return result;
   };
 
-  // Generate a new linking code and save it to the database
-  const generateNewLinkingCode = async () => {
+  // Fix the async handling in this function
+  const handleGenerateCode = async () => {
     setIsGenerating(true);
-    setDbError(null);
-    
     try {
-      // Generate a new code
-      const newCode = generateChildLinkingCode();
-      console.log("Generated new linking code:", newCode);
+      const newCode = generateCode();
       
-      // First check if we need to fix the schema
-      const { data: checkData, error: checkError } = await supabase
-        .from("players")
-        .select("linking_code")
-        .limit(1);
-        
-      if (checkError && checkError.message?.includes("does not exist")) {
-        setDbError("Cannot generate code: The linking_code column doesn't exist yet. Please use the 'Fix Database' button.");
-        setIsGenerating(false);
-        return;
-      }
-      
-      // Try to save it directly to the database
       const { error } = await supabase
         .from("players")
         .update({ linking_code: newCode })
         .eq("id", playerId);
+
+      if (error) throw error;
       
-      if (error) {
-        // Handle other types of errors
-        console.error("Error generating new linking code:", error);
-        if (error.message?.includes("update") && error.message?.includes("player_category")) {
-          setDbError("Database trigger error. Please update the player profile first or contact support.");
-        } else {
-          toast({
-            variant: "destructive",
-            description: "Failed to generate new linking code: " + error.message,
-          });
-        }
-      } else {
-        // Update the UI
-        setLinkingCode(newCode);
-        toast({
-          description: "New linking code generated successfully",
-        });
-        console.log("Successfully saved new linking code to database");
-      }
-    } catch (error) {
-      console.error("Exception generating new linking code:", error);
+      // Now that we have the code, update state with it
+      setLinkingCode(newCode);
+      
       toast({
+        title: "Code Generated",
+        description: "New linking code has been generated.",
+      });
+    } catch (error) {
+      console.error("Error generating linking code:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate linking code.",
         variant: "destructive",
-        description: "An unexpected error occurred while generating a new linking code.",
       });
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Fix database schema
-  const fixDatabaseSchema = async () => {
-    setIsFixing(true);
-    try {
-      console.log("Adding linking_code column to players table...");
-      const success = await addLinkingCodeColumn();
-      
-      if (success) {
-        console.log("Successfully added linking_code column");
-        setDbError(null);
-        toast({
-          description: "Database fixed successfully. Try generating a code now.",
-        });
-        
-        // Refresh
-        await fetchLinkingCode();
-      } else {
-        console.error("Failed to add linking_code column");
-        toast({
-          variant: "destructive",
-          description: "Failed to fix database schema. Please contact support.",
-        });
-      }
-    } catch (error) {
-      console.error("Error fixing database:", error);
-      toast({
-        variant: "destructive",
-        description: "An error occurred while fixing the database.",
-      });
-    } finally {
-      setIsFixing(false);
-    }
-  };
-
-  // Copy the code to clipboard
-  const copyCodeToClipboard = () => {
+  const handleCopyCode = () => {
     if (linkingCode) {
       navigator.clipboard.writeText(linkingCode);
-      setCodeCopied(true);
       toast({
-        description: "Linking code copied to clipboard",
+        title: "Code Copied",
+        description: "Linking code copied to clipboard.",
       });
-      setTimeout(() => setCodeCopied(false), 2000);
     }
   };
 
-  // Fetch code on initial load
-  useEffect(() => {
-    if (playerId) {
-      fetchLinkingCode();
-    }
-  }, [playerId]);
-
-  // If no linking code found and no errors, automatically try to generate one
-  useEffect(() => {
-    if (!isLoading && !linkingCode && !dbError && !isGenerating && playerId) {
-      console.log("No linking code found and no errors. Attempting to generate one automatically.");
-      generateNewLinkingCode();
-    }
-  }, [isLoading, linkingCode, dbError, isGenerating, playerId]);
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          Player Linking Code
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={generateNewLinkingCode}
-            disabled={isGenerating || !!dbError}
-          >
-            {isGenerating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            <span className="ml-2">Generate New</span>
+    <div className="space-y-4">
+      <div className="flex flex-col space-y-2">
+        <Label>Player Linking Code</Label>
+        <div className="flex gap-2">
+          <Input
+            value={linkingCode || ""}
+            readOnly
+            placeholder="No code generated yet"
+          />
+          <Button onClick={handleCopyCode} disabled={!linkingCode}>
+            <Copy className="h-4 w-4" />
           </Button>
-        </CardTitle>
-        <CardDescription>
-          Parents can use this code to link their account to {playerName}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {dbError && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex flex-col gap-2">
-              <span>{dbError}</span>
-              {dbError.includes("column doesn't exist") && (
-                <Button 
-                  size="sm" 
-                  onClick={fixDatabaseSchema}
-                  disabled={isFixing}
-                  className="mt-2 self-start"
-                >
-                  {isFixing ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Wrench className="h-4 w-4 mr-2" />
-                  )}
-                  Fix Database
-                </Button>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        {isLoading ? (
-          <div className="flex justify-center py-4">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : linkingCode ? (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="bg-muted p-3 rounded border flex-1 text-center font-mono text-lg tracking-wider">
-                {linkingCode}
-              </div>
-              <Button 
-                size="icon" 
-                variant="outline" 
-                onClick={copyCodeToClipboard}
-              >
-                {codeCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Share this code with the player's parent to allow them to link their account.
-            </p>
-          </div>
+        </div>
+      </div>
+
+      <Button
+        onClick={handleGenerateCode}
+        disabled={isGenerating}
+        className="w-full"
+      >
+        {isGenerating ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Generating...
+          </>
         ) : (
-          <div className="text-center py-4">
-            <p className="text-muted-foreground">{dbError ? "Cannot generate linking code due to database issue." : "No linking code found. Generating..."}</p>
-            {!dbError && !isGenerating && (
-              <Button 
-                variant="outline" 
-                className="mt-2"
-                onClick={generateNewLinkingCode}
-              >
-                Generate Code
-              </Button>
-            )}
-          </div>
+          <>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Generate New Code
+          </>
         )}
-      </CardContent>
-    </Card>
+      </Button>
+    </div>
   );
 };
