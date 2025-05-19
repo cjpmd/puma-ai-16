@@ -5,7 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { App } from './App.tsx';
 import './index.css';
 import { TeamsContextProvider } from './contexts/TeamContext';
-import { AuthProvider } from './hooks/useAuth';
+import { AuthProvider } from './hooks/useAuth.tsx';  // Updated to import from .tsx file
 import { Toaster } from 'sonner';
 
 // Configure the query client with better error handling and logging
