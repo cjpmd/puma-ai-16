@@ -120,7 +120,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     switchRole,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  // Fix: Convert JSX to proper TypeScript
+  // Instead of returning JSX directly, we'll create a type-safe provider function
+  return createAuthProvider(AuthContext, value, children);
+}
+
+// Helper function to create the auth provider without JSX in .ts file
+function createAuthProvider(
+  Context: React.Context<AuthContextType | undefined>,
+  value: AuthContextType,
+  children: React.ReactNode
+) {
+  // This is a regular function that returns the provider component
+  // We're avoiding direct JSX in .ts files
+  return {
+    type: Context.Provider,
+    props: {
+      value: value,
+      children: children
+    }
+  };
 }
 
 export const useAuth = () => {
