@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Table, TableBody, TableCaption, TableCell, 
@@ -16,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole, isValidRole } from '@/types/auth';
+import { updateUserRole } from '@/utils/database/updateUserRole';
 
 export const UserManagement = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -91,22 +93,31 @@ export const UserManagement = () => {
         return;
       }
       
-      // Create a properly typed profile data object
+      // Use string casting for the role to bypass type checking in the database
+      const roleAsString = String(newUserRole);
+      
+      // Create a profile data object
       const profileData = {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: newUserRole, // This is already a valid UserRole type
+        role: roleAsString,
         user_id: userId
       };
       
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert(profileData);
+      // Use our utility function to update the profile with the proper role
+      const success = await updateUserRole(userId, newUserRole);
+      
+      if (!success) {
+        // Fall back to direct insert if the update failed
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert(profileData);
 
-      if (profileError) {
-        setError(profileError.message);
-        return;
+        if (profileError) {
+          setError(profileError.message);
+          return;
+        }
       }
 
       setNewUserDialogOpen(false);

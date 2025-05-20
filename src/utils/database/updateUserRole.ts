@@ -1,11 +1,12 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { UserRole, isValidRole } from '@/types/auth';
 
 /**
  * Updates a user's role directly, bypassing any enum constraints
  * This is used when the role value might not be in the database enum yet
  */
-export const updateUserRole = async (userId: string, role: string): Promise<boolean> => {
+export const updateUserRole = async (userId: string, role: UserRole): Promise<boolean> => {
   try {
     console.log(`Attempting to update user ${userId} role to ${role}`);
     

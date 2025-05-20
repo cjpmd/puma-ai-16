@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Team } from "@/types/team";
 import { Profile, UserRole } from "@/types/auth";
+import { updateUserRole } from "@/utils/database/updateUserRole";
 
 interface TeamUsersManagerProps {
   team?: Team;
@@ -85,25 +87,49 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         // User exists, update their role and team_id
         const user = existingUsers[0];
         
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update({ 
-            role: newRole, 
-            team_id: team.id 
-          })
-          .eq("id", user.id);
-
-        if (updateError) {
-          console.error("Error updating user:", updateError);
-          toast("Error updating user", {
-            description: "Failed to update user.",
-          });
+        // Use our updateUserRole utility to handle role changes
+        const roleUpdateSuccess = await updateUserRole(user.id, newRole);
+        
+        if (roleUpdateSuccess) {
+          // Now update the team_id separately
+          const { error: teamUpdateError } = await supabase
+            .from("profiles")
+            .update({ team_id: team.id })
+            .eq("id", user.id);
+            
+          if (teamUpdateError) {
+            console.error("Error updating team:", teamUpdateError);
+            toast("Error updating user's team", {
+              description: "Failed to update user's team.",
+            });
+            return;
+          }
         } else {
-          toast("Success", {
-            description: "User added to team successfully.",
-          });
-          fetchTeamUsers(); // Refresh user list
+          // Try the combined update as a fallback
+          // Cast role to string to bypass type checking
+          const roleAsString = String(newRole);
+          
+          const { error: updateError } = await supabase
+            .from("profiles")
+            .update({ 
+              role: roleAsString, 
+              team_id: team.id 
+            })
+            .eq("id", user.id);
+
+          if (updateError) {
+            console.error("Error updating user:", updateError);
+            toast("Error updating user", {
+              description: "Failed to update user.",
+            });
+            return;
+          }
         }
+        
+        toast("Success", {
+          description: "User added to team successfully.",
+        });
+        fetchTeamUsers(); // Refresh user list
       } else {
         // User does not exist, show an error message
         toast("User not found", {
@@ -127,22 +153,46 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
       // When removing from team, set role back to basic user
       const defaultRole: UserRole = 'user';
       
-      const { error } = await supabase
-        .from("profiles")
-        .update({ team_id: null, role: defaultRole })
-        .eq("id", userId);
-
-      if (error) {
-        console.error("Error removing user:", error);
-        toast("Error removing user", {
-          description: "Failed to remove user from team.",
-        });
+      // Use our updateUserRole utility
+      const roleUpdateSuccess = await updateUserRole(userId, defaultRole);
+      
+      if (roleUpdateSuccess) {
+        // Now update the team_id separately
+        const { error: teamUpdateError } = await supabase
+          .from("profiles")
+          .update({ team_id: null })
+          .eq("id", userId);
+          
+        if (teamUpdateError) {
+          console.error("Error removing team:", teamUpdateError);
+          toast("Error removing team", {
+            description: "Failed to remove user from team.",
+          });
+          return;
+        }
       } else {
-        toast("User removed", {
-          description: "User removed from team successfully.",
-        });
-        fetchTeamUsers(); // Refresh user list
+        // Try the combined update as a fallback
+        // Cast role to string to bypass type checking
+        const roleAsString = String(defaultRole);
+        
+        const { error } = await supabase
+          .from("profiles")
+          .update({ team_id: null, role: roleAsString })
+          .eq("id", userId);
+
+        if (error) {
+          console.error("Error removing user:", error);
+          toast("Error removing user", {
+            description: "Failed to remove user from team.",
+          });
+          return;
+        }
       }
+
+      toast("User removed", {
+        description: "User removed from team successfully.",
+      });
+      fetchTeamUsers(); // Refresh user list
     } finally {
       setLoading(false);
     }

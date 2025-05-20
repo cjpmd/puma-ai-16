@@ -1,6 +1,8 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile, UserRole, ensureValidRole, isValidRole } from '@/types/auth';
+import { updateUserRole } from '@/utils/database/updateUserRole';
 
 // Define the Auth context type
 export interface AuthContextType {
@@ -171,19 +173,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
       }
 
-      // Update profile with the validated role
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role }) // Role is already the correct UserRole type
-        .eq('id', user?.id);
-
-      if (error) {
-        console.error("Error updating role:", error.message);
-        return false;
-      } else {
+      // Use our updateUserRole utility
+      const success = await updateUserRole(user?.id, role);
+      if (success) {
         setProfile(prev => prev ? { ...prev, role } : null);
         setActiveRole(role);
         return true;
+      } else {
+        // Fallback to direct update
+        const { error } = await supabase
+          .from('profiles')
+          .update({ role: String(role) }) // Convert to string for database compatibility
+          .eq('id', user?.id);
+
+        if (error) {
+          console.error("Error updating role:", error.message);
+          return false;
+        } else {
+          setProfile(prev => prev ? { ...prev, role } : null);
+          setActiveRole(role);
+          return true;
+        }
       }
     } catch (error: any) {
       console.error("Error adding role:", error.message);
