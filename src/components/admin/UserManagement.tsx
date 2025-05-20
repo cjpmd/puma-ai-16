@@ -94,11 +94,13 @@ export const UserManagement = () => {
       
       // Convert UserRole to string before sending to database
       // This is needed because the database expects a string, not our TypeScript type
+      const roleValue = newUserRole;
+      
       const profileData = {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: newUserRole as string, 
+        role: roleValue, 
         user_id: userId
       };
       
