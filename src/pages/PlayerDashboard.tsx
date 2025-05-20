@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -42,7 +43,7 @@ export const PlayerDashboard = () => {
         }
         
         if (data) {
-          setPlayerProfile(data);
+          setPlayerProfile(data as PlayerProfile);
         } else {
           toast({
             title: "No linked profile",

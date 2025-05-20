@@ -14,6 +14,7 @@ import {
 import { Check } from "lucide-react";
 import { KitIconSelector } from "./KitIconSelector";
 import { TeamSettings } from "@/types/teamSettings";
+import { Json } from "@/integrations/supabase/types";
 
 interface TeamInfoSettingsProps {
   onTeamInfoUpdated?: () => void;
@@ -122,14 +123,18 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
           format: data.format || "",
           parent_notification_enabled: data.parent_notification_enabled || false,
           hide_scores_from_parents: data.hide_scores_from_parents || false,
-          attendance_colors: data.attendance_colors || null,
+          attendance_colors: 
+            (typeof data.attendance_colors === 'object' ? 
+              data.attendance_colors as Record<string, string> : 
+              {}), 
           updated_at: data.updated_at || "",
           created_at: data.created_at || "",
-          team_colors: (data as any).team_colors || "",
-          team_logo: (data as any).team_logo || "",
-          home_kit_icon: ensurePatternFormat((data as any).home_kit_icon || ""),
-          away_kit_icon: ensurePatternFormat((data as any).away_kit_icon || ""),
-          training_kit_icon: ensurePatternFormat((data as any).training_kit_icon || ""),
+          team_colors: Array.isArray(data.team_colors) ? 
+            data.team_colors : 
+            [data.team_colors || ""],
+          team_logo: data.team_logo || "",
+          kit_home_icon: ensurePatternFormat(data.home_kit_icon || ""),
+          kit_away_icon: ensurePatternFormat(data.away_kit_icon || ""),
         };
         
         setTeamSettings(fullTeamSettings);
@@ -137,11 +142,11 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
         // For each kit icon, ensure it has the pattern (backward compatibility)
         setFormData({
           team_name: data.team_name || "",
-          team_colors: (data as any).team_colors || "",
-          team_logo: (data as any).team_logo || "",
-          home_kit_icon: ensurePatternFormat((data as any).home_kit_icon || ""),
-          away_kit_icon: ensurePatternFormat((data as any).away_kit_icon || ""),
-          training_kit_icon: ensurePatternFormat((data as any).training_kit_icon || ""),
+          team_colors: Array.isArray(data.team_colors) ? data.team_colors[0] : (data.team_colors || ""),
+          team_logo: data.team_logo || "",
+          home_kit_icon: ensurePatternFormat(data.home_kit_icon || ""),
+          away_kit_icon: ensurePatternFormat(data.away_kit_icon || ""),
+          training_kit_icon: ensurePatternFormat(data.training_kit_icon || ""),
         });
       }
     } catch (error) {
@@ -176,7 +181,7 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
         .from('team_settings')
         .update({
           team_name: formData.team_name,
-          team_colors: formData.team_colors, // Age group data
+          team_colors: [formData.team_colors], // Convert string to array to match our type definition
           team_logo: formData.team_logo,
           home_kit_icon: formData.home_kit_icon,
           away_kit_icon: formData.away_kit_icon,
@@ -231,11 +236,10 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
         const updatedSettings: TeamSettings = {
           ...teamSettings,
           team_name: formData.team_name,
-          team_colors: formData.team_colors,
+          team_colors: [formData.team_colors], // Convert to array for type safety
           team_logo: formData.team_logo,
-          home_kit_icon: formData.home_kit_icon,
-          away_kit_icon: formData.away_kit_icon,
-          training_kit_icon: formData.training_kit_icon,
+          kit_home_icon: formData.home_kit_icon,
+          kit_away_icon: formData.away_kit_icon,
         };
         setTeamSettings(updatedSettings);
       }

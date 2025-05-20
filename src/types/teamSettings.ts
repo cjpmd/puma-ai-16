@@ -15,3 +15,6 @@ export interface TeamSettings {
   kit_home_icon?: string;
   kit_away_icon?: string;
 }
+
+// Add the AllowedUserRoles type that TeamUsersManager depends on
+export type AllowedUserRoles = "admin" | "manager" | "coach" | "parent" | "globalAdmin";
