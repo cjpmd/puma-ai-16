@@ -92,11 +92,12 @@ export const UserManagement = () => {
         return;
       }
       
+      // Use the validated role directly from the state
       const profileData = {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: newUserRole,
+        role: newUserRole, // This is safely typed as UserRole
         user_id: userId
       };
       

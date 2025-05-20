@@ -1,7 +1,7 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Profile, UserRole, ensureValidRole } from '@/types/auth';
+import { Profile, UserRole, ensureValidRole, isValidRole } from '@/types/auth';
 
 // Define the Auth context type
 export interface AuthContextType {
@@ -22,7 +22,7 @@ export interface AuthContextType {
 }
 
 // Create context with default values
-const AuthContext = createContext<AuthContextType>({
+export const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   profile: null,
@@ -157,7 +157,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!profile) return false;
 
     if (Array.isArray(role)) {
-      return role.includes(profile.role as UserRole);
+      return role.includes(profile.role);
     }
 
     return profile.role === role;

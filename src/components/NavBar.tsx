@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
-import { useAuth, UserRole } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
+import { useAuth } from "@/hooks/useAuth.tsx"; 
+import { UserRole } from "@/types/auth"; // Import UserRole from the correct location
 
 interface MenuItem {
   to: string;
