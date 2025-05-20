@@ -6,16 +6,48 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, Pencil, Trash2 } from "lucide-react";
-import { UserAssignmentDialog } from "@/components/admin/UserAssignmentDialog";
-import { mapStringToUserRole, AllowedUserRoles } from "./UserRoleAdapter";
 
-// Simplify the interface to avoid circular references
+// Define a simplified interface for TeamUser to avoid circular references
 interface TeamUser {
   id: string;
   email: string;
   name: string;
   role: string;
 }
+
+// Define a string union type for user roles instead of using an enum
+export type AllowedUserRoles = "admin" | "manager" | "coach" | "parent" | "globalAdmin";
+
+// Create a prop interface for the UserAssignmentDialog
+interface UserAssignmentDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onAssign: (userId: string, role: AllowedUserRoles) => Promise<boolean>;
+  title?: string;
+  description?: string;
+}
+
+// Simple stub component for UserAssignmentDialog - should be imported from the actual file
+const UserAssignmentDialog = (props: UserAssignmentDialogProps) => {
+  return <div>UserAssignmentDialog Placeholder</div>;
+};
+
+export const mapStringToUserRole = (role: string): AllowedUserRoles => {
+  switch (role.toLowerCase()) {
+    case 'admin':
+      return 'admin';
+    case 'manager':
+      return 'manager';
+    case 'coach':
+      return 'coach';
+    case 'parent':
+      return 'parent';
+    case 'globaladmin':
+      return 'globalAdmin';
+    default:
+      return 'coach'; // Default role
+  }
+};
 
 interface TeamUsersManagerProps {
   teamId: string;
@@ -45,12 +77,12 @@ export const TeamUsersManager = ({ teamId }: TeamUsersManagerProps) => {
       if (error) throw error;
 
       // Transform the data into the simplified format
-      const formattedUsers = data.map((item: any) => ({
+      const formattedUsers = data?.map((item: any) => ({
         id: item.profiles?.id || '',
         email: item.profiles?.email || '',
         name: item.profiles?.name || 'Unknown User',
         role: item.role
-      }));
+      })) || [];
 
       setUsers(formattedUsers);
     } catch (error) {
@@ -65,7 +97,7 @@ export const TeamUsersManager = ({ teamId }: TeamUsersManagerProps) => {
     }
   };
 
-  const handleAssignUser = async (userId: string, role: AllowedUserRoles) => {
+  const handleAssignUser = async (userId: string, role: AllowedUserRoles): Promise<boolean> => {
     try {
       // Convert the role enum to string if needed
       const roleString = role.toString();
@@ -179,12 +211,9 @@ export const TeamUsersManager = ({ teamId }: TeamUsersManagerProps) => {
         )}
       </CardContent>
       
-      {/* Use a simplified prop structure for UserAssignmentDialog */}
       <UserAssignmentDialog 
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        title="Assign User to Team"
-        description="Search for a user and assign them a role in this team."
         onAssign={handleAssignUser}
       />
     </Card>

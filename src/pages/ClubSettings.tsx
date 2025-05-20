@@ -20,6 +20,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+// Add TypeScript interface for team settings
+interface TeamSettings {
+  team_name?: string;
+  team_colors?: string | string[];
+  [key: string]: any; // Allow other properties
+}
+
 export default function ClubSettings() {
   const [clubs, setClubs] = useState<any[]>([]); 
   const [selectedClub, setSelectedClub] = useState<any>(null);

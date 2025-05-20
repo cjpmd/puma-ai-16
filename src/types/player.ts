@@ -19,6 +19,17 @@ export interface Player {
   linking_code?: string;
   profile_image?: string;
   attributeHistory?: Record<string, { date: string; value: number; }[]>;
+  
+  // Additional properties used in components
+  objectives?: any[];
+  topPositions?: any[];
+  
+  // Legacy camelCase aliases for backward compatibility
+  squadNumber?: number;
+  playerType?: string;
+  dateOfBirth?: string;
+  teamCategory?: string;
+  profileImage?: string;
 }
 
 export interface PlayerAttribute {
@@ -43,6 +54,7 @@ export enum AttributeCategory {
   GOALKEEPER = 'GOALKEEPER'
 }
 
+// Make PerformanceCategory a proper TypeScript enum instead of a string type
 export enum PerformanceCategory {
   MESSI = 'MESSI',
   RONALDO = 'RONALDO',
@@ -68,10 +80,14 @@ export const transformDbPlayerToPlayer = (dbPlayer: any): Player => {
     id: dbPlayer.id,
     name: dbPlayer.name,
     squad_number: dbPlayer.squad_number,
+    squadNumber: dbPlayer.squad_number,
     age: dbPlayer.age,
     date_of_birth: dbPlayer.date_of_birth,
+    dateOfBirth: dbPlayer.date_of_birth,
     player_type: dbPlayer.player_type,
+    playerType: dbPlayer.player_type,
     team_category: dbPlayer.team_category,
+    teamCategory: dbPlayer.team_category,
     team_id: dbPlayer.team_id,
     created_at: dbPlayer.created_at,
     updated_at: dbPlayer.updated_at,
@@ -79,6 +95,7 @@ export const transformDbPlayerToPlayer = (dbPlayer: any): Player => {
     user_id: dbPlayer.user_id,
     linking_code: dbPlayer.linking_code,
     status: dbPlayer.status,
-    profile_image: dbPlayer.profile_image
+    profile_image: dbPlayer.profile_image,
+    profileImage: dbPlayer.profile_image
   };
 };

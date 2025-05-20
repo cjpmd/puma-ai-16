@@ -23,6 +23,18 @@ import { PlayerTransferManager } from "@/components/squad/PlayerTransferManager"
 import { useAuth } from "@/hooks/useAuth";
 import { columnExists } from "@/utils/database/columnUtils";
 
+enum SortField {
+  NAME = 'name',
+  SQUAD_NUMBER = 'squad_number',
+  AGE = 'age',
+  POSITION = 'position'
+}
+
+enum SortOrder {
+  ASC = 'asc',
+  DESC = 'desc'
+}
+
 interface ObjectiveStats {
   completed?: number;
   improving?: number;
@@ -105,10 +117,10 @@ const SquadManagement = () => {
           id: player.id,
           name: player.name,
           age: player.age,
-          dateOfBirth: player.date_of_birth,
-          squadNumber: player.squad_number,
-          playerType: player.player_type,
-          profileImage: player.profile_image,
+          date_of_birth: player.date_of_birth,
+          squad_number: player.squad_number,
+          player_type: player.player_type,
+          profile_image: player.profile_image,
           attributes: player.player_attributes?.map((attr: any) => ({
             id: attr.id,
             name: attr.name,
@@ -158,8 +170,8 @@ const SquadManagement = () => {
 
       switch (sortField) {
         case "squadNumber":
-          valueA = a.squadNumber;
-          valueB = b.squadNumber;
+          valueA = a.squad_number;
+          valueB = b.squad_number;
           break;
         case "technical":
           valueA = calculateAttributeAverage(a.attributes, "TECHNICAL");
@@ -365,8 +377,8 @@ const SquadManagement = () => {
                       >
                         <TableCell>
                           <Avatar className="h-8 w-8">
-                            {player.profileImage ? (
-                              <AvatarImage src={player.profileImage} alt={player.name} />
+                            {player.profile_image ? (
+                              <AvatarImage src={player.profile_image} alt={player.name} />
                             ) : (
                               <AvatarFallback>
                                 {player.name.charAt(0)}
@@ -375,13 +387,13 @@ const SquadManagement = () => {
                           </Avatar>
                         </TableCell>
                         <TableCell className="font-medium">
-                          {player.squadNumber}
+                          {player.squad_number}
                         </TableCell>
                         <TableCell>{player.name}</TableCell>
                         <TableCell>{player.age}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            {player.topPositions?.map((pos, index) => (
+                            {positions.map((pos, index) => (
                               <Badge 
                                 key={index} 
                                 variant="outline" 

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -126,9 +125,11 @@ const PlayerDetailsPage = () => {
         teamCategory: playerResult.team_category || "", // Add for backwards compatibility
         attributes: playerResult.attributes ? playerResult.attributes.map((attr: any) => ({
           id: attr.id,
+          player_id: attr.player_id || playerResult.id,  // Ensure player_id is included
           name: attr.name,
           value: attr.value,
           category: attr.category,
+          created_at: attr.created_at || new Date().toISOString()
         })) : [],
         attributeHistory,
         created_at: playerResult.created_at,
