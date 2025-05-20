@@ -1,8 +1,7 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Define the user roles and make it exportable
+// Define the user roles and make it exportable - ensure this includes all roles used in the database
 export type UserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'user' | 'globalAdmin';
 
 // Define the Auth context type
@@ -84,7 +83,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
           setProfile(data)
           // Ensure the role is a valid UserRole
-          setActiveRole((data?.role as UserRole) || 'user');
+          if (data?.role) {
+            setActiveRole(data.role as UserRole);
+          } else {
+            setActiveRole('user');
+          }
         }
       } catch (error: any) {
         console.error("Error fetching profile:", error.message);
@@ -196,7 +199,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         setProfile(data)
-        setActiveRole((data?.role as UserRole) || 'user');
+        if (data?.role) {
+          setActiveRole(data.role as UserRole);
+        } else {
+          setActiveRole('user');
+        }
       }
     } catch (error: any) {
       console.error("Error refreshing profile:", error.message);

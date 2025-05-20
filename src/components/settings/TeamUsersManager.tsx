@@ -31,12 +31,12 @@ interface TeamUsersManagerProps {
 }
 
 // Define a type for team user roles that's compatible with the database
-type TeamUserRole = 'admin' | 'manager' | 'coach' | 'player' | 'parent';
+type ValidProfileRole = 'admin' | 'manager' | 'coach' | 'player' | 'parent' | 'user' | 'globalAdmin';
 
 export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<TeamUserRole>("coach");
+  const [newRole, setNewRole] = useState<ValidProfileRole>("coach");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -90,8 +90,8 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         // User exists, update their role and team_id
         const user = existingUsers[0];
         
-        // Cast the role to ensure compatibility with database
-        const dbRole = newRole as UserRole;
+        // Ensure the role is compatible with the database schema
+        const dbRole = newRole as ValidProfileRole;
         
         const { error: updateError } = await supabase
           .from("profiles")
@@ -133,7 +133,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
     setLoading(true);
     try {
       // Set a default role that's compatible with the database
-      const defaultRole: UserRole = 'coach';
+      const defaultRole: ValidProfileRole = 'user';
       
       const { error } = await supabase
         .from("profiles")
@@ -180,7 +180,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
           </div>
           <div>
             <Label htmlFor="role">Role</Label>
-            <Select value={newRole} onValueChange={(value) => setNewRole(value as TeamUserRole)}>
+            <Select value={newRole} onValueChange={(value) => setNewRole(value as ValidProfileRole)}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>

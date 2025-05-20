@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { Navigate } from 'react-router-dom';
@@ -26,7 +27,7 @@ const GlobalAdminDashboard = () => {
   };
 
   // Check if user has the globalAdmin role
-  const isGlobalAdmin = hasRoleProperty(profile) ? profile.role === 'globalAdmin' : false;
+  const isGlobalAdmin = hasRoleProperty(profile) && profile.role === 'globalAdmin';
   
   if (!isGlobalAdmin) {
     console.log("Global Admin Dashboard - Not a global admin, redirecting to home");
