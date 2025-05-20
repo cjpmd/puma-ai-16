@@ -91,7 +91,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
     onSelectionChange,
     availablePlayers,
     squadPlayers,
-    performanceCategory,
+    performanceCategory: performanceCategory as PerformanceCategory,
     format,
     formationTemplate,
     onTemplateChange,
