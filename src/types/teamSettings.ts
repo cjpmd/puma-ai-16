@@ -14,6 +14,9 @@ export interface TeamSettings {
   team_logo?: string;
   kit_home_icon?: string;
   kit_away_icon?: string;
+  home_kit_icon?: string;
+  away_kit_icon?: string;
+  training_kit_icon?: string;
 }
 
 // Add the AllowedUserRoles type that TeamUsersManager depends on

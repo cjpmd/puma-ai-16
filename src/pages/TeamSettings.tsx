@@ -29,6 +29,11 @@ const defaultSettings: EnhancedTeamSettings = {
   updated_at: "",
   team_name: "Team",
   team_colors: ["#ffffff", "#000000"],
+  home_kit_icon: "",
+  away_kit_icon: "",
+  training_kit_icon: "",
+  kit_home_icon: "",
+  kit_away_icon: ""
 };
 
 export const TeamSettings = () => {

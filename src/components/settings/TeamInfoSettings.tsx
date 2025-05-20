@@ -135,6 +135,9 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
           team_logo: data.team_logo || "",
           kit_home_icon: ensurePatternFormat(data.home_kit_icon || ""),
           kit_away_icon: ensurePatternFormat(data.away_kit_icon || ""),
+          home_kit_icon: ensurePatternFormat(data.home_kit_icon || ""),
+          away_kit_icon: ensurePatternFormat(data.away_kit_icon || ""),
+          training_kit_icon: ensurePatternFormat(data.training_kit_icon || ""),
         };
         
         setTeamSettings(fullTeamSettings);

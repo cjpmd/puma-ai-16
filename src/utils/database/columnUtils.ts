@@ -1,38 +1,32 @@
-
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Check if a column exists in a table
+ * Checks if a column exists in a table
  * @param tableName The name of the table to check
- * @param columnName The name of the column to check
- * @returns Promise<boolean> True if the column exists
+ * @param columnName The name of the column to check for
+ * @returns Promise<boolean> True if the column exists, false otherwise
  */
-export const columnExists = async (tableName: string, columnName?: string): Promise<boolean> => {
+export const columnExists = async (tableName: string, columnName: string): Promise<boolean> => {
   try {
-    // Use a type assertion for the table name to avoid TypeScript errors with dynamic table names
-    const { data, error } = await supabase.rpc('get_table_columns', {
-      table_name: tableName
+    const { data, error } = await supabase.rpc('execute_sql', {
+      sql_string: `
+        SELECT EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_name = '${tableName}'
+          AND column_name = '${columnName}'
+        );
+      `
     });
     
     if (error) {
-      console.error(`Error checking column existence in table ${tableName}:`, error);
+      console.error("Error checking if column exists:", error);
       return false;
     }
     
-    if (!data) {
-      console.error(`Table ${tableName} might not exist`);
-      return false;
-    }
-    
-    // If columnName is provided, check if it exists in the table
-    if (columnName) {
-      return data.includes(columnName);
-    }
-    
-    // If only tableName is provided, check if table exists
-    return data.length > 0;
-  } catch (error) {
-    console.error(`Error checking column existence: ${error}`);
+    return data || false;
+  } catch (err) {
+    console.error("Error in columnExists function:", err);
     return false;
   }
 };
