@@ -23,6 +23,9 @@ export const PlayerCardHeader = ({
   onEdit,
   onDownloadReport,
 }: PlayerCardHeaderProps) => {
+  // Safe access to properties with optional chaining and type handling
+  const profile_image = player && 'profile_image' in player ? player.profile_image : undefined;
+
   return (
     <div className="flex justify-between items-start p-6">
       <div className="space-y-1">

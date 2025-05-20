@@ -1,80 +1,79 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { useSubscriptionVerification } from "@/hooks/calendar/useSubscriptionVerification";
 
-export function useSubscriptionStatus() {
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null);
+export const useSubscriptionStatus = () => {
   const { profile } = useAuth();
-  const { toast } = useToast();
-  const { verifyPlayerSubscription } = useSubscriptionVerification();
-
-  const checkSubscriptionStatus = async () => {
-    setIsLoading(true);
-    
-    try {
-      // Make sure profile is defined before accessing its properties
-      if (!profile) {
-        setIsSubscribed(false);
-        setIsLoading(false);
-        return;
-      }
-      
-      // First check team subscription
-      const { data: teamSub } = await supabase
-        .from('team_subscriptions')
-        .select('status, subscription_plan')
-        .eq('status', 'active')
-        .single();
-      
-      if (teamSub) {
-        setIsSubscribed(true);
-        setSubscriptionTier(teamSub.subscription_plan || 'premium');
-        setIsLoading(false);
-        return;
-      }
-      
-      // If no team subscription, check for player-specific subscription
-      // Safely access profile id with optional chaining
-      const profileId = profile?.id;
-      
-      if (profileId) {
-        const subscriptionData = await verifyPlayerSubscription(profileId);
-        
-        if (subscriptionData && subscriptionData.status === 'active') {
-          setIsSubscribed(true);
-          setSubscriptionTier(subscriptionData.tier || 'premium');
-        } else {
-          setIsSubscribed(false);
-          setSubscriptionTier(null);
-        }
-      } else {
-        console.warn('Unable to check player subscription: profile.id is not available');
-        setIsSubscribed(false);
-        setSubscriptionTier(null);
-      }
-    } catch (error) {
-      console.error('Error checking subscription status:', error);
-      setIsSubscribed(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [subscriptionData, setSubscriptionData] = useState<any>(null);
 
   useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      setLoading(true);
+      try {
+        // Safely check if profile exists and has an id
+        if (!profile || !profile.id) {
+          console.log("No profile found or profile without id");
+          setIsSubscribed(false);
+          return;
+        }
+
+        // Check player subscription first if the user is a player
+        if (profile.role === 'player') {
+          const { data, error } = await supabase
+            .from('player_subscriptions')
+            .select('*')
+            .eq('player_id', profile.id)
+            .eq('status', 'active')
+            .single();
+
+          if (!error && data) {
+            setIsSubscribed(true);
+            setSubscriptionData(data);
+            return;
+          }
+        }
+
+        // Check for team subscription
+        if (profile.team_id) {
+          const { data, error } = await supabase
+            .from('team_subscriptions')
+            .select('*')
+            .eq('team_id', profile.team_id)
+            .eq('status', 'active')
+            .single();
+
+          if (!error && data) {
+            setIsSubscribed(true);
+            setSubscriptionData(data);
+            return;
+          }
+        }
+
+        // No subscription found, set to false
+        setIsSubscribed(false);
+        setSubscriptionData(null);
+
+      } catch (error) {
+        console.error("Error checking subscription status:", error);
+        setIsSubscribed(false);
+        setSubscriptionData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (profile) {
       checkSubscriptionStatus();
+    } else {
+      setLoading(false);
+      setIsSubscribed(false);
     }
   }, [profile]);
 
-  return {
-    isSubscribed,
-    isLoading,
-    subscriptionTier,
-    checkSubscriptionStatus
-  };
-}
+  return { isSubscribed, loading, subscriptionData };
+};
+
+export default useSubscriptionStatus;

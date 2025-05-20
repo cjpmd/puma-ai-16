@@ -92,12 +92,12 @@ export const UserManagement = () => {
         return;
       }
       
-      // Use the correct role type for database operation
+      // Cast the role to string to ensure type compatibility with the database
       const profileData = {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: newUserRole,
+        role: newUserRole as string,
         user_id: userId
       };
       

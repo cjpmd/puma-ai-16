@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DatabaseUserRole } from '@/types/auth';
@@ -162,10 +163,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addRole = async (role: UserRole): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Use the correct role type
+      // Cast the role to string for compatibility with the database
       const { error } = await supabase
         .from('profiles')
-        .update({ role: role })
+        .update({ role: role as string })
         .eq('id', user.id);
 
       if (error) {

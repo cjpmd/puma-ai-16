@@ -1,343 +1,215 @@
-import { useState, useEffect } from "react";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle, 
-  CardFooter 
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Loader2, Search, MoreVertical, CreditCard } from "lucide-react";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { CreditCard, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { TeamSubscription } from "@/types/subscription";
-import { ActiveSubscriptionsTable } from "./ActiveSubscriptionsTable";
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+
+interface SubscriptionData {
+  id: string;
+  status: string;
+  subscription_period?: string;
+  last_payment_date?: string;
+  next_payment_due?: string;
+  subscription_amount?: number;
+}
 
 export const SubscriptionManagement = () => {
-  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const { profile } = useAuth();
+  const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('team');
-  const { toast } = useToast();
 
   useEffect(() => {
-    loadSubscriptionData(activeTab);
-  }, [activeTab]);
+    if (profile) {
+      fetchSubscriptions();
+    }
+  }, [profile]);
 
-  const loadSubscriptionData = async (type: string) => {
-    setLoading(true);
+  const fetchSubscriptions = async () => {
     try {
-      if (type === 'team') {
-        // Load team subscriptions
-        const { data, error } = await supabase
-          .from('team_subscriptions')
-          .select(`
-            *,
-            teams:team_id (
-              team_name,
-              team_logo,
-              admin_id
-            ),
-            profiles:teams->admin_id (
-              name,
-              email
-            )
-          `);
-          
-        if (error) throw error;
-
-        // Cast the data to match our expected format
-        const typedData = (data || []).map(item => ({
-          ...item,
-          subscription_period: item.subscription_period as "monthly" | "annual",
-          status: item.status as "active" | "inactive" | "cancelled"
-        }));
-        
-        setSubscriptions(typedData);
-      } else if (type === 'player') {
-        // Load player subscriptions
-        const { data, error } = await supabase
-          .from('player_subscriptions')
-          .select(`
-            *,
-            players:player_id (
-              name,
-              profile_image,
-              team_id
-            ),
-            teams:players->team_id (
-              team_name
-            )
-          `);
-          
-        if (error) throw error;
-        setSubscriptions(data || []);
-      } else if (type === 'club') {
-        // Load club subscriptions
-        const { data, error } = await supabase
-          .from('club_subscriptions')
-          .select(`
-            *,
-            clubs:club_id (
-              name,
-              logo,
-              admin_id
-            ),
-            profiles:clubs->admin_id (
-              name,
-              email
-            )
-          `);
-          
-        if (error) throw error;
-        setSubscriptions(data || []);
+      setLoading(true);
+      
+      if (!profile || !profile.id) {
+        console.error("No profile found or missing profile ID");
+        return;
       }
+
+      // For team admins, fetch team subscriptions
+      if (profile.role === 'admin' || profile.role === 'manager' || profile.role === 'coach') {
+        const { data: teamData, error: teamError } = await supabase
+          .from('teams')
+          .select('id')
+          .eq('admin_id', profile.id);
+          
+        if (teamError) throw teamError;
+        
+        if (teamData && teamData.length > 0) {
+          const teamIds = teamData.map(team => team.id);
+          
+          const { data: teamSubs, error: subsError } = await supabase
+            .from('team_subscriptions')
+            .select('*')
+            .in('team_id', teamIds);
+            
+          if (subsError) throw subsError;
+          
+          if (teamSubs) {
+            // Safely map subscription data
+            const safeTeamSubs = teamSubs.map(sub => ({
+              id: sub.id,
+              status: sub.status || 'unknown',
+              subscription_period: sub.subscription_period || 'monthly',
+              last_payment_date: sub.start_date || undefined,
+              next_payment_due: sub.end_date || undefined,
+              subscription_amount: sub.subscription_amount || 0
+            }));
+            setSubscriptions(safeTeamSubs);
+          }
+        }
+      } 
+      
+      // For players and parents, fetch player subscriptions
+      else if (profile.role === 'player' || profile.role === 'parent') {
+        const { data: playerSubs, error: playerSubsError } = await supabase
+          .from('player_subscriptions')
+          .select('*')
+          .eq('player_id', profile.id);
+          
+        if (playerSubsError) throw playerSubsError;
+        
+        if (playerSubs) {
+          // Safely map subscription data
+          const safePlayerSubs = playerSubs.map(sub => ({
+            id: sub.id,
+            status: sub.status || 'unknown',
+            subscription_period: sub.subscription_type || 'monthly',
+            last_payment_date: sub.last_payment_date || undefined,
+            next_payment_due: sub.next_payment_due || undefined,
+            subscription_amount: sub.subscription_amount || 0
+          }));
+          setSubscriptions(safePlayerSubs);
+        }
+      }
+      
     } catch (error) {
-      console.error('Error loading subscription data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load subscription data",
-        variant: "destructive"
+      console.error('Error fetching subscriptions:', error);
+      toast('Failed to fetch subscription data', {
+        description: 'Please try again later'
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCancelSubscription = async (id: string) => {
+  const handleManageSubscription = async () => {
     try {
-      // In a real implementation, this would call a Stripe API to cancel the subscription
-      toast({
-        title: "Subscription Canceled",
-        description: "The subscription has been canceled successfully.",
+      // Here we would typically redirect to a customer portal or payment page
+      toast('Redirecting to subscription management', {
+        description: 'You will be redirected to manage your subscription'
       });
     } catch (error) {
-      console.error('Error canceling subscription:', error);
-      toast({
-        title: "Error",
-        description: "Failed to cancel subscription",
-        variant: "destructive"
+      console.error('Error managing subscription:', error);
+      toast('Failed to manage subscription', {
+        description: 'Please try again later'
       });
     }
   };
 
-  const filteredSubscriptions = subscriptions.filter(sub => {
-    if (activeTab === 'team') {
-      return sub.teams?.team_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             sub.profiles?.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    } else if (activeTab === 'player') {
-      return sub.players?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             sub.teams?.team_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    } else if (activeTab === 'club') {
-      return sub.clubs?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             sub.profiles?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+  const handleCancelSubscription = async (subId: string) => {
+    try {
+      toast('Subscription cancellation', {
+        description: 'This would cancel your subscription in a real app'
+      });
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      toast('Failed to cancel subscription', {
+        description: 'Please try again later'
+      });
     }
-    return true;
-  });
+  };
 
-  return (
-    <div className="space-y-6">
-      <Card className="mb-6">
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-40">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (subscriptions.length === 0) {
+    return (
+      <Card>
         <CardHeader>
-          <CardTitle>Subscription Overview</CardTitle>
-          <CardDescription>Manage all platform subscriptions</CardDescription>
+          <CardTitle>Subscriptions</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-muted/50 p-4 rounded-md">
-              <div className="text-2xl font-bold mb-1">120</div>
-              <div className="text-sm text-muted-foreground">Active Team Subscriptions</div>
-            </div>
-            <div className="bg-muted/50 p-4 rounded-md">
-              <div className="text-2xl font-bold mb-1">52</div>
-              <div className="text-sm text-muted-foreground">Active Player Subscriptions</div>
-            </div>
-            <div className="bg-muted/50 p-4 rounded-md">
-              <div className="text-2xl font-bold mb-1">$5,280</div>
-              <div className="text-sm text-muted-foreground">Monthly Recurring Revenue</div>
-            </div>
-          </div>
+        <CardContent className="text-center py-6">
+          <p className="mb-4">You don't have any active subscriptions.</p>
+          <Button onClick={handleManageSubscription}>Subscribe Now</Button>
         </CardContent>
       </Card>
+    );
+  }
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-3">
-          <TabsTrigger value="team">Team Subscriptions</TabsTrigger>
-          <TabsTrigger value="player">Player Subscriptions</TabsTrigger>
-          <TabsTrigger value="club">Club Subscriptions</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value={activeTab} className="space-y-4 mt-4">
-          <div className="flex flex-col md:flex-row gap-4 justify-between">
-            <div className="relative w-full md:w-1/3">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={`Search ${activeTab} subscriptions...`}
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Your Subscriptions</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {subscriptions.map((sub) => (
+          <div key={sub.id} className="mb-6">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
+                <CreditCard className="h-5 w-5 mr-2" />
+                <div>
+                  <h3 className="font-medium">
+                    {sub.subscription_period === 'monthly' ? 'Monthly' : 'Annual'} Subscription
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Status: <span className={`font-medium ${sub.status === 'active' ? 'text-green-600' : 'text-amber-600'}`}>{sub.status}</span>
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-medium">${sub.subscription_amount}</p>
+                <p className="text-xs text-muted-foreground">
+                  {sub.subscription_period === 'monthly' ? 'per month' : 'per year'}
+                </p>
+              </div>
             </div>
-            <Button>
-              <CreditCard className="mr-2 h-4 w-4" />
-              Add New Subscription
-            </Button>
+            
+            <div className="mt-2 text-sm">
+              {sub.last_payment_date && (
+                <p>Last payment: {new Date(sub.last_payment_date).toLocaleDateString()}</p>
+              )}
+              {sub.next_payment_due && (
+                <p>Next payment: {new Date(sub.next_payment_due).toLocaleDateString()}</p>
+              )}
+            </div>
+            
+            <div className="mt-4 flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleManageSubscription}>
+                Manage
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-red-600 hover:text-red-700"
+                onClick={() => handleCancelSubscription(sub.id)}
+              >
+                Cancel
+              </Button>
+            </div>
+            
+            <Separator className="my-4" />
           </div>
-
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : (
-            <div className="border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {activeTab === 'team' && (
-                      <>
-                        <TableHead>Team</TableHead>
-                        <TableHead>Admin</TableHead>
-                      </>
-                    )}
-                    {activeTab === 'player' && (
-                      <>
-                        <TableHead>Player</TableHead>
-                        <TableHead>Team</TableHead>
-                      </>
-                    )}
-                    {activeTab === 'club' && (
-                      <>
-                        <TableHead>Club</TableHead>
-                        <TableHead>Admin</TableHead>
-                      </>
-                    )}
-                    <TableHead>Subscription Plan</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead className="w-[80px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSubscriptions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
-                        No subscriptions found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredSubscriptions.map((sub) => (
-                      <TableRow key={sub.id} className="hover:bg-muted/50">
-                        {activeTab === 'team' && (
-                          <>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8">
-                                  {sub.teams?.team_logo ? (
-                                    <AvatarImage src={sub.teams.team_logo} alt={sub.teams.team_name} />
-                                  ) : (
-                                    <AvatarFallback>{sub.teams?.team_name?.charAt(0) || 'T'}</AvatarFallback>
-                                  )}
-                                </Avatar>
-                                <span className="font-medium">{sub.teams?.team_name || 'Unknown Team'}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>{sub.profiles?.name || 'Unknown'}</TableCell>
-                          </>
-                        )}
-                        {activeTab === 'player' && (
-                          <>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8">
-                                  {sub.players?.profile_image ? (
-                                    <AvatarImage src={sub.players.profile_image} alt={sub.players.name} />
-                                  ) : (
-                                    <AvatarFallback>{sub.players?.name?.charAt(0) || 'P'}</AvatarFallback>
-                                  )}
-                                </Avatar>
-                                <span className="font-medium">{sub.players?.name || 'Unknown Player'}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>{sub.teams?.team_name || 'Unknown Team'}</TableCell>
-                          </>
-                        )}
-                        {activeTab === 'club' && (
-                          <>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8">
-                                  {sub.clubs?.logo ? (
-                                    <AvatarImage src={sub.clubs.logo} alt={sub.clubs.name} />
-                                  ) : (
-                                    <AvatarFallback>{sub.clubs?.name?.charAt(0) || 'C'}</AvatarFallback>
-                                  )}
-                                </Avatar>
-                                <span className="font-medium">{sub.clubs?.name || 'Unknown Club'}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>{sub.profiles?.name || 'Unknown'}</TableCell>
-                          </>
-                        )}
-                        <TableCell>{sub.subscription_plan || 'Standard'}</TableCell>
-                        <TableCell>${sub.amount_monthly || '9.99'}/mo</TableCell>
-                        <TableCell>
-                          <Badge variant={sub.status === 'active' ? "default" : "destructive"}>
-                            {sub.status || 'active'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {sub.start_date ? new Date(sub.start_date).toLocaleDateString() : 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          {sub.end_date ? new Date(sub.end_date).toLocaleDateString() : 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>View Details</DropdownMenuItem>
-                              <DropdownMenuItem>Change Plan</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleCancelSubscription(sub.id)} className="text-destructive">
-                                Cancel Subscription
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 };
+
+export default SubscriptionManagement;
