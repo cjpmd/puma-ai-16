@@ -14,7 +14,7 @@ export interface TeamSettings {
   created_at: string;
   updated_at: string;
   
-  // Add these fields to match what TeamInfoSettings.tsx is expecting
+  // Add these fields to match what our components are expecting
   team_colors?: string[] | string;
   team_logo?: string;
   home_kit_icon?: string;

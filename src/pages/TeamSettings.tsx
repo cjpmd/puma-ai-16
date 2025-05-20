@@ -45,8 +45,10 @@ export const TeamSettings = () => {
       // Transform the data to ensure team_colors is always an array
       return {
         ...data,
-        team_colors: Array.isArray(data.team_colors) ? data.team_colors : 
-                    (typeof data.team_colors === 'string' ? [data.team_colors] : ["#ffffff", "#000000"])
+        team_colors: data.team_colors ? 
+                    (Array.isArray(data.team_colors) ? data.team_colors : 
+                    (typeof data.team_colors === 'string' ? [data.team_colors] : ["#ffffff", "#000000"]))
+                    : ["#ffffff", "#000000"]
       } as EnhancedTeamSettings;
     }
   });
