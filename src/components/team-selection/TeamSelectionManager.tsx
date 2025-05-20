@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -19,7 +18,7 @@ export const TeamSelectionManager = ({
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
-  const [performanceCategory, setPerformanceCategory] = useState<PerformanceCategory>("MESSI");
+  const [performanceCategory, setPerformanceCategory] = useState<PerformanceCategory>(PerformanceCategory.MESSI);
   const [formationTemplate, setFormationTemplate] = useState("All");
   const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>({});
   
@@ -125,15 +124,18 @@ export const TeamSelectionManager = ({
     <div className="space-y-6">
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{fixture.category || "Team"}</CardTitle>
-          <Select value={performanceCategory} onValueChange={(value) => setPerformanceCategory(value as PerformanceCategory)}>
+          <CardTitle>{fixture?.category || "Team"}</CardTitle>
+          <Select 
+            value={performanceCategory} 
+            onValueChange={(value) => setPerformanceCategory(value as PerformanceCategory)}
+          >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="MESSI">Messi</SelectItem>
-              <SelectItem value="RONALDO">Ronaldo</SelectItem>
-              <SelectItem value="JAGS">Jags</SelectItem>
+              <SelectItem value={PerformanceCategory.MESSI}>Messi</SelectItem>
+              <SelectItem value={PerformanceCategory.RONALDO}>Ronaldo</SelectItem>
+              <SelectItem value={PerformanceCategory.JAGS}>Jags</SelectItem>
             </SelectContent>
           </Select>
         </CardHeader>

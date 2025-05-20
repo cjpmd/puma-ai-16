@@ -29,7 +29,7 @@ export const useDraggableFormation = ({
   onSelectionChange,
   availablePlayers,
   squadPlayers,
-  performanceCategory = "MESSI",
+  performanceCategory = PerformanceCategory.MESSI,
   format,
   formationTemplate = "All",
   onTemplateChange,

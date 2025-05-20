@@ -11,7 +11,7 @@ import { ParentDashboard } from "./pages/ParentDashboard";
 import { SubscriptionPage } from "./pages/SubscriptionPage";
 import { PlatformLanding } from "./pages/PlatformLanding";
 import SquadManagement from "./pages/SquadManagement";
-import TeamSettings from "./pages/TeamSettings";
+import { TeamSettings } from "./pages/TeamSettings";
 import CalendarPage from "./components/calendar/CalendarPage";
 import GlobalAdminDashboard from "./pages/GlobalAdminDashboard";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";

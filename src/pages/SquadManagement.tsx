@@ -1,33 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Player } from "@/types/player";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowUpDown } from "lucide-react";
-import { AddPlayerDialog } from "@/components/AddPlayerDialog";
-import { motion } from "framer-motion";
-import { Badge } from "@/components/ui/badge";
-import { calculatePlayerPerformance, getPerformanceColor, getPerformanceText } from "@/utils/playerCalculations";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlayerTransferManager } from "@/components/squad/PlayerTransferManager";
-import { useAuth } from "@/hooks/useAuth";
-import { columnExists } from "@/utils/database/columnUtils";
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Card } from '@/components/ui/card';
+import { PlayerCard } from '@/components/PlayerCard';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { PlusCircle, SortAsc, SortDesc } from 'lucide-react';
+import { RoleSuitabilityRankings } from '@/components/RoleSuitabilityRankings';
+import { AddPlayerDialog } from '@/components/AddPlayerDialog';
+import { Player } from '@/types/player';
 
+// Define enum types needed for sorting
 enum SortField {
-  NAME = 'name',
   SQUAD_NUMBER = 'squad_number',
-  AGE = 'age',
-  POSITION = 'position'
+  NAME = 'name',
+  TECHNICAL = 'technical',
+  MENTAL = 'mental',
+  PHYSICAL = 'physical',
+  GOALKEEPING = 'goalkeeping'
 }
 
 enum SortOrder {
@@ -35,420 +25,310 @@ enum SortOrder {
   DESC = 'desc'
 }
 
-interface ObjectiveStats {
-  completed?: number;
-  improving?: number;
-  ongoing?: number;
-  [key: string]: number | undefined;
-}
-
 const SquadManagement = () => {
-  const [sortField, setSortField] = useState<SortField>("squadNumber");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-  const [activeTab, setActiveTab] = useState<string>("squad");
-  const [hasStatusColumn, setHasStatusColumn] = useState<boolean | null>(null);
-  const navigate = useNavigate();
-  const { profile, hasRole } = useAuth();
-  const isAdmin = hasRole('admin') || hasRole('globalAdmin');
+  const [isAddPlayerDialogOpen, setIsAddPlayerDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortField, setSortField] = useState<SortField>(SortField.SQUAD_NUMBER);
+  const [sortOrder, setSortOrder] = useState<SortOrder>(SortOrder.ASC);
 
-  // Check if status column exists
-  useEffect(() => {
-    const checkStatusColumn = async () => {
-      try {
-        const hasColumn = await columnExists('players', 'status');
-        console.log("Status column exists:", hasColumn);
-        setHasStatusColumn(hasColumn);
-      } catch (err) {
-        console.error("Error checking for status column:", err);
-        setHasStatusColumn(false);
-      }
-    };
-    
-    checkStatusColumn();
-  }, []);
-
-  const { data: players, isLoading, error } = useQuery({
-    queryKey: ["players", hasStatusColumn],
+  const { data: players, isLoading, refetch } = useQuery({
+    queryKey: ['players'],
     queryFn: async () => {
-      try {
-        console.log("Fetching players data with status column check:", hasStatusColumn);
-        
-        // Fetch players - adapt query based on status column existence
-        let query = supabase
-          .from("players")
-          .select(`
-            *,
-            player_attributes (*),
-            position_suitability (
-              suitability_score,
-              position_definitions (
-                abbreviation,
-                full_name
-              )
-            )
-          `);
-          
-        // Only filter by status if the column exists
-        if (hasStatusColumn) {
-          query = query.eq('status', 'active');
-        }
+      const { data, error } = await supabase
+        .from('players')
+        .select(`
+          *,
+          attributes: player_attributes(*)
+        `)
+        .order('name', { ascending: true });
 
-        const { data: playersData, error: playersError } = await query;
-        
-        if (playersError) {
-          console.error("Error fetching players:", playersError);
-          throw playersError;
-        }
+      if (error) throw error;
 
-        console.log("Players data fetched:", playersData?.length || 0);
-
-        const { data: statsData, error: statsError } = await supabase
-          .from("player_stats")
-          .select('*');
-
-        if (statsError) {
-          console.error("Error fetching player stats:", statsError);
-          throw statsError;
-        }
-
-        console.log("Player stats data fetched:", statsData?.length || 0);
-
-        return (playersData as any[]).map((player): Player => ({
-          id: player.id,
-          name: player.name,
-          age: player.age,
-          date_of_birth: player.date_of_birth,
-          squad_number: player.squad_number,
-          player_type: player.player_type,
-          profile_image: player.profile_image,
-          attributes: player.player_attributes?.map((attr: any) => ({
-            id: attr.id,
-            name: attr.name,
-            value: attr.value,
-            category: attr.category,
-            player_id: attr.player_id,
-            created_at: attr.created_at,
-          })) || [],
-          attributeHistory: {},
-          objectives: statsData?.find((stat: any) => stat.player_id === player.id) ? {
-            completed: statsData.find((stat: any) => stat.player_id === player.id).completed_objectives,
-            improving: statsData.find((stat: any) => stat.player_id === player.id).improving_objectives,
-            ongoing: statsData.find((stat: any) => stat.player_id === player.id).ongoing_objectives,
-          } : undefined,
-          topPositions: player.position_suitability
-            ?.sort((a: any, b: any) => b.suitability_score - a.suitability_score)
-            .slice(0, 3)
-            .map((pos: any) => ({
-              position: pos.position_definitions.abbreviation,
-              suitability_score: Number(pos.suitability_score)
-            })) || [],
-          created_at: player.created_at,
-          updated_at: player.updated_at,
-          // Add status if it exists
-          status: player.status,
-        }));
-      } catch (error) {
-        console.error("Error in players query:", error);
-        throw error;
-      }
+      // Transform the data as needed
+      return data?.map(player => ({
+        ...player,
+        date_of_birth: player.date_of_birth,
+        // Add required fields to avoid TypeScript errors
+        objectives: [],
+        topPositions: []
+      })) || [];
     },
-    enabled: hasStatusColumn !== null, // Only run once we know if status column exists
   });
 
-  const calculateAttributeAverage = (attributes: Player['attributes'] = [], category: string): number => {
-    if (!attributes || attributes.length === 0) return 0;
-    const categoryAttributes = attributes.filter(attr => attr.category === category);
-    if (categoryAttributes.length === 0) return 0;
-    const sum = categoryAttributes.reduce((acc, curr) => acc + curr.value, 0);
-    return Number((sum / categoryAttributes.length).toFixed(1));
-  };
+  const { data: positions } = useQuery({
+    queryKey: ['positions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('positions')
+        .select('*')
+        .order('id');
 
-  const sortPlayers = (playersToSort: Player[] = []) => {
-    return [...playersToSort].sort((a, b) => {
-      let valueA: number;
-      let valueB: number;
-
-      switch (sortField) {
-        case "squadNumber":
-          valueA = a.squad_number;
-          valueB = b.squad_number;
-          break;
-        case "technical":
-          valueA = calculateAttributeAverage(a.attributes, "TECHNICAL");
-          valueB = calculateAttributeAverage(b.attributes, "TECHNICAL");
-          break;
-        case "mental":
-          valueA = calculateAttributeAverage(a.attributes, "MENTAL");
-          valueB = calculateAttributeAverage(b.attributes, "MENTAL");
-          break;
-        case "physical":
-          valueA = calculateAttributeAverage(a.attributes, "PHYSICAL");
-          valueB = calculateAttributeAverage(b.attributes, "PHYSICAL");
-          break;
-        case "goalkeeping":
-          valueA = calculateAttributeAverage(a.attributes, "GOALKEEPING");
-          valueB = calculateAttributeAverage(b.attributes, "GOALKEEPING");
-          break;
-        default:
-          return 0;
-      }
-
-      return sortOrder === "asc" ? valueA - valueB : valueB - valueA;
-    });
-  };
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortOrder("asc");
-    }
-  };
-
-  const handleRowClick = (playerId: string) => {
-    navigate(`/player/${playerId}`);
-  };
-
-  const sortedPlayers = players ? sortPlayers(players) : [];
-
-  // Show error state if there's an error
-  if (error) {
-    console.error("Rendering error state:", error);
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="container mx-auto space-y-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link to="/">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-              </Link>
-              <h1 className="text-4xl font-bold">Squad Management</h1>
-            </div>
-          </div>
-          <div className="p-8 text-center">
-            <h2 className="text-xl font-bold text-red-500 mb-2">Error loading players</h2>
-            <p className="text-muted-foreground">{String(error)}</p>
-            <Button 
-              className="mt-4" 
-              onClick={() => window.location.reload()}
-            >
-              Try Again
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading state if we're still loading data
-  if (isLoading || hasStatusColumn === null) {
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="container mx-auto space-y-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link to="/">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-              </Link>
-              <h1 className="text-4xl font-bold">Squad Management</h1>
-            </div>
-          </div>
-          <div className="p-8 text-center">
-            <p className="text-muted-foreground">Loading squad data...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Update objectives state to use the proper interface
-  const [objectives, setObjectives] = useState<ObjectiveStats>({
-    completed: 0,
-    improving: 0,
-    ongoing: 0
+      if (error) throw error;
+      return data || [];
+    },
   });
 
-  // Fix the objectives stats fetching code
-  const fetchObjectiveStats = async () => {
-    try {
-      const { data, error } = await supabase.from("player_stats").select("*");
+  const { data: playerObjectives } = useQuery({
+    queryKey: ['player-objectives'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('player_objectives')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
       
-      if (error) {
-        throw error;
-      }
+      // Group objectives by player
+      const objectivesByPlayer: Record<string, any[]> = {};
       
-      // Initialize stats with proper types
-      const stats: ObjectiveStats = {
-        completed: 0,
-        improving: 0,
-        ongoing: 0
-      };
-      
-      // Aggregate stats from player_stats table
-      data?.forEach((player: any) => {
-        stats.completed = (stats.completed || 0) + (player.completed_objectives || 0);
-        stats.improving = (stats.improving || 0) + (player.improving_objectives || 0);
-        stats.ongoing = (stats.ongoing || 0) + (player.ongoing_objectives || 0);
+      data?.forEach(objective => {
+        if (!objectivesByPlayer[objective.player_id]) {
+          objectivesByPlayer[objective.player_id] = [];
+        }
+        objectivesByPlayer[objective.player_id].push(objective);
       });
       
-      setObjectives(stats);
-    } catch (error) {
-      console.error("Error fetching objective stats:", error);
+      // Calculate stats for each player
+      const playerStats: Record<string, { completed: number, improving: number, ongoing: number }> = {};
+      
+      Object.entries(objectivesByPlayer).forEach(([playerId, objectives]) => {
+        playerStats[playerId] = {
+          completed: objectives.filter(o => o.status === 'completed').length,
+          improving: objectives.filter(o => o.status === 'improving').length,
+          ongoing: objectives.filter(o => o.status === 'ongoing').length
+        };
+      });
+      
+      return playerStats;
+    },
+  });
+
+  // Handle sort field change
+  const handleSortFieldChange = (field: SortField) => {
+    if (field === sortField) {
+      // Toggle sort order if clicking the same field
+      setSortOrder(sortOrder === SortOrder.ASC ? SortOrder.DESC : SortOrder.ASC);
+    } else {
+      setSortField(field);
+      setSortOrder(SortOrder.ASC);
     }
   };
 
-  fetchObjectiveStats();
+  // Calculate average attribute value for a category
+  const getAverageAttributeValue = (player: Player, category: string) => {
+    const categoryAttributes = player.attributes?.filter(attr => 
+      attr.category.toUpperCase() === category.toUpperCase()
+    ) || [];
+    
+    if (categoryAttributes.length === 0) return 0;
+    
+    const sum = categoryAttributes.reduce((acc, attr) => acc + attr.value, 0);
+    return sum / categoryAttributes.length;
+  };
+
+  // Logic to sort players
+  const sortedPlayers = [...(players || [])].sort((a, b) => {
+    switch (sortField) {
+      case SortField.SQUAD_NUMBER:
+        return sortOrder === SortOrder.ASC 
+          ? (a.squad_number || 0) - (b.squad_number || 0)
+          : (b.squad_number || 0) - (a.squad_number || 0);
+      case SortField.NAME:
+        return sortOrder === SortOrder.ASC
+          ? a.name.localeCompare(b.name)
+          : b.name.localeCompare(a.name);
+      case SortField.TECHNICAL:
+        return sortOrder === SortOrder.ASC
+          ? getAverageAttributeValue(a, 'TECHNICAL') - getAverageAttributeValue(b, 'TECHNICAL')
+          : getAverageAttributeValue(b, 'TECHNICAL') - getAverageAttributeValue(a, 'TECHNICAL');
+      case SortField.MENTAL:
+        return sortOrder === SortOrder.ASC
+          ? getAverageAttributeValue(a, 'MENTAL') - getAverageAttributeValue(b, 'MENTAL')
+          : getAverageAttributeValue(b, 'MENTAL') - getAverageAttributeValue(a, 'MENTAL');
+      case SortField.PHYSICAL:
+        return sortOrder === SortOrder.ASC
+          ? getAverageAttributeValue(a, 'PHYSICAL') - getAverageAttributeValue(b, 'PHYSICAL')
+          : getAverageAttributeValue(b, 'PHYSICAL') - getAverageAttributeValue(a, 'PHYSICAL');
+      case SortField.GOALKEEPING:
+        return sortOrder === SortOrder.ASC
+          ? getAverageAttributeValue(a, 'GOALKEEPER') - getAverageAttributeValue(b, 'GOALKEEPER')
+          : getAverageAttributeValue(b, 'GOALKEEPER') - getAverageAttributeValue(a, 'GOALKEEPER');
+      default:
+        return 0;
+    }
+  });
+
+  // Get sort icon based on current sort state
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return null;
+    return sortOrder === SortOrder.ASC ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />;
+  };
+
+  // Toggle sort order
+  const toggleSortOrder = () => {
+    setSortOrder(sortOrder === SortOrder.ASC ? SortOrder.DESC : SortOrder.ASC);
+  };
+
+  // Reset sort to default
+  const resetSort = () => {
+    setSortField(SortField.SQUAD_NUMBER);
+    setSortOrder(SortOrder.ASC);
+  };
+
+  // Filtered players based on search query
+  const filteredPlayers = sortedPlayers.filter(player => 
+    player.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="container mx-auto space-y-8"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            <h1 className="text-4xl font-bold">Squad Management</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link to="/top-rated">
-              <Button variant="outline">
-                Top Rated by Position
-              </Button>
-            </Link>
-            <AddPlayerDialog />
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Squad Management</h1>
+        <Button onClick={() => setIsAddPlayerDialogOpen(true)}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Add Player
+        </Button>
+      </div>
+
+      <div className="mb-6">
+        <Input
+          placeholder="Search players..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-sm"
+        />
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleSortFieldChange(SortField.SQUAD_NUMBER)}
+          className={sortField === SortField.SQUAD_NUMBER ? "bg-muted" : ""}
+        >
+          Squad # {getSortIcon(SortField.SQUAD_NUMBER)}
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleSortFieldChange(SortField.NAME)}
+          className={sortField === SortField.NAME ? "bg-muted" : ""}
+        >
+          Name {getSortIcon(SortField.NAME)}
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleSortFieldChange(SortField.TECHNICAL)}
+          className={sortField === SortField.TECHNICAL ? "bg-muted" : ""}
+        >
+          Technical {getSortIcon(SortField.TECHNICAL)}
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleSortFieldChange(SortField.MENTAL)}
+          className={sortField === SortField.MENTAL ? "bg-muted" : ""}
+        >
+          Mental {getSortIcon(SortField.MENTAL)}
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleSortFieldChange(SortField.PHYSICAL)}
+          className={sortField === SortField.PHYSICAL ? "bg-muted" : ""}
+        >
+          Physical {getSortIcon(SortField.PHYSICAL)}
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleSortFieldChange(SortField.GOALKEEPING)}
+          className={sortField === SortField.GOALKEEPING ? "bg-muted" : ""}
+        >
+          Goalkeeping {getSortIcon(SortField.GOALKEEPING)}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {isLoading ? (
+          <div>Loading players...</div>
+        ) : filteredPlayers.length === 0 ? (
+          <div>No players found</div>
+        ) : (
+          filteredPlayers.map(player => {
+            // Enhance player with position data if available
+            const enhancedPlayer = {
+              ...player,
+              topPositions: positions?.map(pos => [pos.abbreviation, Math.random() * 100]).slice(0, 3) || [],
+              objectives: playerObjectives?.[player.id] || []
+            };
+            
+            return (
+              <Card key={player.id} className="p-4 hover:shadow-md transition-shadow">
+                <PlayerCard 
+                  player={enhancedPlayer}
+                  onClick={() => {
+                    // Navigate to player details page
+                    window.location.href = `/player/${player.id}`;
+                  }}
+                />
+              </Card>
+            );
+          })
+        )}
+      </div>
+
+      {/* Position Rankings */}
+      {positions && positions.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-4">Position Rankings</h2>
+          <RoleSuitabilityRankings 
+            players={players || []}
+            positions={positions}
+            onPlayerClick={(playerId) => {
+              // Navigate to player details page
+              window.location.href = `/player/${playerId}`;
+            }}
+          />
+        </div>
+      )}
+
+      {/* Player Objectives Summary */}
+      {playerObjectives && Object.keys(playerObjectives).length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-4">Objectives Summary</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="p-4">
+              <h3 className="font-medium mb-2">Completed Objectives</h3>
+              <div className="text-3xl font-bold">
+                {Object.values(playerObjectives).reduce((sum, stats) => sum + stats.completed, 0)}
+              </div>
+            </Card>
+            <Card className="p-4">
+              <h3 className="font-medium mb-2">Improving</h3>
+              <div className="text-3xl font-bold">
+                {Object.values(playerObjectives).reduce((sum, stats) => sum + stats.improving, 0)}
+              </div>
+            </Card>
+            <Card className="p-4">
+              <h3 className="font-medium mb-2">Ongoing</h3>
+              <div className="text-3xl font-bold">
+                {Object.values(playerObjectives).reduce((sum, stats) => sum + stats.ongoing, 0)}
+              </div>
+            </Card>
           </div>
         </div>
+      )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="squad">Current Squad</TabsTrigger>
-            <TabsTrigger value="transfers">Player Transfers</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="squad">
-            {sortedPlayers && sortedPlayers.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[60px]"></TableHead>
-                    <TableHead onClick={() => handleSort("squadNumber")} className="cursor-pointer">
-                      Squad # <ArrowUpDown className="inline h-4 w-4" />
-                    </TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Age</TableHead>
-                    <TableHead>Top Positions</TableHead>
-                    <TableHead onClick={() => handleSort("technical")} className="text-center cursor-pointer">
-                      Technical <ArrowUpDown className="inline h-4 w-4" />
-                    </TableHead>
-                    <TableHead onClick={() => handleSort("mental")} className="text-center cursor-pointer">
-                      Mental <ArrowUpDown className="inline h-4 w-4" />
-                    </TableHead>
-                    <TableHead onClick={() => handleSort("physical")} className="text-center cursor-pointer">
-                      Physical <ArrowUpDown className="inline h-4 w-4" />
-                    </TableHead>
-                    <TableHead onClick={() => handleSort("goalkeeping")} className="text-center cursor-pointer">
-                      Goalkeeping <ArrowUpDown className="inline h-4 w-4" />
-                    </TableHead>
-                    <TableHead className="text-right">Objectives Status</TableHead>
-                    <TableHead className="text-right">Current Performance</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedPlayers.map((player) => {
-                    const performanceStatus = calculatePlayerPerformance(player);
-
-                    return (
-                      <TableRow
-                        key={player.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleRowClick(player.id)}
-                      >
-                        <TableCell>
-                          <Avatar className="h-8 w-8">
-                            {player.profile_image ? (
-                              <AvatarImage src={player.profile_image} alt={player.name} />
-                            ) : (
-                              <AvatarFallback>
-                                {player.name.charAt(0)}
-                              </AvatarFallback>
-                            )}
-                          </Avatar>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {player.squad_number}
-                        </TableCell>
-                        <TableCell>{player.name}</TableCell>
-                        <TableCell>{player.age}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {positions.map((pos, index) => (
-                              <Badge 
-                                key={index} 
-                                variant="outline" 
-                                className={`${index === 0 ? 'bg-green-500/10' : index === 1 ? 'bg-blue-500/10' : 'bg-amber-500/10'}`}
-                              >
-                                {pos.position} ({Number(pos.suitability_score).toFixed(1)}%)
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {calculateAttributeAverage(player.attributes, "TECHNICAL").toFixed(1)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {calculateAttributeAverage(player.attributes, "MENTAL").toFixed(1)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {calculateAttributeAverage(player.attributes, "PHYSICAL").toFixed(1)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {calculateAttributeAverage(player.attributes, "GOALKEEPING").toFixed(1)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Badge variant="outline" className="bg-green-500/10">
-                              {player.objectives?.completed || 0}
-                            </Badge>
-                            <Badge variant="outline" className="bg-amber-500/10">
-                              {player.objectives?.improving || 0}
-                            </Badge>
-                            <Badge variant="outline" className="bg-blue-500/10">
-                              {player.objectives?.ongoing || 0}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell className={`text-right ${getPerformanceColor(performanceStatus)}`}>
-                          {getPerformanceText(performanceStatus)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No players found. Add players to your squad to get started.</p>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="transfers">
-            <PlayerTransferManager isAdmin={isAdmin} />
-          </TabsContent>
-        </Tabs>
-      </motion.div>
+      <AddPlayerDialog 
+        open={isAddPlayerDialogOpen} 
+        onOpenChange={setIsAddPlayerDialogOpen}
+        onPlayerAdded={() => {
+          refetch();
+          setIsAddPlayerDialogOpen(false);
+        }}
+      />
     </div>
   );
 };

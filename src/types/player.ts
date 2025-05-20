@@ -54,7 +54,7 @@ export enum AttributeCategory {
   GOALKEEPER = 'GOALKEEPER'
 }
 
-// Make PerformanceCategory a proper TypeScript enum instead of a string type
+// Make PerformanceCategory a proper TypeScript enum
 export enum PerformanceCategory {
   MESSI = 'MESSI',
   RONALDO = 'RONALDO',

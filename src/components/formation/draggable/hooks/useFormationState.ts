@@ -1,13 +1,12 @@
-
 import { useState, useRef, useEffect } from "react";
-import { FormationFormat } from "../../types";
+import { Selection } from "../../types";
 import { PerformanceCategory } from "@/types/player";
 import { useDropOperations } from "./useDropOperations";
 import { useDragOperations } from "./useDragOperations";
 
 interface UseFormationStateProps {
-  initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
-  onSelectionChange: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
+  initialSelections?: Record<string, any>;
+  onSelectionChange: (selections: Record<string, any>) => void;
   performanceCategory?: PerformanceCategory;
   periodNumber?: number;
   periodDuration?: number;
@@ -17,12 +16,12 @@ interface UseFormationStateProps {
 export const useFormationState = ({
   initialSelections,
   onSelectionChange,
-  performanceCategory = "MESSI",
+  performanceCategory = PerformanceCategory.MESSI,
   periodNumber = 1,
   periodDuration = 45,
   squadPlayers
 }: UseFormationStateProps) => {
-  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>>(initialSelections || {});
+  const [selections, setSelections] = useState<Record<string, any>>(initialSelections || {});
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [currentPeriod, setCurrentPeriod] = useState<number>(periodNumber);
   const [periodLength, setPeriodLength] = useState<number>(periodDuration);

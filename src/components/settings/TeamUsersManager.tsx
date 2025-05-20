@@ -15,16 +15,14 @@ interface TeamUser {
   role: string;
 }
 
-// Define a string union type for user roles instead of using an enum
+// Define a string literal type for user roles instead of using an enum
 export type AllowedUserRoles = "admin" | "manager" | "coach" | "parent" | "globalAdmin";
 
-// Create a prop interface for the UserAssignmentDialog
+// Create a simplified interface for the UserAssignmentDialog
 interface UserAssignmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAssign: (userId: string, role: AllowedUserRoles) => Promise<boolean>;
-  title?: string;
-  description?: string;
 }
 
 // Simple stub component for UserAssignmentDialog - should be imported from the actual file
@@ -99,8 +97,8 @@ export const TeamUsersManager = ({ teamId }: TeamUsersManagerProps) => {
 
   const handleAssignUser = async (userId: string, role: AllowedUserRoles): Promise<boolean> => {
     try {
-      // Convert the role enum to string if needed
-      const roleString = role.toString();
+      // Convert the role enum to string
+      const roleString = role;
       
       // Check if user already has a role in this team
       const { data: existingRole } = await supabase

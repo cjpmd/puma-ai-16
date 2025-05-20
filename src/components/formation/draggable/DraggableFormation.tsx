@@ -36,7 +36,7 @@ export const DraggableFormation: React.FC<DraggableFormationProps> = ({
   squadPlayers,
   initialSelections,
   onSelectionChange,
-  performanceCategory = "MESSI",
+  performanceCategory = PerformanceCategory.MESSI,
   onSquadPlayersChange,
   formationTemplate = "All",
   onTemplateChange,
