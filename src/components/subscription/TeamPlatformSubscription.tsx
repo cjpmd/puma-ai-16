@@ -7,15 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth.tsx";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-
-interface SubscriptionPlan {
-  id: string;
-  name: string;
-  price_monthly: number;
-  price_annual: number;
-  features: string[];
-  max_teams?: number;
-}
+import { SubscriptionPlan } from "@/types/subscription";
 
 export const TeamPlatformSubscription = () => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
@@ -36,7 +28,16 @@ export const TeamPlatformSubscription = () => {
         .eq("is_active", true);
 
       if (error) throw error;
-      setPlans(data || []);
+      
+      // Convert Json features to string[] if needed
+      const formattedPlans = (data || []).map(plan => ({
+        ...plan,
+        features: typeof plan.features === 'string' 
+          ? JSON.parse(plan.features) 
+          : (Array.isArray(plan.features) ? plan.features : [])
+      }));
+      
+      setPlans(formattedPlans);
     } catch (error) {
       console.error("Error fetching plans:", error);
       toast.error("Failed to load subscription plans");
@@ -106,7 +107,7 @@ export const TeamPlatformSubscription = () => {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  {plan.features && Array.isArray(plan.features) && plan.features.map((feature, index) => (
+                  {Array.isArray(plan.features) && plan.features.map((feature, index) => (
                     <li key={index} className="flex items-center">
                       <Check className="h-5 w-5 text-green-500 mr-2" />
                       <span>{feature}</span>

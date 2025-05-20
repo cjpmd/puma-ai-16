@@ -1,4 +1,6 @@
 
+import { Json } from "@/integrations/supabase/types";
+
 export interface PlayerSubscription {
   id: string;
   player_id: string;
@@ -15,8 +17,20 @@ export interface TeamSubscription {
   id?: string;
   team_id: string;
   subscription_amount: number;
-  subscription_period: 'monthly';
+  subscription_period: 'monthly' | 'annual';
   status: 'active' | 'inactive' | 'cancelled';
   created_at?: string;
   updated_at?: string;
+  subscription_plan?: string;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price_monthly: number;
+  price_annual: number;
+  features: string[] | Json;
+  max_teams?: number;
+  max_players?: number;
+  description?: string;
 }

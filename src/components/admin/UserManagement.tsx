@@ -92,7 +92,7 @@ const UserManagement = () => {
         return;
       }
 
-      // Convert UserRole to string for database operations
+      // Explicitly cast role to string to satisfy TypeScript
       const roleValue = newUserRole as string;
       
       const { error: profileError } = await supabase

@@ -8,18 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth.tsx";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-
-interface SubscriptionPlan {
-  id: string;
-  name: string;
-  price_monthly: number;
-  price_annual: number;
-  features: string[];
-}
+import { SubscriptionPlan, TeamSubscription } from "@/types/subscription";
 
 export const SubscriptionManagement = () => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [userSubscriptions, setUserSubscriptions] = useState<any[]>([]);
+  const [userSubscriptions, setUserSubscriptions] = useState<TeamSubscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { profile } = useAuth();
   const navigate = useNavigate();
@@ -36,11 +29,18 @@ export const SubscriptionManagement = () => {
 
         if (plansError) throw plansError;
         
-        // Ensure plansData is not null before setting state
-        setPlans(plansData || []);
+        // Convert Json features to string[] if needed
+        const formattedPlans = (plansData || []).map(plan => ({
+          ...plan,
+          features: typeof plan.features === 'string' 
+            ? JSON.parse(plan.features) 
+            : (Array.isArray(plan.features) ? plan.features : [])
+        }));
+        
+        setPlans(formattedPlans);
 
         // Fetch user subscriptions if logged in
-        if (profile) {
+        if (profile && profile.team_id) {
           const { data: subscriptionsData, error: subscriptionsError } = await supabase
             .from("team_subscriptions")
             .select("*, team_plans(*)")
@@ -133,7 +133,7 @@ export const SubscriptionManagement = () => {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  {plan.features && Array.isArray(plan.features) && plan.features.map((feature, index) => (
+                  {Array.isArray(plan.features) && plan.features.map((feature, index) => (
                     <li key={index} className="flex items-center">
                       <Check className="h-5 w-5 text-green-500 mr-2" />
                       <span>{feature}</span>

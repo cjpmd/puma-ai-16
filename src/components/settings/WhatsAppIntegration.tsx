@@ -32,7 +32,7 @@ export function WhatsAppIntegration() {
     whatsapp_phone_id: "",
   });
   const [contacts, setContacts] = useState<WhatsAppContact[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export function WhatsAppIntegration() {
 
   const fetchSettings = async () => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       // Check if table exists
       try {
         await supabase.rpc('execute_sql', {
@@ -87,7 +87,7 @@ export function WhatsAppIntegration() {
     } catch (error) {
       console.error("Error in fetchSettings:", error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -121,17 +121,20 @@ export function WhatsAppIntegration() {
       }
 
       // Process the data rows from the RPC result
-      if (data && data.length > 0) {
-        const contactsList: WhatsAppContact[] = data.map((contact: any) => ({
-          id: contact.id,
-          name: contact.name,
-          phone: contact.phone,
-          player_id: contact.player_id,
-          created_at: contact.created_at
-        }));
-        
-        setContacts(contactsList);
+      const contactsList: WhatsAppContact[] = [];
+      if (data && Array.isArray(data) && data.length > 0) {
+        data.forEach((contact: any) => {
+          contactsList.push({
+            id: contact.id,
+            name: contact.name,
+            phone: contact.phone,
+            player_id: contact.player_id,
+            created_at: contact.created_at
+          });
+        });
       }
+      
+      setContacts(contactsList);
     } catch (error) {
       console.error("Error in fetchContacts:", error);
     }

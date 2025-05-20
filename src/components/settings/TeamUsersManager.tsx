@@ -30,8 +30,8 @@ interface TeamUsersManagerProps {
   team?: Team;
 }
 
-// Define a type for roles allowed in this component - make sure it matches the UserRole in useAuth.tsx
-type TeamUserRole = 'admin' | 'manager' | 'coach' | 'player' | 'parent';
+// Define a type for roles allowed in this component - make sure it's a subset of UserRole
+type TeamUserRole = Extract<UserRole, 'admin' | 'manager' | 'coach' | 'player' | 'parent'>;
 
 export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
@@ -90,8 +90,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         // User exists, update their role and team_id
         const user = existingUsers[0];
         
-        // Ensure we're using the correct role type for the database
-        // We need to explicitly cast the TeamUserRole to string to satisfy TypeScript
+        // Explicitly cast role to string to satisfy TypeScript
         const roleValue = newRole as string;
         
         const { error: updateError } = await supabase
