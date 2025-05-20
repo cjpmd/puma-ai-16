@@ -8,9 +8,9 @@ export type DatabaseUserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'playe
 export type UserRole = DatabaseUserRole;
 
 // Define the specific subset of roles allowed in profiles table
-export type ProfileRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'user' | 'globalAdmin';
+export type ProfileRole = DatabaseUserRole;
 
 // Helper function to safely cast roles
 export const ensureValidProfileRole = (role: DatabaseUserRole): ProfileRole => {
-  return role as ProfileRole; // All database roles are now valid profile roles
+  return role as ProfileRole;
 };

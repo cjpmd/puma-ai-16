@@ -1,4 +1,4 @@
-// Create a new WhatsAppIntegration.tsx file with proper types
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,19 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-
-// Define the WhatsAppSettings interface
-interface WhatsAppSettings {
-  id: string;
-  enabled: boolean;
-  team_id: string | null;
-  provider?: string;
-  whatsapp_business_id?: string;
-  whatsapp_phone_id?: string;
-  business_phone_number?: string;
-  created_at?: string;
-  updated_at?: string;
-}
+import { WhatsAppSettings } from "@/types/whatsAppSettings";
 
 export const WhatsAppIntegration = () => {
   const { toast } = useToast();
@@ -32,8 +20,7 @@ export const WhatsAppIntegration = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Use a mock function since the table doesn't exist yet
-  // This is a temporary solution until we create the table
+  // Use a mock function since the table might not exist yet
   const fetchWhatsAppSettingsMock = async () => {
     setIsLoading(true);
     try {
@@ -41,7 +28,7 @@ export const WhatsAppIntegration = () => {
       const mockData: WhatsAppSettings[] = [{
         id: '1',
         enabled: false,
-        team_id: profile?.team_id || null,
+        team_id: profile?.team_id || "",
         whatsapp_business_id: '',
         whatsapp_phone_id: '',
         business_phone_number: ''
@@ -79,7 +66,7 @@ export const WhatsAppIntegration = () => {
     try {
       const settingsData = {
         enabled,
-        team_id: profile.team_id || null,
+        team_id: profile.team_id || "",
         whatsapp_business_id: businessId,
         whatsapp_phone_id: phoneId,
         business_phone_number: phoneNumber,

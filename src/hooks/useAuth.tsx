@@ -167,7 +167,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ role }) // Now role is a valid ProfileRole
+        .update({ role }) // Updated role is valid
         .eq('id', user.id);
 
       if (error) {
