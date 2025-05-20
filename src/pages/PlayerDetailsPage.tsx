@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +8,7 @@ import { ParentDetailsDialog } from "@/components/parents/ParentDetailsDialog";
 import { Player, PlayerType } from "@/types/player";
 import { differenceInYears } from "date-fns";
 import { toast } from "sonner";
-import { columnExists } from "@/utils/database";
+import { columnExists } from "@/utils/database/columnUtils";
 
 interface Parent {
   id: string;
@@ -30,16 +31,10 @@ const PlayerDetailsPage = () => {
       if (!id) return;
       
       try {
-        // Use a safer approach to check if column exists
-        const { data, error } = await supabase
-          .from('players')
-          .select('profile_image')
-          .limit(1)
-          .maybeSingle();
-          
-        // If we can query it without error, it exists
-        setProfileImageAvailable(!error);
-        console.log(`Profile image column available: ${!error}`);
+        // Use our utility function to check if the column exists
+        const columnAvailable = await columnExists('players', 'profile_image');
+        setProfileImageAvailable(columnAvailable);
+        console.log(`Profile image column available: ${columnAvailable}`);
       } catch (error) {
         console.error('Error checking profile image column:', error);
         setProfileImageAvailable(false);
@@ -113,7 +108,7 @@ const PlayerDetailsPage = () => {
         ? differenceInYears(new Date(), new Date(playerResult.date_of_birth)) 
         : playerResult.age;
 
-      // Transform the player data to match the Player type
+      // Transform the player data to match the Player type with profile_image
       const transformedPlayer: Player = {
         id: playerResult.id,
         name: playerResult.name || "Unknown Player",
@@ -124,8 +119,9 @@ const PlayerDetailsPage = () => {
         squadNumber: playerResult.squad_number || 0, // Add for backwards compatibility
         player_type: playerResult.player_type as PlayerType || "OUTFIELD",
         playerType: playerResult.player_type as PlayerType || "OUTFIELD", // Add for backwards compatibility
-        profile_image: playerResult.profile_image,
-        profileImage: playerResult.profile_image, // Add for backwards compatibility
+        // Handle profile_image property safely
+        profile_image: playerResult.profile_image || undefined,
+        profileImage: playerResult.profile_image || undefined, // Add for backwards compatibility
         team_category: playerResult.team_category || "",
         teamCategory: playerResult.team_category || "", // Add for backwards compatibility
         attributes: playerResult.attributes ? playerResult.attributes.map((attr: any) => ({
@@ -162,7 +158,7 @@ const PlayerDetailsPage = () => {
       const fetchParents = async () => {
         setIsLoading(true);
         try {
-          // Check if player_parents table exists by attempting to query it directly
+          // Use a safer approach to check if the table exists
           const { data, error } = await supabase
             .from("player_parents")
             .select("*")

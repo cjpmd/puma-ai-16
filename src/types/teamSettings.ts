@@ -5,7 +5,7 @@ import { UserRole } from "@/types/auth";
 export interface TeamSettings {
   id: string;
   team_id: string;
-  team_name: string;
+  team_name?: string;
   admin_id: string;
   format: string;
   hide_scores_from_parents: boolean;

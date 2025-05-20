@@ -1,3 +1,4 @@
+
 // Correct the PerformanceCategory type to match what's used in the app
 export type PlayerType = 'OUTFIELD' | 'GOALKEEPER';
 
@@ -101,3 +102,6 @@ export interface PositionSuitability {
   };
   suitability_score: number;
 }
+
+// Add this type for stores/players.ts
+export type AttributeCategory = 'TECHNICAL' | 'PHYSICAL' | 'MENTAL' | 'GOALKEEPING';

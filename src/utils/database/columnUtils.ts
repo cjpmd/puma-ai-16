@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -26,6 +27,30 @@ export const columnExists = async (tableName: string, columnName: string): Promi
     return false;
   } catch (error) {
     console.error(`Error checking if column ${columnName} exists in ${tableName}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Check if a table exists in the database
+ * @param tableName The name of the table to check
+ * @returns Promise<boolean> True if the table exists
+ */
+export const tableExists = async (tableName: string): Promise<boolean> => {
+  try {
+    // Use the Supabase function table_exists to check if the table exists
+    const { data, error } = await supabase.rpc('table_exists', { 
+      table_name: tableName 
+    });
+    
+    if (error) {
+      console.error('Error checking table existence:', error);
+      return false;
+    }
+    
+    return !!data;
+  } catch (error) {
+    console.error(`Error checking if table ${tableName} exists:`, error);
     return false;
   }
 };

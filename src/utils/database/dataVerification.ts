@@ -1,35 +1,72 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Directly checks if a table has a specific value in a column for a specific record
- * Useful for verifying if data was saved correctly
+ * Checks if the provided ID exists in the specified table
+ * @param tableName The name of the table to check
+ * @param id The ID to check for
+ * @returns Promise<boolean> True if the ID exists in the table
  */
-export const verifyDataSaved = async (
-  tableName: string,
-  columnName: string,
-  recordId: string,
-  expectedValue: any
-): Promise<boolean> => {
+export const verifyEntityExists = async (tableName: string, id: string): Promise<boolean> => {
   try {
-    console.log(`Verifying data saved in ${tableName}.${columnName} for record ${recordId}`);
+    // Use a conditional check to avoid the TypeScript error for dynamic table names
+    if (['players', 'teams', 'clubs', 'coaches', 'profiles'].includes(tableName)) {
+      const { data, error } = await supabase
+        .from(tableName as any)
+        .select('id')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        console.warn(`Entity with ID ${id} not found in ${tableName}:`, error);
+        return false;
+      }
+      
+      return !!data;
+    }
     
-    const { data, error } = await supabase
-      .from(tableName)
-      .select(columnName)
-      .eq('id', recordId)
-      .single();
+    // For unsupported tables, use a direct SQL query
+    const { data, error } = await supabase.rpc('execute_sql', {
+      sql_string: `SELECT EXISTS(SELECT 1 FROM ${tableName} WHERE id = '${id}')`
+    });
     
     if (error) {
-      console.error(`Error verifying saved data: ${error.message}`);
+      console.error(`Error verifying if ID ${id} exists in ${tableName}:`, error);
       return false;
     }
     
-    const saved = data && data[columnName] === expectedValue;
-    console.log(`Data verification result: ${saved}`, data);
-    return saved;
+    // Parse the result
+    return !!data;
   } catch (error) {
-    console.error(`Error verifying data save:`, error);
+    console.error(`Error in verifyEntityExists for ${tableName}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Checks if multiple IDs exist in the specified table
+ * @param tableName The name of the table to check
+ * @param ids Array of IDs to check for
+ * @returns Promise<boolean> True if all IDs exist in the table
+ */
+export const verifyEntitiesExist = async (tableName: string, ids: string[]): Promise<boolean> => {
+  try {
+    if (ids.length === 0) return true;
+    
+    // Use a safe approach to handle dynamic table names
+    const { data, error } = await supabase.rpc('execute_sql', {
+      sql_string: `SELECT COUNT(*) as count FROM ${tableName} WHERE id IN ('${ids.join("','")}')`
+    });
+    
+    if (error) {
+      console.error(`Error verifying if IDs exist in ${tableName}:`, error);
+      return false;
+    }
+    
+    // Parse the result (count should equal the number of IDs)
+    return data?.count === ids.length;
+  } catch (error) {
+    console.error(`Error in verifyEntitiesExist for ${tableName}:`, error);
     return false;
   }
 };

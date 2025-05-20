@@ -6,7 +6,6 @@ export * from "./ensureDatabaseSetup";
 export * from "./setupUserRolesTable";
 export * from "./initializeDatabase";
 export * from "./columnUtils";
-export * from "./parentChildLinking";
 export * from "./transferSystem";
 export * from "./createTables";
 
@@ -14,5 +13,5 @@ export * from "./createTables";
 export { executeSql } from "./executeSql";
 
 // Explicit re-exports to resolve ambiguities
-export { generateChildLinkingCode } from "./parentChildLinking";
-export { generateLinkingCode } from "./createTables";
+export { generateChildLinkingCode, linkParentToChild } from "./parentChildLinking";
+export { generateLinkingCode, createPlayerParentsTable } from "./createTables";
