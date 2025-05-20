@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AttributeSettingsManager } from "@/components/settings/AttributeSettingsManager";
 import { FAConnectionSettings } from "@/components/settings/FAConnectionSettings";
@@ -208,9 +207,18 @@ export default function TeamSettings() {
       if (error) {
         console.error('Error creating default categories:', error);
         
-        // If the error indicates the table doesn't exist, try to create it using a function
-        // For demo purposes, we'll create a new RPC function call
-        const { data, error: rpcError } = await supabase.rpc('create_performance_categories_table');
+        // If the error indicates the table doesn't exist, try to create it using execute_sql
+        // For demo purposes, create the table directly with execute_sql
+        const { data, error: rpcError } = await supabase.rpc('execute_sql', {
+          sql_string: `
+            CREATE TABLE IF NOT EXISTS performance_categories (
+              id text PRIMARY KEY,
+              name text NOT NULL,
+              description text,
+              created_at timestamp with time zone DEFAULT now()
+            );
+          `
+        });
         
         if (rpcError) {
           console.error('Error creating performance_categories table via RPC:', rpcError);
@@ -250,8 +258,17 @@ export default function TeamSettings() {
       if (error) {
         console.error('Error creating default formats:', error);
         
-        // If the error indicates the table doesn't exist, try to create it using a function
-        const { data, error: rpcError } = await supabase.rpc('create_game_formats_table');
+        // If the error indicates the table doesn't exist, try to create it using execute_sql
+        const { data, error: rpcError } = await supabase.rpc('execute_sql', {
+          sql_string: `
+            CREATE TABLE IF NOT EXISTS game_formats (
+              id text PRIMARY KEY,
+              name text NOT NULL,
+              description text,
+              created_at timestamp with time zone DEFAULT now()
+            );
+          `
+        });
         
         if (rpcError) {
           console.error('Error creating game_formats table via RPC:', rpcError);
@@ -361,8 +378,13 @@ export default function TeamSettings() {
           
           <TabsContent value="subscriptions" className="space-y-6">
             <TeamPlatformSubscription />
-            <ActiveSubscriptionsTable />
-            <PlayerSubscriptionManager />
+            <ActiveSubscriptionsTable subscriptions={[]} />
+            <PlayerSubscriptionManager 
+              playerId="" 
+              playerName="" 
+              teamId="" 
+              teamName="" 
+            />
           </TabsContent>
           
           <TabsContent value="attributes">

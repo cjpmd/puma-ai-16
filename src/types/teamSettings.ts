@@ -1,6 +1,6 @@
 
 import { Json } from "@/integrations/supabase/types";
-import { UserRole } from "@/hooks/useAuth.tsx"; 
+import { UserRole } from "@/types/auth"; 
 
 export interface TeamSettings {
   id: string;

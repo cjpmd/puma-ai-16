@@ -88,12 +88,12 @@ export default function ClubSettings() {
             
             // Only update team name if it matches the default "My Team" name
             // and if teamSettings.team_name exists
-            if (team.team_name === "My Team" && teamSettings.team_name) {
+            if (team.team_name === "My Team" && teamSettings?.team_name) {
               updates.team_name = teamSettings.team_name;
             }
             
             // Always use the age group from team_settings if available
-            if (teamSettings.team_colors && (!team.age_group || team.age_group === "")) {
+            if (teamSettings?.team_colors && (!team.age_group || team.age_group === "")) {
               updates.age_group = teamSettings.team_colors;
             }
             
@@ -104,7 +104,7 @@ export default function ClubSettings() {
           
           // Update database with age group if needed
           for (const team of teamsData || []) {
-            if (teamSettings.team_colors && (!team.age_group || team.age_group === "")) {
+            if (teamSettings?.team_colors && (!team.age_group || team.age_group === "")) {
               console.log("Updating team age group from team settings:", teamSettings.team_colors);
               await supabase
                 .from('teams')
@@ -161,12 +161,12 @@ export default function ClubSettings() {
             const updates: any = {};
             
             // Only update team name if it matches the default "My Team" name
-            if (team.team_name === "My Team" && teamSettings.team_name) {
+            if (team.team_name === "My Team" && teamSettings?.team_name) {
               updates.team_name = teamSettings.team_name;
             }
             
             // Always use the age group from team_settings if available
-            if (teamSettings.team_colors && (!team.age_group || team.age_group === "")) {
+            if (teamSettings?.team_colors && (!team.age_group || team.age_group === "")) {
               updates.age_group = teamSettings.team_colors;
             }
             
@@ -177,7 +177,7 @@ export default function ClubSettings() {
           
           // Update database with age group if needed
           for (const team of teamsData || []) {
-            if (teamSettings.team_colors && (!team.age_group || team.age_group === "")) {
+            if (teamSettings?.team_colors && (!team.age_group || team.age_group === "")) {
               await supabase
                 .from('teams')
                 .update({ age_group: teamSettings.team_colors })

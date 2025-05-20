@@ -30,9 +30,16 @@ const PlayerDetailsPage = () => {
       if (!id) return;
       
       try {
-        const exists = await columnExists('players', 'profile_image');
-        console.log(`Profile image column available: ${exists}`);
-        setProfileImageAvailable(exists);
+        // Use a safer approach to check if column exists
+        const { data, error } = await supabase
+          .from('players')
+          .select('profile_image')
+          .limit(1)
+          .maybeSingle();
+          
+        // If we can query it without error, it exists
+        setProfileImageAvailable(!error);
+        console.log(`Profile image column available: ${!error}`);
       } catch (error) {
         console.error('Error checking profile image column:', error);
         setProfileImageAvailable(false);
@@ -70,7 +77,7 @@ const PlayerDetailsPage = () => {
       console.log("Player data fetched:", playerResult);
       
       // Log profile image URL if available
-      if (profileImageAvailable && playerResult.profile_image) {
+      if (profileImageAvailable && playerResult?.profile_image) {
         console.log("Profile image URL:", playerResult.profile_image);
       } else {
         console.log("No profile image available");
@@ -117,8 +124,8 @@ const PlayerDetailsPage = () => {
         squadNumber: playerResult.squad_number || 0, // Add for backwards compatibility
         player_type: playerResult.player_type as PlayerType || "OUTFIELD",
         playerType: playerResult.player_type as PlayerType || "OUTFIELD", // Add for backwards compatibility
-        profile_image: profileImageAvailable ? playerResult.profile_image : undefined,
-        profileImage: profileImageAvailable ? playerResult.profile_image : undefined, // Add for backwards compatibility
+        profile_image: playerResult.profile_image,
+        profileImage: playerResult.profile_image, // Add for backwards compatibility
         team_category: playerResult.team_category || "",
         teamCategory: playerResult.team_category || "", // Add for backwards compatibility
         attributes: playerResult.attributes ? playerResult.attributes.map((attr: any) => ({
@@ -155,29 +162,17 @@ const PlayerDetailsPage = () => {
       const fetchParents = async () => {
         setIsLoading(true);
         try {
-          // Check if player_parents table exists
-          const { data: tableExists, error: tableError } = await supabase
-            .from('pg_tables')
-            .select('tablename')
-            .eq('schemaname', 'public')
-            .eq('tablename', 'player_parents');
-            
-          if (tableError || !tableExists) {
-            console.log("player_parents table doesn't exist");
+          // Check if player_parents table exists by attempting to query it directly
+          const { data, error } = await supabase
+            .from("player_parents")
+            .select("*")
+            .eq("player_id", id);
+
+          if (error) {
+            console.log("Error accessing player_parents table:", error);
             setParents([]);
           } else {
-            // Get parents data
-            const { data, error } = await supabase
-              .from("player_parents")
-              .select("*")
-              .eq("player_id", id);
-
-            if (error) {
-              console.error("Error fetching parents:", error);
-              setParents([]);
-            } else {
-              setParents(data || []);
-            }
+            setParents(data || []);
           }
         } catch (error) {
           console.error("Failed to fetch parents:", error);

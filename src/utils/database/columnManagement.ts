@@ -1,23 +1,41 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from '@/integrations/supabase/client';
+import { columnExists } from './columnUtils';
 
 /**
- * Manage database columns for players
+ * Add a column to a table if it doesn't exist
+ * @param tableName The name of the table
+ * @param columnName The name of the column to add
+ * @param columnType The PostgreSQL data type for the column
+ * @returns Promise<boolean> True if the column was added, false otherwise
  */
-export const ensurePlayerColumns = async () => {
+export const addColumnIfNotExists = async (tableName: string, columnName: string, columnType: string): Promise<boolean> => {
   try {
-    // Create SQL statement to add linking_code column if it doesn't exist
-    const sql = `
-      ALTER TABLE public.players 
-      ADD COLUMN IF NOT EXISTS linking_code TEXT UNIQUE DEFAULT gen_random_uuid()::text;
-    `;
+    // First check if the column exists
+    const exists = await columnExists(tableName, columnName);
     
-    const { error } = await supabase.rpc('execute_sql', { sql_query: sql });
-    if (error) throw error;
+    if (!exists) {
+      // Column doesn't exist, so add it
+      const { error } = await supabase.rpc('execute_sql', {
+        sql_string: `ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnType}`
+      });
+      
+      if (error) {
+        console.error(`Error adding column ${columnName} to ${tableName}:`, error);
+        return false;
+      }
+      
+      console.log(`Added column ${columnName} to ${tableName}`);
+      return true;
+    }
     
-    return true;
+    // Column already exists
+    console.log(`Column ${columnName} already exists in ${tableName}`);
+    return false;
   } catch (error) {
-    console.error('Error ensuring player columns:', error);
+    console.error(`Error in addColumnIfNotExists for ${columnName} in ${tableName}:`, error);
     return false;
   }
 };
+
+// Export other column management functions here

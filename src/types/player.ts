@@ -1,9 +1,7 @@
-
-// Update the Player type to include possible profile_image
-
+// Correct the PerformanceCategory type to match what's used in the app
 export type PlayerType = 'OUTFIELD' | 'GOALKEEPER';
 
-export type PerformanceCategory = 'MESSI' | 'HESKEY' | 'BECKHAM';
+export type PerformanceCategory = 'MESSI' | 'RONALDO' | 'JAGS' | 'HESKEY' | 'BECKHAM';
 
 export type PositionCategory = 'GK' | 'DEF' | 'MID' | 'FWD';
 
