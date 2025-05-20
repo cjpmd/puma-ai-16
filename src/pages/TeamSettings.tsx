@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,15 +40,53 @@ export const TeamSettings = () => {
     <div className="space-y-4 p-4">
       <h1 className="text-2xl font-bold">Team Settings</h1>
       
+      {/* Team Info Settings */}
+      <Card>
+        <CardContent className="pt-6">
+          <TeamInfoSettings 
+            settings={settings} 
+            onSettingsUpdated={() => {}} 
+          />
+        </CardContent>
+      </Card>
+      
+      {/* Formats and Categories */}
+      <Card>
+        <CardContent className="pt-6">
+          <FormatsAndCategoriesSettings 
+            settings={settings} 
+            onSettingsUpdated={() => {}} 
+          />
+        </CardContent>
+      </Card>
+      
+      {/* FA Connection Settings */}
+      <Card>
+        <CardContent className="pt-6">
+          <FAConnectionSettings />
+        </CardContent>
+      </Card>
+      
+      {/* Attribute Settings */}
+      <Card>
+        <CardContent className="pt-6">
+          <AttributeSettingsManager />
+        </CardContent>
+      </Card>
+      
+      {/* WhatsApp Integration */}
+      <Card>
+        <CardContent className="pt-6">
+          <WhatsAppIntegration />
+        </CardContent>
+      </Card>
+      
       {/* Users Manager */}
       <Card>
         <CardContent className="pt-6">
           <TeamUsersManager teamId="your-team-id" />
         </CardContent>
       </Card>
-      
-      {/* Other settings sections */}
-      {/* ... keep existing code (other settings sections) */}
     </div>
   );
 };

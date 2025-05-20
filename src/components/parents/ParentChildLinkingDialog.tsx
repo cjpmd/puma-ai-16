@@ -1,135 +1,133 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
+import { useAuth } from "@/hooks/useAuth.tsx";
+import { supabase } from "@/integrations/supabase/client";
+import { Check, Loader2 } from "lucide-react";
 
 export const ParentChildLinkingDialog = () => {
   const [open, setOpen] = useState(false);
-  const [linkingCode, setLinkingCode] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const { profile } = useAuth();
   const { toast } = useToast();
-  const auth = useAuth();
-  const { profile, refreshProfile } = auth;
 
-  const handleLinkWithCode = async () => {
-    if (!linkingCode || !profile) {
+  const handleLinkChild = async () => {
+    if (!profile?.id) {
       toast({
         title: "Error",
-        description: "Please enter a valid linking code",
+        description: "You must be logged in to link a child.",
         variant: "destructive",
       });
       return;
     }
 
-    setIsSubmitting(true);
-
+    setLoading(true);
+    
     try {
-      // Find the player with this linking code
+      // Lookup the player with this code
       const { data: playerData, error: playerError } = await supabase
-        .from("players")
-        .select("id, name")
-        .eq("linking_code", linkingCode)
+        .from('players')
+        .select('id, name')
+        .eq('linking_code', code)
         .single();
-
-      if (playerError || !playerData) {
-        toast({
-          title: "Invalid Code",
-          description: "No player found with this linking code",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
+      
+      if (playerError) {
+        throw new Error("Invalid code. Please check and try again.");
       }
-
-      // Create link between parent and child
-      const { error } = await supabase
-        .from("parent_child_linking")
+      
+      // Link the parent to the child
+      const { error: linkError } = await supabase
+        .from('parent_child_linking')
         .insert({
           parent_id: profile.id,
-          player_id: playerData.id,
+          player_id: playerData.id
         });
-
-      if (error) {
-        if (error.code === "23505") {
-          toast({
-            title: "Already linked",
-            description: "This player is already linked to your account",
-            variant: "destructive", // Changed from "warning" to "destructive"
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
-          });
+      
+      if (linkError) {
+        // Check if it's a duplicate link
+        if (linkError.code === '23505') { // Unique constraint violation
+          throw new Error("You are already linked to this player.");
         }
-        setIsSubmitting(false);
-        return;
+        throw new Error("Failed to link to player. Please try again.");
       }
-
-      // Update role to include parent role if needed
-      if (profile && refreshProfile && auth.addRole) {
-        await auth.addRole("parent");
-        await refreshProfile();
-      }
-
+      
+      setSuccess(true);
       toast({
-        title: "Success",
-        description: `Linked to player: ${playerData.name}`,
+        title: "Success!",
+        description: `You are now linked to player: ${playerData.name}`,
       });
       
-      setLinkingCode("");
-      setOpen(false);
+      // Reset form after a delay
+      setTimeout(() => {
+        setSuccess(false);
+        setCode("");
+        setOpen(false);
+      }, 2000);
+      
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "An unexpected error occurred",
+        description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Link Player with Code</Button>
+        <Button className="w-full">Link to Child</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Link with Player Code</DialogTitle>
+          <DialogTitle>Link to Child Player</DialogTitle>
           <DialogDescription>
-            Enter the linking code provided by the coach or player to connect your parent account
+            Enter the linking code provided by your child's coach to connect your account.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="linkingCode" className="col-span-4">
-              Linking Code
+            <Label htmlFor="code" className="text-right">
+              Code
             </Label>
             <Input
-              id="linkingCode"
-              value={linkingCode}
-              onChange={(e) => setLinkingCode(e.target.value)}
-              placeholder="Enter code (e.g., ABC123)"
-              className="col-span-4"
+              id="code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className="col-span-3"
+              placeholder="Enter linking code"
+              disabled={loading || success}
             />
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit" onClick={handleLinkWithCode} disabled={isSubmitting}>
-            {isSubmitting ? "Linking..." : "Link Account"}
+          <Button 
+            onClick={handleLinkChild} 
+            disabled={!code || loading || success}
+            className="w-full"
+          >
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {success && <Check className="mr-2 h-4 w-4" />}
+            {success ? "Linked Successfully" : "Link to Child"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
-
-export default ParentChildLinkingDialog;

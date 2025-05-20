@@ -1,171 +1,198 @@
-// Fix for TopRatedByPosition PerformanceCategory usage
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { PerformanceCategory } from '@/types/player';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Player, PerformanceCategory } from '@/types/player';
 
-interface PlayerRanking {
-  id: string;
-  name: string;
-  squad_number?: number;
-  profile_image?: string;
-  suitability_score: number;
-  position: string;
-  position_name: string;
-}
-
-export const TopRatedByPosition = () => {
+// Component to display position ratings
+const TopRatedByPosition = () => {
+  const [activeTab, setActiveTab] = useState('field');
   const [selectedCategory, setSelectedCategory] = useState<PerformanceCategory>(PerformanceCategory.MESSI);
-  const [selectedTab, setSelectedTab] = useState('gk');
   
-  const { data: rankings, isLoading } = useQuery({
-    queryKey: ['player-rankings', selectedCategory, selectedTab],
+  // Fetch all players
+  const { data: players, isLoading } = useQuery({
+    queryKey: ['all-players'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('player_position_rankings')
+        .from('players')
         .select(`
-          players (id, name, squad_number, profile_image),
-          suitability_score,
-          position,
-          position_definitions (abbreviation, full_name)
-        `)
-        .eq('performance_category', selectedCategory)
-        .eq('position_category', selectedTab.toUpperCase())
-        .order('suitability_score', { ascending: false })
-        .limit(10);
+          *,
+          attributes:player_attributes(*)
+        `);
+        
+      if (error) {
+        console.error('Error fetching players:', error);
+        throw error;
+      }
       
-      if (error) throw error;
-      
-      return data?.map(item => ({
-        id: item.players.id,
-        name: item.players.name,
-        squad_number: item.players.squad_number,
-        profile_image: item.players.profile_image,
-        suitability_score: item.suitability_score,
-        position: item.position,
-        position_name: item.position_definitions.full_name
-      })) || [];
+      return data as Player[];
     }
   });
   
-  const renderSkeletons = () => {
-    return Array(5).fill(0).map((_, i) => (
-      <div key={i} className="flex items-center space-x-4 py-2">
-        <Skeleton className="h-12 w-12 rounded-full" />
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-[200px]" />
-          <Skeleton className="h-4 w-[160px]" />
-        </div>
-      </div>
-    ));
+  // Fetch position suitability data
+  const { data: positionData } = useQuery({
+    queryKey: ['positions-suitability'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('position_suitability')
+        .select(`
+          player_id,
+          suitability_score,
+          position_id,
+          position_definitions(abbreviation, full_name)
+        `)
+        .order('suitability_score', { ascending: false });
+        
+      if (error) {
+        console.error('Error fetching position suitability:', error);
+        throw error;
+      }
+      
+      // Transform data to be grouped by position
+      const positionMap: Record<string, {id: string, player_id: string, score: number}[]> = {};
+      
+      data.forEach((item: any) => {
+        const posAbbrev = item.position_definitions.abbreviation;
+        if (!positionMap[posAbbrev]) {
+          positionMap[posAbbrev] = [];
+        }
+        
+        positionMap[posAbbrev].push({
+          id: item.id,
+          player_id: item.player_id,
+          score: item.suitability_score
+        });
+        
+        // Sort by score descending
+        positionMap[posAbbrev].sort((a, b) => b.score - a.score);
+      });
+      
+      return positionMap;
+    }
+  });
+  
+  // Function to get player by ID
+  const getPlayerById = (playerId: string): Player | undefined => {
+    return players?.find(p => p.id === playerId);
   };
   
-  const renderRankings = () => {
-    if (isLoading) return renderSkeletons();
-    
-    if (!rankings || rankings.length === 0) {
-      return <p className="text-muted-foreground py-4">No players found for this position.</p>;
-    }
-    
-    return rankings.map((player, index) => (
-      <div key={player.id} className="flex items-center justify-between py-2 border-b last:border-0">
-        <div className="flex items-center space-x-3">
-          <div className="font-bold text-lg w-6 text-center">{index + 1}</div>
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={player.profile_image || ''} alt={player.name} />
-            <AvatarFallback>{player.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="font-medium">{player.name}</div>
-            <div className="text-sm text-muted-foreground">
-              {player.squad_number ? `#${player.squad_number} · ` : ''}
-              {player.position_name}
-            </div>
-          </div>
-        </div>
-        <Badge variant="outline" className="bg-green-500/10">
-          {player.suitability_score.toFixed(1)}
-        </Badge>
-      </div>
-    ));
+  // Group positions by category
+  const groupedPositions = {
+    gk: ['GK'],
+    defense: ['DL', 'DCL', 'DCR', 'DR', 'WBL', 'WBR'],
+    midfield: ['DMCL', 'DMCR', 'ML', 'MCL', 'MCR', 'MR'],
+    attack: ['AML', 'AMCL', 'AMCR', 'AMR', 'STCL', 'STCR']
   };
+  
+  // Render position cards
+  const renderPositionCards = (positions: string[]) => {
+    return positions.map(position => {
+      const playersInPosition = positionData?.[position] || [];
+      
+      return (
+        <Card key={position} className="col-span-1">
+          <CardHeader>
+            <CardTitle className="text-center">{position}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="space-y-2">
+              {playersInPosition.slice(0, 3).map((item, idx) => {
+                const player = getPlayerById(item.player_id);
+                if (!player) return null;
+                
+                return (
+                  <div key={idx} className="flex justify-between items-center p-2 rounded bg-muted">
+                    <span>{player.name}</span>
+                    <span className="font-bold">{Math.round(item.score)}%</span>
+                  </div>
+                );
+              })}
+              
+              {playersInPosition.length === 0 && (
+                <div className="text-center text-muted-foreground py-2">No players rated</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      );
+    });
+  };
+  
+  if (isLoading) {
+    return <div>Loading position data...</div>;
+  }
   
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 className="text-3xl font-bold">Top Rated Players By Position</h1>
-        
-        <div className="flex space-x-2">
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">Player Position Ratings</h1>
+      
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-3">Performance Category</h2>
+        <div className="flex flex-wrap gap-2">
           <Button 
             variant={selectedCategory === PerformanceCategory.MESSI ? "default" : "outline"}
             onClick={() => setSelectedCategory(PerformanceCategory.MESSI)}
-            className="relative"
           >
-            Messi
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></span>
+            MESSI
           </Button>
           <Button 
             variant={selectedCategory === PerformanceCategory.RONALDO ? "default" : "outline"}
             onClick={() => setSelectedCategory(PerformanceCategory.RONALDO)}
-            className="relative"
           >
-            Ronaldo
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full"></span>
+            RONALDO
           </Button>
           <Button 
             variant={selectedCategory === PerformanceCategory.JAGS ? "default" : "outline"}
             onClick={() => setSelectedCategory(PerformanceCategory.JAGS)}
-            className="relative"
           >
-            Jags
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full"></span>
+            JAGS
           </Button>
         </div>
       </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Player Rankings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="gk" value={selectedTab} onValueChange={setSelectedTab}>
-            <TabsList className="grid grid-cols-4 mb-6">
-              <TabsTrigger value="gk">Goalkeepers</TabsTrigger>
-              <TabsTrigger value="def">Defenders</TabsTrigger>
-              <TabsTrigger value="mid">Midfielders</TabsTrigger>
-              <TabsTrigger value="fwd">Forwards</TabsTrigger>
-            </TabsList>
+      <Tabs defaultValue="field" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="field">Field Players</TabsTrigger>
+          <TabsTrigger value="goalkeepers">Goalkeepers</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="field">
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Defense</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {renderPositionCards(groupedPositions.defense)}
+              </div>
+            </div>
             
-            <TabsContent value="gk" className="mt-0">
-              <ScrollArea className="h-[400px]">
-                {renderRankings()}
-              </ScrollArea>
-            </TabsContent>
-            <TabsContent value="def" className="mt-0">
-              <ScrollArea className="h-[400px]">
-                {renderRankings()}
-              </ScrollArea>
-            </TabsContent>
-            <TabsContent value="mid" className="mt-0">
-              <ScrollArea className="h-[400px]">
-                {renderRankings()}
-              </ScrollArea>
-            </TabsContent>
-            <TabsContent value="fwd" className="mt-0">
-              <ScrollArea className="h-[400px]">
-                {renderRankings()}
-              </ScrollArea>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Midfield</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {renderPositionCards(groupedPositions.midfield)}
+              </div>
+            </div>
+            
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Attack</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {renderPositionCards(groupedPositions.attack)}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="goalkeepers">
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Goalkeepers</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+              {renderPositionCards(groupedPositions.gk)}
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

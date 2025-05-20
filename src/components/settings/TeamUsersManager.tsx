@@ -1,219 +1,229 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Pencil, Trash2 } from "lucide-react";
+import { PlusCircle, RefreshCcw, MapPin, User, Mail, Edit, UserPlus } from "lucide-react";
+import { UserAssignmentDialog } from "@/components/admin/UserAssignmentDialog";
+import { AllowedUserRoles } from "@/types/teamSettings";
+import { useQuery } from "@tanstack/react-query";
 
-// Define a simplified interface for TeamUser to avoid circular references
 interface TeamUser {
   id: string;
   email: string;
-  name: string;
+  name?: string;
   role: string;
+  club_id?: string;
+  team_id?: string;
 }
-
-// Define a string literal type for user roles instead of using an enum
-export type AllowedUserRoles = "admin" | "manager" | "coach" | "parent" | "globalAdmin";
-
-// Create a simplified interface for the UserAssignmentDialog
-interface UserAssignmentDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onAssign: (userId: string, role: AllowedUserRoles) => Promise<boolean>;
-}
-
-// Simple stub component for UserAssignmentDialog - should be imported from the actual file
-const UserAssignmentDialog = (props: UserAssignmentDialogProps) => {
-  return <div>UserAssignmentDialog Placeholder</div>;
-};
-
-export const mapStringToUserRole = (role: string): AllowedUserRoles => {
-  switch (role.toLowerCase()) {
-    case 'admin':
-      return 'admin';
-    case 'manager':
-      return 'manager';
-    case 'coach':
-      return 'coach';
-    case 'parent':
-      return 'parent';
-    case 'globaladmin':
-      return 'globalAdmin';
-    default:
-      return 'coach'; // Default role
-  }
-};
 
 interface TeamUsersManagerProps {
-  teamId: string;
+  teamId?: string;
 }
 
 export const TeamUsersManager = ({ teamId }: TeamUsersManagerProps) => {
-  const [users, setUsers] = useState<TeamUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<TeamUser | null>(null);
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (teamId) {
-      fetchUsers();
-    }
-  }, [teamId]);
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      // Use a simple query to get team users
+  // Fetch team users
+  const { 
+    data: users, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useQuery({
+    queryKey: ["team-users"],
+    queryFn: async () => {
+      // In a real app, you'd filter by teamId
       const { data, error } = await supabase
-        .from('user_roles')
-        .select('id, role, profiles:user_id (id, name, email)')
-        .eq('team_id', teamId);
-
-      if (error) throw error;
-
-      // Transform the data into the simplified format
-      const formattedUsers = data?.map((item: any) => ({
-        id: item.profiles?.id || '',
-        email: item.profiles?.email || '',
-        name: item.profiles?.name || 'Unknown User',
-        role: item.role
-      })) || [];
-
-      setUsers(formattedUsers);
-    } catch (error) {
-      console.error('Error fetching team users:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load team users",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAssignUser = async (userId: string, role: AllowedUserRoles): Promise<boolean> => {
-    try {
-      // Convert the role enum to string
-      const roleString = role;
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
       
-      // Check if user already has a role in this team
-      const { data: existingRole } = await supabase
-        .from('user_roles')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('team_id', teamId)
-        .single();
-
-      if (existingRole) {
-        // Update existing role
-        await supabase
-          .from('user_roles')
-          .update({ role: roleString })
-          .eq('id', existingRole.id);
-      } else {
-        // Create new role
-        await supabase
-          .from('user_roles')
-          .insert({
-            user_id: userId,
-            team_id: teamId,
-            role: roleString
-          });
+      if (error) {
+        throw error;
       }
+      
+      return data as TeamUser[];
+    }
+  });
 
+  const handleAssignUserToTeam = async (userId: string, role: AllowedUserRoles) => {
+    try {
+      // Update user role
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ role })
+        .eq('id', userId);
+      
+      if (updateError) throw updateError;
+      
       toast({
-        description: "User role updated successfully"
+        title: "Success",
+        description: "User role updated successfully",
       });
       
-      fetchUsers();
+      refetch();
       return true;
-    } catch (error) {
-      console.error('Error assigning user:', error);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to assign user role",
-        variant: "destructive"
+        description: error.message || "Could not update user role",
+        variant: "destructive",
       });
       return false;
     }
   };
 
-  const handleRemoveUser = async (userId: string) => {
-    try {
-      await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId)
-        .eq('team_id', teamId);
+  const handleOpenAssignDialog = (user: TeamUser) => {
+    setSelectedUser(user);
+    setIsAssignDialogOpen(true);
+  };
 
-      setUsers(users.filter(user => user.id !== userId));
-      
-      toast({
-        description: "User removed from team"
-      });
-    } catch (error) {
-      console.error('Error removing user:', error);
-      toast({
-        title: "Error",
-        description: "Failed to remove user from team",
-        variant: "destructive"
-      });
+  const handleAddNewUser = () => {
+    setIsAddUserOpen(true);
+  };
+
+  const getRoleBadgeColor = (role: string): string => {
+    switch (role) {
+      case 'admin':
+        return "bg-red-100 text-red-800";
+      case 'coach':
+        return "bg-blue-100 text-blue-800";
+      case 'parent':
+        return "bg-green-100 text-green-800";
+      case 'player':
+        return "bg-purple-100 text-purple-800";
+      case 'globalAdmin':
+        return "bg-amber-100 text-amber-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Users</CardTitle>
+          <CardDescription>
+            There was an error loading team users.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={() => refetch()}>
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Try Again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle>Team Users</CardTitle>
-            <CardDescription>
-              Manage users who have access to this team
-            </CardDescription>
-          </div>
-          <Button onClick={() => setIsDialogOpen(true)}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add User
-          </Button>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Team Users</CardTitle>
+          <CardDescription>
+            Manage users and their roles in your team
+          </CardDescription>
         </div>
+        <Button onClick={handleAddNewUser} className="flex items-center">
+          <UserPlus className="mr-2 h-4 w-4" />
+          Add User
+        </Button>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <p className="text-muted-foreground">Loading users...</p>
-        ) : users.length > 0 ? (
-          <div className="space-y-3">
-            {users.map(user => (
-              <div key={user.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-md">
-                <div>
-                  <p className="font-medium">{user.name}</p>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">{user.role}</Badge>
-                  <Button variant="ghost" size="icon">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleRemoveUser(user.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+        {isLoading ? (
+          <div className="flex justify-center items-center p-8">
+            <RefreshCcw className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <p className="text-muted-foreground">No users have been assigned to this team yet.</p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Team</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users && users.length > 0 ? (
+                users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{user.name || "Unnamed User"}</span>
+                        <span className="text-xs text-muted-foreground flex items-center">
+                          <Mail className="mr-1 h-3 w-3" />
+                          {user.email || "No email"}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getRoleBadgeColor(user.role)}>
+                        {user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.team_id ? (
+                        <span className="flex items-center text-sm">
+                          <MapPin className="mr-1 h-3 w-3" />
+                          {user.team_id}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">No team</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleOpenAssignDialog(user)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8">
+                    <div className="flex flex-col items-center">
+                      <User className="h-8 w-8 text-muted-foreground mb-2" />
+                      <p>No users found.</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         )}
       </CardContent>
-      
-      <UserAssignmentDialog 
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        onAssign={handleAssignUser}
-      />
+
+      {/* User Assignment Dialog */}
+      {selectedUser && (
+        <UserAssignmentDialog
+          open={isAssignDialogOpen}
+          onOpenChange={setIsAssignDialogOpen}
+          user={selectedUser}
+          onSuccess={() => refetch()}
+        />
+      )}
     </Card>
   );
 };

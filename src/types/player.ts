@@ -91,7 +91,7 @@ export const transformDbPlayerToPlayer = (dbPlayer: any): Player => {
     team_id: dbPlayer.team_id,
     created_at: dbPlayer.created_at,
     updated_at: dbPlayer.updated_at,
-    self_linked: dbPlayer.self_linked,
+    self_linked: dbPlayer.self_linked || false,
     user_id: dbPlayer.user_id,
     linking_code: dbPlayer.linking_code,
     status: dbPlayer.status,

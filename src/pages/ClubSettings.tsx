@@ -1,3 +1,4 @@
+
 // Fixed default ClubSettings implementation to resolve team_name and team_colors errors
 
 import React, { useState } from 'react';
