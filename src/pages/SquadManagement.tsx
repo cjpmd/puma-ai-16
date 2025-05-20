@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from "@/types/player";
@@ -23,8 +23,12 @@ import { PlayerTransferManager } from "@/components/squad/PlayerTransferManager"
 import { useAuth } from "@/hooks/useAuth";
 import { columnExists } from "@/utils/database/columnUtils";
 
-type SortField = "squadNumber" | "technical" | "mental" | "physical" | "goalkeeping";
-type SortOrder = "asc" | "desc";
+interface ObjectiveStats {
+  completed?: number;
+  improving?: number;
+  ongoing?: number;
+  [key: string]: number | undefined;
+}
 
 const SquadManagement = () => {
   const [sortField, setSortField] = useState<SortField>("squadNumber");
@@ -249,6 +253,44 @@ const SquadManagement = () => {
       </div>
     );
   }
+
+  // Update objectives state to use the proper interface
+  const [objectives, setObjectives] = useState<ObjectiveStats>({
+    completed: 0,
+    improving: 0,
+    ongoing: 0
+  });
+
+  // Fix the objectives stats fetching code
+  const fetchObjectiveStats = async () => {
+    try {
+      const { data, error } = await supabase.from("player_stats").select("*");
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Initialize stats with proper types
+      const stats: ObjectiveStats = {
+        completed: 0,
+        improving: 0,
+        ongoing: 0
+      };
+      
+      // Aggregate stats from player_stats table
+      data?.forEach((player: any) => {
+        stats.completed = (stats.completed || 0) + (player.completed_objectives || 0);
+        stats.improving = (stats.improving || 0) + (player.improving_objectives || 0);
+        stats.ongoing = (stats.ongoing || 0) + (player.ongoing_objectives || 0);
+      });
+      
+      setObjectives(stats);
+    } catch (error) {
+      console.error("Error fetching objective stats:", error);
+    }
+  };
+
+  fetchObjectiveStats();
 
   return (
     <div className="min-h-screen bg-background p-6">

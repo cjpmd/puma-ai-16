@@ -1,290 +1,217 @@
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Team } from "@/types/team";
-import { Profile, UserRole } from "@/types/auth";
-import { updateUserRole } from "@/utils/database/updateUserRole";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+import { UserAssignmentDialog } from "@/components/admin/UserAssignmentDialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, UserPlus, X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { AllowedUserRoles } from "@/types/teamSettings";
+import { useAuth } from "@/hooks/useAuth.tsx";
 
-interface TeamUsersManagerProps {
-  team?: Team;
+type TeamUser = {
+  id: string;
+  name: string;
+  role: AllowedUserRoles;
+  email?: string;
+};
+
+export interface TeamUsersManagerProps {
+  teamId: string;
+  teamName?: string;
 }
 
-export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
-  const [teamUsers, setTeamUsers] = useState<Profile[]>([]);
-  const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<UserRole>("coach");
+export const TeamUsersManager = ({ teamId, teamName }: TeamUsersManagerProps) => {
+  const [users, setUsers] = useState<TeamUser[]>([]);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (team) {
-      fetchTeamUsers();
-    }
-  }, [team]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
+  const auth = useAuth();
 
   const fetchTeamUsers = async () => {
-    if (!team) return;
-    
     setLoading(true);
     try {
+      // First get the profiles that have this team_id assigned
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
-        .eq("team_id", team.id);
+        .select("id, name, email, role")
+        .eq("team_id", teamId);
 
-      if (error) {
-        console.error("Error fetching team users:", error);
-        toast("Failed to fetch team users", {
-          description: "Could not load team users.",
-        });
-      } else {
-        setTeamUsers(data || []);
-      }
+      if (error) throw error;
+      
+      // Simple mapping to avoid deep type instantiation issues
+      const formattedUsers = data.map((user: any) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role as AllowedUserRoles
+      }));
+
+      setUsers(formattedUsers);
+    } catch (error) {
+      console.error("Error fetching team users:", error);
+      toast({
+        title: "Error",
+        description: "Could not load team users",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddUser = async () => {
-    if (!team) return;
-    setLoading(true);
+  const handleAddUser = async (userId: string, role: AllowedUserRoles) => {
     try {
-      // Check if the user with the given email exists
-      const { data: existingUsers, error: userError } = await supabase
+      const { error } = await supabase
         .from("profiles")
-        .select("*")
-        .eq("email", newEmail);
+        .update({
+          team_id: teamId,
+          role: role as string, // Cast to string to avoid type errors
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
 
-      if (userError) {
-        console.error("Error checking existing user:", userError);
-        toast("Error checking user", {
-          description: "Failed to check existing user.",
-        });
-        return;
-      }
+      if (error) throw error;
 
-      if (existingUsers && existingUsers.length > 0) {
-        // User exists, update their role and team_id
-        const user = existingUsers[0];
-        
-        // Use our updateUserRole utility to handle role changes
-        const roleUpdateSuccess = await updateUserRole(user.id, newRole);
-        
-        if (roleUpdateSuccess) {
-          // Now update the team_id separately
-          const { error: teamUpdateError } = await supabase
-            .from("profiles")
-            .update({ team_id: team.id } as any)
-            .eq("id", user.id);
-            
-          if (teamUpdateError) {
-            console.error("Error updating team:", teamUpdateError);
-            toast("Error updating user's team", {
-              description: "Failed to update user's team.",
-            });
-            return;
-          }
-        } else {
-          // Try the combined update as a fallback
-          // Using an object that matches the profile schema
-          const { error: updateError } = await supabase
-            .from("profiles")
-            .update({ 
-              role: newRole as any, 
-              team_id: team.id 
-            } as any)
-            .eq("id", user.id);
-
-          if (updateError) {
-            console.error("Error updating user:", updateError);
-            toast("Error updating user", {
-              description: "Failed to update user.",
-            });
-            return;
-          }
-        }
-        
-        toast("Success", {
-          description: "User added to team successfully.",
-        });
-        fetchTeamUsers(); // Refresh user list
-      } else {
-        // User does not exist, show an error message
-        toast("User not found", {
-          description:
-            "User with this email does not exist. Please invite them to create an account first.",
-        });
-      }
+      toast({
+        title: "Success",
+        description: "User added to team successfully",
+      });
+      
+      fetchTeamUsers();
     } catch (error) {
       console.error("Error adding user to team:", error);
-      toast("Error adding user", {
-        description: "Failed to add user to team.",
+      toast({
+        title: "Error",
+        description: "Failed to add user to team",
+        variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleRemoveUser = async (userId: string) => {
-    setLoading(true);
     try {
-      // When removing from team, set role back to basic user
-      const defaultRole: UserRole = 'user';
-      
-      // Use our updateUserRole utility
-      const roleUpdateSuccess = await updateUserRole(userId, defaultRole);
-      
-      if (roleUpdateSuccess) {
-        // Now update the team_id separately
-        const { error: teamUpdateError } = await supabase
-          .from("profiles")
-          .update({ team_id: null } as any)
-          .eq("id", userId);
-          
-        if (teamUpdateError) {
-          console.error("Error removing team:", teamUpdateError);
-          toast("Error removing team", {
-            description: "Failed to remove user from team.",
-          });
-          return;
-        }
-      } else {
-        // Try the combined update as a fallback
-        const { error } = await supabase
-          .from("profiles")
-          .update({ 
-            team_id: null, 
-            role: defaultRole as any 
-          } as any)
-          .eq("id", userId);
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          team_id: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
 
-        if (error) {
-          console.error("Error removing user:", error);
-          toast("Error removing user", {
-            description: "Failed to remove user from team.",
-          });
-          return;
-        }
-      }
+      if (error) throw error;
 
-      toast("User removed", {
-        description: "User removed from team successfully.",
+      toast({
+        title: "Success",
+        description: "User removed from team successfully",
       });
-      fetchTeamUsers(); // Refresh user list
-    } finally {
-      setLoading(false);
+      
+      fetchTeamUsers();
+    } catch (error) {
+      console.error("Error removing user from team:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove user from team",
+        variant: "destructive",
+      });
     }
   };
 
-  if (!team) {
-    return <div>No team selected</div>;
-  }
+  const updateUserRole = async (userId: string, role: AllowedUserRoles) => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          role: role as string, // Cast to string to avoid type errors
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "User role updated successfully",
+      });
+      
+      fetchTeamUsers();
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update user role",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (teamId) {
+      fetchTeamUsers();
+    }
+  }, [teamId]);
 
   return (
-    <div>
-      <h2 className="text-lg font-semibold mb-4">Manage Team Users</h2>
-
-      {/* Add User Form */}
-      <div className="mb-6">
-        <h3 className="text-md font-semibold mb-2">Add New User</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              type="email"
-              id="email"
-              placeholder="user@example.com"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-            />
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Team Users</CardTitle>
+        <Button 
+          onClick={() => setIsDialogOpen(true)} 
+          size="sm" 
+          className="flex items-center gap-2"
+        >
+          <UserPlus className="h-4 w-4" />
+          Add User
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-          <div>
-            <Label htmlFor="role">Role</Label>
-            <Select value={newRole} onValueChange={(value) => setNewRole(value as UserRole)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="coach">Coach</SelectItem>
-                <SelectItem value="player">Player</SelectItem>
-                <SelectItem value="parent">Parent</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-end">
-            <Button onClick={handleAddUser} disabled={loading}>
-              Add User
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Team Users Table */}
-      <div>
-        <h3 className="text-md font-semibold mb-2">Current Team Users</h3>
-        <Table>
-          <TableCaption>A list of users currently in your team.</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {teamUsers.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">
-                  <div className="flex items-center space-x-2">
+        ) : (
+          <div className="space-y-4">
+            {users.length > 0 ? (
+              users.map((user) => (
+                <div key={user.id} className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-3">
                     <Avatar>
-                      <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} />
-                      <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <span>{user.name || user.email}</span>
+                    <div>
+                      <p className="font-medium">{user.name}</p>
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                    </div>
                   </div>
-                </TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.role}</TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRemoveUser(user.id)}
-                    disabled={loading}
-                  >
-                    Remove
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
+                  <div className="flex items-center gap-2">
+                    <Badge>{user.role}</Badge>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleRemoveUser(user.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground py-6">
+                No users added to this team yet
+              </p>
+            )}
+          </div>
+        )}
+      </CardContent>
+      <UserAssignmentDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onAssign={handleAddUser}
+        title={`Add User to ${teamName || "Team"}`}
+        description="Assign a user to this team and set their role"
+      />
+    </Card>
   );
 };
-
-export default TeamUsersManager;

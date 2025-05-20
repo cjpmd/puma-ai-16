@@ -2,71 +2,96 @@
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Checks if the provided ID exists in the specified table
- * @param tableName The name of the table to check
- * @param id The ID to check for
- * @returns Promise<boolean> True if the ID exists in the table
+ * Verify database connection
+ * @returns Promise<boolean> True if database connection is successful
  */
-export const verifyEntityExists = async (tableName: string, id: string): Promise<boolean> => {
+export const verifyDatabaseConnection = async (): Promise<boolean> => {
   try {
-    // Use a conditional check to avoid the TypeScript error for dynamic table names
-    if (['players', 'teams', 'clubs', 'coaches', 'profiles'].includes(tableName)) {
-      const { data, error } = await supabase
-        .from(tableName as any)
-        .select('id')
-        .eq('id', id)
-        .single();
-      
-      if (error) {
-        console.warn(`Entity with ID ${id} not found in ${tableName}:`, error);
-        return false;
-      }
-      
-      return !!data;
-    }
-    
-    // For unsupported tables, use a direct SQL query
-    const { data, error } = await supabase.rpc('execute_sql', {
-      sql_string: `SELECT EXISTS(SELECT 1 FROM ${tableName} WHERE id = '${id}')`
-    });
+    const { data, error } = await supabase.from('players').select('id').limit(1);
     
     if (error) {
-      console.error(`Error verifying if ID ${id} exists in ${tableName}:`, error);
+      console.error('Database connection error:', error);
       return false;
     }
     
-    // Parse the result
-    return !!data;
+    return true;
   } catch (error) {
-    console.error(`Error in verifyEntityExists for ${tableName}:`, error);
+    console.error('Database connection verification failed:', error);
     return false;
   }
 };
 
 /**
- * Checks if multiple IDs exist in the specified table
+ * Verify that a table exists and has a specified row count
  * @param tableName The name of the table to check
- * @param ids Array of IDs to check for
- * @returns Promise<boolean> True if all IDs exist in the table
+ * @param minRowCount Minimum number of rows that should exist
+ * @returns Promise<boolean> True if table exists with at least minRowCount rows
  */
-export const verifyEntitiesExist = async (tableName: string, ids: string[]): Promise<boolean> => {
+export const verifyTableData = async (
+  tableName: string,
+  minRowCount: number = 1
+): Promise<boolean> => {
   try {
-    if (ids.length === 0) return true;
-    
-    // Use a safe approach to handle dynamic table names
-    const { data, error } = await supabase.rpc('execute_sql', {
-      sql_string: `SELECT COUNT(*) as count FROM ${tableName} WHERE id IN ('${ids.join("','")}')`
-    });
-    
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('count', { count: 'exact', head: true });
+      
     if (error) {
-      console.error(`Error verifying if IDs exist in ${tableName}:`, error);
+      console.error(`Error verifying table ${tableName}:`, error);
       return false;
     }
     
-    // Parse the result (count should equal the number of IDs)
-    return data?.count === ids.length;
+    // Add null check to prevent TS error
+    const count = data?.count ?? 0;
+    
+    if (count < minRowCount) {
+      console.warn(`Table ${tableName} has fewer than ${minRowCount} rows`);
+      return false;
+    }
+    
+    return true;
   } catch (error) {
-    console.error(`Error in verifyEntitiesExist for ${tableName}:`, error);
+    console.error(`Error verifying table data for ${tableName}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Check if a database table has required columns
+ * @param tableName The name of the table to check
+ * @param requiredColumns Array of column names that should exist in the table
+ * @returns Promise<boolean> True if all required columns exist
+ */
+export const verifyTableColumns = async (
+  tableName: string,
+  requiredColumns: string[]
+): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc('get_table_columns', {
+      table_name: tableName
+    });
+    
+    if (error) {
+      console.error(`Error getting columns for table ${tableName}:`, error);
+      return false;
+    }
+    
+    // Add null check to prevent TS error
+    if (data === null) {
+      console.error(`No column data returned for table ${tableName}`);
+      return false;
+    }
+    
+    const missingColumns = requiredColumns.filter(col => !data.includes(col));
+    
+    if (missingColumns.length > 0) {
+      console.warn(`Table ${tableName} is missing required columns: ${missingColumns.join(', ')}`);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`Error verifying table columns for ${tableName}:`, error);
     return false;
   }
 };

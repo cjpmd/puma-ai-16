@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { setupUserRolesTable } from './setupUserRolesTable';
+import { createUserRolesTable } from './setupUserRolesTable';
 import { setupSecurityPolicies } from './setupSecurityPolicies';
 import { addColumnIfNotExists } from './columnManagement';
 import { tableExists } from './columnUtils';
@@ -8,7 +8,7 @@ import { tableExists } from './columnUtils';
 export const ensureDatabaseSetup = async (): Promise<boolean> => {
   try {
     // Setup user roles table
-    await setupUserRolesTable();
+    await createUserRolesTable();
     
     // Setup RLS policies
     await setupSecurityPolicies();

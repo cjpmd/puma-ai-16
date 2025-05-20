@@ -14,4 +14,4 @@ export { executeSql } from "./executeSql";
 
 // Explicit re-exports to resolve ambiguities
 export { generateChildLinkingCode, linkParentToChild } from "./parentChildLinking";
-export { generateLinkingCode, createPlayerParentsTable } from "./createTables";
+export { generateLinkingCode } from "./createTables";

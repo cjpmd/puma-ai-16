@@ -41,3 +41,59 @@ export const setupTransferSystem = async (): Promise<boolean> => {
     return false;
   }
 };
+
+/**
+ * Approves a player transfer request
+ * @param transferId The ID of the transfer to approve
+ * @returns Promise<boolean> True if the transfer was approved successfully
+ */
+export const approveTransfer = async (transferId: string): Promise<boolean> => {
+  try {
+    // First, get the transfer details
+    const { data: transfer, error: getError } = await supabase
+      .from('player_transfers')
+      .select('*')
+      .eq('id', transferId)
+      .single();
+    
+    if (getError || !transfer) {
+      console.error('Error getting transfer:', getError);
+      return false;
+    }
+    
+    // Update the transfer status to 'approved'
+    const { error: updateError } = await supabase
+      .from('player_transfers')
+      .update({ 
+        status: 'approved',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', transferId);
+    
+    if (updateError) {
+      console.error('Error updating transfer status:', updateError);
+      return false;
+    }
+    
+    // If it's a transfer (not just a leave), update the player's team_id
+    if (transfer.type === 'transfer' && transfer.to_team_id) {
+      const { error: playerUpdateError } = await supabase
+        .from('players')
+        .update({ 
+          team_id: transfer.to_team_id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', transfer.player_id);
+      
+      if (playerUpdateError) {
+        console.error('Error updating player team:', playerUpdateError);
+        return false;
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error approving transfer:', error);
+    return false;
+  }
+};
