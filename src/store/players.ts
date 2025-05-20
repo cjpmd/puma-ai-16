@@ -1,7 +1,15 @@
 
 import { create } from "zustand";
-import { Player, PlayerAttribute, AttributeCategory } from "@/types/player";
+import { Player, PlayerAttributes, Attribute } from "@/types/player";
 import { GOALKEEPER_ATTRIBUTES, TECHNICAL_ATTRIBUTES, MENTAL_ATTRIBUTES, PHYSICAL_ATTRIBUTES } from "@/constants/attributes";
+
+// Define AttributeCategory enum used in this file
+enum AttributeCategory {
+  TECHNICAL = 'TECHNICAL',
+  MENTAL = 'MENTAL',
+  PHYSICAL = 'PHYSICAL',
+  GOALKEEPER = 'GOALKEEPER'
+}
 
 interface PlayersState {
   players: Player[];
@@ -14,7 +22,7 @@ interface PlayersState {
 }
 
 const generateInitialAttributes = (playerType: string) => {
-  const attributes: PlayerAttribute[] = [];
+  const attributes: Attribute[] = [];
   const now = new Date().toISOString();
   
   if (playerType === "GOALKEEPER") {

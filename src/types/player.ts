@@ -5,6 +5,13 @@ export type PlayerType = 'OUTFIELD' | 'GOALKEEPER';
 
 export type PerformanceCategory = 'MESSI' | 'HESKEY' | 'BECKHAM';
 
+// Also export PerformanceCategory as a value that can be used in code
+export const PerformanceCategory = {
+  MESSI: 'MESSI' as PerformanceCategory,
+  HESKEY: 'HESKEY' as PerformanceCategory,
+  BECKHAM: 'BECKHAM' as PerformanceCategory,
+};
+
 export type PositionCategory = 'GK' | 'DEF' | 'MID' | 'FWD';
 
 export interface PlayerAttributes {
@@ -16,6 +23,8 @@ export interface Attribute {
   name: string;
   value: number;
   category: string;
+  created_at?: string; // Added for playerCalculations.ts
+  player_id?: string;  // Added for compatibility
 }
 
 // Define the base Player interface without getters

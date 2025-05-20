@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useCallback } from "react";
 import { FormationFormat } from "../../types";
 import { PerformanceCategory } from "@/types/player";
@@ -14,7 +13,7 @@ export interface UseDraggableFormationProps {
   onSelectionChange: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
   availablePlayers: any[];
   squadPlayers: string[];
-  performanceCategory?: PerformanceCategory;
+  performanceCategory?: string;
   format: FormationFormat;
   formationTemplate?: string;
   onTemplateChange?: (template: string) => void;

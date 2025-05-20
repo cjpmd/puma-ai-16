@@ -6,9 +6,11 @@ export const calculatePlayerPerformance = (player?: Player): PerformanceStatus =
   if (!player?.attributes || player.attributes.length === 0) return "neutral";
 
   const allAttributes = player.attributes;
-  const sortedByDate = [...allAttributes].sort((a, b) => 
-    new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime()
-  );
+  const sortedByDate = [...allAttributes].sort((a, b) => {
+    const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return bDate - aDate;
+  });
 
   // Get the most recent attribute values
   const recentValues = sortedByDate.slice(0, Math.min(5, sortedByDate.length));

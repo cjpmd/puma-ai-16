@@ -1,41 +1,30 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { FormationFormat } from "@/components/formation/types";
-import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TeamSelectionManagerProps } from "./types";
-import { PerformanceCategory } from "@/types/player";
-import { DraggableFormation } from "@/components/formation/draggable";
-import { useTeamSelectionsState } from "./hooks/useTeamSelectionsState";
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TeamSelectionManagerProps } from './types';
+import { DraggableFormation } from '@/components/formation/draggable';
+import { FormationFormat } from '@/components/formation/types';
+import { useToast } from '@/hooks/use-toast';
+import { PerformanceCategory } from '@/types/player';
 
-export const TeamSelectionManager = ({ 
-  fixture, 
-  onSuccess 
+export const TeamSelectionManager = ({
+  fixture,
+  onSuccess,
+  performanceCategory: initialPerformanceCategory = PerformanceCategory.MESSI
 }: TeamSelectionManagerProps) => {
   const { toast } = useToast();
-  const [isSaving, setIsSaving] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
-  const [performanceCategory, setPerformanceCategory] = useState<PerformanceCategory>(PerformanceCategory.MESSI);
+  const [performanceCategory, setPerformanceCategory] = useState<string>(initialPerformanceCategory);
   const [formationTemplate, setFormationTemplate] = useState("All");
-  const [selections, setSelections] = useState<Record<string, { playerId: string; position: string; isSubstitution?: boolean }>>({});
-  
-  // Always use drag and drop mode
-  const [forceDragEnabled] = useState(true);
-  
-  // Use the hook for state management
-  const teamSelectionsState = useTeamSelectionsState({
-    onTeamSelectionsChange: (selections) => {
-      console.log("Team selections changed:", selections);
-    },
-    fixtureId: fixture?.id
-  });
-  
-  // Get format from fixture, default to 7-a-side
-  const format = (fixture?.format || "7-a-side") as FormationFormat;
-  
+  const [selections, setSelections] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Format from fixture or default
+  const format: FormationFormat = ((fixture?.format as FormationFormat) || "7-a-side");
+
   // Get players with attendance status
   const { data: players, isLoading, error } = useQuery({
     queryKey: ["players-with-attendance"],
@@ -121,21 +110,19 @@ export const TeamSelectionManager = ({
   const squadPlayers = Array.from(selectedPlayers);
 
   return (
-    <div className="space-y-6">
-      <Card className="mb-6">
+    <div className="space-y-4">
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{fixture?.category || "Team"}</CardTitle>
-          <Select 
-            value={performanceCategory} 
-            onValueChange={(value) => setPerformanceCategory(value as PerformanceCategory)}
-          >
+          <CardTitle>Team Selection</CardTitle>
+          
+          <Select value={performanceCategory} onValueChange={setPerformanceCategory}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select category" />
+              <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={PerformanceCategory.MESSI}>Messi</SelectItem>
-              <SelectItem value={PerformanceCategory.RONALDO}>Ronaldo</SelectItem>
-              <SelectItem value={PerformanceCategory.JAGS}>Jags</SelectItem>
+              <SelectItem value={PerformanceCategory.HESKEY}>Heskey</SelectItem>
+              <SelectItem value={PerformanceCategory.BECKHAM}>Beckham</SelectItem>
             </SelectContent>
           </Select>
         </CardHeader>
@@ -160,7 +147,7 @@ export const TeamSelectionManager = ({
           onClick={handleSave} 
           disabled={isSaving}
         >
-          {isSaving ? 'Saving...' : 'Save Team Selections'}
+          {isSaving ? 'Saving...' : 'Save Selections'}
         </Button>
       </div>
     </div>

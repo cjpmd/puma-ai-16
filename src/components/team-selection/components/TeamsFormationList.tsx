@@ -13,13 +13,13 @@ interface TeamsFormationListProps {
   format: FormationFormat;
   playersWithStatus: any[];
   selectedPlayers: Set<string>;
-  performanceCategories: Record<string, PerformanceCategory>;
+  performanceCategories: Record<string, string>;
   teamFormationTemplates: Record<string, string>;
   squadSelections: Record<string, string[]>;
   periods: Record<string, any[]>;
   teamCaptains: Record<string, string>;
   captainSelectionMode?: Record<string, boolean>;
-  handlePerformanceCategoryChange: (teamId: string, value: PerformanceCategory) => void;
+  handlePerformanceCategoryChange: (teamId: string, value: string) => void;
   handleTeamSelectionChange: (teamId: string, selections: any) => void;
   handlePeriodSelectionChange: (teamId: string, periodId: number, selections: any) => void;
   handleTemplateChange: (teamId: string, template: string) => void;

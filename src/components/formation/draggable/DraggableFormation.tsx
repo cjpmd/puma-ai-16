@@ -17,7 +17,7 @@ export interface DraggableFormationProps {
   squadPlayers: string[];
   initialSelections?: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>;
   onSelectionChange: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
-  performanceCategory?: PerformanceCategory;
+  performanceCategory?: string;
   onSquadPlayersChange?: (playerIds: string[]) => void;
   formationTemplate?: string;
   onTemplateChange?: (template: string) => void;

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,7 +9,7 @@ import { Player, PerformanceCategory } from '@/types/player';
 // Component to display position ratings
 const TopRatedByPosition = () => {
   const [activeTab, setActiveTab] = useState('field');
-  const [selectedCategory, setSelectedCategory] = useState<PerformanceCategory>(PerformanceCategory.MESSI);
+  const [selectedCategory, setSelectedCategory] = useState<string>(PerformanceCategory.MESSI);
   
   // Fetch all players
   const { data: players, isLoading } = useQuery({
@@ -139,16 +138,16 @@ const TopRatedByPosition = () => {
             MESSI
           </Button>
           <Button 
-            variant={selectedCategory === PerformanceCategory.RONALDO ? "default" : "outline"}
-            onClick={() => setSelectedCategory(PerformanceCategory.RONALDO)}
+            variant={selectedCategory === PerformanceCategory.HESKEY ? "default" : "outline"}
+            onClick={() => setSelectedCategory(PerformanceCategory.HESKEY)}
           >
-            RONALDO
+            HESKEY
           </Button>
           <Button 
-            variant={selectedCategory === PerformanceCategory.JAGS ? "default" : "outline"}
-            onClick={() => setSelectedCategory(PerformanceCategory.JAGS)}
+            variant={selectedCategory === PerformanceCategory.BECKHAM ? "default" : "outline"}
+            onClick={() => setSelectedCategory(PerformanceCategory.BECKHAM)}
           >
-            JAGS
+            BECKHAM
           </Button>
         </div>
       </div>
