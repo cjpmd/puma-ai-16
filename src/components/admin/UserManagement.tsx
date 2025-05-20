@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Table, TableBody, TableCaption, TableCell, 
@@ -16,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { DatabaseUserRole, ProfileRole } from '@/types/auth';
+import { DatabaseUserRole, ProfileRole, ensureValidProfileRole } from '@/types/auth';
 
 export const UserManagement = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -93,7 +92,7 @@ export const UserManagement = () => {
       }
       
       // Cast the role to ensure compatibility with the database
-      const profileRole = newUserRole as ProfileRole;
+      const profileRole = newUserRole;
       
       const profileData = {
         id: userId,

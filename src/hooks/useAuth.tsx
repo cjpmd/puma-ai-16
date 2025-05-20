@@ -84,7 +84,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setProfile(data)
           // Ensure the role is a valid ProfileRole
           if (data?.role) {
-            setActiveRole(ensureValidProfileRole(data.role));
+            const safeRole = ensureValidProfileRole(data.role);
+            setActiveRole(safeRole);
           } else {
             setActiveRole('user');
           }
@@ -204,7 +205,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         setProfile(data)
         if (data?.role) {
-          setActiveRole(ensureValidProfileRole(data.role));
+          const safeRole = ensureValidProfileRole(data.role);
+          setActiveRole(safeRole);
         } else {
           setActiveRole('user');
         }

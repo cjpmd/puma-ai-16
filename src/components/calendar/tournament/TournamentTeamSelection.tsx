@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Player } from '@/types/player';
+import { Player, transformDbPlayerToPlayer } from '@/types/player';
 import { supabase } from '@/integrations/supabase/client';
 
 interface TournamentTeamSelectionProps {
@@ -38,7 +38,13 @@ export const TournamentTeamSelection: React.FC<TournamentTeamSelectionProps> = (
         .select('*');
 
       if (error) throw error;
-      setPlayers(data || []);
+      
+      // Transform the database objects to Player objects
+      const transformedPlayers = (data || []).map(player => 
+        transformDbPlayerToPlayer(player)
+      );
+      
+      setPlayers(transformedPlayers);
     } catch (error) {
       console.error('Error fetching players:', error);
     } finally {

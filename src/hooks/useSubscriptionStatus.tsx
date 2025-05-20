@@ -8,6 +8,7 @@ interface SubscriptionStatus {
   loading: boolean;
   subscriptionData: any;
   subscriptionTier?: string;
+  checkSubscriptionStatus?: () => Promise<void>;
 }
 
 export const useSubscriptionStatus = (): SubscriptionStatus => {
@@ -27,14 +28,14 @@ export const useSubscriptionStatus = (): SubscriptionStatus => {
       }
       
       // Check if user is a global admin (they get all features)
-      if (profile?.role === 'globalAdmin' || profile?.role === 'admin') {
+      if (profile && (profile?.role === 'globalAdmin' || profile?.role === 'admin')) {
         setIsSubscribed(true);
         setSubscriptionTier('Enterprise');
         return;
       }
       
       // Check team subscription if team_id exists
-      if (profile?.team_id) {
+      if (profile && profile?.team_id) {
         const { data: teamSubscription, error: teamError } = await supabase
           .from('team_subscriptions')
           .select('*')

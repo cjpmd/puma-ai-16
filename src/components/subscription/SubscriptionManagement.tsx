@@ -6,7 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { CreditCard, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
 interface SubscriptionData {
   id: string;
@@ -21,6 +21,7 @@ export const SubscriptionManagement = () => {
   const { profile } = useAuth();
   const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (profile) {
@@ -32,17 +33,17 @@ export const SubscriptionManagement = () => {
     try {
       setLoading(true);
       
-      if (!profile || !profile.id) {
-        console.error("No profile found or missing profile ID");
+      if (!profile) {
+        console.error("No profile found");
         return;
       }
 
       // For team admins, fetch team subscriptions
-      if (profile.role === 'admin' || profile.role === 'manager' || profile.role === 'coach') {
+      if (profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'coach') {
         const { data: teamData, error: teamError } = await supabase
           .from('teams')
           .select('id')
-          .eq('admin_id', profile.id);
+          .eq('admin_id', profile?.id || '');
           
         if (teamError) throw teamError;
         
@@ -72,11 +73,11 @@ export const SubscriptionManagement = () => {
       } 
       
       // For players and parents, fetch player subscriptions
-      else if (profile.role === 'player' || profile.role === 'parent') {
+      else if (profile?.role === 'player' || profile?.role === 'parent') {
         const { data: playerSubs, error: playerSubsError } = await supabase
           .from('player_subscriptions')
           .select('*')
-          .eq('player_id', profile.id);
+          .eq('player_id', profile?.id || '');
           
         if (playerSubsError) throw playerSubsError;
         
@@ -96,7 +97,8 @@ export const SubscriptionManagement = () => {
       
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
-      toast('Failed to fetch subscription data', {
+      toast({
+        title: 'Failed to fetch subscription data',
         description: 'Please try again later'
       });
     } finally {
@@ -107,12 +109,14 @@ export const SubscriptionManagement = () => {
   const handleManageSubscription = async () => {
     try {
       // Here we would typically redirect to a customer portal or payment page
-      toast('Redirecting to subscription management', {
+      toast({
+        title: 'Redirecting to subscription management',
         description: 'You will be redirected to manage your subscription'
       });
     } catch (error) {
       console.error('Error managing subscription:', error);
-      toast('Failed to manage subscription', {
+      toast({
+        title: 'Failed to manage subscription',
         description: 'Please try again later'
       });
     }
@@ -120,12 +124,14 @@ export const SubscriptionManagement = () => {
 
   const handleCancelSubscription = async (subId: string) => {
     try {
-      toast('Subscription cancellation', {
+      toast({
+        title: 'Subscription cancellation',
         description: 'This would cancel your subscription in a real app'
       });
     } catch (error) {
       console.error('Error cancelling subscription:', error);
-      toast('Failed to cancel subscription', {
+      toast({
+        title: 'Failed to cancel subscription',
         description: 'Please try again later'
       });
     }
@@ -190,26 +196,22 @@ export const SubscriptionManagement = () => {
               )}
             </div>
             
-            <div className="mt-4 flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleManageSubscription}>
-                Manage
-              </Button>
+            <div className="mt-4 flex justify-end">
               <Button 
                 variant="outline" 
-                size="sm" 
-                className="text-red-600 hover:text-red-700"
+                size="sm"
                 onClick={() => handleCancelSubscription(sub.id)}
               >
-                Cancel
+                Cancel Subscription
               </Button>
             </div>
             
-            <Separator className="my-4" />
+            {subscriptions.indexOf(sub) < subscriptions.length - 1 && (
+              <Separator className="my-6" />
+            )}
           </div>
         ))}
       </CardContent>
     </Card>
   );
 };
-
-export default SubscriptionManagement;
