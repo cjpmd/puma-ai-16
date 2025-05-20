@@ -21,7 +21,7 @@ export const SubscriptionPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { profile } = useAuth();
-  const { isSubscribed, isLoading, subscriptionTier, checkSubscriptionStatus } = useSubscriptionStatus();
+  const { isSubscribed, loading: isLoading, subscriptionTier, checkSubscriptionStatus } = useSubscriptionStatus();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   // For the demo, we'll use the team subscription component
