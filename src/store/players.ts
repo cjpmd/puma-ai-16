@@ -31,7 +31,7 @@ const generateInitialAttributes = (playerType: string) => {
         id: crypto.randomUUID(),
         name: attr.name,
         value: 10,
-        category: attr.category as AttributeCategory,
+        category: attr.category as string,
         player_id: "", // Will be set after player creation
         created_at: now
       });
@@ -43,7 +43,7 @@ const generateInitialAttributes = (playerType: string) => {
         id: crypto.randomUUID(),
         name: attr.name,
         value: 10,
-        category: attr.category as AttributeCategory,
+        category: attr.category as string,
         player_id: "", // Will be set after player creation
         created_at: now
       });

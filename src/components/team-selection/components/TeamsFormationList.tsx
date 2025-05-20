@@ -61,7 +61,7 @@ export const TeamsFormationList = ({
     <>
       {teams.map(team => {
         const teamPeriods = periods[team.id] || [];
-        const currentPerformanceCategory = performanceCategories[team.id] || PerformanceCategory.MESSI;
+        const currentPerformanceCategory = (performanceCategories[team.id] as PerformanceCategory) || PerformanceCategory.MESSI;
         
         if (teamPeriods.length === 0) {
           return (
@@ -71,7 +71,7 @@ export const TeamsFormationList = ({
               format={format}
               players={playersWithStatus}
               selectedPlayers={selectedPlayers}
-              performanceCategory={currentPerformanceCategory}
+              performanceCategory={currentPerformanceCategory as PerformanceCategory}
               onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
               onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
               formationTemplate={teamFormationTemplates[team.id] || "All"}
@@ -98,7 +98,7 @@ export const TeamsFormationList = ({
             format={format}
             players={playersWithStatus}
             selectedPlayers={selectedPlayers}
-            performanceCategory={currentPerformanceCategory}
+            performanceCategory={currentPerformanceCategory as PerformanceCategory}
             onPerformanceCategoryChange={(value) => handlePerformanceCategoryChange(team.id, value)}
             onSelectionChange={(selections) => handleTeamSelectionChange(team.id, selections)}
             onPeriodSelectionChange={(selections) => handlePeriodSelectionChange(team.id, period.id, selections)}

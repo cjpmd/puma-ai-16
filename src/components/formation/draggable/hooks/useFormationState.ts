@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Selection } from "../../types";
 import { PerformanceCategory } from "@/types/player";
@@ -16,7 +17,7 @@ interface UseFormationStateProps {
 export const useFormationState = ({
   initialSelections,
   onSelectionChange,
-  performanceCategory = PerformanceCategory.MESSI,
+  performanceCategory = PerformanceCategory.MESSI as PerformanceCategory,
   periodNumber = 1,
   periodDuration = 45,
   squadPlayers

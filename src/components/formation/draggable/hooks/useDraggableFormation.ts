@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, useCallback } from "react";
 import { FormationFormat } from "../../types";
 import { PerformanceCategory } from "@/types/player";
@@ -13,7 +14,7 @@ export interface UseDraggableFormationProps {
   onSelectionChange: (selections: Record<string, { playerId: string; position: string; isSubstitution?: boolean; performanceCategory?: string }>) => void;
   availablePlayers: any[];
   squadPlayers: string[];
-  performanceCategory?: string;
+  performanceCategory?: PerformanceCategory;
   format: FormationFormat;
   formationTemplate?: string;
   onTemplateChange?: (template: string) => void;
@@ -28,7 +29,7 @@ export const useDraggableFormation = ({
   onSelectionChange,
   availablePlayers,
   squadPlayers,
-  performanceCategory = PerformanceCategory.MESSI,
+  performanceCategory = PerformanceCategory.MESSI as PerformanceCategory,
   format,
   formationTemplate = "All",
   onTemplateChange,
@@ -65,7 +66,7 @@ export const useDraggableFormation = ({
   } = useFormationState({
     initialSelections,
     onSelectionChange,
-    performanceCategory,
+    performanceCategory: performanceCategory as PerformanceCategory,
     periodNumber,
     periodDuration,
     squadPlayers: localSquadPlayers
@@ -100,7 +101,7 @@ export const useDraggableFormation = ({
     selections: formationSelections,
     updateSelections: onSelectionChange,
     onSelectionChange,
-    performanceCategory
+    performanceCategory: performanceCategory as PerformanceCategory
   });
 
   // We need this for the useEffect that updates squad players from selections
