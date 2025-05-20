@@ -1,6 +1,6 @@
 
 import { Json } from "@/integrations/supabase/types";
-import { UserRole } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
+import { UserRole } from "@/hooks/useAuth.tsx"; 
 
 export interface TeamSettings {
   id: string;
@@ -15,12 +15,12 @@ export interface TeamSettings {
   updated_at: string;
   
   // Add these fields to match what TeamInfoSettings.tsx is expecting
-  team_colors: string;
-  team_logo: string;
-  home_kit_icon: string;
-  away_kit_icon: string;
-  training_kit_icon: string;
+  team_colors?: string;
+  team_logo?: string;
+  home_kit_icon?: string;
+  away_kit_icon?: string;
+  training_kit_icon?: string;
 }
 
 // Update to use the imported UserRole type
-export type AllowedUserRoles = Extract<UserRole, 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin'>;
+export type AllowedUserRoles = Extract<UserRole, 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin' | 'user'>;

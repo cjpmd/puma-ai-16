@@ -30,8 +30,8 @@ interface TeamUsersManagerProps {
   team?: Team;
 }
 
-// Define a literal union type for database-compatible roles
-type TeamUserRole = 'admin' | 'manager' | 'coach' | 'player' | 'parent';
+// Define a literal type for team user roles that's compatible with UserRole
+type TeamUserRole = Extract<UserRole, 'admin' | 'manager' | 'coach' | 'player' | 'parent'>;
 
 export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
@@ -91,7 +91,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         const user = existingUsers[0];
         
         // Create a valid role value that the database will accept
-        const roleValue: TeamUserRole = newRole;
+        const roleValue = newRole;
         
         const { error: updateError } = await supabase
           .from("profiles")

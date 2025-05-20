@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Table, TableBody, TableCaption, TableCell, 
@@ -19,7 +18,7 @@ import { UserRole } from '@/hooks/useAuth.tsx';
 import { supabase } from '@/integrations/supabase/client';
 
 // Define a literal union type for database-compatible roles
-type ProfileRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'user' | 'globalAdmin';
+type ProfileRole = UserRole;
 
 // Ensure this component has a named export matching what GlobalAdminDashboard expects
 export const UserManagement = () => {
@@ -96,21 +95,14 @@ export const UserManagement = () => {
         return;
       }
       
-      // Here's where we need to fix the type issue
-      // We need to ensure the role is one of the expected values
-      // First check if the role is valid
-      const validRoles: UserRole[] = ['admin', 'manager', 'coach', 'parent', 'player', 'user', 'globalAdmin'];
-      const roleValue: UserRole = validRoles.includes(newUserRole as UserRole) 
-        ? newUserRole as UserRole 
-        : 'user';
-      
+      // Type assertion to handle role value properly
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
           id: userId,
           email: newUserEmail,
           name: newUserName,
-          role: roleValue,
+          role: newUserRole as UserRole,
           user_id: userId
         });
 

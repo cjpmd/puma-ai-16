@@ -17,7 +17,7 @@ export function useSubscriptionStatus() {
     setIsLoading(true);
     
     try {
-      if (!profile?.id) {
+      if (!profile || !profile.id) {
         setIsSubscribed(false);
         return;
       }
@@ -37,14 +37,16 @@ export function useSubscriptionStatus() {
       }
       
       // If no team subscription, check for player-specific subscription
-      const subscriptionData = await verifyPlayerSubscription(profile.id);
-      
-      if (subscriptionData && subscriptionData.status === 'active') {
-        setIsSubscribed(true);
-        setSubscriptionTier(subscriptionData.tier || 'premium');
-      } else {
-        setIsSubscribed(false);
-        setSubscriptionTier(null);
+      if (profile && profile.id) {
+        const subscriptionData = await verifyPlayerSubscription(profile.id);
+        
+        if (subscriptionData && subscriptionData.status === 'active') {
+          setIsSubscribed(true);
+          setSubscriptionTier(subscriptionData.tier || 'premium');
+        } else {
+          setIsSubscribed(false);
+          setSubscriptionTier(null);
+        }
       }
     } catch (error) {
       console.error('Error checking subscription status:', error);
@@ -55,8 +57,10 @@ export function useSubscriptionStatus() {
   };
 
   useEffect(() => {
-    checkSubscriptionStatus();
-  }, [profile?.id]);
+    if (profile) {
+      checkSubscriptionStatus();
+    }
+  }, [profile]);
 
   return {
     isSubscribed,

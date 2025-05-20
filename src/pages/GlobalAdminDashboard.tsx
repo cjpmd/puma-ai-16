@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -33,7 +34,7 @@ const GlobalAdminDashboard = () => {
     // Only check role if we're not bypassing access
     if (!bypassAccess && !isLoading && profile) {
       console.log("GlobalAdminDashboard: Checking user role:", profile.role);
-      if (!hasRole('globalAdmin')) {
+      if (profile && hasRole && !hasRole('globalAdmin')) {
         console.log("User does not have globalAdmin role, redirecting");
         navigate('/platform');
       }

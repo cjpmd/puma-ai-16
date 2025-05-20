@@ -95,7 +95,7 @@ export function WhatsAppIntegration() {
       if (data && Array.isArray(data) && data.length > 0) {
         const settingsData = data[0];
         setSettings({
-          id: settingsData.id,
+          id: settingsData.id || "",
           enabled: settingsData.enabled || false,
           whatsapp_business_id: settingsData.whatsapp_business_id || "",
           whatsapp_phone_id: settingsData.whatsapp_phone_id || "",
@@ -144,9 +144,9 @@ export function WhatsAppIntegration() {
       if (data && Array.isArray(data) && data.length > 0) {
         data.forEach((contact: any) => {
           contactsList.push({
-            id: contact.id,
-            name: contact.name,
-            phone: contact.phone,
+            id: contact.id || "",
+            name: contact.name || "",
+            phone: contact.phone || "",
             player_id: contact.player_id,
             created_at: contact.created_at
           });

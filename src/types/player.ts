@@ -18,7 +18,7 @@ export interface Player {
   id: string;
   name: string;
   playerType: PlayerType; // Already camelCase
-  squad_number: number;
+  squad_number?: number;
   team_category?: string;
   status: string;
   age?: number;
@@ -39,6 +39,7 @@ export interface Player {
   attributes?: Attribute[];
   attributeHistory?: Record<string, { date: string; value: number }[]>;
   profileImage?: string;
+  profile_image?: string; // Allow both camel and snake case
 }
 
 // Helper function to transform snake_case DB fields to camelCase for frontend use
@@ -49,6 +50,7 @@ export const transformDbPlayerToPlayer = (dbPlayer: any): Player => {
     squadNumber: dbPlayer.squad_number,
     teamCategory: dbPlayer.team_category,
     dateOfBirth: dbPlayer.date_of_birth,
+    profileImage: dbPlayer.profile_image,
     // Any other transformations needed
   };
 };

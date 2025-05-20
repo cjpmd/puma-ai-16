@@ -1,11 +1,13 @@
 
 export interface WhatsAppSettings {
-  id?: string;
+  id: string;
   enabled: boolean;
-  whatsapp_business_id?: string;
-  whatsapp_phone_id?: string;
-  team_id?: string;
-  business_phone_number?: string;
+  whatsapp_business_id: string;
+  whatsapp_phone_id: string;
+  team_id: string;
+  business_phone_number: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface WhatsAppContact {
