@@ -45,40 +45,43 @@ export function WhatsAppIntegration() {
       setLoading(true);
       // Check if table exists
       try {
-        await supabase.rpc('create_table_if_not_exists', {
-          p_table_name: 'whatsapp_settings',
-          p_columns: `id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          enabled BOOLEAN DEFAULT false,
-          whatsapp_business_id TEXT,
-          whatsapp_phone_id TEXT,
-          team_id UUID,
-          business_phone_number TEXT,
-          created_at TIMESTAMPTZ DEFAULT now(),
-          updated_at TIMESTAMPTZ DEFAULT now()`
+        await supabase.rpc('execute_sql', {
+          sql_string: `
+          CREATE TABLE IF NOT EXISTS whatsapp_settings (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            enabled BOOLEAN DEFAULT false,
+            whatsapp_business_id TEXT,
+            whatsapp_phone_id TEXT,
+            team_id UUID,
+            business_phone_number TEXT,
+            created_at TIMESTAMPTZ DEFAULT now(),
+            updated_at TIMESTAMPTZ DEFAULT now()
+          )`
         });
       } catch (error) {
         console.log('Table might already exist:', error);
       }
 
       // Now fetch the settings
-      const { data, error } = await supabase
-        .from('whatsapp_settings')
-        .select('*')
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('execute_sql', {
+        sql_string: `SELECT * FROM whatsapp_settings LIMIT 1`
+      });
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error("Error fetching WhatsApp settings:", error);
         return;
       }
 
-      if (data) {
+      // Parse the result - RPC returns a result with rows
+      if (data && data.length > 0) {
+        const settingsData = data[0];
         setSettings({
-          id: data.id,
-          enabled: data.enabled || false,
-          whatsapp_business_id: data.whatsapp_business_id || "",
-          whatsapp_phone_id: data.whatsapp_phone_id || "",
-          team_id: data.team_id || "",
-          business_phone_number: data.business_phone_number || "",
+          id: settingsData.id,
+          enabled: settingsData.enabled || false,
+          whatsapp_business_id: settingsData.whatsapp_business_id || "",
+          whatsapp_phone_id: settingsData.whatsapp_phone_id || "",
+          team_id: settingsData.team_id || "",
+          business_phone_number: settingsData.business_phone_number || "",
         });
       }
     } catch (error) {
@@ -92,37 +95,42 @@ export function WhatsAppIntegration() {
     try {
       // Try to create the table if it doesn't exist
       try {
-        await supabase.rpc('create_table_if_not_exists', {
-          p_table_name: 'whatsapp_contacts',
-          p_columns: `id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          name TEXT NOT NULL,
-          phone TEXT NOT NULL,
-          player_id UUID REFERENCES players(id),
-          created_at TIMESTAMPTZ DEFAULT now(),
-          updated_at TIMESTAMPTZ DEFAULT now()`
+        await supabase.rpc('execute_sql', {
+          sql_string: `
+          CREATE TABLE IF NOT EXISTS whatsapp_contacts (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            player_id UUID,
+            created_at TIMESTAMPTZ DEFAULT now(),
+            updated_at TIMESTAMPTZ DEFAULT now()
+          )`
         });
       } catch (error) {
         console.log('Table might already exist:', error);
       }
 
       // Fetch contacts
-      const { data, error } = await supabase
-        .from('whatsapp_contacts')
-        .select('*');
+      const { data, error } = await supabase.rpc('execute_sql', {
+        sql_string: `SELECT * FROM whatsapp_contacts`
+      });
 
       if (error) {
         console.error("Error fetching WhatsApp contacts:", error);
         return;
       }
 
-      if (data) {
-        setContacts(data.map(contact => ({
+      // Process the data rows from the RPC result
+      if (data && data.length > 0) {
+        const contactsList: WhatsAppContact[] = data.map((contact: any) => ({
           id: contact.id,
           name: contact.name,
           phone: contact.phone,
           player_id: contact.player_id,
           created_at: contact.created_at
-        })));
+        }));
+        
+        setContacts(contactsList);
       }
     } catch (error) {
       console.error("Error in fetchContacts:", error);
@@ -139,22 +147,40 @@ export function WhatsAppIntegration() {
         updated_at: new Date().toISOString()
       };
 
-      let result;
+      let sql;
       if (id) {
         // Update existing settings
-        result = await supabase
-          .from('whatsapp_settings')
-          .update(payload)
-          .eq('id', id);
+        sql = `
+          UPDATE whatsapp_settings 
+          SET 
+            enabled = ${payload.enabled}, 
+            whatsapp_business_id = '${payload.whatsapp_business_id || ""}', 
+            whatsapp_phone_id = '${payload.whatsapp_phone_id || ""}',
+            business_phone_number = '${payload.business_phone_number || ""}',
+            updated_at = now()
+          WHERE id = '${id}'
+        `;
       } else {
         // Insert new settings
-        result = await supabase
-          .from('whatsapp_settings')
-          .insert([payload]);
+        sql = `
+          INSERT INTO whatsapp_settings 
+          (enabled, whatsapp_business_id, whatsapp_phone_id, business_phone_number, updated_at)
+          VALUES (
+            ${payload.enabled},
+            '${payload.whatsapp_business_id || ""}',
+            '${payload.whatsapp_phone_id || ""}',
+            '${payload.business_phone_number || ""}',
+            now()
+          )
+        `;
       }
 
-      if (result.error) {
-        console.error("Error saving WhatsApp settings:", result.error);
+      const { error } = await supabase.rpc('execute_sql', {
+        sql_string: sql
+      });
+
+      if (error) {
+        console.error("Error saving WhatsApp settings:", error);
         return;
       }
 
@@ -240,17 +266,23 @@ export function WhatsAppIntegration() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {contacts.map((contact) => (
-              <TableRow key={contact.id}>
-                <TableCell className="font-medium">{contact.name}</TableCell>
-                <TableCell>{contact.phone}</TableCell>
-                <TableCell>
-                  {contact.created_at
-                    ? new Date(contact.created_at).toLocaleDateString()
-                    : "N/A"}
-                </TableCell>
+            {contacts.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center">No contacts found</TableCell>
               </TableRow>
-            ))}
+            ) : (
+              contacts.map((contact) => (
+                <TableRow key={contact.id}>
+                  <TableCell className="font-medium">{contact.name}</TableCell>
+                  <TableCell>{contact.phone}</TableCell>
+                  <TableCell>
+                    {contact.created_at
+                      ? new Date(contact.created_at).toLocaleDateString()
+                      : "N/A"}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </CardContent>

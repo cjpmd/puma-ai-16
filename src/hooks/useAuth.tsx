@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -19,7 +20,7 @@ export interface AuthContextType {
   activeRole: UserRole | null;
   switchRole: (role: UserRole) => void;
   hasRole: (role: UserRole | UserRole[]) => boolean;
-  addRole: (role: UserRole) => Promise<boolean>; // Changed return type to boolean
+  addRole: (role: UserRole) => Promise<boolean>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -38,7 +39,7 @@ const AuthContext = createContext<AuthContextType>({
   activeRole: null,
   switchRole: () => {},
   hasRole: () => false,
-  addRole: async () => false, // Changed return type to boolean
+  addRole: async () => false,
   refreshProfile: async () => {},
 });
 

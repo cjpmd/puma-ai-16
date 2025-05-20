@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Table, TableBody, TableCaption, TableCell, 
@@ -91,14 +92,16 @@ const UserManagement = () => {
         return;
       }
 
-      // Explicitly type cast the role to ensure it's compatible with the database schema
+      // Convert UserRole to string for database operations
+      const roleValue = newUserRole as string;
+      
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
           id: userId,
           email: newUserEmail,
           name: newUserName,
-          role: newUserRole as UserRole,
+          role: roleValue,
           user_id: userId
         });
 

@@ -14,12 +14,12 @@ export interface TeamSettings {
   created_at: string;
   updated_at: string;
   
-  // Add these fields to fix the type errors
-  team_colors?: string | string[];
-  team_logo?: string;
-  home_kit_icon?: string;
-  away_kit_icon?: string;
-  training_kit_icon?: string;
+  // Add these fields
+  team_colors: string;
+  team_logo: string;
+  home_kit_icon: string;
+  away_kit_icon: string;
+  training_kit_icon: string;
 }
 
 // Update to use the imported UserRole type

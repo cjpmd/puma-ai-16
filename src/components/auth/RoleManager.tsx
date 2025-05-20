@@ -27,7 +27,7 @@ export const RoleManager = () => {
     
     try {
       const success = await addRole(role);
-      if (success) { // Now checking boolean return type
+      if (success) {
         toast({
           title: "Success",
           description: `Added ${role} role to your account`,
@@ -72,6 +72,9 @@ export const RoleManager = () => {
     navigate('/global-admin');
   };
 
+  // Fixed hasRole truthiness check by explicitly handling the boolean check
+  const hasGlobalAdminRole = hasRole && hasRole('globalAdmin');
+
   return (
     <Card>
       <CardHeader>
@@ -114,9 +117,9 @@ export const RoleManager = () => {
             {hasRole && hasRole('admin') ? 'Admin Role Added' : 'Add Admin Role'}
           </Button>
           <Button 
-            variant={(hasRole && hasRole('globalAdmin')) ? "outline" : "default"}
+            variant={hasGlobalAdminRole ? "outline" : "default"}
             className="col-span-1 md:col-span-2"
-            onClick={() => !(hasRole && hasRole('globalAdmin')) && handleAddRole('globalAdmin')}
+            onClick={() => !hasGlobalAdminRole && handleAddRole('globalAdmin')}
             disabled={isAddingGlobalAdmin}
           >
             {isAddingGlobalAdmin ? (
@@ -124,7 +127,7 @@ export const RoleManager = () => {
                 <span className="mr-2">Adding Global Admin role...</span>
                 <span className="animate-spin">⏳</span>
               </div>
-            ) : (hasRole && hasRole('globalAdmin')) ? (
+            ) : hasGlobalAdminRole ? (
               <div className="flex items-center justify-between w-full">
                 <span>Global Admin Role Added</span>
                 <Button 
@@ -144,7 +147,7 @@ export const RoleManager = () => {
           </Button>
         </div>
         
-        {hasRole && hasRole('globalAdmin') && (
+        {hasGlobalAdminRole && (
           <Button 
             className="w-full"
             onClick={goToGlobalAdmin}

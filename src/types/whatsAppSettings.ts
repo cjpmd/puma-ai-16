@@ -5,7 +5,7 @@ export interface WhatsAppSettings {
   whatsapp_business_id?: string;
   whatsapp_phone_id?: string;
   team_id?: string;
-  business_phone_number?: string; // Add missing property
+  business_phone_number?: string;
 }
 
 export interface WhatsAppContact {
