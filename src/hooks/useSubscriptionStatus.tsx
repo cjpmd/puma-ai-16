@@ -40,7 +40,7 @@ export function useSubscriptionStatus() {
       
       // If no team subscription, check for player-specific subscription
       if (profile) {
-        // Safe access of profile id
+        // Safe access of profile id using optional chaining
         const profileId = profile?.id;
         
         if (profileId) {

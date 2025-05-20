@@ -84,9 +84,9 @@ export const usePlayersWithAttendance = (eventId: string | undefined, eventType 
         
         // Determine if player is attending with proper type checking
         const attendanceStatus = attendance?.status || 'PENDING';
+        // Fix: Use a type-safe comparison for the attendance status
         const isAttending = attendanceStatus === "CONFIRMED" || 
-                           (attendance?.status as string) === "ATTENDING" || 
-                           false;
+                           attendanceStatus === "ATTENDING";
         
         return {
           ...transformedPlayer,

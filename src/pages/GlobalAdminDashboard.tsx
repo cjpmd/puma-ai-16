@@ -21,7 +21,7 @@ const GlobalAdminDashboard = () => {
     return <Navigate to="/" />;
   }
 
-  // Check if user has the globalAdmin role using explicit property access
+  // Check if user has the globalAdmin role using optional chaining for safety
   const isGlobalAdmin = profile?.role === 'globalAdmin';
   
   if (!isGlobalAdmin) {
