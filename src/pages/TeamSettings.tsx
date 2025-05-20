@@ -9,12 +9,26 @@ import { FAConnectionSettings } from '@/components/settings/FAConnectionSettings
 import { AttributeSettingsManager } from '@/components/settings/AttributeSettingsManager';
 import { WhatsAppIntegration } from '@/components/settings/WhatsAppIntegration';
 import { TeamUsersManager } from '@/components/settings/TeamUsersManager';
+import { TeamSettings as TeamSettingsType } from '@/types/teamSettings';
+
+// Define enhanced team settings that includes all expected properties
+interface EnhancedTeamSettings extends TeamSettingsType {
+  team_colors: string[];
+}
 
 // Add a default object with the expected properties for when data is missing
-const defaultSettings = {
-  team_name: "",
+const defaultSettings: EnhancedTeamSettings = {
+  id: "",
+  team_id: "",
+  admin_id: "",
+  format: "7-a-side",
+  hide_scores_from_parents: false,
+  parent_notification_enabled: false,
+  attendance_colors: {},
+  created_at: "",
+  updated_at: "",
+  team_name: "Team",
   team_colors: ["#ffffff", "#000000"],
-  // Add other default properties as needed
 };
 
 export const TeamSettings = () => {
@@ -27,14 +41,17 @@ export const TeamSettings = () => {
         .single();
       
       if (error) return defaultSettings;
-      return data || defaultSettings;
+      
+      // Transform the data to ensure team_colors is always an array
+      return {
+        ...data,
+        team_colors: Array.isArray(data.team_colors) ? data.team_colors : ["#ffffff", "#000000"]
+      } as EnhancedTeamSettings;
     }
   });
 
   // Use the settings object with fallbacks:
   const settings = settingsData || defaultSettings;
-  const teamName = settings.team_name || "Team";
-  const teamColors = settings.team_colors || ["#ffffff", "#000000"];
 
   return (
     <div className="space-y-4 p-4">
@@ -44,7 +61,8 @@ export const TeamSettings = () => {
       <Card>
         <CardContent className="pt-6">
           <TeamInfoSettings 
-            settings={settings} 
+            teamName={settings.team_name || "Team"}
+            teamColors={settings.team_colors}
             onSettingsUpdated={() => {}} 
           />
         </CardContent>
@@ -54,7 +72,7 @@ export const TeamSettings = () => {
       <Card>
         <CardContent className="pt-6">
           <FormatsAndCategoriesSettings 
-            settings={settings} 
+            format={settings.format}
             onSettingsUpdated={() => {}} 
           />
         </CardContent>

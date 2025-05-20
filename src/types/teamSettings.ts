@@ -15,12 +15,13 @@ export interface TeamSettings {
   updated_at: string;
   
   // Add these fields to match what TeamInfoSettings.tsx is expecting
-  team_colors?: string;
+  team_colors?: string[] | string;
   team_logo?: string;
   home_kit_icon?: string;
   away_kit_icon?: string;
   training_kit_icon?: string;
 }
 
-// Update to use the imported UserRole type
-export type AllowedUserRoles = Extract<UserRole, 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin' | 'user'>;
+// Update to use more specific role types that match what TeamUsersManager expects
+export type AllowedUserRoles = "admin" | "manager" | "coach" | "parent" | "globalAdmin";
+

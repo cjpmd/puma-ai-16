@@ -78,6 +78,8 @@ const PlayerDetailsPage = () => {
       // Create the complete player object
       const completePlayer: Player = {
         ...playerData,
+        profile_image: playerData.profile_image || undefined, // Ensure profile_image exists
+        profileImage: playerData.profile_image || undefined, // Set alias property too
         attributes: attributesData || [],
         attributeHistory: attributeHistory,
         // Ensure required fields
@@ -93,8 +95,7 @@ const PlayerDetailsPage = () => {
         squadNumber: playerData.squad_number,
         playerType: playerData.player_type,
         dateOfBirth: playerData.date_of_birth,
-        teamCategory: playerData.team_category,
-        profileImage: playerData.profile_image
+        teamCategory: playerData.team_category
       };
 
       return completePlayer;

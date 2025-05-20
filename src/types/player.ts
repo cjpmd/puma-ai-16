@@ -72,6 +72,8 @@ export interface Attribute {
   name: string;
   value: number;
   category: string;
+  player_id: string;  // Added missing properties to match PlayerAttribute
+  created_at: string; // Added missing properties to match PlayerAttribute
 }
 
 // Helper function to transform database player object to our internal Player format

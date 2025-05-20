@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export const TeamDashboard = () => {
-  // Assuming this will be defined in the component
+  // Define a proper function to fetch sessions
   const { data: sessionsData, error } = useQuery({
     queryKey: ["sessions"],
     queryFn: async () => {
@@ -28,3 +28,5 @@ export const TeamDashboard = () => {
     <div>Team Dashboard Content</div>
   );
 };
+
+export default TeamDashboard;

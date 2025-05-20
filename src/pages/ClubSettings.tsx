@@ -23,8 +23,10 @@ export default function ClubSettings() {
   const { data: settingsData, isLoading } = useQuery({
     queryKey: ["club-settings"],
     queryFn: async () => {
+      // Instead of using the club_settings table which doesn't exist,
+      // use the team_settings table which does exist in our database
       const { data, error } = await supabase
-        .from('club_settings')
+        .from('team_settings')
         .select('*')
         .single();
         
@@ -33,7 +35,12 @@ export default function ClubSettings() {
         return defaultSettings;
       }
       
-      return data || defaultSettings;
+      // Transform team_settings data to match our ClubSettingsData interface
+      return {
+        team_name: data?.team_name || defaultSettings.team_name,
+        team_colors: data?.team_colors || defaultSettings.team_colors,
+        // Add other fields as needed
+      } as ClubSettingsData;
     }
   });
   

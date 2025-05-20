@@ -8,6 +8,11 @@ export interface FormationSlot {
   className: string;
 }
 
+export interface Selection {
+  playerId: string;
+  position: string;
+}
+
 export interface PlayerSelection {
   playerId: string;
   position: string;
