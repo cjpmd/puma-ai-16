@@ -4,7 +4,7 @@ import {
 } from "@supabase/auth-helpers-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { DatabaseUserRole } from "@/types/auth";
+import { ProfileRole } from "@/types/auth";
 
 // This file is being replaced by useAuth.tsx, keeping only the type exports
 export const useAuth = () => {

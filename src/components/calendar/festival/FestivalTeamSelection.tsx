@@ -51,11 +51,9 @@ export const FestivalTeamSelection: React.FC<FestivalTeamSelectionProps> = ({
   };
 
   const handleSave = async () => {
-    // Add implementation to save selected players for festival teams
+    // Implementation to save selected players for festival teams
     onSuccess();
   };
-
-  if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -89,3 +87,5 @@ export const FestivalTeamSelection: React.FC<FestivalTeamSelectionProps> = ({
     </Dialog>
   );
 };
+
+export default FestivalTeamSelection;

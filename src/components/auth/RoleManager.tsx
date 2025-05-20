@@ -2,10 +2,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth, UserRole } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
+import { useAuth } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
 import { Shield, ExternalLink, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { ProfileRole } from "@/types/auth";
 
 export const RoleManager = () => {
   const auth = useAuth();
@@ -15,7 +16,7 @@ export const RoleManager = () => {
   const [isAddingGlobalAdmin, setIsAddingGlobalAdmin] = useState(false);
   const navigate = useNavigate();
 
-  const handleAddRole = async (role: UserRole) => {
+  const handleAddRole = async (role: ProfileRole) => {
     if (!profile || !addRole) return;
     
     // Special handling for globalAdmin

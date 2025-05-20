@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { DatabaseUserRole, ProfileRole, ensureValidProfileRole } from '@/types/auth';
+import { ProfileRole, ensureValidProfileRole } from '@/types/auth';
 
 export const UserManagement = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -94,13 +94,13 @@ export const UserManagement = () => {
       
       // This is the fix for the TypeScript error - ensure the role is a valid ProfileRole type
       // and convert it to a string when passing to Supabase
-      const profileRole = ensureValidProfileRole(newUserRole);
+      const validRole = ensureValidProfileRole(newUserRole);
       
       const profileData = {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: profileRole as string, // Cast to string to satisfy database expectations
+        role: validRole as string, // Cast to string to satisfy database expectations
         user_id: userId
       };
       

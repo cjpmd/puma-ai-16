@@ -167,14 +167,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Use the ensureValidProfileRole to ensure we have a valid role
       const validRole = ensureValidProfileRole(role);
       
-      // Cast to string for database compatibility
-      // This is the fix for the TypeScript error
-      const roleString: string = validRole;
-      
       // Update profile with the validated role
       const { error } = await supabase
         .from('profiles')
-        .update({ role: roleString })
+        .update({ role: validRole as string })
         .eq('id', user.id);
 
       if (error) {
