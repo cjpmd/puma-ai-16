@@ -15,3 +15,4 @@ export { executeSql } from "./executeSql";
 // Explicit re-exports to resolve ambiguities
 export { generateChildLinkingCode, linkParentToChild } from "./parentChildLinking";
 export { generateLinkingCode } from "./createTables";
+// Remove the duplicate createPlayerParentsTable export

@@ -149,8 +149,8 @@ export const PlayerCard = ({ player, onClick }: PlayerCardProps) => {
       <PlayerCardHeader
         player={player}
         name={player.name}
-        squadNumber={player.squadNumber || player.squad_number}
-        playerType={player.playerType}
+        squadNumber={player.squad_number}
+        playerType={player.player_type}
         topPositions={showAttributes ? topPositions : []}
         onEdit={onClick}
         onDownloadReport={() => {}} // Implement report download

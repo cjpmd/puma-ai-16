@@ -123,8 +123,8 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
       <PlayerCardHeader 
         player={player} 
         name={player.name}
-        squadNumber={player.squadNumber || player.squad_number || 0}
-        playerType={player.playerType}
+        squadNumber={player.squad_number || 0}
+        playerType={player.player_type}
         topPositions={(positionsData || []).map((pos: any) => [pos.role_definitions.abbreviation, pos.suitability_score] as [string, number]).slice(0, 3)}
         onEdit={() => {}}
         onDownloadReport={() => {}}
@@ -144,8 +144,8 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
           <PlayerAttributes 
             attributes={player.attributes || []} 
             playerId={player.id}
-            playerType={player.playerType}
-            playerCategory={player.teamCategory || player.team_category || ""}
+            playerType={player.player_type}
+            playerCategory={player.team_category || ""}
           />
         </TabsContent>
         
@@ -170,7 +170,7 @@ export const PlayerDetails = ({ player, onPlayerUpdated }: PlayerDetailsProps) =
               motmCount: 0 
             }} 
             positionMappings={{}} 
-            playerCategory={player.teamCategory || player.team_category || ""}
+            playerCategory={player.team_category || ""}
           />
         </TabsContent>
         

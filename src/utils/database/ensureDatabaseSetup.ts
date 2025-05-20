@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { createUserRolesTable } from './setupUserRolesTable';
 import { setupSecurityPolicies } from './setupSecurityPolicies';
 import { addColumnIfNotExists } from './columnManagement';
-import { tableExists } from './columnUtils';
+import { columnExists } from './columnUtils';
 
 export const ensureDatabaseSetup = async (): Promise<boolean> => {
   try {
@@ -14,7 +14,7 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
     await setupSecurityPolicies();
     
     // Check if the profile_image column exists in the players table
-    const hasProfileImageColumn = await tableExists('players');
+    const hasProfileImageColumn = await columnExists('players');
     
     if (hasProfileImageColumn) {
       const profileImageAdded = await addColumnIfNotExists(

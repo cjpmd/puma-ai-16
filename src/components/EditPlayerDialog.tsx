@@ -52,8 +52,8 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
 
   useEffect(() => {
     if (open) {
-      // Use the profileImage property if it exists, otherwise null
-      setImagePreview(player.profileImage || null);
+      // Use the profile_image property if it exists, otherwise null
+      setImagePreview(player.profile_image || null);
       setSaveAttempted(false);
       setImageError(null);
       
@@ -75,13 +75,13 @@ export const EditPlayerDialog = ({ player, onPlayerUpdated }: EditPlayerDialogPr
       
       verifyColumn();
     }
-  }, [open, player.profileImage, toast]);
+  }, [open, player.profile_image, toast]);
 
   const form = useForm({
     defaultValues: {
-      squadNumber: player.squadNumber || player.squad_number,
-      playerType: player.playerType,
-      dateOfBirth: player.dateOfBirth || player.date_of_birth,
+      squadNumber: player.squad_number,
+      playerType: player.player_type,
+      dateOfBirth: player.date_of_birth,
     },
   });
 

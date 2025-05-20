@@ -32,8 +32,9 @@ export const verifyTableData = async (
   minRowCount: number = 1
 ): Promise<boolean> => {
   try {
+    // Use a type assertion to handle the dynamic table name
     const { data, error } = await supabase
-      .from(tableName)
+      .from(tableName as any)
       .select('count', { count: 'exact', head: true });
       
     if (error) {

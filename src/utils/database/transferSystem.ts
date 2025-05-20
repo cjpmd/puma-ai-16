@@ -1,99 +1,100 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { tableExists } from './columnUtils';
 
 /**
- * Set up the necessary database tables for the transfer system
- * @returns Promise<boolean> True if setup was successful
+ * Process a player transfer between teams
+ * @param playerId The ID of the player to transfer
+ * @param fromTeamId The ID of the team the player is leaving
+ * @param toTeamId The ID of the team the player is joining
+ * @param reason Optional reason for the transfer
+ * @returns Promise<boolean> True if transfer was successful
  */
-export const setupTransferSystem = async (): Promise<boolean> => {
+export const transferPlayer = async (
+  playerId: string,
+  fromTeamId: string | null,
+  toTeamId: string,
+  reason?: string
+): Promise<boolean> => {
   try {
-    // First, check if the player_transfers table exists
-    const transfersTableExists = await tableExists('player_transfers');
-    
-    if (!transfersTableExists) {
-      // Create the player_transfers table
-      const { error: createTableError } = await supabase.rpc('create_table_if_not_exists', {
-        p_table_name: 'player_transfers',
-        p_columns: `
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          player_id UUID NOT NULL REFERENCES players(id),
-          from_team_id UUID REFERENCES teams(id),
-          to_team_id UUID REFERENCES teams(id),
-          transfer_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          status TEXT DEFAULT 'pending',
-          reason TEXT,
-          type TEXT NOT NULL
-        `
+    // Create a transfer record
+    const { error: transferError } = await supabase
+      .from('player_transfers')
+      .insert({
+        player_id: playerId,
+        from_team_id: fromTeamId,
+        to_team_id: toTeamId,
+        reason: reason,
+        type: 'MANUAL',
+        status: 'approved' // Auto-approved for manual transfers
       });
       
-      if (createTableError) {
-        console.error('Error creating player_transfers table:', createTableError);
-        return false;
-      }
+    if (transferError) {
+      console.error('Error creating transfer record:', transferError);
+      return false;
+    }
+    
+    // Update the player's team
+    const { error: playerError } = await supabase
+      .from('players')
+      .update({ team_id: toTeamId })
+      .eq('id', playerId);
+      
+    if (playerError) {
+      console.error('Error updating player team:', playerError);
+      return false;
     }
     
     return true;
   } catch (error) {
-    console.error('Error setting up transfer system:', error);
+    console.error('Error in transferPlayer:', error);
     return false;
   }
 };
 
 /**
- * Approves a player transfer request
+ * Approve a pending transfer
  * @param transferId The ID of the transfer to approve
  * @returns Promise<boolean> True if the transfer was approved successfully
  */
 export const approveTransfer = async (transferId: string): Promise<boolean> => {
   try {
-    // First, get the transfer details
-    const { data: transfer, error: getError } = await supabase
+    // Get the transfer details
+    const { data: transfer, error: fetchError } = await supabase
       .from('player_transfers')
       .select('*')
       .eq('id', transferId)
       .single();
-    
-    if (getError || !transfer) {
-      console.error('Error getting transfer:', getError);
+      
+    if (fetchError || !transfer) {
+      console.error('Error fetching transfer:', fetchError);
       return false;
     }
     
-    // Update the transfer status to 'approved'
+    // Update transfer status to approved
     const { error: updateError } = await supabase
       .from('player_transfers')
-      .update({ 
-        status: 'approved',
-        updated_at: new Date().toISOString()
-      })
+      .update({ status: 'approved', updated_at: new Date().toISOString() })
       .eq('id', transferId);
-    
+      
     if (updateError) {
       console.error('Error updating transfer status:', updateError);
       return false;
     }
     
-    // If it's a transfer (not just a leave), update the player's team_id
-    if (transfer.type === 'transfer' && transfer.to_team_id) {
-      const { error: playerUpdateError } = await supabase
-        .from('players')
-        .update({ 
-          team_id: transfer.to_team_id,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', transfer.player_id);
+    // Update the player's team
+    const { error: playerError } = await supabase
+      .from('players')
+      .update({ team_id: transfer.to_team_id })
+      .eq('id', transfer.player_id);
       
-      if (playerUpdateError) {
-        console.error('Error updating player team:', playerUpdateError);
-        return false;
-      }
+    if (playerError) {
+      console.error('Error updating player team:', playerError);
+      return false;
     }
     
     return true;
   } catch (error) {
-    console.error('Error approving transfer:', error);
+    console.error('Error in approveTransfer:', error);
     return false;
   }
 };
