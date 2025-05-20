@@ -5,7 +5,7 @@ export interface PlayerSubscription {
   id: string;
   player_id: string;
   subscription_id?: string;
-  status: 'active' | 'inactive' | 'cancelled';
+  status: 'active' | 'inactive' | 'cancelled' | string; // Allow string for flexibility
   created_at: string;
   payment_date?: string;
   payment_amount?: number;

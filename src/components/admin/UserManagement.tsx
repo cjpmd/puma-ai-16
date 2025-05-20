@@ -19,9 +19,10 @@ import { UserRole } from '@/hooks/useAuth.tsx';
 import { supabase } from '@/integrations/supabase/client';
 
 // Define a literal union type for database-compatible roles
-type ProfileRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'user';
+type ProfileRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'user' | 'globalAdmin';
 
-const UserManagement = () => {
+// Ensure this component has a named export matching what GlobalAdminDashboard expects
+export const UserManagement = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
@@ -96,7 +97,8 @@ const UserManagement = () => {
       }
       
       // Create a valid role value that the database will accept
-      const roleValue: ProfileRole = newUserRole;
+      // Cast to string to avoid TypeScript errors with the profile insert
+      const roleValue = newUserRole as string;
       
       const { error: profileError } = await supabase
         .from('profiles')
@@ -172,13 +174,14 @@ const UserManagement = () => {
                 </Label>
                 <Select 
                   value={newUserRole} 
-                  onValueChange={(value) => setNewUserRole(value as UserRole)}
+                  onValueChange={(value) => setNewUserRole(value as ProfileRole)}
                 >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="globalAdmin">Global Admin</SelectItem>
                     <SelectItem value="manager">Manager</SelectItem>
                     <SelectItem value="coach">Coach</SelectItem>
                     <SelectItem value="parent">Parent</SelectItem>
@@ -238,4 +241,4 @@ const UserManagement = () => {
   );
 };
 
-export default UserManagement;
+// Remove the default export to avoid confusion

@@ -14,7 +14,7 @@ export interface TeamSettings {
   created_at: string;
   updated_at: string;
   
-  // Add these fields
+  // Add these fields to match what TeamInfoSettings.tsx is expecting
   team_colors: string;
   team_logo: string;
   home_kit_icon: string;
@@ -23,4 +23,4 @@ export interface TeamSettings {
 }
 
 // Update to use the imported UserRole type
-export type AllowedUserRoles = Extract<UserRole, 'admin' | 'manager' | 'coach' | 'parent' | 'player'>;
+export type AllowedUserRoles = Extract<UserRole, 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin'>;
