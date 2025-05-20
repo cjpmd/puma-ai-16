@@ -1,7 +1,6 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { DatabaseUserRole, ProfileRole } from '@/types/auth';
+import { DatabaseUserRole } from '@/types/auth';
 
 // Export the user roles type
 export type UserRole = DatabaseUserRole;
@@ -16,7 +15,6 @@ export interface AuthContextType {
   signOut: () => Promise<void>;
   loading: boolean;
   
-  // Added missing properties
   isLoading: boolean;
   activeRole: UserRole | null;
   switchRole: (role: UserRole) => void;
@@ -35,7 +33,6 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   loading: true,
   
-  // Added missing properties with defaults
   isLoading: true,
   activeRole: null,
   switchRole: () => {},
@@ -50,7 +47,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isLoading, setIsLoading] = useState(false); // Separate loading state
+  const [isLoading, setIsLoading] = useState(false);
   const [activeRole, setActiveRole] = useState<UserRole | null>(null);
 
   useEffect(() => {
@@ -165,12 +162,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addRole = async (role: UserRole): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Ensure the role is a valid ProfileRole for the database
-      const validRole = role as ProfileRole;
-      
+      // Use the correct role type
       const { error } = await supabase
         .from('profiles')
-        .update({ role: validRole })
+        .update({ role: role })
         .eq('id', user.id);
 
       if (error) {

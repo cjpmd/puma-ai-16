@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Team } from "@/types/team";
 import { User } from "@/types/user";
-import { ProfileRole } from "@/types/auth";
+import { DatabaseUserRole } from "@/types/auth";
 
 interface TeamUsersManagerProps {
   team?: Team;
@@ -33,7 +33,7 @@ interface TeamUsersManagerProps {
 export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<ProfileRole>("coach");
+  const [newRole, setNewRole] = useState<DatabaseUserRole>("coach");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -126,8 +126,8 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const handleRemoveUser = async (userId: string) => {
     setLoading(true);
     try {
-      // Set a default role that's compatible with the database
-      const defaultRole: ProfileRole = 'user';
+      // Use correct role type for the default role
+      const defaultRole: DatabaseUserRole = 'user';
       
       const { error } = await supabase
         .from("profiles")
@@ -174,7 +174,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
           </div>
           <div>
             <Label htmlFor="role">Role</Label>
-            <Select value={newRole} onValueChange={(value) => setNewRole(value as ProfileRole)}>
+            <Select value={newRole} onValueChange={(value) => setNewRole(value as DatabaseUserRole)}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
