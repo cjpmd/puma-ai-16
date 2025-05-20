@@ -15,10 +15,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserRole } from '@/hooks/useAuth.tsx';
 import { supabase } from '@/integrations/supabase/client';
+import { DatabaseUserRole } from '@/types/auth';
 
-// Define the roles the database expects - matching the exact string literals
+// Define the role type the database expects
 type ProfileRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin' | 'user';
 
 // Ensure this component has a named export matching what GlobalAdminDashboard expects
@@ -101,7 +101,7 @@ export const UserManagement = () => {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: newUserRole as ProfileRole,
+        role: newUserRole, // Using ProfileRole as defined above
         user_id: userId
       };
       

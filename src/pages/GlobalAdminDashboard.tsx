@@ -21,13 +21,8 @@ const GlobalAdminDashboard = () => {
     return <Navigate to="/" />;
   }
 
-  // Type guard to check if profile has role property
-  const hasRoleProperty = (obj: any): obj is { role: string } => {
-    return obj && typeof obj.role === 'string';
-  };
-
-  // Check if user has the globalAdmin role
-  const isGlobalAdmin = hasRoleProperty(profile) && profile.role === 'globalAdmin';
+  // Check if user has the globalAdmin role using explicit property access
+  const isGlobalAdmin = profile?.role === 'globalAdmin';
   
   if (!isGlobalAdmin) {
     console.log("Global Admin Dashboard - Not a global admin, redirecting to home");

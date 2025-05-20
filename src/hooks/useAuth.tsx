@@ -1,8 +1,10 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { DatabaseUserRole } from '@/types/auth';
 
-// Define the user roles and make it exportable - ensure this includes all roles used in the database
-export type UserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'user' | 'globalAdmin';
+// Export the user roles type
+export type UserRole = DatabaseUserRole;
 
 // Define the Auth context type
 export interface AuthContextType {

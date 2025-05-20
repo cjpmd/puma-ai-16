@@ -1,56 +1,42 @@
 
-export type PlayerType = 'OUTFIELD' | 'GOALKEEPER' | string;
+// Extending the Player interface to include profile_image
 
-export type AttributeCategory = 'TECHNICAL' | 'MENTAL' | 'PHYSICAL' | 'GOALKEEPING';
-
-export type PerformanceCategory = 'MESSI' | 'RONALDO' | 'JAGS' | string;
-
-export interface Attribute {
-  id: string;
-  name: string;
-  value: number;
-  category: AttributeCategory;
-  abbreviation?: string;
-}
+export type PlayerType = 'OUTFIELD' | 'GOALKEEPER';
 
 export interface Player {
-  // Original properties (snake_case from DB)
   id: string;
   name: string;
-  playerType: PlayerType; // Already camelCase
-  squad_number?: number;
-  team_category?: string;
-  status: string;
   age?: number;
+  squad_number?: number;
+  date_of_birth?: string;
+  player_type: PlayerType;
+  status?: string;
+  team_category?: string;
+  team_id?: string;
+  self_linked?: boolean;
+  user_id?: string;
   created_at?: string;
   updated_at?: string;
-  date_of_birth?: string;
-  linking_code?: string;
-  self_linked?: boolean;
-  team_id?: string;
-  user_id?: string;
-  profile_image?: string;
-  
-  // Added camelCase aliases for convenience in frontend components
-  squadNumber?: number;
-  teamCategory?: string;
-  dateOfBirth?: string;
-  
-  // Additional properties used in components
-  attributes?: Attribute[];
-  attributeHistory?: Record<string, { date: string; value: number }[]>;
-  profileImage?: string;
+  profile_image?: string; // Add this field for player profile images
+  attributes?: any[];
 }
 
-// Helper function to transform snake_case DB fields to camelCase for frontend use
+// Helper function to transform database player records to frontend Player objects
 export const transformDbPlayerToPlayer = (dbPlayer: any): Player => {
   return {
-    ...dbPlayer,
-    playerType: dbPlayer.player_type || 'OUTFIELD',
-    squadNumber: dbPlayer.squad_number,
-    teamCategory: dbPlayer.team_category,
-    dateOfBirth: dbPlayer.date_of_birth,
-    profileImage: dbPlayer.profile_image,
-    // Any other transformations needed
+    id: dbPlayer.id,
+    name: dbPlayer.name,
+    age: dbPlayer.age,
+    squad_number: dbPlayer.squad_number,
+    date_of_birth: dbPlayer.date_of_birth,
+    player_type: dbPlayer.player_type as PlayerType,
+    status: dbPlayer.status,
+    team_category: dbPlayer.team_category,
+    team_id: dbPlayer.team_id,
+    self_linked: dbPlayer.self_linked,
+    user_id: dbPlayer.user_id,
+    created_at: dbPlayer.created_at,
+    updated_at: dbPlayer.updated_at,
+    profile_image: dbPlayer.profile_image
   };
 };

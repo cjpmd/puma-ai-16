@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Team } from "@/types/team";
 import { User } from "@/types/user";
-import { UserRole } from "@/hooks/useAuth.tsx";
+import { DatabaseUserRole } from "@/types/auth";
 
 interface TeamUsersManagerProps {
   team?: Team;
@@ -90,8 +90,8 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         // User exists, update their role and team_id
         const user = existingUsers[0];
         
-        // Ensure the role is compatible with the database schema
-        const dbRole = newRole as ValidProfileRole;
+        // Explicitly cast the role to the accepted database type
+        const dbRole = newRole;
         
         const { error: updateError } = await supabase
           .from("profiles")

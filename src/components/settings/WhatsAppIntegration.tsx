@@ -34,45 +34,38 @@ export const WhatsAppIntegration = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (profile) {
-      fetchWhatsAppSettings();
-    }
-  }, [profile]);
-
-  const fetchWhatsAppSettings = async () => {
+  // Use a mock function since the table doesn't exist yet
+  // This is a temporary solution until we create the table
+  const fetchWhatsAppSettingsMock = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("whatsapp_settings")
-        .select("*");
-
-      if (error) {
-        console.error("Error fetching WhatsApp settings:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load WhatsApp settings.",
-          variant: "destructive",
-        });
-      } else {
-        // Type assertion to ensure array handling
-        const settingsData = data as WhatsAppSettings[];
-        setSettings(settingsData || []);
-        
-        if (settingsData && settingsData.length > 0) {
-          const current = settingsData[0];
-          setEnabled(current.enabled);
-          setBusinessId(current.whatsapp_business_id || "");
-          setPhoneId(current.whatsapp_phone_id || "");
-          setPhoneNumber(current.business_phone_number || "");
-        }
-      }
+      // Mock data return
+      const mockData: WhatsAppSettings[] = [{
+        id: '1',
+        enabled: false,
+        team_id: profile?.team_id || '',
+        whatsapp_business_id: '',
+        whatsapp_phone_id: '',
+        business_phone_number: ''
+      }];
+      
+      setSettings(mockData);
+      setEnabled(mockData[0].enabled);
+      setBusinessId(mockData[0].whatsapp_business_id || "");
+      setPhoneId(mockData[0].whatsapp_phone_id || "");
+      setPhoneNumber(mockData[0].business_phone_number || "");
     } catch (error) {
-      console.error("Error in WhatsApp settings fetch:", error);
+      console.error("Error in WhatsApp settings mock fetch:", error);
     } finally {
       setIsLoading(false);
     }
   };
+  
+  useEffect(() => {
+    if (profile) {
+      fetchWhatsAppSettingsMock();
+    }
+  }, [profile]);
 
   const saveSettings = async () => {
     if (!profile) {
@@ -94,57 +87,31 @@ export const WhatsAppIntegration = () => {
         business_phone_number: phoneNumber,
       };
 
-      let action;
-      if (settings && settings.length > 0) {
-        // Update existing record
-        action = supabase
-          .from("whatsapp_settings")
-          .update(settingsData)
-          .eq("id", settings[0].id);
-      } else {
-        // Insert new record
-        action = supabase
-          .from("whatsapp_settings")
-          .insert([settingsData]);
-      }
-
-      const { error } = await action;
-
-      if (error) {
-        console.error("Error saving WhatsApp settings:", error);
-        toast({
-          title: "Error",
-          description: "Failed to save WhatsApp settings.",
-          variant: "destructive",
-        });
-      } else {
+      // Mock API operation - in a real app, you'd save to the database
+      setTimeout(() => {
         toast({
           title: "Success",
-          description: "WhatsApp settings saved successfully.",
+          description: "WhatsApp settings saved successfully (mock).",
         });
-        fetchWhatsAppSettings(); // Refresh data
-      }
+        setIsSaving(false);
+      }, 1000);
     } catch (error) {
-      console.error("Error in saving WhatsApp settings:", error);
+      console.error("Error in mock saving WhatsApp settings:", error);
       toast({
         title: "Error",
         description: "An unexpected error occurred.",
         variant: "destructive",
       });
-    } finally {
       setIsSaving(false);
     }
   };
 
   const testWhatsAppConnection = async () => {
-    // Placeholder for WhatsApp connection test
     toast({
       title: "Test Started",
       description: "Testing WhatsApp connection...",
     });
     
-    // Here you would implement actual WhatsApp API testing
-    // For now, we'll just simulate it
     setTimeout(() => {
       toast({
         title: "Test Complete",

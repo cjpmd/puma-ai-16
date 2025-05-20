@@ -82,11 +82,16 @@ export const usePlayersWithAttendance = (eventId: string | undefined, eventType 
         // Transform the player data from DB format to frontend format
         const transformedPlayer = transformDbPlayerToPlayer(player);
         
+        // Determine if player is attending with proper type checking
+        const attendanceStatus = attendance?.status || 'PENDING';
+        const isAttending = attendanceStatus === "CONFIRMED" || 
+                           (attendance?.status as string) === "ATTENDING" || 
+                           false;
+        
         return {
           ...transformedPlayer,
-          attendanceStatus: attendance?.status || 'PENDING',
-          // Check if attendance status indicates the player is attending
-          isAttending: attendance?.status === "CONFIRMED" || attendance?.status === "ATTENDING" || false
+          attendanceStatus,
+          isAttending
         };
       });
 
