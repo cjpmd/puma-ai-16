@@ -1,105 +1,78 @@
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Player, PlayerType, transformDbPlayerToPlayer } from '@/types/player';
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Player } from "@/types/player";
 
-// Extend Player interface to include attendance status
-export interface PlayerWithAttendance extends Player {
-  attendanceStatus?: string;
-  isAttending?: boolean;
-}
+// Import our transformer
+const transformDbPlayerToPlayer = (dbPlayer: any): Partial<Player> => {
+  return {
+    id: dbPlayer.id,
+    name: dbPlayer.name,
+    squad_number: dbPlayer.squad_number,
+    player_type: dbPlayer.player_type,
+    team_category: dbPlayer.team_category,
+  };
+};
 
-export const usePlayersWithAttendance = (eventId: string | undefined, eventType = 'FIXTURE') => {
-  const [players, setPlayers] = useState<PlayerWithAttendance[]>([]);
+export const usePlayersWithAttendance = (eventId: string, eventType: string) => {
+  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (eventId) {
-      fetchPlayersWithAttendance(eventId, eventType);
+    const fetchPlayersWithAttendance = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch all players first
+        const { data: playersData, error: playersError } = await supabase
+          .from("players")
+          .select("*")
+          .order("name");
+        
+        if (playersError) throw playersError;
+        
+        // Fetch attendance for the specific event
+        const { data: attendanceData, error: attendanceError } = await supabase
+          .from("event_attendance")
+          .select("*")
+          .eq("event_id", eventId)
+          .eq("event_type", eventType);
+        
+        if (attendanceError) throw attendanceError;
+        
+        // Transform and combine the data
+        const enrichedPlayers = playersData.map((player) => {
+          const attendanceRecord = attendanceData.find(
+            (record) => record.player_id === player.id
+          );
+          
+          return {
+            ...transformDbPlayerToPlayer(player),
+            attendance: attendanceRecord ? {
+              id: attendanceRecord.id,
+              status: attendanceRecord.status,
+              response_time: attendanceRecord.response_time,
+            } : null
+          } as unknown as Player;
+        });
+        
+        setPlayers(enrichedPlayers);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching players with attendance:", err);
+        setError(err instanceof Error ? err : new Error("An unknown error occurred"));
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (eventId && eventType) {
+      fetchPlayersWithAttendance();
     } else {
       setLoading(false);
     }
   }, [eventId, eventType]);
-
-  const fetchPlayersWithAttendance = async (id: string, type: string) => {
-    try {
-      setLoading(true);
-
-      // First get the event to determine the team category
-      let teamCategory;
-      
-      if (type === 'FIXTURE') {
-        const { data: eventData, error: eventError } = await supabase
-          .from('fixtures')
-          .select('team_name')
-          .eq('id', id)
-          .single();
-
-        if (eventError) throw eventError;
-        teamCategory = eventData.team_name;
-      } else if (type === 'FESTIVAL') {
-        const { data: eventData, error: eventError } = await supabase
-          .from('festivals')
-          .select('team_name')
-          .eq('id', id)
-          .single();
-
-        if (eventError) throw eventError;
-        teamCategory = eventData.team_name;
-      } else if (type === 'TOURNAMENT') {
-        const { data: eventData, error: eventError } = await supabase
-          .from('tournaments')
-          .select('team_name')
-          .eq('id', id)
-          .single();
-
-        if (eventError) throw eventError;
-        teamCategory = eventData.team_name;
-      }
-
-      // Get all players in this team category
-      const { data: playersData, error: playersError } = await supabase
-        .from('players')
-        .select('*')
-        .eq('team_category', teamCategory)
-        .order('name', { ascending: true });
-
-      if (playersError) throw playersError;
-
-      // Get attendance status for this event
-      const { data: attendanceData, error: attendanceError } = await supabase
-        .from('event_attendance')
-        .select('*')
-        .eq('event_id', id)
-        .eq('event_type', type);
-
-      if (attendanceError) throw attendanceError;
-
-      // Combine players with their attendance status
-      const playersWithAttendance = playersData.map(player => {
-        const attendance = attendanceData.find(a => a.player_id === player.id);
-        // Transform the player data from DB format to frontend format
-        const transformedPlayer = transformDbPlayerToPlayer(player);
-        
-        // Determine if player is attending
-        const attendanceStatus = attendance?.status || 'PENDING';
-        // Use strict equality check for status comparison
-        const isAttending = attendanceStatus === "CONFIRMED";
-        
-        return {
-          ...transformedPlayer,
-          attendanceStatus,
-          isAttending
-        };
-      });
-
-      setPlayers(playersWithAttendance);
-    } catch (error) {
-      console.error('Error fetching players with attendance:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return { players, loading };
+  
+  return { players, loading, error };
 };

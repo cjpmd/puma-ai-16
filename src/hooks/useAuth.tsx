@@ -1,7 +1,7 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { DatabaseUserRole } from '@/types/auth';
+import { DatabaseUserRole, ProfileRole, ensureValidProfileRole } from '@/types/auth';
 
 // Export the user roles type
 export type UserRole = DatabaseUserRole;
@@ -17,10 +17,10 @@ export interface AuthContextType {
   loading: boolean;
   
   isLoading: boolean;
-  activeRole: UserRole | null;
-  switchRole: (role: UserRole) => void;
-  hasRole: (role: UserRole | UserRole[]) => boolean;
-  addRole: (role: UserRole) => Promise<boolean>;
+  activeRole: ProfileRole | null;
+  switchRole: (role: ProfileRole) => void;
+  hasRole: (role: ProfileRole | ProfileRole[]) => boolean;
+  addRole: (role: ProfileRole) => Promise<boolean>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeRole, setActiveRole] = useState<UserRole | null>(null);
+  const [activeRole, setActiveRole] = useState<ProfileRole | null>(null);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -82,9 +82,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
 
           setProfile(data)
-          // Ensure the role is a valid UserRole
+          // Ensure the role is a valid ProfileRole
           if (data?.role) {
-            setActiveRole(data.role as UserRole);
+            setActiveRole(ensureValidProfileRole(data.role));
           } else {
             setActiveRole('user');
           }
@@ -146,27 +146,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
   
-  const switchRole = (role: UserRole) => {
+  const switchRole = (role: ProfileRole) => {
     setActiveRole(role);
   };
 
-  const hasRole = (role: UserRole | UserRole[]): boolean => {
+  const hasRole = (role: ProfileRole | ProfileRole[]): boolean => {
     if (!profile) return false;
 
     if (Array.isArray(role)) {
-      return role.includes(profile.role as UserRole);
+      return role.includes(ensureValidProfileRole(profile.role));
     }
 
-    return profile.role === role;
+    return ensureValidProfileRole(profile.role) === role;
   };
 
-  const addRole = async (role: UserRole): Promise<boolean> => {
+  const addRole = async (role: ProfileRole): Promise<boolean> => {
     setIsLoading(true);
     try {
       // Cast the role to string for compatibility with the database
       const { error } = await supabase
         .from('profiles')
-        .update({ role: role as string })
+        .update({ role: role })
         .eq('id', user.id);
 
       if (error) {
@@ -201,7 +201,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         setProfile(data)
         if (data?.role) {
-          setActiveRole(data.role as UserRole);
+          setActiveRole(ensureValidProfileRole(data.role));
         } else {
           setActiveRole('user');
         }

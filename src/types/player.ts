@@ -11,6 +11,34 @@ export interface PlayerAttributes {
   [key: string]: number;
 }
 
+export interface Attribute {
+  id: string;
+  name: string;
+  value: number;
+  category: string;
+}
+
+// Helper function to transform database player object to our internal Player format
+export const transformDbPlayerToPlayer = (dbPlayer: any): Player => {
+  return {
+    id: dbPlayer.id,
+    name: dbPlayer.name,
+    squad_number: dbPlayer.squad_number,
+    age: dbPlayer.age,
+    date_of_birth: dbPlayer.date_of_birth,
+    player_type: dbPlayer.player_type,
+    team_category: dbPlayer.team_category,
+    team_id: dbPlayer.team_id,
+    created_at: dbPlayer.created_at,
+    updated_at: dbPlayer.updated_at,
+    self_linked: dbPlayer.self_linked,
+    user_id: dbPlayer.user_id,
+    linking_code: dbPlayer.linking_code,
+    status: dbPlayer.status,
+    profile_image: dbPlayer.profile_image
+  };
+};
+
 export interface Player {
   id: string;
   name: string;
@@ -26,7 +54,16 @@ export interface Player {
   user_id?: string; 
   linking_code?: string;
   status?: string;
-  profile_image?: string; // Added to support profile images
+  profile_image?: string;
+  // Add these properties for compatibility with existing components
+  attributes?: Attribute[];
+  attributeHistory?: Record<string, { date: string; value: number; }[]>;
+  // These are property aliases to maintain compatibility with camelCase usage
+  get squadNumber(): number | undefined { return this.squad_number; }
+  get playerType(): string { return this.player_type; }
+  get dateOfBirth(): string | undefined { return this.date_of_birth; }
+  get teamCategory(): string | undefined { return this.team_category; }
+  get profileImage(): string | undefined { return this.profile_image; }
 }
 
 export interface PlayerWithAttributes extends Player {

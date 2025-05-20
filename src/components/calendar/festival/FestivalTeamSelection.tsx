@@ -1,234 +1,93 @@
-import { useEffect, useState } from "react";
-import { useTeamSelection } from "@/hooks/useTeamSelection";
-import { FormationSelector } from "@/components/FormationSelector";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FormationView } from "@/components/fixtures/FormationView";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { PerformanceCategory, Player, transformDbPlayerToPlayer } from "@/types/player";
+import { PositionSelect } from "@/components/formation/PlayerPositionSelect";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Player } from "@/types/player";
 
-interface TeamSelection {
-  playerId: string;
-  position: string;
-  is_substitute: boolean;
-  performanceCategory?: PerformanceCategory;
-}
+// Replace the import with a local implementation
+const transformDbPlayerToPlayer = (dbPlayer: any): Partial<Player> => {
+  return {
+    id: dbPlayer.id,
+    name: dbPlayer.name,
+    squad_number: dbPlayer.squad_number,
+    player_type: dbPlayer.player_type,
+    team_category: dbPlayer.team_category,
+  };
+};
 
 interface FestivalTeamSelectionProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  festival: {
-    id: string;
-    teams: Array<{ id: string; name: string; category: string }>;
-    format: string;
-  };
-  onSuccess: () => void;
+  eventId: string;
+  onPlayersSelected: (players: any[]) => void;
 }
 
-export const FestivalTeamSelection = ({ 
-  isOpen,
-  onOpenChange,
-  festival,
-  onSuccess,
-}: FestivalTeamSelectionProps) => {
-  const { selectedPlayers, clearSelectedPlayers } = useTeamSelection();
-  const [teamSelections, setTeamSelections] = useState<Record<string, Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>>>({});
-  const [isSaving, setIsSaving] = useState(false);
-  const [teamFormationTemplates, setTeamFormationTemplates] = useState<Record<string, string>>({});
-
-  const { data: playersData } = useQuery({
-    queryKey: ["all-players"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("players")
-        .select("*");
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Transform players data to match the expected Player interface properly
-  const players = (playersData || []).map(player => {
-    const transformedPlayer = transformDbPlayerToPlayer(player);
-    
-    // Ensure squadNumber is defined for FormationView
-    if (transformedPlayer.squadNumber === undefined) {
-      transformedPlayer.squadNumber = player.squad_number || 0;
-    }
-    
-    // Add squad_number for internal components that expect it
-    if (player.squad_number) {
-      (transformedPlayer as any).squad_number = player.squad_number;
-    } else if (transformedPlayer.squadNumber) {
-      (transformedPlayer as any).squad_number = transformedPlayer.squadNumber;
-    } else {
-      (transformedPlayer as any).squad_number = 0;
-    }
-    
-    return transformedPlayer as any;
-  });
+export const FestivalTeamSelection = ({ eventId, onPlayersSelected }: FestivalTeamSelectionProps) => {
+  const [players, setPlayers] = useState<any[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      clearSelectedPlayers();
-    }
-  }, [isOpen, clearSelectedPlayers]);
-
-  const handleSelectionChange = (teamId: string, selections: Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>) => {
-    // Update local state
-    setTeamSelections(prev => ({
-      ...prev,
-      [teamId]: selections
-    }));
-  };
-
-  const handleTemplateChange = (teamId: string, template: string) => {
-    console.log(`Changing template for team ${teamId} to ${template}`);
-    setTeamFormationTemplates(prev => ({
-      ...prev,
-      [teamId]: template
-    }));
-  };
-
-  const formatSelectionsForFormation = (selections: Record<string, { playerId: string; position: string }>) => {
-    return Object.entries(selections)
-      .filter(([_, value]) => !value.position.startsWith('sub-'))
-      .map(([_, value]) => ({
-        position: value.position.split('-')[0].toUpperCase(),
-        playerId: value.playerId
-      }));
-  };
-
-  const handleSaveSelections = async () => {
-    setIsSaving(true);
-    try {
-      // Format all team selections for saving to database
-      const formattedSelections: Record<string, TeamSelection[]> = {};
-      
-      Object.entries(teamSelections).forEach(([teamId, selections]) => {
-        formattedSelections[teamId] = Object.entries(selections).map(([_, value]) => ({
-          playerId: value.playerId,
-          position: value.position,
-          is_substitute: value.position.startsWith('sub-'),
-          performanceCategory: value.performanceCategory || 'MESSI' as PerformanceCategory
-        }));
-      });
-      
-      // Create festival_team_players table if it doesn't exist
+    const fetchPlayers = async () => {
       try {
-        // Create table if it doesn't exist
-        await supabase.rpc('create_table_if_not_exists', {
-          p_table_name: 'festival_team_players',
-          p_columns: `
-            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-            festival_team_id uuid REFERENCES festival_teams(id),
-            player_id uuid REFERENCES players(id),
-            position text NOT NULL,
-            is_substitute boolean DEFAULT false,
-            is_captain boolean DEFAULT false,
-            performance_category text DEFAULT 'MESSI',
-            created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
-            updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
-          `
-        });
-      } catch (error) {
-        console.error("Error creating festival_team_players table:", error);
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("players")
+          .select("*")
+          .order("name");
+
+        if (error) throw error;
+
+        // Transform the database players to our internal player format
+        const transformedPlayers = data.map(transformDbPlayerToPlayer);
+        setPlayers(transformedPlayers);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching players:", err);
+        setError(err instanceof Error ? err : new Error("An unknown error occurred"));
+      } finally {
+        setLoading(false);
       }
-      
-      // Insert selections into database using the festival_team_players table
-      const insertPromises = Object.entries(formattedSelections).flatMap(([teamId, selections]) => 
-        selections.map(selection => {
-          const insertData = {
-            festival_team_id: teamId,
-            player_id: selection.playerId,
-            position: selection.position,
-            is_substitute: selection.is_substitute,
-            performance_category: selection.performanceCategory
-          };
-          
-          return supabase
-            .from('festival_team_players')
-            .upsert(insertData);
-        })
-      );
-      
-      const results = await Promise.all(insertPromises);
-      const errors = results.filter(r => r.error).map(r => r.error);
-      
-      if (errors.length > 0) {
-        console.error("Errors saving selections:", errors);
-        throw new Error("Some selections could not be saved");
-      }
-      
-      onSuccess();
-      
-    } catch (error) {
-      console.error('Error saving team selections:', error);
-    } finally {
-      setIsSaving(false);
+    };
+
+    fetchPlayers();
+  }, []);
+
+  const togglePlayerSelection = (player: any) => {
+    const alreadySelected = selectedPlayers.some((p) => p.id === player.id);
+
+    if (alreadySelected) {
+      setSelectedPlayers(selectedPlayers.filter((p) => p.id !== player.id));
+    } else {
+      setSelectedPlayers([...selectedPlayers, player]);
     }
   };
+
+  useEffect(() => {
+    onPlayersSelected(selectedPlayers);
+  }, [selectedPlayers, onPlayersSelected]);
+
+  if (loading) return <div>Loading players...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Team Selection for Festival</DialogTitle>
-        </DialogHeader>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
-          {festival.teams && festival.teams.map(team => (
-            <Card key={team.id} className="w-full">
-              <CardHeader>
-                <CardTitle className="text-lg">{team.name}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {teamSelections[team.id] && (
-                  <FormationView
-                    positions={formatSelectionsForFormation(teamSelections[team.id])}
-                    players={players}
-                    periodNumber={1}
-                    duration={20}
-                  />
-                )}
-                <FormationSelector
-                  format={festival.format as any}
-                  teamName={team.category}
-                  onSelectionChange={(selections) => {
-                    // Type casting to ensure compatibility with PerformanceCategory
-                    const typedSelections = Object.entries(selections).reduce((acc, [key, value]) => {
-                      return {
-                        ...acc,
-                        [key]: {
-                          ...value,
-                          performanceCategory: value.performanceCategory as PerformanceCategory
-                        }
-                      };
-                    }, {} as Record<string, { playerId: string; position: string; performanceCategory?: PerformanceCategory }>);
-                    
-                    handleSelectionChange(team.id, typedSelections);
-                  }}
-                  selectedPlayers={selectedPlayers}
-                  availablePlayers={players}
-                  formationTemplate={teamFormationTemplates[team.id] || "All"}
-                  onTemplateChange={(template) => handleTemplateChange(team.id, template)}
-                />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        
-        <div className="flex justify-end mt-8 gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSaveSelections} disabled={isSaving}>
-            {isSaving ? 'Saving...' : 'Save Selections'}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <div>
+      <h3 className="text-lg font-semibold mb-4">Select Players for the Festival</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {players.map((player) => (
+          <div key={player.id} className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+            <Label htmlFor={`player-${player.id}`} className="w-full">
+              {player.name}
+            </Label>
+            <Checkbox
+              id={`player-${player.id}`}
+              checked={selectedPlayers.some((p) => p.id === player.id)}
+              onCheckedChange={() => togglePlayerSelection(player)}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
