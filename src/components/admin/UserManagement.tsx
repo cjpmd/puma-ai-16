@@ -91,14 +91,12 @@ export const UserManagement = () => {
         return;
       }
       
-      // Cast the role to string to ensure it's handled correctly for database
-      const roleAsString = newUserRole as string;
-      
+      // Create a properly typed profile data object
       const profileData = {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: roleAsString, 
+        role: newUserRole, // This is already a valid UserRole type
         user_id: userId
       };
       

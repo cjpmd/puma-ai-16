@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile, UserRole, ensureValidRole, isValidRole } from '@/types/auth';
@@ -175,7 +174,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Update profile with the validated role
       const { error } = await supabase
         .from('profiles')
-        .update({ role }) // Use directly as it's already the correct type
+        .update({ role }) // Role is already the correct UserRole type
         .eq('id', user?.id);
 
       if (error) {

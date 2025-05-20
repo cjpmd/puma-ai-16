@@ -85,13 +85,10 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         // User exists, update their role and team_id
         const user = existingUsers[0];
         
-        // Cast role to string for database operation
-        const roleAsString = newRole as string;
-        
         const { error: updateError } = await supabase
           .from("profiles")
           .update({ 
-            role: roleAsString, 
+            role: newRole, 
             team_id: team.id 
           })
           .eq("id", user.id);
@@ -129,12 +126,10 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
     try {
       // When removing from team, set role back to basic user
       const defaultRole: UserRole = 'user';
-      // Cast to string for database operation
-      const roleAsString = defaultRole as string;
       
       const { error } = await supabase
         .from("profiles")
-        .update({ team_id: null, role: roleAsString })
+        .update({ team_id: null, role: defaultRole })
         .eq("id", userId);
 
       if (error) {
