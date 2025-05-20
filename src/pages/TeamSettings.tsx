@@ -51,7 +51,12 @@ export const TeamSettings = () => {
       return {
         ...data,
         team_colors: Array.isArray(data?.team_colors) ? data?.team_colors : 
-                    (typeof data?.team_colors === 'string' ? [data?.team_colors] : ["#ffffff", "#000000"])
+                    (typeof data?.team_colors === 'string' ? [data?.team_colors] : ["#ffffff", "#000000"]),
+        home_kit_icon: data?.home_kit_icon || "",
+        away_kit_icon: data?.away_kit_icon || "",
+        training_kit_icon: data?.training_kit_icon || "",
+        kit_home_icon: data?.kit_home_icon || "",
+        kit_away_icon: data?.kit_away_icon || ""
       } as EnhancedTeamSettings;
     }
   });

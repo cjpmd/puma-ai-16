@@ -2660,6 +2660,7 @@ export type Database = {
           linking_code: string | null
           name: string
           player_type: string
+          profile_image: string | null
           self_linked: boolean | null
           squad_number: number
           status: string | null
@@ -2676,6 +2677,7 @@ export type Database = {
           linking_code?: string | null
           name: string
           player_type?: string
+          profile_image?: string | null
           self_linked?: boolean | null
           squad_number: number
           status?: string | null
@@ -2692,6 +2694,7 @@ export type Database = {
           linking_code?: string | null
           name?: string
           player_type?: string
+          profile_image?: string | null
           self_linked?: boolean | null
           squad_number?: number
           status?: string | null
@@ -3317,37 +3320,52 @@ export type Database = {
         Row: {
           admin_id: string | null
           attendance_colors: Json | null
+          away_kit_icon: string | null
           created_at: string | null
           format: string | null
           hide_scores_from_parents: boolean | null
+          home_kit_icon: string | null
           id: string
           parent_notification_enabled: boolean | null
+          team_colors: string[] | null
           team_id: string | null
+          team_logo: string | null
           team_name: string | null
+          training_kit_icon: string | null
           updated_at: string | null
         }
         Insert: {
           admin_id?: string | null
           attendance_colors?: Json | null
+          away_kit_icon?: string | null
           created_at?: string | null
           format?: string | null
           hide_scores_from_parents?: boolean | null
+          home_kit_icon?: string | null
           id?: string
           parent_notification_enabled?: boolean | null
+          team_colors?: string[] | null
           team_id?: string | null
+          team_logo?: string | null
           team_name?: string | null
+          training_kit_icon?: string | null
           updated_at?: string | null
         }
         Update: {
           admin_id?: string | null
           attendance_colors?: Json | null
+          away_kit_icon?: string | null
           created_at?: string | null
           format?: string | null
           hide_scores_from_parents?: boolean | null
+          home_kit_icon?: string | null
           id?: string
           parent_notification_enabled?: boolean | null
+          team_colors?: string[] | null
           team_id?: string | null
+          team_logo?: string | null
           team_name?: string | null
+          training_kit_icon?: string | null
           updated_at?: string | null
         }
         Relationships: [

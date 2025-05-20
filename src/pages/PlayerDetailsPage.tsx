@@ -1,3 +1,4 @@
+
 // Fixed implementation for PlayerDetailsPage to properly handle profile_image and other properties
 
 import React from 'react';

@@ -14,9 +14,9 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
     await setupSecurityPolicies();
     
     // Check if the profile_image column exists in the players table
-    const hasProfileImageColumn = await columnExists('players');
+    const hasProfileImageColumn = await columnExists('players', 'profile_image');
     
-    if (hasProfileImageColumn) {
+    if (!hasProfileImageColumn) {
       const profileImageAdded = await addColumnIfNotExists(
         'players', 
         'profile_image', 

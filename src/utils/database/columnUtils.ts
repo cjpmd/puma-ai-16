@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -6,25 +7,45 @@ import { supabase } from "@/integrations/supabase/client";
  * @param columnName The name of the column to check for
  * @returns Promise<boolean> True if the column exists, false otherwise
  */
-export const columnExists = async (tableName: string, columnName: string): Promise<boolean> => {
+export const columnExists = async (tableName: string, columnName?: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc('execute_sql', {
-      sql_string: `
-        SELECT EXISTS (
-          SELECT 1
-          FROM information_schema.columns
-          WHERE table_name = '${tableName}'
-          AND column_name = '${columnName}'
-        );
-      `
-    });
-    
-    if (error) {
-      console.error("Error checking if column exists:", error);
-      return false;
+    if (columnName) {
+      const { data, error } = await supabase.rpc('execute_sql', {
+        sql_string: `
+          SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_name = '${tableName}'
+            AND column_name = '${columnName}'
+          );
+        `
+      });
+      
+      if (error) {
+        console.error("Error checking if column exists:", error);
+        return false;
+      }
+      
+      return data || false;
+    } else {
+      // If no column name is provided, check if the table exists
+      const { data, error } = await supabase.rpc('execute_sql', {
+        sql_string: `
+          SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_name = '${tableName}'
+          );
+        `
+      });
+      
+      if (error) {
+        console.error(`Error checking if table ${tableName} exists:`, error);
+        return false;
+      }
+      
+      return data || false;
     }
-    
-    return data || false;
   } catch (err) {
     console.error("Error in columnExists function:", err);
     return false;
