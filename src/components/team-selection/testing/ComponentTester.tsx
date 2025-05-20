@@ -19,7 +19,7 @@ export const ComponentTester = () => {
       <TeamSelectionManager 
         fixture={mockFixture as any} 
         onSuccess={() => console.log('Success')} 
-        // Remove performanceCategory prop as it's not in the interface
+        performanceCategory={PerformanceCategory.MESSI}
       />
     </div>
   );

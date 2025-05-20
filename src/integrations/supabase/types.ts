@@ -4043,6 +4043,10 @@ export type Database = {
         Args: { input_player_id: string }
         Returns: undefined
       }
+      count_invalid_relationships: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       create_initial_admin: {
         Args: { admin_email: string }
         Returns: undefined

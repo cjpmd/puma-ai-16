@@ -60,21 +60,14 @@ export const TeamSettings = () => {
       {/* Team Info Settings */}
       <Card>
         <CardContent className="pt-6">
-          <TeamInfoSettings 
-            teamName={settings.team_name || "Team"}
-            teamColors={settings.team_colors}
-            onSettingsUpdated={() => {}} 
-          />
+          <TeamInfoSettings />
         </CardContent>
       </Card>
       
       {/* Formats and Categories */}
       <Card>
         <CardContent className="pt-6">
-          <FormatsAndCategoriesSettings 
-            format={settings.format}
-            onSettingsUpdated={() => {}} 
-          />
+          <FormatsAndCategoriesSettings />
         </CardContent>
       </Card>
       
