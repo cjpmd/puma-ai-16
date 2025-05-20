@@ -38,6 +38,9 @@ export interface Player {
   // Add these properties for compatibility with existing components
   attributes?: Attribute[];
   attributeHistory?: Record<string, { date: string; value: number; }[]>;
+  // Add properties used in SquadManagement 
+  objectives?: any[];
+  topPositions?: any[];
   // Add camelCase property aliases directly as optional properties
   squadNumber?: number;
   playerType?: string;

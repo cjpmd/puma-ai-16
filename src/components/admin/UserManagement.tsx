@@ -92,12 +92,13 @@ export const UserManagement = () => {
         return;
       }
       
-      // Use the validated role directly from the state
+      // Convert UserRole to string before sending to database
+      // This is needed because the database expects a string, not our TypeScript type
       const profileData = {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: newUserRole, // This is safely typed as UserRole
+        role: newUserRole as string, 
         user_id: userId
       };
       

@@ -82,12 +82,13 @@ export default function ClubSettings() {
         }
         
         // If team settings exist, use it to update team display names and age groups
-        if (teamSettings?.team_name) {
+        if (teamSettings && teamSettingsData) {
           const updatedTeams = teamsData?.map(team => {
             const updates: any = {};
             
             // Only update team name if it matches the default "My Team" name
-            if (team.team_name === "My Team") {
+            // and if teamSettings.team_name exists
+            if (team.team_name === "My Team" && teamSettings.team_name) {
               updates.team_name = teamSettings.team_name;
             }
             
@@ -155,12 +156,12 @@ export default function ClubSettings() {
         }
         
         // Apply team settings data to the teams
-        if (teamSettings?.team_name) {
+        if (teamSettings && teamSettingsData) {
           const updatedTeams = teamsData?.map(team => {
             const updates: any = {};
             
             // Only update team name if it matches the default "My Team" name
-            if (team.team_name === "My Team") {
+            if (team.team_name === "My Team" && teamSettings.team_name) {
               updates.team_name = teamSettings.team_name;
             }
             
