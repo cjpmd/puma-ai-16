@@ -24,4 +24,3 @@ export interface TeamSettings {
 
 // Update to use more specific role types that match what TeamUsersManager expects
 export type AllowedUserRoles = "admin" | "manager" | "coach" | "parent" | "globalAdmin";
-
