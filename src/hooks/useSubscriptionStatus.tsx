@@ -28,18 +28,18 @@ export const useSubscriptionStatus = (): SubscriptionStatus => {
       }
       
       // Check if user is a global admin (they get all features)
-      if (profile && (profile?.role === 'globalAdmin' || profile?.role === 'admin')) {
+      if (profile && (profile.role === 'globalAdmin' || profile.role === 'admin')) {
         setIsSubscribed(true);
         setSubscriptionTier('Enterprise');
         return;
       }
       
       // Check team subscription if team_id exists
-      if (profile && profile?.team_id) {
+      if (profile && profile.team_id) {
         const { data: teamSubscription, error: teamError } = await supabase
           .from('team_subscriptions')
           .select('*')
-          .eq('team_id', profile?.team_id)
+          .eq('team_id', profile.team_id)
           .eq('status', 'active')
           .maybeSingle();
           
@@ -82,7 +82,7 @@ export const useSubscriptionStatus = (): SubscriptionStatus => {
     loading, 
     subscriptionData, 
     subscriptionTier,
-    checkSubscriptionStatus 
+    checkSubscriptionStatus
   };
 };
 

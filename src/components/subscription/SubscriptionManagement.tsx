@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,7 +38,7 @@ export const SubscriptionManagement = () => {
       }
 
       // For team admins, fetch team subscriptions
-      if (profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'coach') {
+      if (profile && (profile.role === 'admin' || profile.role === 'manager' || profile.role === 'coach')) {
         const { data: teamData, error: teamError } = await supabase
           .from('teams')
           .select('id')
@@ -73,7 +72,7 @@ export const SubscriptionManagement = () => {
       } 
       
       // For players and parents, fetch player subscriptions
-      else if (profile?.role === 'player' || profile?.role === 'parent') {
+      else if (profile && (profile.role === 'player' || profile.role === 'parent')) {
         const { data: playerSubs, error: playerSubsError } = await supabase
           .from('player_subscriptions')
           .select('*')

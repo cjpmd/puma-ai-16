@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Table, TableBody, TableCaption, TableCell, 
@@ -91,14 +92,15 @@ export const UserManagement = () => {
         return;
       }
       
-      // Cast the role to ensure compatibility with the database
-      const profileRole = newUserRole;
+      // This is the fix for the TypeScript error - ensure the role is a valid ProfileRole type
+      // and convert it to a string when passing to Supabase
+      const profileRole = ensureValidProfileRole(newUserRole);
       
       const profileData = {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: profileRole,
+        role: profileRole as string, // Cast to string to satisfy database expectations
         user_id: userId
       };
       

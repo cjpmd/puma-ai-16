@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Team } from "@/types/team";
 import { User } from "@/types/user";
-import { DatabaseUserRole } from "@/types/auth";
+import { ProfileRole } from "@/types/auth";
 
 interface TeamUsersManagerProps {
   team?: Team;
@@ -33,7 +33,7 @@ interface TeamUsersManagerProps {
 export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<DatabaseUserRole>("coach");
+  const [newRole, setNewRole] = useState<ProfileRole>("coach");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -90,7 +90,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         const { error: updateError } = await supabase
           .from("profiles")
           .update({ 
-            role: newRole as string, 
+            role: newRole as string, // Cast to string to satisfy database expectations
             team_id: team.id 
           })
           .eq("id", user.id);
@@ -131,7 +131,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
       
       const { error } = await supabase
         .from("profiles")
-        .update({ team_id: null, role: defaultRole })
+        .update({ team_id: null, role: defaultRole as string })
         .eq("id", userId);
 
       if (error) {
