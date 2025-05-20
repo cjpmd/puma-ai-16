@@ -11,7 +11,7 @@ import { PlayerObjectives } from "@/components/coaching/PlayerObjectives";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CoachingComments } from "@/components/coaching/CoachingComments";
-import { columnExists } from "@/utils/database";
+import { columnExists } from "@/utils/database/columnUtils"; // Import specifically from columnUtils
 import { useToast } from "@/hooks/use-toast";
 
 interface PlayerDetailsProps {
