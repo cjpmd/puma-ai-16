@@ -1,6 +1,7 @@
 
-// Extend the Player interface to include all needed fields
+// Player types and interfaces
 
+// Define player types
 export type PlayerType = 'OUTFIELD' | 'GOALKEEPER';
 
 // Define performance categories

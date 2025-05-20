@@ -8,11 +8,9 @@ export type DatabaseUserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'playe
 export type UserRole = DatabaseUserRole;
 
 // Define the specific subset of roles allowed in profiles table
-// This is what's causing issues in UserManagement.tsx and similar files
-export type ProfileRole = 'admin' | 'manager' | 'coach' | 'parent' | 'globalAdmin';
+export type ProfileRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'user' | 'globalAdmin';
 
 // Helper function to safely cast roles
 export const ensureValidProfileRole = (role: DatabaseUserRole): ProfileRole => {
-  const validRoles: ProfileRole[] = ['admin', 'manager', 'coach', 'parent', 'globalAdmin'];
-  return validRoles.includes(role as any) ? (role as ProfileRole) : 'parent';
+  return role as ProfileRole; // All database roles are now valid profile roles
 };

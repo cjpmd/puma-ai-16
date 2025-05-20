@@ -1,7 +1,5 @@
-
 // Create a new WhatsAppIntegration.tsx file with proper types
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 interface WhatsAppSettings {
   id: string;
   enabled: boolean;
-  team_id: string;
+  team_id: string | null;
   provider?: string;
   whatsapp_business_id?: string;
   whatsapp_phone_id?: string;
@@ -43,7 +41,7 @@ export const WhatsAppIntegration = () => {
       const mockData: WhatsAppSettings[] = [{
         id: '1',
         enabled: false,
-        team_id: profile?.team_id || '',
+        team_id: profile?.team_id || null,
         whatsapp_business_id: '',
         whatsapp_phone_id: '',
         business_phone_number: ''

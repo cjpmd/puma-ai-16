@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -112,18 +111,21 @@ const PlayerDetailsPage = () => {
         id: playerResult.id,
         name: playerResult.name || "Unknown Player",
         age: calculatedAge || 0,
-        dateOfBirth: playerResult.date_of_birth,
-        squadNumber: playerResult.squad_number || 0,
-        playerType: playerResult.player_type as PlayerType || "OUTFIELD",
-        profileImage: profileImageAvailable ? playerResult.profile_image : undefined,
-        teamCategory: playerResult.team_category || "",
+        date_of_birth: playerResult.date_of_birth,
+        dateOfBirth: playerResult.date_of_birth, // Add for backwards compatibility
+        squad_number: playerResult.squad_number || 0,
+        squadNumber: playerResult.squad_number || 0, // Add for backwards compatibility
+        player_type: playerResult.player_type as PlayerType || "OUTFIELD",
+        playerType: playerResult.player_type as PlayerType || "OUTFIELD", // Add for backwards compatibility
+        profile_image: profileImageAvailable ? playerResult.profile_image : undefined,
+        profileImage: profileImageAvailable ? playerResult.profile_image : undefined, // Add for backwards compatibility
+        team_category: playerResult.team_category || "",
+        teamCategory: playerResult.team_category || "", // Add for backwards compatibility
         attributes: playerResult.attributes ? playerResult.attributes.map((attr: any) => ({
           id: attr.id,
           name: attr.name,
           value: attr.value,
           category: attr.category,
-          player_id: attr.player_id,
-          created_at: attr.created_at,
         })) : [],
         attributeHistory,
         created_at: playerResult.created_at,

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -24,19 +23,16 @@ import {
 } from "@/components/ui/table";
 import { Team } from "@/types/team";
 import { User } from "@/types/user";
-import { DatabaseUserRole } from "@/types/auth";
+import { ProfileRole } from "@/types/auth";
 
 interface TeamUsersManagerProps {
   team?: Team;
 }
 
-// Define a type for team user roles that's compatible with the database
-type ValidProfileRole = 'admin' | 'manager' | 'coach' | 'player' | 'parent' | 'user' | 'globalAdmin';
-
 export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<ValidProfileRole>("coach");
+  const [newRole, setNewRole] = useState<ProfileRole>("coach");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -90,13 +86,10 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         // User exists, update their role and team_id
         const user = existingUsers[0];
         
-        // Explicitly cast the role to the accepted database type
-        const dbRole = newRole;
-        
         const { error: updateError } = await supabase
           .from("profiles")
           .update({ 
-            role: dbRole, 
+            role: newRole, 
             team_id: team.id 
           })
           .eq("id", user.id);
@@ -133,7 +126,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
     setLoading(true);
     try {
       // Set a default role that's compatible with the database
-      const defaultRole: ValidProfileRole = 'user';
+      const defaultRole: ProfileRole = 'user';
       
       const { error } = await supabase
         .from("profiles")
@@ -180,7 +173,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
           </div>
           <div>
             <Label htmlFor="role">Role</Label>
-            <Select value={newRole} onValueChange={(value) => setNewRole(value as ValidProfileRole)}>
+            <Select value={newRole} onValueChange={(value) => setNewRole(value as ProfileRole)}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>

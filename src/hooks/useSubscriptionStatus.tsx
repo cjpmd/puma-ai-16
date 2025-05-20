@@ -39,25 +39,23 @@ export function useSubscriptionStatus() {
       }
       
       // If no team subscription, check for player-specific subscription
-      if (profile) {
-        // Safe access of profile id using optional chaining
-        const profileId = profile?.id;
+      // Safely access profile id
+      const profileId = profile?.id;
+      
+      if (profileId) {
+        const subscriptionData = await verifyPlayerSubscription(profileId);
         
-        if (profileId) {
-          const subscriptionData = await verifyPlayerSubscription(profileId);
-          
-          if (subscriptionData && subscriptionData.status === 'active') {
-            setIsSubscribed(true);
-            setSubscriptionTier(subscriptionData.tier || 'premium');
-          } else {
-            setIsSubscribed(false);
-            setSubscriptionTier(null);
-          }
+        if (subscriptionData && subscriptionData.status === 'active') {
+          setIsSubscribed(true);
+          setSubscriptionTier(subscriptionData.tier || 'premium');
         } else {
-          console.warn('Unable to check player subscription: profile.id is not available');
           setIsSubscribed(false);
           setSubscriptionTier(null);
         }
+      } else {
+        console.warn('Unable to check player subscription: profile.id is not available');
+        setIsSubscribed(false);
+        setSubscriptionTier(null);
       }
     } catch (error) {
       console.error('Error checking subscription status:', error);

@@ -4,10 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Player, PlayerType, transformDbPlayerToPlayer } from '@/types/player';
 
 // Extend Player interface to include attendance status
-export interface PlayerWithAttendance extends Omit<Player, 'status'> {
+export interface PlayerWithAttendance extends Player {
   attendanceStatus?: string;
   isAttending?: boolean;
-  playerType: PlayerType;
 }
 
 export const usePlayersWithAttendance = (eventId: string | undefined, eventType = 'FIXTURE') => {
@@ -84,9 +83,8 @@ export const usePlayersWithAttendance = (eventId: string | undefined, eventType 
         
         // Determine if player is attending with proper type checking
         const attendanceStatus = attendance?.status || 'PENDING';
-        // Fix: Use a type-safe comparison for the attendance status
-        const isAttending = attendanceStatus === "CONFIRMED" || 
-                           attendanceStatus === "ATTENDING";
+        // Fix: Use the correct attendance status comparison
+        const isAttending = attendanceStatus === "CONFIRMED";
         
         return {
           ...transformedPlayer,

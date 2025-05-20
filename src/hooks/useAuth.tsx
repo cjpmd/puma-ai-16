@@ -1,7 +1,7 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { DatabaseUserRole } from '@/types/auth';
+import { DatabaseUserRole, ProfileRole } from '@/types/auth';
 
 // Export the user roles type
 export type UserRole = DatabaseUserRole;
@@ -167,7 +167,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ role })
+        .update({ role }) // Now role is a valid ProfileRole
         .eq('id', user.id);
 
       if (error) {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Table, TableBody, TableCaption, TableCell, 
@@ -16,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { DatabaseUserRole } from '@/types/auth';
+import { ProfileRole } from '@/types/auth';
 
 // Define the role type the database expects
 type ProfileRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'globalAdmin' | 'user';
@@ -101,7 +100,7 @@ export const UserManagement = () => {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: newUserRole, // Using ProfileRole as defined above
+        role: newUserRole as ProfileRole,  // Properly cast to ProfileRole
         user_id: userId
       };
       
