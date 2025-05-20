@@ -30,8 +30,8 @@ interface TeamUsersManagerProps {
   team?: Team;
 }
 
-// Define a type for roles allowed in this component - make sure it's a subset of UserRole
-type TeamUserRole = Extract<UserRole, 'admin' | 'manager' | 'coach' | 'player' | 'parent'>;
+// Define a literal union type for database-compatible roles
+type TeamUserRole = 'admin' | 'manager' | 'coach' | 'player' | 'parent';
 
 export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
@@ -90,8 +90,8 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         // User exists, update their role and team_id
         const user = existingUsers[0];
         
-        // Explicitly cast role to string to satisfy TypeScript
-        const roleValue = newRole as string;
+        // Create a valid role value that the database will accept
+        const roleValue: TeamUserRole = newRole;
         
         const { error: updateError } = await supabase
           .from("profiles")
@@ -132,8 +132,8 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const handleRemoveUser = async (userId: string) => {
     setLoading(true);
     try {
-      // Cast 'coach' to string to avoid type errors
-      const roleValue = 'coach' as string;
+      // Create a valid role value that the database will accept
+      const roleValue: TeamUserRole = 'coach';
       
       const { error } = await supabase
         .from("profiles")

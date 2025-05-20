@@ -1,6 +1,6 @@
 
 import { Json } from "@/integrations/supabase/types";
-import { UserRole } from "@/hooks/useAuth.tsx";
+import { UserRole } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
 
 export interface TeamSettings {
   id: string;
@@ -23,4 +23,4 @@ export interface TeamSettings {
 }
 
 // Update to use the imported UserRole type
-export type AllowedUserRoles = UserRole;
+export type AllowedUserRoles = Extract<UserRole, 'admin' | 'manager' | 'coach' | 'parent' | 'player'>;

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,10 +31,11 @@ export const TeamPlatformSubscription = () => {
       // Convert Json features to string[] if needed
       const formattedPlans = (data || []).map(plan => ({
         ...plan,
+        // Ensure features are properly parsed into an array
         features: typeof plan.features === 'string' 
           ? JSON.parse(plan.features) 
           : (Array.isArray(plan.features) ? plan.features : [])
-      }));
+      })) as SubscriptionPlan[];
       
       setPlans(formattedPlans);
     } catch (error) {
@@ -68,8 +68,8 @@ export const TeamPlatformSubscription = () => {
         subscription_plan: selectedPlan.name,
         subscription_period: "monthly",
         status: "active",
-        start_date: new Date(),
-        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 days
+        start_date: new Date().toISOString(),
+        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 days
       });
 
       if (error) throw error;

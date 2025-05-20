@@ -18,12 +18,15 @@ import { Label } from '@/components/ui/label';
 import { UserRole } from '@/hooks/useAuth.tsx';
 import { supabase } from '@/integrations/supabase/client';
 
+// Define a literal union type for database-compatible roles
+type ProfileRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'user';
+
 const UserManagement = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState<UserRole>('user');
+  const [newUserRole, setNewUserRole] = useState<ProfileRole>('user');
   const [newUserName, setNewUserName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -91,9 +94,9 @@ const UserManagement = () => {
         setError('Failed to create user account');
         return;
       }
-
-      // Explicitly cast role to string to satisfy TypeScript
-      const roleValue = newUserRole as string;
+      
+      // Create a valid role value that the database will accept
+      const roleValue: ProfileRole = newUserRole;
       
       const { error: profileError } = await supabase
         .from('profiles')

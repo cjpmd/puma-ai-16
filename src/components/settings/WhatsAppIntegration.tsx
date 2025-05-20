@@ -73,7 +73,7 @@ export function WhatsAppIntegration() {
       }
 
       // Parse the result - RPC returns a result with rows
-      if (data && data.length > 0) {
+      if (data && Array.isArray(data) && data.length > 0) {
         const settingsData = data[0];
         setSettings({
           id: settingsData.id,
