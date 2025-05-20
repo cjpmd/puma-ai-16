@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -25,7 +24,7 @@ import { Loader2, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const GlobalAdminDashboard = () => {
-  const { profile, isLoading, hasRole } = useAuth();
+  const { profile, isLoading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("users");
   const [bypassAccess, setBypassAccess] = useState(true); // Default to bypass for testing
@@ -34,12 +33,13 @@ const GlobalAdminDashboard = () => {
     // Only check role if we're not bypassing access
     if (!bypassAccess && !isLoading && profile) {
       console.log("GlobalAdminDashboard: Checking user role:", profile.role);
-      if (profile && hasRole && !hasRole('globalAdmin')) {
+      // Check if profile exists and has a role before checking if it's a globalAdmin
+      if (profile && profile.role && profile.role !== 'globalAdmin') {
         console.log("User does not have globalAdmin role, redirecting");
         navigate('/platform');
       }
     }
-  }, [profile, isLoading, hasRole, navigate, bypassAccess]);
+  }, [profile, isLoading, navigate, bypassAccess]);
 
   // If still loading, show loading indicator
   if (isLoading) {

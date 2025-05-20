@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -160,9 +159,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addRole = async (role: UserRole): Promise<boolean> => {
     setIsLoading(true);
     try {
+      // Cast to the expanded type to include 'player'
+      const roleValue = role as UserRole;
+
       const { error } = await supabase
         .from('profiles')
-        .update({ role })
+        .update({ role: roleValue })
         .eq('id', user.id);
 
       if (error) {

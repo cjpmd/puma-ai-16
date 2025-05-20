@@ -39,10 +39,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { WhatsAppSettings, WhatsAppContact } from "@/types/whatsAppSettings";
+import { WhatsAppSettings as WhatsAppSettingsType, WhatsAppContact } from "@/types/whatsAppSettings";
 
 export function WhatsAppIntegration() {
-  const [settings, setSettings] = useState<WhatsAppSettings>({
+  const [settings, setSettings] = useState<WhatsAppSettingsType>({
     id: "",
     enabled: false,
     whatsapp_business_id: "",

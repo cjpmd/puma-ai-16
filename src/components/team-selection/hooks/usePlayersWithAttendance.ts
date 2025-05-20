@@ -85,7 +85,7 @@ export const usePlayersWithAttendance = (eventId: string | undefined, eventType 
         return {
           ...transformedPlayer,
           attendanceStatus: attendance?.status || 'PENDING',
-          // Fix the comparison to use string literal "ATTENDING" | "CONFIRMED" instead of enum
+          // Fix the comparison to check for attendance status
           isAttending: attendance?.status === "ATTENDING" || attendance?.status === "CONFIRMED"
         };
       });

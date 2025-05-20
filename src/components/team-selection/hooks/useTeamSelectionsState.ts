@@ -121,16 +121,25 @@ export const useTeamSelectionsState = ({
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // Filter by team_id if specified
+        // Handle potential team_id property in data (assume it might not exist)
         const filteredPeriods = teamId 
           ? data.filter(p => !p.team_id || p.team_id === teamId) 
           : data;
         
-        setPeriods(filteredPeriods);
+        // Add an explicit type to avoid property access issues
+        const typedPeriods: TeamSelectionPeriod[] = filteredPeriods.map(p => ({
+          id: p.id,
+          period_number: p.period_number,
+          duration_minutes: p.duration_minutes,
+          team_id: p.team_id as string | undefined,
+          formation_template: undefined
+        }));
         
-        if (filteredPeriods.length > 0) {
-          setCurrentPeriodId(filteredPeriods[0].id);
-          setActivePeriodNumber(filteredPeriods[0].period_number);
+        setPeriods(typedPeriods);
+        
+        if (typedPeriods.length > 0) {
+          setCurrentPeriodId(typedPeriods[0].id);
+          setActivePeriodNumber(typedPeriods[0].period_number);
         }
       }
     } catch (error) {

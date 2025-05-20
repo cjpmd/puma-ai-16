@@ -17,8 +17,10 @@ export function useSubscriptionStatus() {
     setIsLoading(true);
     
     try {
-      if (!profile || !profile.id) {
+      // Make sure profile is defined before accessing its properties
+      if (!profile) {
         setIsSubscribed(false);
+        setIsLoading(false);
         return;
       }
       
@@ -37,7 +39,7 @@ export function useSubscriptionStatus() {
       }
       
       // If no team subscription, check for player-specific subscription
-      if (profile && profile.id) {
+      if (profile) {
         const subscriptionData = await verifyPlayerSubscription(profile.id);
         
         if (subscriptionData && subscriptionData.status === 'active') {

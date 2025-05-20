@@ -91,7 +91,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         const user = existingUsers[0];
         
         // Create a valid role value that the database will accept
-        const roleValue = newRole;
+        const roleValue = newRole as UserRole;
         
         const { error: updateError } = await supabase
           .from("profiles")
@@ -132,8 +132,8 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const handleRemoveUser = async (userId: string) => {
     setLoading(true);
     try {
-      // Create a valid role value that the database will accept
-      const roleValue: TeamUserRole = 'coach';
+      // Use the expanded UserRole type to avoid type errors
+      const roleValue: UserRole = 'coach';
       
       const { error } = await supabase
         .from("profiles")

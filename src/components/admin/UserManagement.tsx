@@ -95,16 +95,18 @@ export const UserManagement = () => {
         return;
       }
       
-      // Type assertion to handle role value properly
+      // Create a valid profile record with proper typing
+      const profileData = {
+        id: userId,
+        email: newUserEmail,
+        name: newUserName,
+        role: newUserRole,
+        user_id: userId
+      };
+      
       const { error: profileError } = await supabase
         .from('profiles')
-        .upsert({
-          id: userId,
-          email: newUserEmail,
-          name: newUserName,
-          role: newUserRole as UserRole,
-          user_id: userId
-        });
+        .upsert(profileData);
 
       if (profileError) {
         setError(profileError.message);
