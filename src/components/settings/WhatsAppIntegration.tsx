@@ -1,4 +1,21 @@
-// Create a new implementation for WhatsAppIntegration
+// Add your WhatsAppIntegration component implementation here
+// This would usually include defining a proper type for whatsappSettings to avoid 'never' type errors
+// For example:
+
+interface WhatsAppSettings {
+  id: string;
+  enabled: boolean;
+  whatsapp_business_id: string;
+  whatsapp_phone_id: string;
+  team_id: string;
+  business_phone_number: string;
+}
+
+// When fetching data in the component, ensure to set a default empty array or object:
+// const [whatsappSettings, setWhatsAppSettings] = useState<WhatsAppSettings[]>([]);
+
+// This way you avoid the 'never' type issues
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -26,10 +43,12 @@ import { WhatsAppSettings, WhatsAppContact } from "@/types/whatsAppSettings";
 
 export function WhatsAppIntegration() {
   const [settings, setSettings] = useState<WhatsAppSettings>({
+    id: "",
     enabled: false,
-    business_phone_number: "",
     whatsapp_business_id: "",
     whatsapp_phone_id: "",
+    team_id: "",
+    business_phone_number: "",
   });
   const [contacts, setContacts] = useState<WhatsAppContact[]>([]);
   const [loading, setIsLoading] = useState(true);

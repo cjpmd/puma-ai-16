@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Player, PlayerType, transformDbPlayerToPlayer } from '@/types/player';
@@ -85,7 +84,7 @@ export const usePlayersWithAttendance = (eventId: string | undefined, eventType 
         return {
           ...transformedPlayer,
           attendanceStatus: attendance?.status || 'PENDING',
-          isAttending: attendance?.status === 'ATTENDING'
+          isAttending: attendance?.status === "ATTENDING" || attendance?.status === "CONFIRMED"
         };
       });
 

@@ -96,9 +96,13 @@ export const UserManagement = () => {
         return;
       }
       
-      // Create a valid role value that the database will accept
-      // Cast to string to avoid TypeScript errors with the profile insert
-      const roleValue = newUserRole as string;
+      // Here's where we need to fix the type issue
+      // We need to ensure the role is one of the expected values
+      // First check if the role is valid
+      const validRoles: UserRole[] = ['admin', 'manager', 'coach', 'parent', 'player', 'user', 'globalAdmin'];
+      const roleValue: UserRole = validRoles.includes(newUserRole as UserRole) 
+        ? newUserRole as UserRole 
+        : 'user';
       
       const { error: profileError } = await supabase
         .from('profiles')
@@ -240,5 +244,3 @@ export const UserManagement = () => {
     </div>
   );
 };
-
-// Remove the default export to avoid confusion

@@ -83,7 +83,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
 
           setProfile(data)
-          setActiveRole(data?.role || 'user');
+          // Ensure the role is a valid UserRole
+          setActiveRole((data?.role as UserRole) || 'user');
         }
       } catch (error: any) {
         console.error("Error fetching profile:", error.message);
@@ -150,7 +151,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!profile) return false;
 
     if (Array.isArray(role)) {
-      return role.includes(profile.role);
+      return role.includes(profile.role as UserRole);
     }
 
     return profile.role === role;
@@ -195,7 +196,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         setProfile(data)
-        setActiveRole(data?.role || 'user');
+        setActiveRole((data?.role as UserRole) || 'user');
       }
     } catch (error: any) {
       console.error("Error refreshing profile:", error.message);

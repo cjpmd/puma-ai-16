@@ -125,11 +125,11 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
           attendance_colors: data.attendance_colors || null,
           updated_at: data.updated_at || "",
           created_at: data.created_at || "",
-          team_colors: data.team_colors || "",
-          team_logo: data.team_logo || "",
-          home_kit_icon: ensurePatternFormat(data.home_kit_icon || ""),
-          away_kit_icon: ensurePatternFormat(data.away_kit_icon || ""),
-          training_kit_icon: ensurePatternFormat(data.training_kit_icon || ""),
+          team_colors: (data as any).team_colors || "",
+          team_logo: (data as any).team_logo || "",
+          home_kit_icon: ensurePatternFormat((data as any).home_kit_icon || ""),
+          away_kit_icon: ensurePatternFormat((data as any).away_kit_icon || ""),
+          training_kit_icon: ensurePatternFormat((data as any).training_kit_icon || ""),
         };
         
         setTeamSettings(fullTeamSettings);
@@ -137,11 +137,11 @@ export function TeamInfoSettings({ onTeamInfoUpdated }: TeamInfoSettingsProps) {
         // For each kit icon, ensure it has the pattern (backward compatibility)
         setFormData({
           team_name: data.team_name || "",
-          team_colors: data.team_colors || "",
-          team_logo: data.team_logo || "",
-          home_kit_icon: ensurePatternFormat(data.home_kit_icon || ""),
-          away_kit_icon: ensurePatternFormat(data.away_kit_icon || ""),
-          training_kit_icon: ensurePatternFormat(data.training_kit_icon || ""),
+          team_colors: (data as any).team_colors || "",
+          team_logo: (data as any).team_logo || "",
+          home_kit_icon: ensurePatternFormat((data as any).home_kit_icon || ""),
+          away_kit_icon: ensurePatternFormat((data as any).away_kit_icon || ""),
+          training_kit_icon: ensurePatternFormat((data as any).training_kit_icon || ""),
         });
       }
     } catch (error) {
