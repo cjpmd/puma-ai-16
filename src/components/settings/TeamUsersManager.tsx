@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -86,13 +85,13 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         // User exists, update their role and team_id
         const user = existingUsers[0];
         
-        // Use the role as-is without type casting
-        const roleValue = newRole;
+        // Cast role to string for database operation
+        const roleAsString = newRole as string;
         
         const { error: updateError } = await supabase
           .from("profiles")
           .update({ 
-            role: roleValue, 
+            role: roleAsString, 
             team_id: team.id 
           })
           .eq("id", user.id);
@@ -130,12 +129,12 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
     try {
       // When removing from team, set role back to basic user
       const defaultRole: UserRole = 'user';
-      // Use the role value directly
-      const roleValue = defaultRole;
+      // Cast to string for database operation
+      const roleAsString = defaultRole as string;
       
       const { error } = await supabase
         .from("profiles")
-        .update({ team_id: null, role: roleValue })
+        .update({ team_id: null, role: roleAsString })
         .eq("id", userId);
 
       if (error) {

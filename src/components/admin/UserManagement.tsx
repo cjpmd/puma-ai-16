@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Table, TableBody, TableCaption, TableCell, 
@@ -16,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { UserRole } from '@/types/auth';
+import { UserRole, isValidRole } from '@/types/auth';
 
 export const UserManagement = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -92,15 +91,14 @@ export const UserManagement = () => {
         return;
       }
       
-      // Convert UserRole to string before sending to database
-      // This is needed because the database expects a string, not our TypeScript type
-      const roleValue = newUserRole;
+      // Cast the role to string to ensure it's handled correctly for database
+      const roleAsString = newUserRole as string;
       
       const profileData = {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: roleValue, 
+        role: roleAsString, 
         user_id: userId
       };
       
