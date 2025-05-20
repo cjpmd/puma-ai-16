@@ -15,7 +15,7 @@ export const updateUserRole = async (userId: string, role: UserRole): Promise<bo
     try {
       const { error: sqlError } = await supabase
         .from('profiles')
-        .update({ role: role })
+        .update({ role: role as any })
         .eq('id', userId);
         
       if (!sqlError) {
@@ -46,7 +46,7 @@ export const updateUserRole = async (userId: string, role: UserRole): Promise<bo
             // Try the update again after altering the type
             const { error: retryError } = await supabase
               .from('profiles')
-              .update({ role: role })
+              .update({ role: role as any })
               .eq('id', userId);
               
             if (!retryError) {

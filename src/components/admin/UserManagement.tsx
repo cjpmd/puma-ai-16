@@ -99,16 +99,14 @@ export const UserManagement = () => {
       if (!success) {
         // Create user profile directly as a fallback
         try {
-          // IMPORTANT: Cast role to string for better compatibility with Supabase
-          const roleAsString = String(newUserRole);
-          
+          // Create a typed role value that TypeScript will accept
           const { error: profileError } = await supabase
             .from('profiles')
             .insert({
               id: userId,
               email: newUserEmail,
               name: newUserName,
-              role: roleAsString,
+              role: newUserRole as any, // Use type assertion to bypass TS check
               user_id: userId
             });
 

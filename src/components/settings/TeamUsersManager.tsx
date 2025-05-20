@@ -94,7 +94,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
           // Now update the team_id separately
           const { error: teamUpdateError } = await supabase
             .from("profiles")
-            .update({ team_id: team.id })
+            .update({ team_id: team.id } as any)
             .eq("id", user.id);
             
           if (teamUpdateError) {
@@ -106,16 +106,13 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
           }
         } else {
           // Try the combined update as a fallback
-          // Cast role to string to bypass type checking
-          const roleAsString = String(newRole);
-          
           // Using an object that matches the profile schema
           const { error: updateError } = await supabase
             .from("profiles")
             .update({ 
-              role: roleAsString, 
+              role: newRole as any, 
               team_id: team.id 
-            })
+            } as any)
             .eq("id", user.id);
 
           if (updateError) {
@@ -161,7 +158,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         // Now update the team_id separately
         const { error: teamUpdateError } = await supabase
           .from("profiles")
-          .update({ team_id: null })
+          .update({ team_id: null } as any)
           .eq("id", userId);
           
         if (teamUpdateError) {
@@ -173,15 +170,12 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         }
       } else {
         // Try the combined update as a fallback
-        // Cast role to string to bypass type checking
-        const roleAsString = String(defaultRole);
-        
         const { error } = await supabase
           .from("profiles")
           .update({ 
             team_id: null, 
-            role: roleAsString 
-          })
+            role: defaultRole as any 
+          } as any)
           .eq("id", userId);
 
         if (error) {

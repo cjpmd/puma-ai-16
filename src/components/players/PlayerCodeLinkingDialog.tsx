@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth.tsx"; // Fixed import to .tsx extension
+import { useAuth } from "@/hooks/useAuth"; // Import directly from useAuth
 
 export const PlayerCodeLinkingDialog = () => {
   const [open, setOpen] = useState(false);
