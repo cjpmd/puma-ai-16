@@ -1,26 +1,23 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { DatabaseUserRole, ProfileRole, ensureValidProfileRole } from '@/types/auth';
-
-// Export the user roles type
-export type UserRole = DatabaseUserRole;
+import { Profile, UserRole, ensureValidRole } from '@/types/auth';
 
 // Define the Auth context type
 export interface AuthContextType {
   session: any;
   user: any;
-  profile: any;
+  profile: Profile | null;
   signIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
   loading: boolean;
   
   isLoading: boolean;
-  activeRole: ProfileRole | null;
-  switchRole: (role: ProfileRole) => void;
-  hasRole: (role: ProfileRole | ProfileRole[]) => boolean;
-  addRole: (role: ProfileRole) => Promise<boolean>;
+  activeRole: UserRole | null;
+  switchRole: (role: UserRole) => void;
+  hasRole: (role: UserRole | UserRole[]) => boolean;
+  addRole: (role: UserRole) => Promise<boolean>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -46,10 +43,10 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeRole, setActiveRole] = useState<ProfileRole | null>(null);
+  const [activeRole, setActiveRole] = useState<UserRole | null>(null);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -81,13 +78,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw error
           }
 
-          setProfile(data)
-          // Ensure the role is a valid ProfileRole
-          if (data?.role) {
-            const safeRole = ensureValidProfileRole(data.role);
-            setActiveRole(safeRole);
+          if (data) {
+            // Ensure the role is valid
+            const validRole = ensureValidRole(data.role);
+            const typedProfile: Profile = {
+              ...data,
+              role: validRole
+            };
+            setProfile(typedProfile);
+            setActiveRole(validRole);
           } else {
-            setActiveRole('user');
+            setProfile(null);
+            setActiveRole('user'); // Default role
           }
         }
       } catch (error: any) {
@@ -147,38 +149,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
   
-  const switchRole = (role: ProfileRole) => {
+  const switchRole = (role: UserRole) => {
     setActiveRole(role);
   };
 
-  const hasRole = (role: ProfileRole | ProfileRole[]): boolean => {
+  const hasRole = (role: UserRole | UserRole[]): boolean => {
     if (!profile) return false;
 
     if (Array.isArray(role)) {
-      return role.includes(ensureValidProfileRole(profile.role));
+      return role.includes(profile.role as UserRole);
     }
 
-    return ensureValidProfileRole(profile.role) === role;
+    return profile.role === role;
   };
 
-  const addRole = async (role: ProfileRole): Promise<boolean> => {
+  const addRole = async (role: UserRole): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Use the ensureValidProfileRole to ensure we have a valid role
-      const validRole = ensureValidProfileRole(role);
-      
+      // Validate the role before updating
+      if (!isValidRole(role)) {
+        console.error("Invalid role:", role);
+        return false;
+      }
+
       // Update profile with the validated role
       const { error } = await supabase
         .from('profiles')
-        .update({ role: validRole as string })
-        .eq('id', user.id);
+        .update({ role: role })
+        .eq('id', user?.id);
 
       if (error) {
         console.error("Error updating role:", error.message);
         return false;
       } else {
-        setProfile(prevProfile => ({ ...prevProfile, role: validRole }));
-        setActiveRole(validRole);
+        setProfile(prev => prev ? { ...prev, role } : null);
+        setActiveRole(role);
         return true;
       }
     } catch (error: any) {
@@ -200,15 +205,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           .single()
 
         if (error && status !== 406) {
-          throw error
+          throw error;
         }
 
-        setProfile(data)
-        if (data?.role) {
-          const safeRole = ensureValidProfileRole(data.role);
-          setActiveRole(safeRole);
-        } else {
-          setActiveRole('user');
+        if (data) {
+          const validRole = ensureValidRole(data.role);
+          const typedProfile: Profile = {
+            ...data,
+            role: validRole
+          };
+          setProfile(typedProfile);
+          setActiveRole(validRole);
         }
       }
     } catch (error: any) {

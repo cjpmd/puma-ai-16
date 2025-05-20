@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { Profile } from '@/types/auth';
 
 interface SubscriptionStatus {
   isSubscribed: boolean;

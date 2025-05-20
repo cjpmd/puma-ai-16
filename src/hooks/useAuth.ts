@@ -1,15 +1,10 @@
-import { useState, useEffect, useContext, createContext } from "react";
-import {
-  useSupabaseClient,
-} from "@supabase/auth-helpers-react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { ProfileRole } from "@/types/auth";
 
-// This file is being replaced by useAuth.tsx, keeping only the type exports
-export const useAuth = () => {
-  throw new Error("useAuth.ts is deprecated - import from useAuth.tsx instead");
-};
+// This file is being replaced by useAuth.tsx to solve the TypeScript role issues
+import { useAuth as useAuthFromTsx } from './useAuth.tsx';
+import { AuthContext } from './useAuth.tsx';
 
-// Export the context for potential direct access
-export const AuthContext = createContext<any>(undefined);
+// Re-export the useAuth hook from useAuth.tsx
+export const useAuth = useAuthFromTsx;
+
+// Re-export the AuthContext
+export { AuthContext };

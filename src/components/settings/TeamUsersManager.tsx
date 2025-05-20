@@ -23,17 +23,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Team } from "@/types/team";
-import { User } from "@/types/user";
-import { ProfileRole, ensureValidProfileRole } from "@/types/auth";
+import { Profile, UserRole } from "@/types/auth";
 
 interface TeamUsersManagerProps {
   team?: Team;
 }
 
 export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
-  const [teamUsers, setTeamUsers] = useState<User[]>([]);
+  const [teamUsers, setTeamUsers] = useState<Profile[]>([]);
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<ProfileRole>("coach");
+  const [newRole, setNewRole] = useState<UserRole>("coach");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -87,13 +86,10 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         // User exists, update their role and team_id
         const user = existingUsers[0];
         
-        // Ensure role is valid
-        const validRole = ensureValidProfileRole(newRole);
-        
         const { error: updateError } = await supabase
           .from("profiles")
           .update({ 
-            role: validRole as string, // Cast to string to satisfy database expectations
+            role: newRole, 
             team_id: team.id 
           })
           .eq("id", user.id);
@@ -129,12 +125,11 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
   const handleRemoveUser = async (userId: string) => {
     setLoading(true);
     try {
-      // Cast to string for compatibility with database
-      const defaultRole: ProfileRole = 'user';
+      const defaultRole: UserRole = 'user';
       
       const { error } = await supabase
         .from("profiles")
-        .update({ team_id: null, role: defaultRole as string })
+        .update({ team_id: null, role: defaultRole })
         .eq("id", userId);
 
       if (error) {
@@ -177,7 +172,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
           </div>
           <div>
             <Label htmlFor="role">Role</Label>
-            <Select value={newRole} onValueChange={(value) => setNewRole(value as ProfileRole)}>
+            <Select value={newRole} onValueChange={(value) => setNewRole(value as UserRole)}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
@@ -220,7 +215,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
                       <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} />
                       <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <span>{user.full_name || user.email}</span>
+                    <span>{user.name || user.email}</span>
                   </div>
                 </TableCell>
                 <TableCell>{user.email}</TableCell>

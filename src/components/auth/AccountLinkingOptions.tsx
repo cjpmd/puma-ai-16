@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ParentCodeLinkingDialog } from "@/components/parents/ParentCodeLinkingDialog";
 import { PlayerCodeLinkingDialog } from "@/components/players/PlayerCodeLinkingDialog";
-import { useAuth } from "@/hooks/useAuth.tsx"; // Updated import to use .tsx extension
+import { useAuth } from "@/hooks/useAuth.tsx";
 import { User, Users } from "lucide-react";
 
 export const AccountLinkingOptions = () => {

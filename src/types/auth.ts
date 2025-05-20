@@ -2,17 +2,28 @@
 // Centralized type definitions for user roles and authentication
 
 // Define the user roles that are valid in the database
-export type DatabaseUserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'user' | 'globalAdmin';
+export type UserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'user' | 'globalAdmin';
 
-// For backwards compatibility with existing code 
-export type UserRole = DatabaseUserRole;
+// Define the Profile interface with strict typing
+export interface Profile {
+  id: string;
+  user_id?: string;
+  email?: string;
+  name?: string;
+  role: UserRole;
+  team_id?: string;
+  club_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
-// Define the specific subset of roles allowed in profiles table
-// This ensures compatibility with the database constraints
-export type ProfileRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'user' | 'globalAdmin';
+// Helper function to safely validate roles
+export const isValidRole = (role: string): role is UserRole => {
+  const validRoles: UserRole[] = ['admin', 'manager', 'coach', 'parent', 'player', 'user', 'globalAdmin'];
+  return validRoles.includes(role as UserRole);
+};
 
-// Helper function to safely cast roles
-export const ensureValidProfileRole = (role: string): ProfileRole => {
-  const validRoles: ProfileRole[] = ['admin', 'manager', 'coach', 'parent', 'player', 'user', 'globalAdmin'];
-  return validRoles.includes(role as ProfileRole) ? role as ProfileRole : 'user';
+// Helper function to ensure a valid role or default to 'user'
+export const ensureValidRole = (role: string): UserRole => {
+  return isValidRole(role) ? role : 'user';
 };

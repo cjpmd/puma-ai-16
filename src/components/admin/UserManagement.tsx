@@ -16,14 +16,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { ProfileRole, ensureValidProfileRole } from '@/types/auth';
+import { UserRole } from '@/types/auth';
 
 export const UserManagement = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState<ProfileRole>('user');
+  const [newUserRole, setNewUserRole] = useState<UserRole>('user');
   const [newUserName, setNewUserName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -92,15 +92,11 @@ export const UserManagement = () => {
         return;
       }
       
-      // This is the fix for the TypeScript error - ensure the role is a valid ProfileRole type
-      // and convert it to a string when passing to Supabase
-      const validRole = ensureValidProfileRole(newUserRole);
-      
       const profileData = {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: validRole as string, // Cast to string to satisfy database expectations
+        role: newUserRole,
         user_id: userId
       };
       
@@ -172,7 +168,7 @@ export const UserManagement = () => {
                 </Label>
                 <Select 
                   value={newUserRole} 
-                  onValueChange={(value) => setNewUserRole(value as ProfileRole)}
+                  onValueChange={(value) => setNewUserRole(value as UserRole)}
                 >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select role" />
