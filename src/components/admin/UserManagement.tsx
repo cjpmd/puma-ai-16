@@ -93,29 +93,31 @@ export const UserManagement = () => {
         return;
       }
       
-      // Use string casting for the role to bypass type checking in the database
-      const roleAsString = String(newUserRole);
-      
-      // Create a profile data object
-      const profileData = {
-        id: userId,
-        email: newUserEmail,
-        name: newUserName,
-        role: roleAsString,
-        user_id: userId
-      };
-      
       // Use our utility function to update the profile with the proper role
       const success = await updateUserRole(userId, newUserRole);
       
       if (!success) {
-        // Fall back to direct insert if the update failed
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert(profileData);
+        // Create user profile directly as a fallback
+        try {
+          // IMPORTANT: Cast role to string for better compatibility with Supabase
+          const roleAsString = String(newUserRole);
+          
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              email: newUserEmail,
+              name: newUserName,
+              role: roleAsString,
+              user_id: userId
+            });
 
-        if (profileError) {
-          setError(profileError.message);
+          if (profileError) {
+            setError(profileError.message);
+            return;
+          }
+        } catch (insertError: any) {
+          setError(`Profile creation error: ${insertError.message}`);
           return;
         }
       }

@@ -2,7 +2,7 @@
 // Centralized type definitions for user roles and authentication
 
 // Define the user roles that are valid in the database
-// Note: we explicitly include 'player' and 'user' to match what's used in the application
+// These need to match exactly what's in the database enum type
 export type UserRole = 'admin' | 'manager' | 'coach' | 'parent' | 'player' | 'user' | 'globalAdmin';
 
 // Define the Profile interface with strict typing

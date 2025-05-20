@@ -181,9 +181,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return true;
       } else {
         // Fallback to direct update
+        // Cast to string for database compatibility
+        const roleAsString = String(role);
+        
         const { error } = await supabase
           .from('profiles')
-          .update({ role: String(role) }) // Convert to string for database compatibility
+          .update({ role: roleAsString })
           .eq('id', user?.id);
 
         if (error) {

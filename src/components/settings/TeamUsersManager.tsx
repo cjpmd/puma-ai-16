@@ -109,6 +109,7 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
           // Cast role to string to bypass type checking
           const roleAsString = String(newRole);
           
+          // Using an object that matches the profile schema
           const { error: updateError } = await supabase
             .from("profiles")
             .update({ 
@@ -177,7 +178,10 @@ export const TeamUsersManager: React.FC<TeamUsersManagerProps> = ({ team }) => {
         
         const { error } = await supabase
           .from("profiles")
-          .update({ team_id: null, role: roleAsString })
+          .update({ 
+            team_id: null, 
+            role: roleAsString 
+          })
           .eq("id", userId);
 
         if (error) {
