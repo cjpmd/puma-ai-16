@@ -64,9 +64,11 @@ export const WhatsAppIntegration = () => {
 
     setIsSaving(true);
     try {
+      const teamId = profile.team_id || "";
+      
       const settingsData = {
         enabled,
-        team_id: profile.team_id || "",
+        team_id: teamId,
         whatsapp_business_id: businessId,
         whatsapp_phone_id: phoneId,
         business_phone_number: phoneNumber,

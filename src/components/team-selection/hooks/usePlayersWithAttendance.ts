@@ -76,14 +76,14 @@ export const usePlayersWithAttendance = (eventId: string | undefined, eventType 
       if (attendanceError) throw attendanceError;
 
       // Combine players with their attendance status
-      const playersWithAttendance: PlayerWithAttendance[] = playersData.map(player => {
+      const playersWithAttendance = playersData.map(player => {
         const attendance = attendanceData.find(a => a.player_id === player.id);
         // Transform the player data from DB format to frontend format
         const transformedPlayer = transformDbPlayerToPlayer(player);
         
         // Determine if player is attending
         const attendanceStatus = attendance?.status || 'PENDING';
-        // Use the correct attendance status comparison
+        // Use strict equality check for status comparison
         const isAttending = attendanceStatus === "CONFIRMED";
         
         return {

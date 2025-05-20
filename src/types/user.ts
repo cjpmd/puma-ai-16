@@ -1,12 +1,12 @@
 
-import { DatabaseUserRole } from "@/types/auth";
+import { ProfileRole } from "@/types/auth";
 
 export interface User {
   id: string;
   email?: string;
   full_name?: string;
   name?: string;
-  role: DatabaseUserRole;
+  role: ProfileRole;
   team_id?: string;
   club_id?: string;
   created_at: string;

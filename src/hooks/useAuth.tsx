@@ -165,9 +165,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addRole = async (role: UserRole): Promise<boolean> => {
     setIsLoading(true);
     try {
+      // Ensure the role is a valid ProfileRole for the database
+      const validRole = role as ProfileRole;
+      
       const { error } = await supabase
         .from('profiles')
-        .update({ role }) // Updated role is valid
+        .update({ role: validRole })
         .eq('id', user.id);
 
       if (error) {
