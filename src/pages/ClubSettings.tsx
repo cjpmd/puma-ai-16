@@ -38,7 +38,8 @@ export default function ClubSettings() {
       // Transform team_settings data to match our ClubSettingsData interface
       return {
         team_name: data?.team_name || defaultSettings.team_name,
-        team_colors: data?.team_colors || defaultSettings.team_colors,
+        team_colors: Array.isArray(data?.team_colors) ? data.team_colors : 
+                    (typeof data?.team_colors === 'string' ? [data.team_colors] : defaultSettings.team_colors),
         // Add other fields as needed
       } as ClubSettingsData;
     }
