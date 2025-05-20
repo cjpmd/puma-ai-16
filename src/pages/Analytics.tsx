@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
 import { BasicAnalytics } from '@/components/analytics/BasicAnalytics';

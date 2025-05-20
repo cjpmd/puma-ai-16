@@ -163,18 +163,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addRole = async (role: ProfileRole): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Cast the role to string for compatibility with the database
+      // Use the ensureValidProfileRole to ensure we have a valid role
+      const validRole = ensureValidProfileRole(role);
+      
+      // Update profile with the validated role
       const { error } = await supabase
         .from('profiles')
-        .update({ role: role })
+        .update({ role: validRole })
         .eq('id', user.id);
 
       if (error) {
         console.error("Error updating role:", error.message);
         return false;
       } else {
-        setProfile(prevProfile => ({ ...prevProfile, role }));
-        setActiveRole(role);
+        setProfile(prevProfile => ({ ...prevProfile, role: validRole }));
+        setActiveRole(validRole);
         return true;
       }
     } catch (error: any) {

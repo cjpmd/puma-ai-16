@@ -16,14 +16,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { DatabaseUserRole } from '@/types/auth';
+import { DatabaseUserRole, ProfileRole } from '@/types/auth';
 
 export const UserManagement = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState<DatabaseUserRole>('user');
+  const [newUserRole, setNewUserRole] = useState<ProfileRole>('user');
   const [newUserName, setNewUserName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -92,12 +92,14 @@ export const UserManagement = () => {
         return;
       }
       
-      // Cast the role to string to ensure type compatibility with the database
+      // Cast the role to ensure compatibility with the database
+      const profileRole = newUserRole as ProfileRole;
+      
       const profileData = {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: newUserRole as string,
+        role: profileRole,
         user_id: userId
       };
       
@@ -169,7 +171,7 @@ export const UserManagement = () => {
                 </Label>
                 <Select 
                   value={newUserRole} 
-                  onValueChange={(value) => setNewUserRole(value as DatabaseUserRole)}
+                  onValueChange={(value) => setNewUserRole(value as ProfileRole)}
                 >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select role" />

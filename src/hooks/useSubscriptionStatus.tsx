@@ -1,77 +1,73 @@
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect } from 'react';
+import { useAuth } from './useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
-export const useSubscriptionStatus = () => {
-  const { profile } = useAuth();
+interface SubscriptionStatus {
+  isSubscribed: boolean;
+  loading: boolean;
+  subscriptionData: any;
+}
+
+const useSubscriptionStatus = (): SubscriptionStatus => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [subscriptionData, setSubscriptionData] = useState<any>(null);
+  const [subscriptionData, setSubscriptionData] = useState(null);
+  const { user, profile } = useAuth();
 
   useEffect(() => {
     const checkSubscriptionStatus = async () => {
-      setLoading(true);
       try {
-        // Safely check if profile exists and has an id
-        if (!profile || !profile.id) {
-          console.log("No profile found or profile without id");
+        setLoading(true);
+        
+        if (!user || !profile) {
           setIsSubscribed(false);
           return;
         }
-
-        // Check player subscription first if the user is a player
-        if (profile.role === 'player') {
-          const { data, error } = await supabase
-            .from('player_subscriptions')
-            .select('*')
-            .eq('player_id', profile.id)
-            .eq('status', 'active')
-            .single();
-
-          if (!error && data) {
-            setIsSubscribed(true);
-            setSubscriptionData(data);
-            return;
-          }
+        
+        // Check if user is a global admin (they get all features)
+        if (profile.role === 'globalAdmin' || profile.role === 'admin') {
+          setIsSubscribed(true);
+          return;
         }
-
-        // Check for team subscription
+        
+        // Check team subscription if team_id exists
         if (profile.team_id) {
-          const { data, error } = await supabase
+          const { data: teamSubscription, error: teamError } = await supabase
             .from('team_subscriptions')
             .select('*')
             .eq('team_id', profile.team_id)
             .eq('status', 'active')
-            .single();
-
-          if (!error && data) {
+            .maybeSingle();
+            
+          if (teamSubscription) {
             setIsSubscribed(true);
-            setSubscriptionData(data);
+            setSubscriptionData(teamSubscription);
             return;
           }
         }
-
-        // No subscription found, set to false
-        setIsSubscribed(false);
-        setSubscriptionData(null);
-
+        
+        // Check personal subscription as fallback
+        const { data: playerSubscription, error: playerError } = await supabase
+          .from('player_subscriptions')
+          .select('*')
+          .eq('player_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+          
+        setIsSubscribed(!!playerSubscription);
+        setSubscriptionData(playerSubscription);
+        
       } catch (error) {
-        console.error("Error checking subscription status:", error);
+        console.error('Error checking subscription:', error);
         setIsSubscribed(false);
-        setSubscriptionData(null);
       } finally {
         setLoading(false);
       }
     };
 
-    if (profile) {
-      checkSubscriptionStatus();
-    } else {
-      setLoading(false);
-      setIsSubscribed(false);
-    }
-  }, [profile]);
+    checkSubscriptionStatus();
+  }, [user, profile]);
 
   return { isSubscribed, loading, subscriptionData };
 };

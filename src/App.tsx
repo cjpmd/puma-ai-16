@@ -5,7 +5,7 @@ import { supabase } from "./integrations/supabase/client";
 import { Auth } from "./pages/Auth";
 import { AppLayout } from "./components/layout/AppLayout";
 import { TeamDashboard } from "./pages/TeamDashboard";
-import { Analytics } from "./pages/Analytics";
+import Analytics from "./pages/Analytics";
 import { PlayerDashboard } from "./pages/PlayerDashboard";
 import { ParentDashboard } from "./pages/ParentDashboard";
 import { SubscriptionPage } from "./pages/SubscriptionPage";

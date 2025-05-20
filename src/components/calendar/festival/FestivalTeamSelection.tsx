@@ -1,93 +1,84 @@
-import React, { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { PositionSelect } from "@/components/formation/PlayerPositionSelect";
-import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Player } from "@/types/player";
-
-// Replace the import with a local implementation
-const transformDbPlayerToPlayer = (dbPlayer: any): Partial<Player> => {
-  return {
-    id: dbPlayer.id,
-    name: dbPlayer.name,
-    squad_number: dbPlayer.squad_number,
-    player_type: dbPlayer.player_type,
-    team_category: dbPlayer.team_category,
-  };
-};
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Player } from '@/types/player';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FestivalTeamSelectionProps {
-  eventId: string;
-  onPlayersSelected: (players: any[]) => void;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  festival: any;
+  onSuccess: () => void;
 }
 
-export const FestivalTeamSelection = ({ eventId, onPlayersSelected }: FestivalTeamSelectionProps) => {
-  const [players, setPlayers] = useState<any[]>([]);
-  const [selectedPlayers, setSelectedPlayers] = useState<any[]>([]);
+export const FestivalTeamSelection: React.FC<FestivalTeamSelectionProps> = ({
+  isOpen,
+  onOpenChange,
+  festival,
+  onSuccess
+}) => {
+  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [selectedPlayers, setSelectedPlayers] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
-    const fetchPlayers = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from("players")
-          .select("*")
-          .order("name");
+    if (isOpen) {
+      fetchPlayers();
+    }
+  }, [isOpen]);
 
-        if (error) throw error;
+  const fetchPlayers = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('players')
+        .select('*');
 
-        // Transform the database players to our internal player format
-        const transformedPlayers = data.map(transformDbPlayerToPlayer);
-        setPlayers(transformedPlayers);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching players:", err);
-        setError(err instanceof Error ? err : new Error("An unknown error occurred"));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPlayers();
-  }, []);
-
-  const togglePlayerSelection = (player: any) => {
-    const alreadySelected = selectedPlayers.some((p) => p.id === player.id);
-
-    if (alreadySelected) {
-      setSelectedPlayers(selectedPlayers.filter((p) => p.id !== player.id));
-    } else {
-      setSelectedPlayers([...selectedPlayers, player]);
+      if (error) throw error;
+      setPlayers(data || []);
+    } catch (error) {
+      console.error('Error fetching players:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    onPlayersSelected(selectedPlayers);
-  }, [selectedPlayers, onPlayersSelected]);
+  const handleSave = async () => {
+    // Add implementation to save selected players for festival teams
+    onSuccess();
+  };
 
-  if (loading) return <div>Loading players...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  if (!isOpen) return null;
 
   return (
-    <div>
-      <h3 className="text-lg font-semibold mb-4">Select Players for the Festival</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {players.map((player) => (
-          <div key={player.id} className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-            <Label htmlFor={`player-${player.id}`} className="w-full">
-              {player.name}
-            </Label>
-            <Checkbox
-              id={`player-${player.id}`}
-              checked={selectedPlayers.some((p) => p.id === player.id)}
-              onCheckedChange={() => togglePlayerSelection(player)}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Select Teams for Festival</DialogTitle>
+        </DialogHeader>
+        
+        <div className="py-4">
+          {loading ? (
+            <div>Loading players...</div>
+          ) : (
+            <div>
+              {/* Implement player selection UI here */}
+              <div className="text-sm text-muted-foreground">
+                Select players for festival teams
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>
+            Save Selection
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

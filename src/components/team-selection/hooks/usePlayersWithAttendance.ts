@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from "@/types/player";
 
-// Import our transformer
+// Define our own transformer if needed
 const transformDbPlayerToPlayer = (dbPlayer: any): Partial<Player> => {
   return {
     id: dbPlayer.id,
