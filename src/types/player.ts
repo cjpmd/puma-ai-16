@@ -1,70 +1,14 @@
 
-// src/types/player.ts
+// Update the Player type to include possible profile_image
 
-export interface Player {
-  id: string;
-  name: string;
-  age: number;
-  squad_number?: number;
-  player_type: string;
-  team_id?: string;
-  team_category?: string;
-  date_of_birth: string;
-  created_at: string;
-  updated_at: string;
-  self_linked: boolean;
-  user_id?: string;
-  attributes?: PlayerAttribute[];
-  status?: string;
-  linking_code?: string;
-  profile_image?: string;
-  attributeHistory?: Record<string, { date: string; value: number; }[]>;
-  
-  // Additional properties used in components
-  objectives?: any[];
-  topPositions?: any[];
-  
-  // Legacy camelCase aliases for backward compatibility
-  squadNumber?: number;
-  playerType?: string;
-  dateOfBirth?: string;
-  teamCategory?: string;
-  profileImage?: string;
-}
+export type PlayerType = 'OUTFIELD' | 'GOALKEEPER';
 
-export interface PlayerAttribute {
-  id: string;
-  player_id: string;
-  name: string;
-  category: string;
-  value: number;
-  created_at: string;
-  abbreviation?: string;
-}
+export type PerformanceCategory = 'MESSI' | 'HESKEY' | 'BECKHAM';
 
-export enum PlayerType {
-  OUTFIELD = 'OUTFIELD',
-  GOALKEEPER = 'GOALKEEPER'
-}
+export type PositionCategory = 'GK' | 'DEF' | 'MID' | 'FWD';
 
-export enum AttributeCategory {
-  TECHNICAL = 'TECHNICAL',
-  MENTAL = 'MENTAL',
-  PHYSICAL = 'PHYSICAL',
-  GOALKEEPER = 'GOALKEEPER'
-}
-
-// Make PerformanceCategory a proper TypeScript enum
-export enum PerformanceCategory {
-  MESSI = 'MESSI',
-  RONALDO = 'RONALDO',
-  JAGS = 'JAGS',
-  BECKHAM = 'BECKHAM',
-  HESKEY = 'HESKEY'
-}
-
-export interface PlayerWithAttributes extends Player {
-  attributes: PlayerAttribute[];
+export interface PlayerAttributes {
+  [key: string]: number;
 }
 
 export interface Attribute {
@@ -72,8 +16,37 @@ export interface Attribute {
   name: string;
   value: number;
   category: string;
-  player_id: string;  // Added missing properties to match PlayerAttribute
-  created_at: string; // Added missing properties to match PlayerAttribute
+}
+
+// Define the base Player interface without getters
+export interface Player {
+  id: string;
+  name: string;
+  squad_number?: number;
+  age?: number;
+  date_of_birth?: string;
+  player_type: PlayerType;
+  team_category?: string;
+  team_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  self_linked?: boolean;
+  user_id?: string; 
+  linking_code?: string;
+  status?: string;
+  profile_image?: string;
+  // Add these properties for compatibility with existing components
+  attributes?: Attribute[];
+  attributeHistory?: Record<string, { date: string; value: number; }[]>;
+  // Add properties used in SquadManagement 
+  objectives?: any[];
+  topPositions?: any[];
+  // Add camelCase property aliases directly as optional properties
+  squadNumber?: number;
+  playerType?: string;
+  dateOfBirth?: string;
+  teamCategory?: string;
+  profileImage?: string;
 }
 
 // Helper function to transform database player object to our internal Player format
@@ -93,7 +66,7 @@ export const transformDbPlayerToPlayer = (dbPlayer: any): Player => {
     team_id: dbPlayer.team_id,
     created_at: dbPlayer.created_at,
     updated_at: dbPlayer.updated_at,
-    self_linked: dbPlayer.self_linked || false,
+    self_linked: dbPlayer.self_linked,
     user_id: dbPlayer.user_id,
     linking_code: dbPlayer.linking_code,
     status: dbPlayer.status,
@@ -101,3 +74,32 @@ export const transformDbPlayerToPlayer = (dbPlayer: any): Player => {
     profileImage: dbPlayer.profile_image
   };
 };
+
+export interface PlayerWithAttributes extends Player {
+  attributes: {
+    id: string;
+    player_id: string;
+    name: string;
+    value: number;
+    category: string;
+    created_at: string;
+  }[];
+}
+
+export interface Position {
+  id: string;
+  abbreviation: string;
+  full_name: string;
+  description?: string;
+}
+
+export interface PositionSuitability {
+  player_id: string;
+  position_id: string;
+  position: {
+    id: string;
+    abbreviation: string;
+    full_name: string;
+  };
+  suitability_score: number;
+}
