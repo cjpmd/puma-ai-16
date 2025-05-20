@@ -101,3 +101,4 @@ export const transformDbPlayerToPlayer = (dbPlayer: any): Player => {
     profileImage: dbPlayer.profile_image
   };
 };
+

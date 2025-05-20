@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { TeamSelectionManager } from '@/components/team-selection/TeamSelectionManager';
 import { PerformanceCategory } from '@/types/player';
@@ -26,3 +27,4 @@ export const ComponentTester = () => {
 };
 
 export default ComponentTester;
+

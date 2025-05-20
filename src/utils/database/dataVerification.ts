@@ -1,4 +1,5 @@
 
+
 import { supabase } from '@/integrations/supabase/client';
 
 export const verifyRelationships = async (): Promise<number> => {
@@ -25,3 +26,4 @@ export const verifyRelationships = async (): Promise<number> => {
     return 0;
   }
 };
+
