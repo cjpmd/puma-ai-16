@@ -9,6 +9,8 @@ export interface TeamSelectionManagerProps {
   teams?: { id: string; name: string; category: string; }[];
   format?: FormationFormat;
   onTeamSelectionsChange?: (selections: any) => void;
+  // Add performanceCategory prop to fix the error
+  performanceCategory?: PerformanceCategory;
 }
 
 export interface TeamCaptains {

@@ -75,11 +75,11 @@ const PlayerDetailsPage = () => {
         });
       }
 
-      // Create the complete player object
-      const completePlayer: Player = {
+      // Enhanced player data with profile_image property
+      const playerWithEnhancedData = {
         ...playerData,
-        profile_image: playerData.profile_image || undefined, // Ensure profile_image exists
-        profileImage: playerData.profile_image || undefined, // Set alias property too
+        profile_image: playerData.profile_image || undefined,
+        profileImage: playerData.profile_image || undefined,
         attributes: attributesData || [],
         attributeHistory: attributeHistory,
         // Ensure required fields
@@ -98,7 +98,7 @@ const PlayerDetailsPage = () => {
         teamCategory: playerData.team_category
       };
 
-      return completePlayer;
+      return playerWithEnhancedData as Player;
     },
     enabled: !!id,
   });

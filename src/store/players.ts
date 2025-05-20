@@ -1,5 +1,6 @@
+
 import { create } from "zustand";
-import { Player, Attribute, AttributeCategory } from "@/types/player";
+import { Player, PlayerAttribute, AttributeCategory } from "@/types/player";
 import { GOALKEEPER_ATTRIBUTES, TECHNICAL_ATTRIBUTES, MENTAL_ATTRIBUTES, PHYSICAL_ATTRIBUTES } from "@/constants/attributes";
 
 interface PlayersState {
@@ -13,7 +14,8 @@ interface PlayersState {
 }
 
 const generateInitialAttributes = (playerType: string) => {
-  const attributes: Attribute[] = [];
+  const attributes: PlayerAttribute[] = [];
+  const now = new Date().toISOString();
   
   if (playerType === "GOALKEEPER") {
     GOALKEEPER_ATTRIBUTES.forEach((attr) => {
@@ -22,6 +24,8 @@ const generateInitialAttributes = (playerType: string) => {
         name: attr.name,
         value: 10,
         category: attr.category as AttributeCategory,
+        player_id: "", // Will be set after player creation
+        created_at: now
       });
     });
   } else {
@@ -32,6 +36,8 @@ const generateInitialAttributes = (playerType: string) => {
         name: attr.name,
         value: 10,
         category: attr.category as AttributeCategory,
+        player_id: "", // Will be set after player creation
+        created_at: now
       });
     });
   }
@@ -43,12 +49,21 @@ export const usePlayersStore = create<PlayersState>((set) => ({
   players: [],
   globalMultiplier: 1,
   addPlayer: (player) => {
+    const playerId = crypto.randomUUID();
+    const attributes = generateInitialAttributes(player.playerType);
+    
+    // Set player_id for all attributes
+    attributes.forEach(attr => {
+      attr.player_id = playerId;
+    });
+    
     const newPlayer: Player = {
       ...player,
-      id: crypto.randomUUID(),
-      attributes: generateInitialAttributes(player.playerType),
+      id: playerId,
+      attributes: attributes,
       attributeHistory: {},
     };
+    
     set((state) => ({
       players: [...state.players, newPlayer],
     }));
