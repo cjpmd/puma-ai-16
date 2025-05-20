@@ -1,92 +1,58 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { useAuth } from '@/hooks/useAuth';
+import React, { useEffect } from 'react';
 import { UserManagement } from '@/components/admin/UserManagement';
-import { TeamManagement } from '@/components/admin/TeamManagement';
-import { ClubManagement } from '@/components/admin/ClubManagement';
-import { PlatformSettings } from '@/components/admin/PlatformSettings';
-import { SubscriptionManagement } from '@/components/admin/SubscriptionManagement';
-import { FinancialReports } from '@/components/admin/FinancialReports';
-import { Loader2, AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { motion } from 'framer-motion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const GlobalAdminDashboard = () => {
-  const { profile, isLoading } = useAuth();
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("users");
-  const [bypassAccess, setBypassAccess] = useState(true); // Default to bypass for testing
+  const { profile, user } = useAuth();
 
   useEffect(() => {
-    // Only check role if we're not bypassing access
-    if (!bypassAccess && !isLoading && profile) {
-      console.log("GlobalAdminDashboard: Checking user role:", profile.role);
-      // Check if profile exists and has a role before checking if it's a globalAdmin
-      if (profile && profile.role && profile.role !== 'globalAdmin') {
-        console.log("User does not have globalAdmin role, redirecting");
-        navigate('/platform');
-      }
-    }
-  }, [profile, isLoading, navigate, bypassAccess]);
+    // Log auth state for debugging
+    console.log("Global Admin Dashboard - Auth state:", { profile, user });
+  }, [profile, user]);
 
-  // If still loading, show loading indicator
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+  // Ensure the profile exists and has the globalAdmin role
+  if (!profile) {
+    console.log("Global Admin Dashboard - No profile found, redirecting to home");
+    return <Navigate to="/" />;
+  }
+
+  // Type guard to check if profile has role property
+  const hasRoleProperty = (obj: any): obj is { role: string } => {
+    return obj && typeof obj.role === 'string';
+  };
+
+  // Check if user has the globalAdmin role
+  const isGlobalAdmin = hasRoleProperty(profile) ? profile.role === 'globalAdmin' : false;
+  
+  if (!isGlobalAdmin) {
+    console.log("Global Admin Dashboard - Not a global admin, redirecting to home");
+    return <Navigate to="/" />;
   }
 
   return (
-    <div className="container py-8 space-y-6">
-      <div className="flex flex-col space-y-2">
-        <h1 className="text-3xl font-bold">Global Admin Dashboard</h1>
-        <p className="text-muted-foreground">
-          Manage all platform users, teams, clubs, settings, and subscriptions
-        </p>
-        
-        {bypassAccess && (
-          <Alert variant="warning" className="bg-yellow-50 border-yellow-200">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription>
-              Access restrictions have been temporarily disabled for testing purposes.
-            </AlertDescription>
-          </Alert>
-        )}
-      </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="container mx-auto p-6"
+    >
+      <h1 className="text-3xl font-bold mb-8">Global Admin Dashboard</h1>
 
-      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <div className="bg-background sticky top-0 z-10 py-2">
-          <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full">
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="teams">Teams</TabsTrigger>
-            <TabsTrigger value="clubs">Clubs</TabsTrigger>
-            <TabsTrigger value="platform">Platform</TabsTrigger>
-            <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-          </TabsList>
-        </div>
+      <Tabs defaultValue="users" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="users">User Management</TabsTrigger>
+          <TabsTrigger value="subscription">Subscription</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
 
-        <TabsContent value="users" className="space-y-4">
+        <TabsContent value="users">
           <Card>
             <CardHeader>
               <CardTitle>User Management</CardTitle>
-              <CardDescription>
-                View and manage all users on the platform
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <UserManagement />
@@ -94,77 +60,35 @@ const GlobalAdminDashboard = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="teams" className="space-y-4">
+        <TabsContent value="subscription">
           <Card>
             <CardHeader>
-              <CardTitle>Team Management</CardTitle>
-              <CardDescription>
-                View and manage all teams on the platform
-              </CardDescription>
+              <CardTitle>Global Subscription Management</CardTitle>
             </CardHeader>
             <CardContent>
-              <TeamManagement />
+              <p className="text-muted-foreground">
+                Manage subscription tiers and pricing for the platform
+              </p>
+              {/* Add subscription management components here */}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="clubs" className="space-y-4">
+        <TabsContent value="settings">
           <Card>
             <CardHeader>
-              <CardTitle>Club Management</CardTitle>
-              <CardDescription>
-                View and manage all clubs on the platform
-              </CardDescription>
+              <CardTitle>Global Settings</CardTitle>
             </CardHeader>
             <CardContent>
-              <ClubManagement />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="platform" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Platform Settings</CardTitle>
-              <CardDescription>
-                Configure global platform settings including APIs and integrations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PlatformSettings />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="subscriptions" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Subscription Management</CardTitle>
-              <CardDescription>
-                Manage all user and team subscriptions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SubscriptionManagement />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="reports" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Financial & Platform Reports</CardTitle>
-              <CardDescription>
-                View reports on platform usage, finances, and more
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FinancialReports />
+              <p className="text-muted-foreground">
+                Configure global platform settings
+              </p>
+              {/* Add global settings components here */}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </motion.div>
   );
 };
 

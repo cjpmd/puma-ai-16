@@ -85,8 +85,8 @@ export const usePlayersWithAttendance = (eventId: string | undefined, eventType 
         return {
           ...transformedPlayer,
           attendanceStatus: attendance?.status || 'PENDING',
-          // Fix the comparison to check for attendance status
-          isAttending: attendance?.status === "ATTENDING" || attendance?.status === "CONFIRMED"
+          // Fix the comparison by checking for specific attendance statuses
+          isAttending: attendance?.status === "CONFIRMED" || attendance?.status === "ATTENDING"
         };
       });
 

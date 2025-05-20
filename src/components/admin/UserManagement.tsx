@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Table, TableBody, TableCaption, TableCell, 
@@ -18,7 +19,7 @@ import { UserRole } from '@/hooks/useAuth.tsx';
 import { supabase } from '@/integrations/supabase/client';
 
 // Define a literal union type for database-compatible roles
-type ProfileRole = UserRole;
+type DatabaseRole = 'admin' | 'manager' | 'coach' | 'parent' | 'globalAdmin' | 'player' | 'user';
 
 // Ensure this component has a named export matching what GlobalAdminDashboard expects
 export const UserManagement = () => {
@@ -26,7 +27,7 @@ export const UserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState<ProfileRole>('user');
+  const [newUserRole, setNewUserRole] = useState<DatabaseRole>('user');
   const [newUserName, setNewUserName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -100,7 +101,7 @@ export const UserManagement = () => {
         id: userId,
         email: newUserEmail,
         name: newUserName,
-        role: newUserRole,
+        role: newUserRole as DatabaseRole,
         user_id: userId
       };
       
@@ -172,7 +173,7 @@ export const UserManagement = () => {
                 </Label>
                 <Select 
                   value={newUserRole} 
-                  onValueChange={(value) => setNewUserRole(value as ProfileRole)}
+                  onValueChange={(value) => setNewUserRole(value as DatabaseRole)}
                 >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select role" />

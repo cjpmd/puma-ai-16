@@ -29,6 +29,7 @@ export interface Player {
   self_linked?: boolean;
   team_id?: string;
   user_id?: string;
+  profile_image?: string;
   
   // Added camelCase aliases for convenience in frontend components
   squadNumber?: number;
@@ -39,7 +40,6 @@ export interface Player {
   attributes?: Attribute[];
   attributeHistory?: Record<string, { date: string; value: number }[]>;
   profileImage?: string;
-  profile_image?: string; // Allow both camel and snake case
 }
 
 // Helper function to transform snake_case DB fields to camelCase for frontend use

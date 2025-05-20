@@ -30,6 +30,18 @@ interface TeamSelectionData {
   formation_template?: string;
 }
 
+// Define a type for event periods
+interface EventPeriod {
+  id: string;
+  event_id: string;
+  event_type: string;
+  period_number: number;
+  duration_minutes: number;
+  team_number: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export const useTeamSelectionsState = ({
   onTeamSelectionsChange,
   fixtureId,
@@ -62,7 +74,13 @@ export const useTeamSelectionsState = ({
       setLoading(true);
       const { data, error } = await supabase
         .from('team_selections')
-        .select('*')
+        .select(`
+          *,
+          players:player_id (
+            id,
+            name
+          )
+        `)
         .eq('event_id', fixtureId)
         .eq('event_type', 'FIXTURE');
 
@@ -121,17 +139,20 @@ export const useTeamSelectionsState = ({
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // Handle potential team_id property in data (assume it might not exist)
+        // Handle potential team_id property - assuming it's an EventPeriod array
+        const periodData = data as EventPeriod[];
+        
+        // If teamId is specified, filter the periods by team_number since team_id isn't available
         const filteredPeriods = teamId 
-          ? data.filter(p => !p.team_id || p.team_id === teamId) 
-          : data;
+          ? periodData.filter(p => p.team_number.toString() === teamId) 
+          : periodData;
         
         // Add an explicit type to avoid property access issues
         const typedPeriods: TeamSelectionPeriod[] = filteredPeriods.map(p => ({
           id: p.id,
           period_number: p.period_number,
           duration_minutes: p.duration_minutes,
-          team_id: p.team_id as string | undefined,
+          team_number: p.team_number,
           formation_template: undefined
         }));
         
@@ -177,3 +198,4 @@ export const useTeamSelectionsState = ({
     loading
   };
 };
+
