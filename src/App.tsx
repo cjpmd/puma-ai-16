@@ -28,6 +28,7 @@ export function App() {
       try {
         const result = await ensureDatabaseSetup();
         setDbInitialized(result);
+        console.log("Database initialization completed with result:", result);
       } catch (error) {
         console.error("Database initialization error:", error);
         setDbInitialized(true); // Still allow the app to proceed
@@ -70,7 +71,6 @@ export function App() {
             !session ? (
               <Navigate to="/auth" />
             ) : (
-              // Remove role restriction for testing purposes
               <GlobalAdminDashboard />
             )
           }
@@ -174,6 +174,36 @@ export function App() {
               <TeamSettings />
             )
           }
+        />
+        <Route
+          path="/club-settings"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <div className="p-6">
+                <h1 className="text-3xl font-bold mb-4">Club Settings</h1>
+                <p>Club management functionality will be available soon.</p>
+              </div>
+            )
+          }
+        />
+        <Route
+          path="/club-dashboard"
+          element={
+            !session ? (
+              <Navigate to="/auth" />
+            ) : (
+              <div className="p-6">
+                <h1 className="text-3xl font-bold mb-4">Club Dashboard</h1>
+                <p>Club dashboard functionality will be available soon.</p>
+              </div>
+            )
+          }
+        />
+        <Route
+          path="/"
+          element={<Navigate to={session ? "/platform" : "/auth"} />}
         />
       </Route>
       <Route path="*" element={<Navigate to="/platform" />} />

@@ -1,3 +1,4 @@
+
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Users, BarChart2, UserCircle, Calendar, LogOut, Cog, Home, Building, LogIn, Plus, SwitchCamera } from "lucide-react";
@@ -19,7 +20,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth.tsx"; 
-import { UserRole } from "@/types/auth"; // Import UserRole from the correct location
+import { UserRole } from "@/types/auth";
 
 interface MenuItem {
   to: string;
@@ -135,45 +136,65 @@ export const NavBar = () => {
     }
   };
 
+  // Define menu items
   const menuItems: MenuItem[] = [
-    { to: "/", icon: <Home className="mr-2 h-4 w-4" />, label: "Home", roles: [], public: true },
+    { to: "/platform", icon: <Home className="mr-2 h-4 w-4" />, label: "Home", roles: [], public: true },
   ];
   
   // Add authenticated-only menu items if user is logged in
   if (session) {
     menuItems.push(
-      { to: "/home", icon: <UserCircle className="mr-2 h-4 w-4" />, label: "Team Dashboard", roles: ['admin', 'manager', 'coach', 'parent'] },
+      { to: "/team-dashboard", icon: <UserCircle className="mr-2 h-4 w-4" />, label: "Team Dashboard", roles: ['admin', 'manager', 'coach', 'parent'] },
       { to: "/squad-management", icon: <Users className="mr-2 h-4 w-4" />, label: "Squad", roles: ['admin', 'manager'] },
       { to: "/analytics", icon: <BarChart2 className="mr-2 h-4 w-4" />, label: "Analytics", roles: ['admin', 'manager', 'coach'] },
       { to: "/calendar", icon: <Calendar className="mr-2 h-4 w-4" />, label: "Calendar", roles: ['admin', 'manager', 'coach', 'parent'] },
-      { to: "/settings", icon: <Cog className="mr-2 h-4 w-4" />, label: "Team Settings", roles: ['admin'] }
+      { to: "/team-settings", icon: <Cog className="mr-2 h-4 w-4" />, label: "Settings", roles: ['admin'] }
     );
   }
   
   // Add club dashboard if user has a club
   if (session && userClub) {
     menuItems.push({ 
-      to: `/club/${userClub.id}`, 
+      to: "/club-dashboard", 
       icon: <Building className="mr-2 h-4 w-4" />, 
-      label: "Club Dashboard", 
+      label: "Club", 
       roles: ['admin']
     });
   }
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // Clean up auth state first
+      const cleanupLocalStorage = () => {
+        // Remove tokens and team data
+        localStorage.removeItem('team_logo');
+        localStorage.removeItem('team_name');
+        
+        // Remove any supabase auth keys
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+            localStorage.removeItem(key);
+          }
+        });
+      };
       
-      // Clear local storage on logout
-      localStorage.removeItem('team_logo');
-      localStorage.removeItem('team_name');
+      cleanupLocalStorage();
+      
+      // Attempt global sign out
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) throw error;
       
       setUserTeam(null);
       setUserClub(null);
       setTeamLogo(null);
       
-      navigate("/");
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account",
+      });
+      
+      // Force page reload for a clean state
+      window.location.href = '/auth';
     } catch (error) {
       console.error("Logout error:", error);
       toast({
@@ -188,15 +209,19 @@ export const NavBar = () => {
     if (isPublic) return true;
     if (!session) return false;
     
-    // For now, all authenticated users have admin role for simplicity
-    return true;
+    if (hasRole) {
+      return requiredRoles.length === 0 || requiredRoles.some(role => hasRole(role));
+    }
+    
+    // Fallback - all authenticated users have access if no specific roles required
+    return requiredRoles.length === 0;
   };
   
-  const isTeamRoute = location.pathname.includes('/home') || 
+  const isTeamRoute = location.pathname.includes('/team-dashboard') || 
                       location.pathname.includes('/squad') || 
                       location.pathname.includes('/analytics') || 
                       location.pathname.includes('/calendar') || 
-                      location.pathname.includes('/settings') ||
+                      location.pathname.includes('/team-settings') ||
                       location.pathname.includes('/fixtures') ||
                       location.pathname.includes('/player') ||
                       location.pathname.includes('/formation') ||
@@ -205,7 +230,8 @@ export const NavBar = () => {
   const isPlatformRoute = location.pathname.includes('/platform') || 
                           location.pathname.includes('/create-team') || 
                           location.pathname.includes('/club-settings') ||
-                          location.pathname.includes('/club/');
+                          location.pathname.includes('/club/') ||
+                          location.pathname.includes('/global-admin');
                           
   const isParentRoute = location.pathname.includes('/parent-dashboard');
 
@@ -224,6 +250,17 @@ export const NavBar = () => {
         title: "Role Switched",
         description: `You are now viewing as a ${role.charAt(0).toUpperCase() + role.slice(1)}`,
       });
+      
+      // Redirect to appropriate dashboard based on role
+      if (role === 'parent') {
+        navigate('/parent-dashboard');
+      } else if (role === 'coach') {
+        navigate('/team-dashboard');
+      } else if (role === 'admin') {
+        navigate('/platform');
+      } else if (role === 'globalAdmin') {
+        navigate('/global-admin');
+      }
     }
   };
 
@@ -242,7 +279,7 @@ export const NavBar = () => {
               }}
             />
           ) : (
-            <Link to="/">
+            <Link to="/platform">
               <img 
                 src="/lovable-uploads/47160456-08d9-4525-b5da-08312ba94630.png" 
                 alt="Puma.AI Logo" 
@@ -344,6 +381,9 @@ export const NavBar = () => {
                       {hasRole && hasRole('coach') && (
                         <DropdownMenuRadioItem value="coach">Coach</DropdownMenuRadioItem>
                       )}
+                      {hasRole && hasRole('globalAdmin') && (
+                        <DropdownMenuRadioItem value="globalAdmin">Global Admin</DropdownMenuRadioItem>
+                      )}
                     </DropdownMenuRadioGroup>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
@@ -352,6 +392,13 @@ export const NavBar = () => {
                   <Home className="mr-2 h-4 w-4" />
                   <span>Platform Dashboard</span>
                 </DropdownMenuItem>
+                
+                {hasRole && hasRole('globalAdmin') && (
+                  <DropdownMenuItem onClick={() => navigate("/global-admin")}>
+                    <Cog className="mr-2 h-4 w-4" />
+                    <span>Global Admin</span>
+                  </DropdownMenuItem>
+                )}
                 
                 {hasRole && hasRole('parent') && (
                   <DropdownMenuItem onClick={() => navigate("/parent-dashboard")}>

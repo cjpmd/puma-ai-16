@@ -7,6 +7,8 @@ import { columnExists } from './columnUtils';
 
 export const ensureDatabaseSetup = async (): Promise<boolean> => {
   try {
+    console.log("Starting database setup check...");
+
     // Setup user roles table
     await createUserRolesTable();
     
@@ -17,6 +19,7 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
     const hasProfileImageColumn = await columnExists('players', 'profile_image');
     
     if (!hasProfileImageColumn) {
+      console.log("Adding profile_image column to players table...");
       const profileImageAdded = await addColumnIfNotExists(
         'players', 
         'profile_image', 
@@ -25,6 +28,8 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
       
       if (profileImageAdded) {
         console.log('Added profile_image column to players table');
+      } else {
+        console.log('Profile image column already exists or failed to add');
       }
     }
     
@@ -32,6 +37,7 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
     const hasLinkingCodeColumn = await columnExists('players', 'linking_code');
     
     if (!hasLinkingCodeColumn) {
+      console.log("Adding linking_code column to players table...");
       const linkingCodeAdded = await addColumnIfNotExists(
         'players', 
         'linking_code', 
@@ -40,9 +46,12 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
       
       if (linkingCodeAdded) {
         console.log('Added linking_code column to players table');
+      } else {
+        console.log('Linking code column already exists or failed to add');
       }
     }
-    
+
+    console.log("Database setup check complete");
     return true;
   } catch (error) {
     console.error('Error ensuring database setup:', error);
