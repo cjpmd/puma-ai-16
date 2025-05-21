@@ -2825,6 +2825,7 @@ export type Database = {
           id: string
           name: string
           role: Database["public"]["Enums"]["user_role"]
+          team_id: string | null
           updated_at: string | null
           user_id: string | null
         }
@@ -2835,6 +2836,7 @@ export type Database = {
           id?: string
           name: string
           role?: Database["public"]["Enums"]["user_role"]
+          team_id?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -2845,6 +2847,7 @@ export type Database = {
           id?: string
           name?: string
           role?: Database["public"]["Enums"]["user_role"]
+          team_id?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -2854,6 +2857,13 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -4080,6 +4090,14 @@ export type Database = {
       function_exists: {
         Args: { function_name: string }
         Returns: boolean
+      }
+      generate_linking_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_player_linking_code: {
+        Args: { player_id: string }
+        Returns: string
       }
       get_table_columns: {
         Args: { table_name: string }

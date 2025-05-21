@@ -26,7 +26,8 @@ export const columnExists = async (tableName: string, columnName?: string): Prom
         return false;
       }
       
-      return data || false;
+      // The result comes back as a boolean value
+      return data === true;
     } else {
       // If no column name is provided, check if the table exists
       const { data, error } = await supabase.rpc('execute_sql', {
@@ -44,7 +45,7 @@ export const columnExists = async (tableName: string, columnName?: string): Prom
         return false;
       }
       
-      return data || false;
+      return data === true;
     }
   } catch (err) {
     console.error("Error in columnExists function:", err);

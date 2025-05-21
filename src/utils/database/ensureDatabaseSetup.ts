@@ -28,6 +28,21 @@ export const ensureDatabaseSetup = async (): Promise<boolean> => {
       }
     }
     
+    // Check if linking_code column exists in the players table
+    const hasLinkingCodeColumn = await columnExists('players', 'linking_code');
+    
+    if (!hasLinkingCodeColumn) {
+      const linkingCodeAdded = await addColumnIfNotExists(
+        'players', 
+        'linking_code', 
+        'TEXT'
+      );
+      
+      if (linkingCodeAdded) {
+        console.log('Added linking_code column to players table');
+      }
+    }
+    
     return true;
   } catch (error) {
     console.error('Error ensuring database setup:', error);

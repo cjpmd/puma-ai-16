@@ -75,6 +75,8 @@ const PlayerDetailsPage = () => {
         });
       }
 
+      console.log('Player data loaded:', playerData);
+
       // Enhanced player data with profile_image property
       const playerWithEnhancedData = {
         ...playerData,
