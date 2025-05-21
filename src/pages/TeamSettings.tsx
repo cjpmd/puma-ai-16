@@ -29,11 +29,10 @@ const defaultSettings: EnhancedTeamSettings = {
   updated_at: "",
   team_name: "Team",
   team_colors: ["#ffffff", "#000000"],
+  team_logo: "",
   home_kit_icon: "",
   away_kit_icon: "",
   training_kit_icon: "",
-  kit_home_icon: "",
-  kit_away_icon: ""
 };
 
 export const TeamSettings = () => {
@@ -55,8 +54,9 @@ export const TeamSettings = () => {
         home_kit_icon: data?.home_kit_icon || "",
         away_kit_icon: data?.away_kit_icon || "",
         training_kit_icon: data?.training_kit_icon || "",
-        kit_home_icon: data?.kit_home_icon || "",
-        kit_away_icon: data?.kit_away_icon || ""
+        // Map the kit icons properties to ensure compatibility
+        kit_home_icon: data?.home_kit_icon || "",
+        kit_away_icon: data?.away_kit_icon || ""
       } as EnhancedTeamSettings;
     }
   });
