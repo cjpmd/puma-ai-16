@@ -36,13 +36,32 @@ export const columnExists = async (tableName: string, columnName?: string): Prom
         } else {
           console.log("execute_sql RPC not available - this is expected in development");
           
-          // Fallback to direct select if function fails
-          const { data: columnData, error: columnError } = await supabase
-            .from(tableName)
-            .select(columnName)
-            .limit(1);
-          
-          return !columnError;
+          // Fallback to direct select - but using a type assertion to avoid the TypeScript error
+          // with dynamic table names
+          try {
+            // Use a more type-safe approach by checking with a raw query instead
+            const { data: checkData, error: checkError } = await supabase
+              .from('information_schema.columns')
+              .select('column_name')
+              .eq('table_name', tableName)
+              .eq('column_name', columnName)
+              .limit(1);
+
+            if (!checkError && checkData && checkData.length > 0) {
+              return true;
+            }
+
+            // If the information schema approach fails, try a cast approach as last resort
+            const { error: columnError } = await supabase
+              .from(tableName as any)
+              .select(columnName)
+              .limit(1);
+            
+            return !columnError;
+          } catch (innerErr) {
+            console.error("Error checking column existence with direct query:", innerErr);
+            return false;
+          }
         }
       } catch (err) {
         console.error("Error checking if column exists:", err);
@@ -80,15 +99,31 @@ export const tableExists = async (tableName: string): Promise<boolean> => {
       console.log("RPC method not available:", rpcError);
     }
     
-    // Fallback method - try selecting from the table
+    // Fallback method - use a raw query to check if table exists in information schema
     try {
-      const { error } = await supabase
-        .from(tableName)
+      const { data, error } = await supabase.rpc('execute_sql', {
+        sql_string: `
+          SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = '${tableName}'
+          );
+        `
+      });
+      
+      if (!error) {
+        return Boolean(data);
+      }
+      
+      // As a last resort, try directly selecting from the table with type assertion
+      const { error: selectError } = await supabase
+        .from(tableName as any)
         .select('*')
         .limit(1);
       
       // If there's no error, the table exists
-      return !error;
+      return !selectError;
     } catch (selectError) {
       console.error(`Error checking if table ${tableName} exists:`, selectError);
       return false;
